@@ -9,6 +9,7 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
 * AsyncAPI versions:
   * 2.5.0
 * Brokers:
+  * NATS
   * Custom (implementation specified by the developer)
 * Formats:
   * JSON
