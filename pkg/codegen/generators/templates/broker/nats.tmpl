@@ -1,0 +1,72 @@
+// NATSController is the NATS implementation for asyncapi-codegen
+type NATSController struct {
+    connection *nats.Conn
+}
+
+// NewNATSController creates a new NATSController that fulfill the BrokerLinker interface
+func NewNATSController(connection *nats.Conn) *NATSController {
+    return &NATSController{
+        connection: connection,
+    }
+}
+
+// Publish a message to the broker
+func (c *NATSController) Publish(channel string, um UniversalMessage) error {
+	msg := nats.NewMsg(channel)
+
+    // Set message content
+	msg.Data = um.Payload
+	if um.CorrelationId != "" {
+		msg.Header.Add(CorrelationIdField, um.CorrelationId)
+	}
+
+    // Publish message
+	if err := c.connection.PublishMsg(msg); err != nil {
+		return err
+	}
+
+    // Flush the queue
+	return c.connection.Flush()
+}
+
+// Subscribe to messages from the broker
+func (c *NATSController) Subscribe(channel string) (msgs chan UniversalMessage, stop chan interface{}, err error) {
+    // Subscribe to channel
+    natsMsgs := make(chan *nats.Msg, 64)
+    sub, err := c.connection.ChanSubscribe(channel, natsMsgs)
+    if err != nil {
+        return nil, nil, err
+    }
+
+    // Handle events
+    msgs = make(chan UniversalMessage, 64)
+    stop = make(chan interface{}, 1)
+    go func() {
+        for {
+            select {
+            // Handle new message
+            case msg := <-natsMsgs:
+                msgs <- natsMsgToMsgWrapper(msg)
+            // Handle closure request from function caller
+            case _ = <-stop:
+                if err := sub.Unsubscribe(); err != nil {
+                    log.Println("error when unsubscribing") // TODO: Add proper error handling
+                }
+
+                if err := sub.Drain(); err != nil {
+                    log.Println("error when draining") // TODO: Add proper error handling
+                }
+
+                close(msgs)
+            }
+        }
+    } ()
+
+    return msgs, stop, nil
+}
+
+func natsMsgToMsgWrapper(natsMsg *nats.Msg) UniversalMessage {
+    return UniversalMessage{
+        Payload: natsMsg.Data,
+    }
+}

@@ -1,0 +1,66 @@
+asyncapi: 2.5.0
+info:
+  title: Library Example Service
+  version: '1.0.0'
+  description: This is a library application using EDA
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+channels:
+  books.list.request:
+    publish:
+      operationId: booksListRequest
+      message:
+        $ref : '#/components/messages/BooksListRequest'
+
+  books.list.response:
+    subscribe:
+      operationId: booksListResponse
+      message:
+        $ref: '#/components/messages/BooksListResponse'
+
+components:
+  messages:
+    BooksListRequest:
+      headers:
+        type: object
+        properties:
+          correlationId:
+            description: Correlation ID set by client
+            type: string
+      payload:
+        type: object
+        description: Books list request with filters
+        properties:
+          genre:
+            type: string
+      correlationId:
+        description: Default Correlation ID
+        location: $message.header#/correlationId
+    BooksListResponse:
+      headers:
+        type: object
+        properties:
+          correlationId:
+            description: Correlation ID set by client on corresponding request
+            type: string
+      payload:
+        type: object
+        description: Books list response with data
+        properties:
+          books:
+            type: array
+            description: Books list
+            items:
+              $ref: '#/components/schemas/Book'
+      correlationId:
+        description: Default Correlation ID
+        location: $message.header#/correlationId
+  schemas:
+    Book:
+      type: object
+      description: Book Information
+      properties:
+        title:
+          type: string 

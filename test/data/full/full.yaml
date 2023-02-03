@@ -1,0 +1,74 @@
+asyncapi: 2.5.0
+info:
+  title: Account Service
+  version: 1.0.0
+  description: "This service is in charge of processing user signups :rocket:"
+channels:
+  user/signedup:
+    subscribe:
+      message:
+        $ref: '#/components/messages/UserSignedUpExtraWording'
+  user/signedin:
+    subscribe:
+      message:
+        payload:
+          type: integer
+  user/delete:
+    publish:
+      message:
+        payload:
+          type: integer
+  user/modify:
+    publish:
+      message:
+        $ref: '#/components/messages/UserModifyExtraWording'
+components:
+  messages:
+    UserSignedUpExtraWording: # Adding ExtraWording to decorrelate the message name from channel name
+      headers:
+        type: object
+        properties:
+          correlationId:
+            type: string
+      payload:
+        type: object
+        properties:
+          displayName:
+            type: string
+            description: Name of the user
+          email:
+            type: string
+            format: email
+            description: Email of the user
+          schema:
+            $ref: '#/components/schemas/schemaStruct'
+      correlationId:
+        description: Default Correlation ID
+        location: $message.header#/correlationId
+    UserModifyExtraWording: # Adding ExtraWording to decorrelate the message name from channel name
+      payload:
+        type: object
+        properties:
+          name:
+            type: string
+  schemas:
+    schemaStruct:
+      type: string
+    UserSignedUpExtraWording: # Added to test same name as message
+      type: string
+    limit:
+      type: integer
+      format: int32
+    total:
+      type: integer
+    number:
+      type: number
+    number64:
+      type: number
+      format: double
+    number32:
+      type: number
+      format: float
+
+
+  

@@ -1,0 +1,9 @@
+// AppSubscriber represents all application handlers that are expecting messages from clients
+type AppSubscriber interface {
+{{- range  $key, $value := .Specification.Channels}}
+{{- if $value.Publish}}
+    // {{namify $key}}
+    {{namify $key}}(msg {{channelToMessageTypeName $value}})
+{{end -}}
+{{end}}
+}

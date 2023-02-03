@@ -1,0 +1,126 @@
+// ClientController is the structure that provides publishing capabilities to the
+// developer and and connect the broker with the client
+type ClientController struct {
+    brokerController BrokerController
+    stopSubscribers map[string]chan interface{}
+}
+
+// NewClientController links the client to the broker
+func NewClientController(bs BrokerController) *ClientController {
+    // TODO: Check that brokerController is not nil
+
+    return &ClientController{
+        brokerController: bs,
+        stopSubscribers: make(map[string]chan interface{}),
+    }
+}
+
+// SubscribeAll will subscribe to channels on which the client is expecting messages
+func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
+    // TODO: Check that cs is not nil
+
+    {{range  $key, $value := .Specification.Channels -}}{{- if $value.Subscribe -}}
+    if err := cc.Subscribe{{namify $key}}(cs.{{namify $key}}); err != nil {
+        return err
+    }
+    {{end -}}{{- end}}
+
+    return nil
+}
+
+// UnsubscribeAll will unsubscribe all remaining subscribed channels
+func (cc *ClientController) UnsubscribeAll() {
+    {{range  $key, $value := .Specification.Channels -}}{{- if $value.Subscribe -}}
+    cc.Unsubscribe{{namify $key}}()
+    {{end -}}{{- end -}}
+}
+
+{{range  $key, $value := .Specification.Channels -}}
+{{- if $value.Subscribe}}
+// Subscribe{{namify $key}} will subscribe to new messages from '{{$key}}' channel
+func (cc *ClientController) Subscribe{{namify $key}}(fn func (msg {{channelToMessageTypeName $value}})) error {
+    // Subscribe to broker channel
+    msgs, stop, err := cc.brokerController.Subscribe("{{$key}}")
+    if err != nil {
+        return err
+    }
+
+    // Asynchronously listen to new messages and pass them to client subscriber
+    go func() {
+        var msg {{template "message" $value.Subscribe.Message}}
+        var um UniversalMessage
+
+        for open := true; open; {
+            um, open = <-msgs
+
+            err := json.Unmarshal(um.Payload, &msg)
+            if err != nil {
+                log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+                continue
+            }
+            
+            // TODO: run checks on data type
+
+            fn(msg)
+        }
+    } ()
+
+    // Add the stop channel to the inside map
+    cc.stopSubscribers["{{$key}}"] = stop
+
+    return nil
+}
+
+// Unsubscribe{{namify $key}} will unsubscribe messages from '{{$key}}' channel
+func (cc *ClientController) Unsubscribe{{namify $key}}() {
+    stopChan, exists := cc.stopSubscribers["{{$key}}"]
+    if !exists {
+        return
+    }
+
+    stopChan <- true
+    delete(cc.stopSubscribers, "{{$key}}") 
+}
+{{- end -}}
+{{- end}}
+
+// Close will clean up any existing resources on the controller
+func (cc *ClientController) Close() {
+    cc.UnsubscribeAll()
+}
+
+{{- range  $key, $value := .Specification.Channels}}
+{{if $value.Publish}}
+// Publish{{namify $key}} will publish messages to '{{$key}}' channel
+func (cc *ClientController) Publish{{namify $key}}(msg {{channelToMessageTypeName $value}}) error {
+    // TODO: check that 'cc' is not nil
+    // TODO: implement checks on message
+
+    // Convert to JSON payload
+    payload, err := json.Marshal(msg.Payload)
+    if err != nil {
+        return err
+    }
+
+    {{if ne (index $.CorrelationIdLocation $key) "" -}}
+    // Create a new correlationID if none is specified
+    correlationID := uuid.New().String()
+    // TODO: get if from another place according to spec
+    if msg.{{referenceToStructAttributePath (index $.CorrelationIdLocation $key)}} != "" {
+        correlationID = msg.{{referenceToStructAttributePath (index $.CorrelationIdLocation $key)}}
+    }
+    {{- end}}
+
+    // Create universal message
+    um := UniversalMessage{
+        Payload: payload,
+        {{- if ne (index $.CorrelationIdLocation $key) ""}}
+        CorrelationId: correlationID,
+        {{- end}}
+    }
+
+    // Publish on event broker
+    return cc.brokerController.Publish("{{$key}}", um)
+}
+{{end}}
+{{end}}

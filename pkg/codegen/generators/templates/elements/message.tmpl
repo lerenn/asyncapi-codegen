@@ -1,0 +1,22 @@
+{{define "message" -}}
+
+{{- /* If there is a payload, then its override the reference */ -}}
+{{- if .Payload -}}
+struct {
+
+{{- /* Display headers if they exists */}}
+{{- if .Headers}}
+// Headers will be used to fill the message headers
+Headers {{template "any" .Headers}}
+{{end -}}
+
+{{- /* Display payload */}}
+// Payload will be inserted in the message payload
+Payload {{template "any" .Payload}}
+}
+
+{{- /* If there is nothing to display, then it must be a reference */ -}}
+{{- else -}}
+{{- template "any" . -}} 
+{{- end -}}
+{{- end }}

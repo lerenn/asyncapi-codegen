@@ -1,0 +1,48 @@
+{{define "any" -}}
+
+{{- if hasField . "Type" -}}
+
+{{- /* Type Object */ -}}
+{{- if eq .Type "object" -}}struct {
+    {{- range $key, $value := .Properties}}
+    // {{if $value.Description}}{{$value.Description}}{{else}}{{namify $key}}{{end}}
+    {{namify $key}} {{template "any" $value}} `json:"{{snakeCase $key}}"`
+    {{end -}}
+}
+{{- end -}}
+
+{{- /* Type String */ -}}
+{{- if eq .Type "string" -}}
+string
+{{- end -}}
+
+{{- /* Type Integer */ -}}
+{{- if eq .Type "integer" -}}
+{{- if and .Format (eq .Format "int32") -}}
+int32
+{{- else -}}
+int64
+{{- end -}}
+{{- end -}}
+
+{{- /* Type Array */ -}}
+{{- if eq .Type "array" -}}
+[]{{- template "any" .Items -}}
+{{- end -}}
+
+{{- /* Type Number */ -}}
+{{- if eq .Type "number" -}}
+{{- if and .Format (eq .Format "float") -}}
+float32
+{{- else -}}
+float64
+{{- end -}}
+{{- end -}}
+
+{{- end -}}
+
+{{- /* If no know type but reference a component */ -}}
+{{- if .Reference -}}
+{{ referenceToTypeName .Reference }}
+{{- end -}}
+{{- end -}}

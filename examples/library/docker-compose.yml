@@ -1,0 +1,42 @@
+version: "3.5"
+
+services:
+  nats:
+    image: nats:alpine
+    ports:
+        - 4222:4222
+    networks:
+      - nats-network
+  app:
+    depends_on:
+      - nats
+    image: golang:1.19.4
+    volumes:
+      - gocache:/go/pkg/mod
+      - gobuild:/root/.cache/go-build
+      - ../../:/go/asyncapi-codegen
+    working_dir: /go/asyncapi-codegen
+    command: go run ./examples/library/app
+    networks:
+      - nats-network
+  client:
+    depends_on:
+      - app
+      - nats
+    image: golang:1.19.4
+    volumes:
+      - gocache:/go/pkg/mod
+      - gobuild:/root/.cache/go-build
+      - ../../:/go/asyncapi-codegen
+    working_dir: /go/asyncapi-codegen
+    command: go run ./examples/library/client
+    networks:
+      - nats-network
+
+
+volumes:
+  gocache:
+  gobuild:
+
+networks:
+  nats-network:

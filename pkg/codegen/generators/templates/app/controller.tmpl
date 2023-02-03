@@ -1,0 +1,132 @@
+// AppController is the structure that provides publishing capabilities to the
+// developer and and connect the broker with the app
+type AppController struct {
+    brokerController BrokerController
+    stopSubscribers map[string]chan interface{}
+}
+
+// NewAppController links the application to the broker
+func NewAppController(bs BrokerController) *AppController {
+    // TODO: Check that brokerController is not nil
+
+    return &AppController{
+        brokerController: bs,
+        stopSubscribers: make(map[string]chan interface{}),
+    }
+}
+
+// SubscribeAll will subscribe to channels on which the app is expecting messages
+func (ac *AppController) SubscribeAll(as AppSubscriber) error {
+    // TODO: Check that as is not nil
+
+    {{range  $key, $value := .Specification.Channels -}}{{- if $value.Publish -}}
+    if err := ac.Subscribe{{namify $key}}(as.{{namify $key}}); err != nil {
+        return err
+    }
+    {{end -}}{{- end}}
+
+    return nil
+}
+
+// UnsubscribeAll will unsubscribe all remaining subscribed channels
+func (ac *AppController) UnsubscribeAll() {
+    {{range  $key, $value := .Specification.Channels -}}{{- if $value.Publish -}}
+    ac.Unsubscribe{{namify $key}}()
+    {{end -}}{{- end -}}
+}
+
+{{range  $key, $value := .Specification.Channels -}}
+{{- if $value.Publish -}}
+// Subscribe{{namify $key}} will subscribe to new messages from '{{$key}}' channel
+func (ac *AppController) Subscribe{{namify $key}}(fn func (msg {{channelToMessageTypeName $value}})) error {
+    // Subscribe to broker channel
+    msgs, stop, err := ac.brokerController.Subscribe("{{$key}}")
+    if err != nil {
+        return err
+    }
+
+    // Asynchronously listen to new messages and pass them to app subscriber
+    go func() {
+        var msg {{template "message" $value.Publish.Message}}
+        var um UniversalMessage
+
+        for open := true; open; {
+            um, open = <-msgs
+
+            err := json.Unmarshal(um.Payload, &msg)
+            if err != nil {
+                log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+                continue
+            }
+            
+            // TODO: run checks on msg type
+
+            fn(msg)
+        }
+    } ()
+
+    // Add the stop channel to the inside map
+    ac.stopSubscribers["{{$key}}"] = stop
+
+    return nil
+}
+
+// Unsubscribe{{namify $key}} will unsubscribe messages from '{{$key}}' channel
+func (ac *AppController) Unsubscribe{{namify $key}}() {
+    stopChan, exists := ac.stopSubscribers["{{$key}}"]
+    if !exists {
+        return
+    }
+
+    stopChan <- true
+    delete(ac.stopSubscribers, "{{$key}}") 
+}
+{{- end -}}
+{{- end}}
+
+// Close will clean up any existing resources on the controller
+func (ac *AppController) Close() {
+    ac.UnsubscribeAll()
+}
+
+{{- range  $key, $value := .Specification.Channels}}
+{{if $value.Subscribe}}
+// Publish{{namify $key}} will publish messages to '{{$key}}' channel
+func (ac *AppController) Publish{{namify $key}}(msg {{channelToMessageTypeName $value}}) error {
+    // TODO: check that 'ac' is not nil
+    // TODO: implement checks on message
+
+    // Convert to JSON payload
+    payload, err := json.Marshal(msg.Payload)
+    if err != nil {
+        return err
+    }
+
+    {{if ne (index $.CorrelationIdLocation $key) "" -}}
+    // Create a new correlationID if none is specified
+    correlationID := uuid.New().String()
+    // TODO: get if from another place according to spec
+    if msg.{{referenceToStructAttributePath (index $.CorrelationIdLocation $key)}} != "" {
+        correlationID = msg.{{referenceToStructAttributePath (index $.CorrelationIdLocation $key)}}
+    }
+    {{- end}}
+
+    // Create universal message
+    um := UniversalMessage{
+        Payload: payload,
+        {{- if ne (index $.CorrelationIdLocation $key) ""}}
+        CorrelationId: correlationID,
+        {{- end}}
+    }
+
+    // Publish on event broker
+    return ac.brokerController.Publish("{{$key}}", um)
+}
+{{end}}
+{{end}}
+
+// Listen will let the controller handle subscriptions and will be interrupted
+// only when an struct is sent on the interrupt channel
+func (ac *AppController) Listen(irq chan interface{}){
+	<-irq
+}
