@@ -9,15 +9,15 @@ import (
 type ClientControllerGenerator struct {
 	Specification asyncapi.Specification
 
-	// CorrelationIdLocation will indicate where the correlation id is
-	// According to this: https://www.asyncapi.com/docs/reference/specification/v2.5.0#correlationIdObject
-	CorrelationIdLocation map[string]string
+	// CorrelationIDLocation will indicate where the correlation id is
+	// According to this: https://www.asyncapi.com/docs/reference/specification/v2.5.0#correlationIDObject
+	CorrelationIDLocation map[string]string
 }
 
 func NewClientControllerGenerator(spec asyncapi.Specification) ClientControllerGenerator {
 	return ClientControllerGenerator{
 		Specification:         spec,
-		CorrelationIdLocation: getCorrelationIdsLocationsByChannel(spec),
+		CorrelationIDLocation: getCorrelationIDsLocationsByChannel(spec),
 	}
 }
 

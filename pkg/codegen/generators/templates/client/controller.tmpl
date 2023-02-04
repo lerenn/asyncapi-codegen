@@ -102,20 +102,20 @@ func (cc *ClientController) Publish{{namify $key}}(msg {{channelToMessageTypeNam
         return err
     }
 
-    {{if ne (index $.CorrelationIdLocation $key) "" -}}
+    {{if ne (index $.CorrelationIDLocation $key) "" -}}
     // Create a new correlationID if none is specified
     correlationID := uuid.New().String()
     // TODO: get if from another place according to spec
-    if msg.{{referenceToStructAttributePath (index $.CorrelationIdLocation $key)}} != "" {
-        correlationID = msg.{{referenceToStructAttributePath (index $.CorrelationIdLocation $key)}}
+    if msg.{{referenceToStructAttributePath (index $.CorrelationIDLocation $key)}} != "" {
+        correlationID = msg.{{referenceToStructAttributePath (index $.CorrelationIDLocation $key)}}
     }
     {{- end}}
 
     // Create universal message
     um := UniversalMessage{
         Payload: payload,
-        {{- if ne (index $.CorrelationIdLocation $key) ""}}
-        CorrelationId: correlationID,
+        {{- if ne (index $.CorrelationIDLocation $key) ""}}
+        CorrelationID: correlationID,
         {{- end}}
     }
 
