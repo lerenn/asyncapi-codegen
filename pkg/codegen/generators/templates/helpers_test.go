@@ -1,4 +1,4 @@
-package generators
+package templates
 
 import (
 	"testing"
@@ -6,15 +6,15 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestTemplatesSuite(t *testing.T) {
-	suite.Run(t, new(TemplatesSuite))
+func TestHelpersSuite(t *testing.T) {
+	suite.Run(t, new(HelpersSuite))
 }
 
-type TemplatesSuite struct {
+type HelpersSuite struct {
 	suite.Suite
 }
 
-func (suite *TemplatesSuite) TestNamify() {
+func (suite *HelpersSuite) TestNamify() {
 	cases := []struct {
 		In  string
 		Out string
@@ -27,9 +27,12 @@ func (suite *TemplatesSuite) TestNamify() {
 		{In: "name", Out: "Name"},
 		// Snake Case
 		{In: "eh_oh__ah", Out: "EhOhAh"},
+		// With acronym
+		{In: "TotoIdLala", Out: "TotoIDLala"},
+		{In: "TotoId", Out: "TotoID"},
 	}
 
 	for i, c := range cases {
-		suite.Require().Equal(c.Out, namify(c.In), i)
+		suite.Require().Equal(c.Out, Namify(c.In), i)
 	}
 }
