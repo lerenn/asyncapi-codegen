@@ -2,6 +2,7 @@ package generators
 
 import (
 	"embed"
+	"fmt"
 	"path"
 	"reflect"
 	"regexp"
@@ -68,7 +69,21 @@ func namify(sentence string) string {
 	sentence = string(re.ReplaceAll([]byte(sentence), []byte("")))
 
 	// Snake case to Upper Camel case
-	return strcase.UpperCamelCase(sentence)
+	sentence = strcase.UpperCamelCase(sentence)
+
+	// Correct acronyms
+	return correctAcronyms(sentence)
+}
+
+func correctAcronyms(sentence string) string {
+	acronyms := []string{"ID"}
+	for _, a := range acronyms {
+		wronglyFormatedAcronym := strcase.UpperCamelCase(a)
+		re := regexp.MustCompile(fmt.Sprintf("%s[A-Z]*", wronglyFormatedAcronym))
+		sentence = string(re.ReplaceAll([]byte(sentence), []byte(a)))
+	}
+
+	return sentence
 }
 
 var (

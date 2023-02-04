@@ -27,8 +27,8 @@ func (c *NATSController) Publish(channel string, um UniversalMessage) error {
 
 	// Set message content
 	msg.Data = um.Payload
-	if um.CorrelationId != "" {
-		msg.Header.Add(CorrelationIdField, um.CorrelationId)
+	if um.CorrelationID != "" {
+		msg.Header.Add(CorrelationIDField, um.CorrelationID)
 	}
 
 	// Publish message

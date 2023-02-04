@@ -1,6 +1,6 @@
 package asyncapi
 
-type CorrelationId struct {
+type CorrelationID struct {
 	Description string `json:"description"`
 	Location    string `json:"location"`
 }

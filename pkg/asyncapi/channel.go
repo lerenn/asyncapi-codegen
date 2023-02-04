@@ -16,19 +16,19 @@ func (c Channel) GetMessageWithoutReferenceRedirect() Message {
 	return c.Publish.Message
 }
 
-func (c Channel) CorrelationIdLocation(spec Specification) string {
+func (c Channel) CorrelationIDLocation(spec Specification) string {
 	msg := c.GetMessageWithoutReferenceRedirect()
 
 	// Let's check the message before the reference
-	if msg.CorrelationId != nil {
-		return msg.CorrelationId.Location
+	if msg.CorrelationID != nil {
+		return msg.CorrelationID.Location
 	}
 
 	// If there is a reference, check it
 	if msg.Reference != "" {
-		correlationId := spec.ReferenceMessage(msg.Reference).CorrelationId
-		if correlationId != nil {
-			return correlationId.Location
+		correlationID := spec.ReferenceMessage(msg.Reference).CorrelationID
+		if correlationID != nil {
+			return correlationID.Location
 		}
 	}
 

@@ -10,7 +10,7 @@ type BooksListRequestMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
 		// Correlation ID set by client
-		CorrelationId string `json:"correlation_id"`
+		CorrelationID string `json:"correlation_id"`
 	}
 
 	// Payload will be inserted in the message payload
@@ -25,7 +25,7 @@ type BooksListResponseMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
 		// Correlation ID set by client on corresponding request
-		CorrelationId string `json:"correlation_id"`
+		CorrelationID string `json:"correlation_id"`
 	}
 
 	// Payload will be inserted in the message payload

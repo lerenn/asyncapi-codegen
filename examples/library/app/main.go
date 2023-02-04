@@ -22,7 +22,7 @@ type AppSubscriber struct {
 func (as AppSubscriber) BooksListRequest(req generated.BooksListRequestMessage) {
 	var resp generated.BooksListResponseMessage
 
-	log.Printf("Received a books list request (%q)\n", req.Headers.CorrelationId)
+	log.Printf("Received a books list request (%q)\n", req.Headers.CorrelationID)
 
 	// Respond with books
 	resp.Payload.Books = []generated.Book{
@@ -31,7 +31,7 @@ func (as AppSubscriber) BooksListRequest(req generated.BooksListRequestMessage) 
 	}
 
 	// And with same correlation Id
-	resp.Headers.CorrelationId = req.Headers.CorrelationId
+	resp.Headers.CorrelationID = req.Headers.CorrelationID
 
 	err := as.Controller.PublishBooksListResponse(resp)
 	if err != nil {

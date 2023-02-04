@@ -186,14 +186,14 @@ func (ac *AppController) PublishUserSignedup(msg UserSignedUpExtraWordingMessage
 	// Create a new correlationID if none is specified
 	correlationID := uuid.New().String()
 	// TODO: get if from another place according to spec
-	if msg.Headers.CorrelationId != "" {
-		correlationID = msg.Headers.CorrelationId
+	if msg.Headers.CorrelationID != "" {
+		correlationID = msg.Headers.CorrelationID
 	}
 
 	// Create universal message
 	um := UniversalMessage{
 		Payload:       payload,
-		CorrelationId: correlationID,
+		CorrelationID: correlationID,
 	}
 
 	// Publish on event broker
@@ -391,13 +391,13 @@ func (cc *ClientController) PublishUserModify(msg UserModifyExtraWordingMessage)
 }
 
 const (
-	// CorrelationIdField is the name of the field that will contain the correlation ID
-	CorrelationIdField = "correlation_id"
+	// CorrelationIDField is the name of the field that will contain the correlation ID
+	CorrelationIDField = "correlation_id"
 )
 
 // UniversalMessage is a wrapper that will contain all information regarding a message
 type UniversalMessage struct {
-	CorrelationId string
+	CorrelationID string
 	Payload       []byte
 }
 
@@ -436,8 +436,8 @@ type UserModifyExtraWordingMessage struct {
 type UserSignedUpExtraWordingMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
-		// CorrelationId
-		CorrelationId string `json:"correlation_id"`
+		// CorrelationID
+		CorrelationID string `json:"correlation_id"`
 	}
 
 	// Payload will be inserted in the message payload

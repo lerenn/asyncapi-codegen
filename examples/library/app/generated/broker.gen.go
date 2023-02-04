@@ -6,13 +6,13 @@ package generated
 import ()
 
 const (
-	// CorrelationIdField is the name of the field that will contain the correlation ID
-	CorrelationIdField = "correlation_id"
+	// CorrelationIDField is the name of the field that will contain the correlation ID
+	CorrelationIDField = "correlation_id"
 )
 
 // UniversalMessage is a wrapper that will contain all information regarding a message
 type UniversalMessage struct {
-	CorrelationId string
+	CorrelationID string
 	Payload       []byte
 }
 

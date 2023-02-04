@@ -113,14 +113,14 @@ func (cc *ClientController) PublishBooksListRequest(msg BooksListRequestMessage)
 	// Create a new correlationID if none is specified
 	correlationID := uuid.New().String()
 	// TODO: get if from another place according to spec
-	if msg.Headers.CorrelationId != "" {
-		correlationID = msg.Headers.CorrelationId
+	if msg.Headers.CorrelationID != "" {
+		correlationID = msg.Headers.CorrelationID
 	}
 
 	// Create universal message
 	um := UniversalMessage{
 		Payload:       payload,
-		CorrelationId: correlationID,
+		CorrelationID: correlationID,
 	}
 
 	// Publish on event broker
