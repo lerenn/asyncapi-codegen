@@ -28,3 +28,15 @@ func (s Specification) ReferenceMessage(ref string) Message {
 	name := strings.Split(ref, "/")[3]
 	return s.Components.Messages[name]
 }
+
+func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount uint) {
+	for _, c := range s.Channels {
+		if c.Publish != nil {
+			publishCount += 1
+		} else if c.Subscribe != nil {
+			subscribeCount += 1
+		}
+	}
+
+	return publishCount, subscribeCount
+}

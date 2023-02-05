@@ -1,3 +1,4 @@
+{{if .PublishCount -}}
 // AppSubscriber represents all application handlers that are expecting messages from clients
 type AppSubscriber interface {
 {{- range  $key, $value := .Specification.Channels}}
@@ -7,3 +8,4 @@ type AppSubscriber interface {
 {{end -}}
 {{end}}
 }
+{{- end}}

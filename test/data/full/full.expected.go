@@ -56,6 +56,11 @@ func (ac *AppController) UnsubscribeAll() {
 	ac.UnsubscribeUserModify()
 }
 
+// Close will clean up any existing resources on the controller
+func (ac *AppController) Close() {
+	ac.UnsubscribeAll()
+}
+
 // SubscribeUserDelete will subscribe to new messages from 'user/delete' channel
 func (ac *AppController) SubscribeUserDelete(fn func(msg UserDeleteMessage)) error {
 	// Subscribe to broker channel
@@ -75,7 +80,7 @@ func (ac *AppController) SubscribeUserDelete(fn func(msg UserDeleteMessage)) err
 		for open := true; open; {
 			um, open = <-msgs
 
-			err := json.Unmarshal(um.Payload, &msg)
+			err := json.Unmarshal(um.Payload, &msg.Payload)
 			if err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
@@ -118,7 +123,7 @@ func (ac *AppController) SubscribeUserModify(fn func(msg UserModifyExtraWordingM
 		for open := true; open; {
 			um, open = <-msgs
 
-			err := json.Unmarshal(um.Payload, &msg)
+			err := json.Unmarshal(um.Payload, &msg.Payload)
 			if err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
@@ -145,11 +150,6 @@ func (ac *AppController) UnsubscribeUserModify() {
 
 	stopChan <- true
 	delete(ac.stopSubscribers, "user/modify")
-}
-
-// Close will clean up any existing resources on the controller
-func (ac *AppController) Close() {
-	ac.UnsubscribeAll()
 }
 
 // PublishUserSignedin will publish messages to 'user/signedin' channel
@@ -252,6 +252,11 @@ func (cc *ClientController) UnsubscribeAll() {
 	cc.UnsubscribeUserSignedup()
 }
 
+// Close will clean up any existing resources on the controller
+func (cc *ClientController) Close() {
+	cc.UnsubscribeAll()
+}
+
 // SubscribeUserSignedin will subscribe to new messages from 'user/signedin' channel
 func (cc *ClientController) SubscribeUserSignedin(fn func(msg UserSignedinMessage)) error {
 	// Subscribe to broker channel
@@ -271,7 +276,7 @@ func (cc *ClientController) SubscribeUserSignedin(fn func(msg UserSignedinMessag
 		for open := true; open; {
 			um, open = <-msgs
 
-			err := json.Unmarshal(um.Payload, &msg)
+			err := json.Unmarshal(um.Payload, &msg.Payload)
 			if err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
@@ -316,7 +321,7 @@ func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpExtraW
 		for open := true; open; {
 			um, open = <-msgs
 
-			err := json.Unmarshal(um.Payload, &msg)
+			err := json.Unmarshal(um.Payload, &msg.Payload)
 			if err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
@@ -343,11 +348,6 @@ func (cc *ClientController) UnsubscribeUserSignedup() {
 
 	stopChan <- true
 	delete(cc.stopSubscribers, "user/signedup")
-}
-
-// Close will clean up any existing resources on the controller
-func (cc *ClientController) Close() {
-	cc.UnsubscribeAll()
 }
 
 // PublishUserDelete will publish messages to 'user/delete' channel

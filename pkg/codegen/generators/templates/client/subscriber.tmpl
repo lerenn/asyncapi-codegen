@@ -1,3 +1,4 @@
+{{if .SubscribeCount -}}
 // ClientSubscriber represents all application handlers that are expecting messages from application
 type ClientSubscriber interface {
 {{- range  $key, $value := .Specification.Channels}}
@@ -7,3 +8,4 @@ type ClientSubscriber interface {
 {{end -}}
 {{end}}
 }
+{{- end}}
