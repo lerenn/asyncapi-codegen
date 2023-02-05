@@ -15,6 +15,7 @@ func NewClientController(bs BrokerController) *ClientController {
     }
 }
 
+{{if .SubscribeCount -}}
 // SubscribeAll will subscribe to channels on which the client is expecting messages
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
     // TODO: Check that cs is not nil
@@ -35,6 +36,12 @@ func (cc *ClientController) UnsubscribeAll() {
     {{end -}}{{- end -}}
 }
 
+// Close will clean up any existing resources on the controller
+func (cc *ClientController) Close() {
+    cc.UnsubscribeAll()
+}
+{{- end}}
+
 {{range  $key, $value := .Specification.Channels -}}
 {{- if $value.Subscribe}}
 // Subscribe{{namify $key}} will subscribe to new messages from '{{$key}}' channel
@@ -53,7 +60,7 @@ func (cc *ClientController) Subscribe{{namify $key}}(fn func (msg {{channelToMes
         for open := true; open; {
             um, open = <-msgs
 
-            err := json.Unmarshal(um.Payload, &msg)
+            err := json.Unmarshal(um.Payload, &msg.Payload)
             if err != nil {
                 log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
                 continue
@@ -83,11 +90,6 @@ func (cc *ClientController) Unsubscribe{{namify $key}}() {
 }
 {{- end -}}
 {{- end}}
-
-// Close will clean up any existing resources on the controller
-func (cc *ClientController) Close() {
-    cc.UnsubscribeAll()
-}
 
 {{- range  $key, $value := .Specification.Channels}}
 {{if $value.Publish}}

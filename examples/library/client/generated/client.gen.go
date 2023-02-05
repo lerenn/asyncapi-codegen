@@ -49,6 +49,11 @@ func (cc *ClientController) UnsubscribeAll() {
 	cc.UnsubscribeBooksListResponse()
 }
 
+// Close will clean up any existing resources on the controller
+func (cc *ClientController) Close() {
+	cc.UnsubscribeAll()
+}
+
 // SubscribeBooksListResponse will subscribe to new messages from 'books.list.response' channel
 func (cc *ClientController) SubscribeBooksListResponse(fn func(msg BooksListResponseMessage)) error {
 	// Subscribe to broker channel
@@ -65,7 +70,7 @@ func (cc *ClientController) SubscribeBooksListResponse(fn func(msg BooksListResp
 		for open := true; open; {
 			um, open = <-msgs
 
-			err := json.Unmarshal(um.Payload, &msg)
+			err := json.Unmarshal(um.Payload, &msg.Payload)
 			if err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
@@ -92,11 +97,6 @@ func (cc *ClientController) UnsubscribeBooksListResponse() {
 
 	stopChan <- true
 	delete(cc.stopSubscribers, "books.list.response")
-}
-
-// Close will clean up any existing resources on the controller
-func (cc *ClientController) Close() {
-	cc.UnsubscribeAll()
 }
 
 // PublishBooksListRequest will publish messages to 'books.list.request' channel
