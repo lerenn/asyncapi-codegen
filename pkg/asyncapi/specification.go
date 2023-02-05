@@ -32,9 +32,9 @@ func (s Specification) ReferenceMessage(ref string) Message {
 func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount uint) {
 	for _, c := range s.Channels {
 		if c.Publish != nil {
-			publishCount += 1
+			publishCount++
 		} else if c.Subscribe != nil {
-			subscribeCount += 1
+			subscribeCount++
 		}
 	}
 
