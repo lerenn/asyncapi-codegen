@@ -33,6 +33,12 @@ func NewClientController(bs BrokerController) *ClientController {
 	}
 }
 
+// Close will clean up any existing resources on the controller
+func (cc *ClientController) Close() {
+	cc.UnsubscribeAll()
+
+}
+
 // SubscribeAll will subscribe to channels on which the client is expecting messages
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
 	// TODO: Check that cs is not nil
@@ -47,11 +53,6 @@ func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (cc *ClientController) UnsubscribeAll() {
 	cc.UnsubscribeBooksListResponse()
-}
-
-// Close will clean up any existing resources on the controller
-func (cc *ClientController) Close() {
-	cc.UnsubscribeAll()
 }
 
 // SubscribeBooksListResponse will subscribe to new messages from 'books.list.response' channel

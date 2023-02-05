@@ -15,6 +15,15 @@ func NewClientController(bs BrokerController) *ClientController {
     }
 }
 
+// Close will clean up any existing resources on the controller
+func (cc *ClientController) Close() {
+{{if .SubscribeCount -}}
+    cc.UnsubscribeAll()
+{{else -}}
+    // Nothing to do
+{{- end}}
+}
+
 {{if .SubscribeCount -}}
 // SubscribeAll will subscribe to channels on which the client is expecting messages
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
@@ -34,11 +43,6 @@ func (cc *ClientController) UnsubscribeAll() {
     {{range  $key, $value := .Specification.Channels -}}{{- if $value.Subscribe -}}
     cc.Unsubscribe{{namify $key}}()
     {{end -}}{{- end -}}
-}
-
-// Close will clean up any existing resources on the controller
-func (cc *ClientController) Close() {
-    cc.UnsubscribeAll()
 }
 {{- end}}
 

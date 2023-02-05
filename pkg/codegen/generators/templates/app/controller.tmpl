@@ -15,6 +15,14 @@ func NewAppController(bs BrokerController) *AppController {
     }
 }
 
+func (ac *AppController) Close() {
+{{if .PublishCount -}}
+    ac.UnsubscribeAll()
+{{else -}}
+    // Nothing to do
+{{- end}}
+}
+
 {{if .PublishCount -}}
 // SubscribeAll will subscribe to channels on which the app is expecting messages
 func (ac *AppController) SubscribeAll(as AppSubscriber) error {
@@ -37,9 +45,6 @@ func (ac *AppController) UnsubscribeAll() {
 }
 
 // Close will clean up any existing resources on the controller
-func (ac *AppController) Close() {
-    ac.UnsubscribeAll()
-}
 {{- end}}
 
 {{range  $key, $value := .Specification.Channels -}}
