@@ -6,14 +6,12 @@ package generated
 import (
 	"encoding/json"
 	"log"
-
-	"github.com/google/uuid"
 )
 
 // AppSubscriber represents all application handlers that are expecting messages from clients
 type AppSubscriber interface {
-	// BooksListRequest
-	BooksListRequest(msg BooksListRequestMessage)
+	// Hello
+	Hello(msg HelloMessage)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -42,7 +40,7 @@ func (ac *AppController) Close() {
 func (ac *AppController) SubscribeAll(as AppSubscriber) error {
 	// TODO: Check that as is not nil
 
-	if err := ac.SubscribeBooksListRequest(as.BooksListRequest); err != nil {
+	if err := ac.SubscribeHello(as.Hello); err != nil {
 		return err
 	}
 
@@ -51,22 +49,25 @@ func (ac *AppController) SubscribeAll(as AppSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (ac *AppController) UnsubscribeAll() {
-	ac.UnsubscribeBooksListRequest()
+	ac.UnsubscribeHello()
 }
 
 // Close will clean up any existing resources on the controller
 
-// SubscribeBooksListRequest will subscribe to new messages from 'books.list.request' channel
-func (ac *AppController) SubscribeBooksListRequest(fn func(msg BooksListRequestMessage)) error {
+// SubscribeHello will subscribe to new messages from 'hello' channel
+func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 	// Subscribe to broker channel
-	msgs, stop, err := ac.brokerController.Subscribe("books.list.request")
+	msgs, stop, err := ac.brokerController.Subscribe("hello")
 	if err != nil {
 		return err
 	}
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		var msg BooksListRequestMessage
+		var msg struct {
+			// Payload will be inserted in the message payload
+			Payload string
+		}
 		var um UniversalMessage
 
 		for open := true; open; {
@@ -85,48 +86,20 @@ func (ac *AppController) SubscribeBooksListRequest(fn func(msg BooksListRequestM
 	}()
 
 	// Add the stop channel to the inside map
-	ac.stopSubscribers["books.list.request"] = stop
+	ac.stopSubscribers["hello"] = stop
 
 	return nil
 }
 
-// UnsubscribeBooksListRequest will unsubscribe messages from 'books.list.request' channel
-func (ac *AppController) UnsubscribeBooksListRequest() {
-	stopChan, exists := ac.stopSubscribers["books.list.request"]
+// UnsubscribeHello will unsubscribe messages from 'hello' channel
+func (ac *AppController) UnsubscribeHello() {
+	stopChan, exists := ac.stopSubscribers["hello"]
 	if !exists {
 		return
 	}
 
 	stopChan <- true
-	delete(ac.stopSubscribers, "books.list.request")
-}
-
-// PublishBooksListResponse will publish messages to 'books.list.response' channel
-func (ac *AppController) PublishBooksListResponse(msg BooksListResponseMessage) error {
-	// TODO: check that 'ac' is not nil
-	// TODO: implement checks on message
-
-	// Convert to JSON payload
-	payload, err := json.Marshal(msg.Payload)
-	if err != nil {
-		return err
-	}
-
-	// Create a new correlationID if none is specified
-	correlationID := uuid.New().String()
-	// TODO: get if from another place according to spec
-	if msg.Headers.CorrelationID != "" {
-		correlationID = msg.Headers.CorrelationID
-	}
-
-	// Create universal message
-	um := UniversalMessage{
-		Payload:       payload,
-		CorrelationID: correlationID,
-	}
-
-	// Publish on event broker
-	return ac.brokerController.Publish("books.list.response", um)
+	delete(ac.stopSubscribers, "hello")
 }
 
 // Listen will let the controller handle subscriptions and will be interrupted

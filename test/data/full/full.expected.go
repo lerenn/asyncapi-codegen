@@ -36,6 +36,11 @@ func NewAppController(bs BrokerController) *AppController {
 	}
 }
 
+func (ac *AppController) Close() {
+	ac.UnsubscribeAll()
+
+}
+
 // SubscribeAll will subscribe to channels on which the app is expecting messages
 func (ac *AppController) SubscribeAll(as AppSubscriber) error {
 	// TODO: Check that as is not nil
@@ -57,9 +62,6 @@ func (ac *AppController) UnsubscribeAll() {
 }
 
 // Close will clean up any existing resources on the controller
-func (ac *AppController) Close() {
-	ac.UnsubscribeAll()
-}
 
 // SubscribeUserDelete will subscribe to new messages from 'user/delete' channel
 func (ac *AppController) SubscribeUserDelete(fn func(msg UserDeleteMessage)) error {
@@ -232,6 +234,12 @@ func NewClientController(bs BrokerController) *ClientController {
 	}
 }
 
+// Close will clean up any existing resources on the controller
+func (cc *ClientController) Close() {
+	cc.UnsubscribeAll()
+
+}
+
 // SubscribeAll will subscribe to channels on which the client is expecting messages
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
 	// TODO: Check that cs is not nil
@@ -250,11 +258,6 @@ func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
 func (cc *ClientController) UnsubscribeAll() {
 	cc.UnsubscribeUserSignedin()
 	cc.UnsubscribeUserSignedup()
-}
-
-// Close will clean up any existing resources on the controller
-func (cc *ClientController) Close() {
-	cc.UnsubscribeAll()
 }
 
 // SubscribeUserSignedin will subscribe to new messages from 'user/signedin' channel
