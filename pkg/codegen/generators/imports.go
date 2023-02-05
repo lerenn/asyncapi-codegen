@@ -5,7 +5,6 @@ import (
 )
 
 type ImportsGenerator struct {
-	Options       Options
 	PackageName   string
 	ModuleVersion string
 	ModuleName    string

@@ -4,9 +4,9 @@
 package generated
 
 import (
+	"encoding/json"
 	"log"
 
-	"encoding/json"
 	"github.com/google/uuid"
 )
 

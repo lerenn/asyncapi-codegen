@@ -1,12 +1,12 @@
 package codegen
 
 import (
-	"go/format"
 	"os"
 	"runtime/debug"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
+	"golang.org/x/tools/imports"
 )
 
 type CodeGen struct {
@@ -68,7 +68,12 @@ func (cg CodeGen) Generate(opt Options) error {
 		content += part
 	}
 
-	buf, err := format.Source([]byte(content))
+	buf, err := imports.Process("", []byte(content), &imports.Options{
+		TabWidth:  8,
+		TabIndent: true,
+		Comments:  true,
+		Fragment:  true,
+	})
 	if err != nil {
 		return err
 	}
@@ -78,7 +83,6 @@ func (cg CodeGen) Generate(opt Options) error {
 
 func (cg CodeGen) generateImports(opts Options) (string, error) {
 	return generators.ImportsGenerator{
-		Options:       opts.Generate,
 		PackageName:   opts.PackageName,
 		ModuleVersion: cg.ModuleVersion,
 		ModuleName:    cg.ModulePath,

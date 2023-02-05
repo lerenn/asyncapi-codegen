@@ -4,16 +4,9 @@
 package {{.PackageName}}
 
 import (
-    {{- if or .Options.Application .Options.Client .Options.NATS}}
     "log"
-    {{end}}
-    
-    {{- if or .Options.Application .Options.Client}}
     "encoding/json"
-    "github.com/google/uuid"
-    {{- end}}
     
-    {{- if .Options.NATS}}
+    "github.com/google/uuid"
     "github.com/nats-io/nats.go"
-    {{- end}}
 )
