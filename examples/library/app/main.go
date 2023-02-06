@@ -15,6 +15,10 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+}
+
 type AppSubscriber struct {
 	Controller *generated.AppController
 }
@@ -22,7 +26,7 @@ type AppSubscriber struct {
 func (as AppSubscriber) BooksListRequest(req generated.BooksListRequestMessage) {
 	var resp generated.BooksListResponseMessage
 
-	log.Printf("Received a books list request (%q)\n", req.Headers.CorrelationID)
+	log.Println("Received a books list request for:", req.Payload.Genre)
 
 	// Respond with books
 	resp.Payload.Books = []generated.Book{
@@ -33,6 +37,7 @@ func (as AppSubscriber) BooksListRequest(req generated.BooksListRequestMessage) 
 	// And with same correlation Id
 	resp.Headers.CorrelationID = req.Headers.CorrelationID
 
+	log.Println("Responding with books list:", resp.Payload.Books)
 	err := as.Controller.PublishBooksListResponse(resp)
 	if err != nil {
 		panic(err)

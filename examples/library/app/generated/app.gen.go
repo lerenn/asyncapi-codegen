@@ -64,12 +64,10 @@ func (ac *AppController) SubscribeBooksListRequest(fn func(msg BooksListRequestM
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		var um UniversalMessage
-
-		for open := true; open; um, open = <-msgs {
+		for um, open := <-msgs; open; um, open = <-msgs {
 			var msg BooksListRequestMessage
 			if err := msg.fromUniversalMessage(um); err != nil {
-				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
 

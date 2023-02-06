@@ -65,12 +65,10 @@ func (cc *ClientController) SubscribeBooksListResponse(fn func(msg BooksListResp
 
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
-		var um UniversalMessage
-
-		for open := true; open; um, open = <-msgs {
+		for um, open := <-msgs; open; um, open = <-msgs {
 			var msg BooksListResponseMessage
 			if err := msg.fromUniversalMessage(um); err != nil {
-				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
 
@@ -116,7 +114,10 @@ func (cc *ClientController) Listen(irq chan interface{}) {
 }
 
 // WaitForBooksListResponse will wait for a specific message by its correlation ID
-func (cc *ClientController) WaitForBooksListResponse(correlationID string, timeout time.Duration) (BooksListResponseMessage, error) {
+//
+// The pub function is the publication function that should be used to send the message
+// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
+func (cc *ClientController) WaitForBooksListResponse(correlationID string, pub func() error, timeout time.Duration) (BooksListResponseMessage, error) {
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("books.list.response")
 	if err != nil {
@@ -126,6 +127,12 @@ func (cc *ClientController) WaitForBooksListResponse(correlationID string, timeo
 	// Close subscriber on leave
 	defer func() { stop <- true }()
 
+	// Execute publication
+	if err := pub(); err != nil {
+		return BooksListResponseMessage{}, err
+	}
+
+	// Wait for corresponding response
 	for {
 		select {
 		case um := <-msgs:

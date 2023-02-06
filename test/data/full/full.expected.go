@@ -6,6 +6,7 @@ package asyncapi
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -76,12 +77,10 @@ func (ac *AppController) SubscribeUserDelete(fn func(msg UserDeleteMessage)) err
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		var um UniversalMessage
-
-		for open := true; open; um, open = <-msgs {
+		for um, open := <-msgs; open; um, open = <-msgs {
 			var msg UserDeleteMessage
 			if err := msg.fromUniversalMessage(um); err != nil {
-				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
 
@@ -116,12 +115,10 @@ func (ac *AppController) SubscribeUserModify(fn func(msg UserModifyExtraWordingM
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		var um UniversalMessage
-
-		for open := true; open; um, open = <-msgs {
+		for um, open := <-msgs; open; um, open = <-msgs {
 			var msg UserModifyExtraWordingMessage
 			if err := msg.fromUniversalMessage(um); err != nil {
-				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
 
@@ -244,12 +241,10 @@ func (cc *ClientController) SubscribeUserSignedin(fn func(msg UserSignedinMessag
 
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
-		var um UniversalMessage
-
-		for open := true; open; um, open = <-msgs {
+		for um, open := <-msgs; open; um, open = <-msgs {
 			var msg UserSignedinMessage
 			if err := msg.fromUniversalMessage(um); err != nil {
-				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
 
@@ -286,12 +281,10 @@ func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpExtraW
 
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
-		var um UniversalMessage
-
-		for open := true; open; um, open = <-msgs {
+		for um, open := <-msgs; open; um, open = <-msgs {
 			var msg UserSignedUpExtraWordingMessage
 			if err := msg.fromUniversalMessage(um); err != nil {
-				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
 
@@ -351,7 +344,10 @@ func (cc *ClientController) Listen(irq chan interface{}) {
 }
 
 // WaitForUserSignedup will wait for a specific message by its correlation ID
-func (cc *ClientController) WaitForUserSignedup(correlationID string, timeout time.Duration) (UserSignedUpExtraWordingMessage, error) {
+//
+// The pub function is the publication function that should be used to send the message
+// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
+func (cc *ClientController) WaitForUserSignedup(correlationID string, pub func() error, timeout time.Duration) (UserSignedUpExtraWordingMessage, error) {
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("user/signedup")
 	if err != nil {
@@ -361,6 +357,12 @@ func (cc *ClientController) WaitForUserSignedup(correlationID string, timeout ti
 	// Close subscriber on leave
 	defer func() { stop <- true }()
 
+	// Execute publication
+	if err := pub(); err != nil {
+		return UserSignedUpExtraWordingMessage{}, err
+	}
+
+	// Wait for corresponding response
 	for {
 		select {
 		case um := <-msgs:
@@ -398,11 +400,14 @@ type BrokerController interface {
 }
 
 var (
+	// Generic error for AsyncAPI generated code
+	ErrAsyncAPI = errors.New("error when using AsyncAPI")
+
 	// ErrTimedOut is given when any timeout happen
-	ErrTimedOut = errors.New("time out")
+	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
 )
 
-// UserDelete
+// UserDeleteMessage is the message expected for 'UserDelete' channel
 type UserDeleteMessage struct {
 	// Payload will be inserted in the message payload
 	Payload int64
@@ -410,6 +415,7 @@ type UserDeleteMessage struct {
 
 // fromUniversalMessage will fill UserDeleteMessage with data from UniversalMessage
 func (msg *UserDeleteMessage) fromUniversalMessage(um UniversalMessage) error {
+	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
 		return err
@@ -424,19 +430,18 @@ func (msg *UserDeleteMessage) fromUniversalMessage(um UniversalMessage) error {
 func (msg UserDeleteMessage) toUniversalMessage() (UniversalMessage, error) {
 	// TODO: implement checks on message
 
-	// Convert to JSON payload
+	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
 		return UniversalMessage{}, err
 	}
 
-	// Create universal message
 	return UniversalMessage{
 		Payload: payload,
 	}, nil
 }
 
-// UserSignedin
+// UserSignedinMessage is the message expected for 'UserSignedin' channel
 type UserSignedinMessage struct {
 	// Payload will be inserted in the message payload
 	Payload int64
@@ -444,6 +449,7 @@ type UserSignedinMessage struct {
 
 // fromUniversalMessage will fill UserSignedinMessage with data from UniversalMessage
 func (msg *UserSignedinMessage) fromUniversalMessage(um UniversalMessage) error {
+	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
 		return err
@@ -458,19 +464,18 @@ func (msg *UserSignedinMessage) fromUniversalMessage(um UniversalMessage) error 
 func (msg UserSignedinMessage) toUniversalMessage() (UniversalMessage, error) {
 	// TODO: implement checks on message
 
-	// Convert to JSON payload
+	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
 		return UniversalMessage{}, err
 	}
 
-	// Create universal message
 	return UniversalMessage{
 		Payload: payload,
 	}, nil
 }
 
-// UserModifyExtraWording
+// UserModifyExtraWordingMessage is the message expected for 'UserModifyExtraWording' channel
 type UserModifyExtraWordingMessage struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
@@ -481,6 +486,7 @@ type UserModifyExtraWordingMessage struct {
 
 // fromUniversalMessage will fill UserModifyExtraWordingMessage with data from UniversalMessage
 func (msg *UserModifyExtraWordingMessage) fromUniversalMessage(um UniversalMessage) error {
+	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
 		return err
@@ -495,19 +501,18 @@ func (msg *UserModifyExtraWordingMessage) fromUniversalMessage(um UniversalMessa
 func (msg UserModifyExtraWordingMessage) toUniversalMessage() (UniversalMessage, error) {
 	// TODO: implement checks on message
 
-	// Convert to JSON payload
+	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
 		return UniversalMessage{}, err
 	}
 
-	// Create universal message
 	return UniversalMessage{
 		Payload: payload,
 	}, nil
 }
 
-// UserSignedUpExtraWording
+// UserSignedUpExtraWordingMessage is the message expected for 'UserSignedUpExtraWording' channel
 type UserSignedUpExtraWordingMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
@@ -530,10 +535,14 @@ type UserSignedUpExtraWordingMessage struct {
 
 // fromUniversalMessage will fill UserSignedUpExtraWordingMessage with data from UniversalMessage
 func (msg *UserSignedUpExtraWordingMessage) fromUniversalMessage(um UniversalMessage) error {
+	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
 		return err
 	}
+
+	// Get correlation ID
+	msg.Headers.CorrelationID = um.CorrelationID
 
 	// TODO: run checks on msg type
 
@@ -544,43 +553,43 @@ func (msg *UserSignedUpExtraWordingMessage) fromUniversalMessage(um UniversalMes
 func (msg UserSignedUpExtraWordingMessage) toUniversalMessage() (UniversalMessage, error) {
 	// TODO: implement checks on message
 
-	// Convert to JSON payload
+	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
 		return UniversalMessage{}, err
 	}
 
-	// Create a new correlationID if none is specified
-	correlationID := uuid.New().String()
-	// TODO: get if from another place according to spec
+	// Set correlation ID if it does not exist
+	var correlationID string
 	if msg.Headers.CorrelationID != "" {
 		correlationID = msg.Headers.CorrelationID
+	} else {
+		correlationID = uuid.New().String()
 	}
 
-	// Create universal message
 	return UniversalMessage{
 		Payload:       payload,
 		CorrelationID: correlationID,
 	}, nil
 }
 
-// UserSignedUpExtraWording
+// UserSignedUpExtraWording is a component of the AsyncAPI specification required in messages
 type UserSignedUpExtraWording string
 
-// Limit
+// Limit is a component of the AsyncAPI specification required in messages
 type Limit int32
 
-// Number
+// Number is a component of the AsyncAPI specification required in messages
 type Number float64
 
-// Number32
+// Number32 is a component of the AsyncAPI specification required in messages
 type Number32 float32
 
-// Number64
+// Number64 is a component of the AsyncAPI specification required in messages
 type Number64 float64
 
-// SchemaStruct
+// SchemaStruct is a component of the AsyncAPI specification required in messages
 type SchemaStruct string
 
-// Total
+// Total is a component of the AsyncAPI specification required in messages
 type Total int64

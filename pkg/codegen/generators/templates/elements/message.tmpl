@@ -14,10 +14,16 @@ Payload {{template "any" .Payload}}
 
 // fromUniversalMessage will fill {{namify .Name}}Message with data from UniversalMessage
 func (msg *{{namify .Name}}Message) fromUniversalMessage(um UniversalMessage) error {
+    // Unmarshal payload to expected message payload format
     err := json.Unmarshal(um.Payload, &msg.Payload)
     if err != nil {
         return err
     }
+
+    {{if ne $.CorrelationIDLocation "" -}}
+    // Get correlation ID
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = um.CorrelationID
+    {{- end}}
     
     // TODO: run checks on msg type
 
@@ -28,22 +34,22 @@ func (msg *{{namify .Name}}Message) fromUniversalMessage(um UniversalMessage) er
 func (msg {{namify .Name}}Message) toUniversalMessage() (UniversalMessage, error) {
     // TODO: implement checks on message
 
-    // Convert to JSON payload
+    // Marshal payload to JSON
     payload, err := json.Marshal(msg.Payload)
     if err != nil {
         return UniversalMessage{}, err
     }
 
     {{if ne $.CorrelationIDLocation "" -}}
-    // Create a new correlationID if none is specified
-    correlationID := uuid.New().String()
-    // TODO: get if from another place according to spec
+    // Set correlation ID if it does not exist
+    var correlationID string
     if msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} != "" {
         correlationID = msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
+    } else {
+        correlationID = uuid.New().String()
     }
     {{- end}}
 
-    // Create universal message
     return UniversalMessage{
         Payload: payload,
         {{- if ne $.CorrelationIDLocation ""}}

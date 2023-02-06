@@ -6,16 +6,20 @@ package generated
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 )
 
 var (
+	// Generic error for AsyncAPI generated code
+	ErrAsyncAPI = errors.New("error when using AsyncAPI")
+
 	// ErrTimedOut is given when any timeout happen
-	ErrTimedOut = errors.New("time out")
+	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
 )
 
-// BooksListRequest
+// BooksListRequestMessage is the message expected for 'BooksListRequest' channel
 type BooksListRequestMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
@@ -32,10 +36,14 @@ type BooksListRequestMessage struct {
 
 // fromUniversalMessage will fill BooksListRequestMessage with data from UniversalMessage
 func (msg *BooksListRequestMessage) fromUniversalMessage(um UniversalMessage) error {
+	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
 		return err
 	}
+
+	// Get correlation ID
+	msg.Headers.CorrelationID = um.CorrelationID
 
 	// TODO: run checks on msg type
 
@@ -46,27 +54,27 @@ func (msg *BooksListRequestMessage) fromUniversalMessage(um UniversalMessage) er
 func (msg BooksListRequestMessage) toUniversalMessage() (UniversalMessage, error) {
 	// TODO: implement checks on message
 
-	// Convert to JSON payload
+	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
 		return UniversalMessage{}, err
 	}
 
-	// Create a new correlationID if none is specified
-	correlationID := uuid.New().String()
-	// TODO: get if from another place according to spec
+	// Set correlation ID if it does not exist
+	var correlationID string
 	if msg.Headers.CorrelationID != "" {
 		correlationID = msg.Headers.CorrelationID
+	} else {
+		correlationID = uuid.New().String()
 	}
 
-	// Create universal message
 	return UniversalMessage{
 		Payload:       payload,
 		CorrelationID: correlationID,
 	}, nil
 }
 
-// BooksListResponse
+// BooksListResponseMessage is the message expected for 'BooksListResponse' channel
 type BooksListResponseMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
@@ -83,10 +91,14 @@ type BooksListResponseMessage struct {
 
 // fromUniversalMessage will fill BooksListResponseMessage with data from UniversalMessage
 func (msg *BooksListResponseMessage) fromUniversalMessage(um UniversalMessage) error {
+	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
 		return err
 	}
+
+	// Get correlation ID
+	msg.Headers.CorrelationID = um.CorrelationID
 
 	// TODO: run checks on msg type
 
@@ -97,26 +109,27 @@ func (msg *BooksListResponseMessage) fromUniversalMessage(um UniversalMessage) e
 func (msg BooksListResponseMessage) toUniversalMessage() (UniversalMessage, error) {
 	// TODO: implement checks on message
 
-	// Convert to JSON payload
+	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
 		return UniversalMessage{}, err
 	}
 
-	// Create a new correlationID if none is specified
-	correlationID := uuid.New().String()
-	// TODO: get if from another place according to spec
+	// Set correlation ID if it does not exist
+	var correlationID string
 	if msg.Headers.CorrelationID != "" {
 		correlationID = msg.Headers.CorrelationID
+	} else {
+		correlationID = uuid.New().String()
 	}
 
-	// Create universal message
 	return UniversalMessage{
 		Payload:       payload,
 		CorrelationID: correlationID,
 	}, nil
 }
 
+// Book is a component of the AsyncAPI specification required in messages
 // Book Information
 type Book struct {
 	// Title

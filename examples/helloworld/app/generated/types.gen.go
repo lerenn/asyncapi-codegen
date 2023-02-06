@@ -6,14 +6,18 @@ package generated
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 var (
+	// Generic error for AsyncAPI generated code
+	ErrAsyncAPI = errors.New("error when using AsyncAPI")
+
 	// ErrTimedOut is given when any timeout happen
-	ErrTimedOut = errors.New("time out")
+	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
 )
 
-// Hello
+// HelloMessage is the message expected for 'Hello' channel
 type HelloMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
@@ -21,6 +25,7 @@ type HelloMessage struct {
 
 // fromUniversalMessage will fill HelloMessage with data from UniversalMessage
 func (msg *HelloMessage) fromUniversalMessage(um UniversalMessage) error {
+	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
 		return err
@@ -35,13 +40,12 @@ func (msg *HelloMessage) fromUniversalMessage(um UniversalMessage) error {
 func (msg HelloMessage) toUniversalMessage() (UniversalMessage, error) {
 	// TODO: implement checks on message
 
-	// Convert to JSON payload
+	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
 		return UniversalMessage{}, err
 	}
 
-	// Create universal message
 	return UniversalMessage{
 		Payload: payload,
 	}, nil

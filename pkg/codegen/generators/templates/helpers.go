@@ -92,7 +92,7 @@ func HasField(v interface{}, name string) bool {
 }
 
 func ChannelToMessageTypeName(ch asyncapi.Channel) string {
-	msg := ch.GetMessageWithoutReferenceRedirect()
+	msg := ch.GetChannelMessage()
 
 	if msg.Payload != nil {
 		return Namify(ch.Name) + "Message"

@@ -12,12 +12,13 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lerenn/asyncapi-codegen/examples/library/client/generated"
 	"github.com/nats-io/nats.go"
 )
 
-func BooksListResponseHandler(msg generated.BooksListResponseMessage) {
-	log.Println("received books list response!")
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 }
 
 func main() {
@@ -29,18 +30,24 @@ func main() {
 	// Create a new application controller
 	clientController := generated.NewClientController(generated.NewNATSController(nc))
 
-	// Subscribe specifically to the response handler
-	if err := clientController.SubscribeBooksListResponse(BooksListResponseHandler); err != nil {
+	// Make a new book list request
+	var req generated.BooksListRequestMessage
+	req.Payload.Genre = "famous"
+	req.Headers.CorrelationID = uuid.New().String()
+
+	// Create the publication function
+	publicationFunc := func() error {
+		log.Println("New book list request for:", req.Payload.Genre)
+		return clientController.PublishBooksListRequest(req)
+	}
+
+	// Send request and wait for response
+	resp, err := clientController.WaitForBooksListResponse(req.Headers.CorrelationID, publicationFunc, time.Second)
+	if err != nil {
 		panic(err)
 	}
 
-	// Make a new book list request
-	log.Println("New book list request!")
-	var req generated.BooksListRequestMessage
-	req.Payload.Genre = "famous"
-	if err := clientController.PublishBooksListRequest(req); err != nil {
-		panic(err)
-	}
+	log.Println("Got books:", resp.Payload.Books)
 
 	time.Sleep(time.Second)
 }

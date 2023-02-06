@@ -13,12 +13,12 @@ type Channel struct {
 func (c *Channel) Process(spec Specification) {
 	c.setMapsValuesName()
 
-	msg := c.GetMessageWithoutReferenceRedirect()
+	msg := c.GetChannelMessage()
 	msg.Process(spec)
 }
 
 func (c *Channel) setMapsValuesName() {
-	msg := c.GetMessageWithoutReferenceRedirect()
+	msg := c.GetChannelMessage()
 
 	if msg.Reference != "" {
 		msg.Name = strings.Split(msg.Reference, "/")[3]
@@ -27,7 +27,9 @@ func (c *Channel) setMapsValuesName() {
 	}
 }
 
-func (c Channel) GetMessageWithoutReferenceRedirect() *Message {
+// GetChannelMessage will return the channel message
+// WARNING: if there is a reference, then it won't be followed.
+func (c Channel) GetChannelMessage() *Message {
 	if c.Subscribe != nil {
 		return &c.Subscribe.Message
 	}
