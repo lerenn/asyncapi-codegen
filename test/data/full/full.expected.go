@@ -78,8 +78,8 @@ func (ac *AppController) SubscribeUserDelete(fn func(msg UserDeleteMessage)) err
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
 		for um, open := <-msgs; open; um, open = <-msgs {
-			var msg UserDeleteMessage
-			if err := msg.fromUniversalMessage(um); err != nil {
+			msg, err := newUserDeleteMessageFromUniversalMessage(um)
+			if err != nil {
 				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
@@ -116,8 +116,8 @@ func (ac *AppController) SubscribeUserModify(fn func(msg UserModifyExtraWordingM
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
 		for um, open := <-msgs; open; um, open = <-msgs {
-			var msg UserModifyExtraWordingMessage
-			if err := msg.fromUniversalMessage(um); err != nil {
+			msg, err := newUserModifyExtraWordingMessageFromUniversalMessage(um)
+			if err != nil {
 				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
@@ -242,8 +242,8 @@ func (cc *ClientController) SubscribeUserSignedin(fn func(msg UserSignedinMessag
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
 		for um, open := <-msgs; open; um, open = <-msgs {
-			var msg UserSignedinMessage
-			if err := msg.fromUniversalMessage(um); err != nil {
+			msg, err := newUserSignedinMessageFromUniversalMessage(um)
+			if err != nil {
 				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
@@ -282,8 +282,8 @@ func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpExtraW
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
 		for um, open := <-msgs; open; um, open = <-msgs {
-			var msg UserSignedUpExtraWordingMessage
-			if err := msg.fromUniversalMessage(um); err != nil {
+			msg, err := newUserSignedUpExtraWordingMessageFromUniversalMessage(um)
+			if err != nil {
 				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
@@ -366,8 +366,11 @@ func (cc *ClientController) WaitForUserSignedup(correlationID string, pub func()
 	for {
 		select {
 		case um := <-msgs:
-			var msg UserSignedUpExtraWordingMessage
-			msg.fromUniversalMessage(um)
+			msg, err := newUserSignedUpExtraWordingMessageFromUniversalMessage(um)
+			if err != nil {
+				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
+				continue
+			}
 
 			if correlationID == msg.Headers.CorrelationID {
 				return msg, nil
@@ -413,17 +416,25 @@ type UserDeleteMessage struct {
 	Payload int64
 }
 
-// fromUniversalMessage will fill UserDeleteMessage with data from UniversalMessage
-func (msg *UserDeleteMessage) fromUniversalMessage(um UniversalMessage) error {
+func NewUserDeleteMessage() UserDeleteMessage {
+	var msg UserDeleteMessage
+
+	return msg
+}
+
+// newUserDeleteMessageFromUniversalMessage will fill a new UserDeleteMessage with data from UniversalMessage
+func newUserDeleteMessageFromUniversalMessage(um UniversalMessage) (UserDeleteMessage, error) {
+	var msg UserDeleteMessage
+
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
-		return err
+		return msg, err
 	}
 
 	// TODO: run checks on msg type
 
-	return nil
+	return msg, nil
 }
 
 // toUniversalMessage will generate an UniversalMessage from UserDeleteMessage data
@@ -447,17 +458,25 @@ type UserSignedinMessage struct {
 	Payload int64
 }
 
-// fromUniversalMessage will fill UserSignedinMessage with data from UniversalMessage
-func (msg *UserSignedinMessage) fromUniversalMessage(um UniversalMessage) error {
+func NewUserSignedinMessage() UserSignedinMessage {
+	var msg UserSignedinMessage
+
+	return msg
+}
+
+// newUserSignedinMessageFromUniversalMessage will fill a new UserSignedinMessage with data from UniversalMessage
+func newUserSignedinMessageFromUniversalMessage(um UniversalMessage) (UserSignedinMessage, error) {
+	var msg UserSignedinMessage
+
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
-		return err
+		return msg, err
 	}
 
 	// TODO: run checks on msg type
 
-	return nil
+	return msg, nil
 }
 
 // toUniversalMessage will generate an UniversalMessage from UserSignedinMessage data
@@ -484,17 +503,25 @@ type UserModifyExtraWordingMessage struct {
 	}
 }
 
-// fromUniversalMessage will fill UserModifyExtraWordingMessage with data from UniversalMessage
-func (msg *UserModifyExtraWordingMessage) fromUniversalMessage(um UniversalMessage) error {
+func NewUserModifyExtraWordingMessage() UserModifyExtraWordingMessage {
+	var msg UserModifyExtraWordingMessage
+
+	return msg
+}
+
+// newUserModifyExtraWordingMessageFromUniversalMessage will fill a new UserModifyExtraWordingMessage with data from UniversalMessage
+func newUserModifyExtraWordingMessageFromUniversalMessage(um UniversalMessage) (UserModifyExtraWordingMessage, error) {
+	var msg UserModifyExtraWordingMessage
+
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
-		return err
+		return msg, err
 	}
 
 	// TODO: run checks on msg type
 
-	return nil
+	return msg, nil
 }
 
 // toUniversalMessage will generate an UniversalMessage from UserModifyExtraWordingMessage data
@@ -533,12 +560,23 @@ type UserSignedUpExtraWordingMessage struct {
 	}
 }
 
-// fromUniversalMessage will fill UserSignedUpExtraWordingMessage with data from UniversalMessage
-func (msg *UserSignedUpExtraWordingMessage) fromUniversalMessage(um UniversalMessage) error {
+func NewUserSignedUpExtraWordingMessage() UserSignedUpExtraWordingMessage {
+	var msg UserSignedUpExtraWordingMessage
+
+	// Set correlation ID
+	msg.Headers.CorrelationID = uuid.New().String()
+
+	return msg
+}
+
+// newUserSignedUpExtraWordingMessageFromUniversalMessage will fill a new UserSignedUpExtraWordingMessage with data from UniversalMessage
+func newUserSignedUpExtraWordingMessageFromUniversalMessage(um UniversalMessage) (UserSignedUpExtraWordingMessage, error) {
+	var msg UserSignedUpExtraWordingMessage
+
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
-		return err
+		return msg, err
 	}
 
 	// Get correlation ID
@@ -546,7 +584,7 @@ func (msg *UserSignedUpExtraWordingMessage) fromUniversalMessage(um UniversalMes
 
 	// TODO: run checks on msg type
 
-	return nil
+	return msg, nil
 }
 
 // toUniversalMessage will generate an UniversalMessage from UserSignedUpExtraWordingMessage data

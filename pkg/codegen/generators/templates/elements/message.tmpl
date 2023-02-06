@@ -1,5 +1,11 @@
 {{define "message" -}}
-struct {
+
+// {{namify .Name}}Message is the message expected for '{{namify .Name}}' channel
+{{if $.Description -}}
+// {{$.Description}}
+{{end -}}
+
+type {{namify .Name}}Message struct {
 
 {{- /* Display headers if they exists */}}
 {{- if .Headers}}
@@ -12,12 +18,25 @@ Headers {{template "any" .Headers}}
 Payload {{template "any" .Payload}}
 }
 
-// fromUniversalMessage will fill {{namify .Name}}Message with data from UniversalMessage
-func (msg *{{namify .Name}}Message) fromUniversalMessage(um UniversalMessage) error {
+func New{{namify .Name}}Message() {{namify .Name}}Message {
+    var msg {{namify .Name}}Message
+
+    {{if ne $.CorrelationIDLocation "" -}}
+    // Set correlation ID
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = uuid.New().String()
+    {{- end}}
+    
+    return msg
+}
+
+// new{{namify .Name}}MessageFromUniversalMessage will fill a new {{namify .Name}}Message with data from UniversalMessage
+func new{{namify .Name}}MessageFromUniversalMessage(um UniversalMessage) ({{namify .Name}}Message, error) {
+    var msg {{namify .Name}}Message
+   
     // Unmarshal payload to expected message payload format
     err := json.Unmarshal(um.Payload, &msg.Payload)
     if err != nil {
-        return err
+        return msg, err
     }
 
     {{if ne $.CorrelationIDLocation "" -}}
@@ -27,7 +46,7 @@ func (msg *{{namify .Name}}Message) fromUniversalMessage(um UniversalMessage) er
     
     // TODO: run checks on msg type
 
-    return nil
+    return msg, nil
 }
 
 // toUniversalMessage will generate an UniversalMessage from {{namify .Name}}Message data

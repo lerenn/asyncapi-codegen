@@ -66,8 +66,8 @@ func (cc *ClientController) SubscribePong(fn func(msg PongMessage)) error {
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
 		for um, open := <-msgs; open; um, open = <-msgs {
-			var msg PongMessage
-			if err := msg.fromUniversalMessage(um); err != nil {
+			msg, err := newPongMessageFromUniversalMessage(um)
+			if err != nil {
 				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
@@ -136,8 +136,11 @@ func (cc *ClientController) WaitForPong(correlationID string, pub func() error, 
 	for {
 		select {
 		case um := <-msgs:
-			var msg PongMessage
-			msg.fromUniversalMessage(um)
+			msg, err := newPongMessageFromUniversalMessage(um)
+			if err != nil {
+				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
+				continue
+			}
 
 			if correlationID == msg.Headers.CorrelationID {
 				return msg, nil

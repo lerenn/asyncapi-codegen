@@ -12,7 +12,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/lerenn/asyncapi-codegen/examples/ping/client/generated"
 	"github.com/nats-io/nats.go"
 )
@@ -31,9 +30,8 @@ func main() {
 	clientController := generated.NewClientController(generated.NewNATSController(nc))
 
 	// Make a new ping
-	var req generated.PingMessage
+	req := generated.NewPingMessage()
 	req.Payload = "ping"
-	req.Headers.CorrelationID = uuid.New().String()
 
 	// Create the publication function
 	publicationFunc := func() error {

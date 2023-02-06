@@ -23,17 +23,25 @@ type HelloMessage struct {
 	Payload string
 }
 
-// fromUniversalMessage will fill HelloMessage with data from UniversalMessage
-func (msg *HelloMessage) fromUniversalMessage(um UniversalMessage) error {
+func NewHelloMessage() HelloMessage {
+	var msg HelloMessage
+
+	return msg
+}
+
+// newHelloMessageFromUniversalMessage will fill a new HelloMessage with data from UniversalMessage
+func newHelloMessageFromUniversalMessage(um UniversalMessage) (HelloMessage, error) {
+	var msg HelloMessage
+
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
-		return err
+		return msg, err
 	}
 
 	// TODO: run checks on msg type
 
-	return nil
+	return msg, nil
 }
 
 // toUniversalMessage will generate an UniversalMessage from HelloMessage data

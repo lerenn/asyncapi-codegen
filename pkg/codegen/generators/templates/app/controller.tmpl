@@ -61,8 +61,8 @@ func (ac *AppController) Subscribe{{namify $key}}(fn func (msg {{channelToMessag
     // Asynchronously listen to new messages and pass them to app subscriber
     go func() {
         for um, open := <-msgs; open; um, open = <-msgs{
-            var msg {{channelToMessageTypeName $value}}
-            if err := msg.fromUniversalMessage(um); err != nil {
+            msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
+            if err != nil {
                 log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
                 continue
             }

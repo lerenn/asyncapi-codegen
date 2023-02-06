@@ -31,12 +31,23 @@ type PingMessage struct {
 	Payload string
 }
 
-// fromUniversalMessage will fill PingMessage with data from UniversalMessage
-func (msg *PingMessage) fromUniversalMessage(um UniversalMessage) error {
+func NewPingMessage() PingMessage {
+	var msg PingMessage
+
+	// Set correlation ID
+	msg.Headers.CorrelationID = uuid.New().String()
+
+	return msg
+}
+
+// newPingMessageFromUniversalMessage will fill a new PingMessage with data from UniversalMessage
+func newPingMessageFromUniversalMessage(um UniversalMessage) (PingMessage, error) {
+	var msg PingMessage
+
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
-		return err
+		return msg, err
 	}
 
 	// Get correlation ID
@@ -44,7 +55,7 @@ func (msg *PingMessage) fromUniversalMessage(um UniversalMessage) error {
 
 	// TODO: run checks on msg type
 
-	return nil
+	return msg, nil
 }
 
 // toUniversalMessage will generate an UniversalMessage from PingMessage data
@@ -83,12 +94,23 @@ type PongMessage struct {
 	Payload string
 }
 
-// fromUniversalMessage will fill PongMessage with data from UniversalMessage
-func (msg *PongMessage) fromUniversalMessage(um UniversalMessage) error {
+func NewPongMessage() PongMessage {
+	var msg PongMessage
+
+	// Set correlation ID
+	msg.Headers.CorrelationID = uuid.New().String()
+
+	return msg
+}
+
+// newPongMessageFromUniversalMessage will fill a new PongMessage with data from UniversalMessage
+func newPongMessageFromUniversalMessage(um UniversalMessage) (PongMessage, error) {
+	var msg PongMessage
+
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
-		return err
+		return msg, err
 	}
 
 	// Get correlation ID
@@ -96,7 +118,7 @@ func (msg *PongMessage) fromUniversalMessage(um UniversalMessage) error {
 
 	// TODO: run checks on msg type
 
-	return nil
+	return msg, nil
 }
 
 // toUniversalMessage will generate an UniversalMessage from PongMessage data

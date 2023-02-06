@@ -65,8 +65,8 @@ func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
 		for um, open := <-msgs; open; um, open = <-msgs {
-			var msg HelloMessage
-			if err := msg.fromUniversalMessage(um); err != nil {
+			msg, err := newHelloMessageFromUniversalMessage(um)
+			if err != nil {
 				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}

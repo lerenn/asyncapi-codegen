@@ -8,28 +8,16 @@ var (
 
 {{range $key, $value := .Channels -}}
 {{- if and $value.Subscribe $value.Subscribe.Message.Payload}}
-// {{namify $key}}Message is the message expected for '{{namify $key}}' channel
-{{if $value.Subscribe.Message.Description -}}
-// {{$value.Subscribe.Message.Description}}
-{{end -}}
-type {{namify $key}}Message {{template "message" $value.Subscribe.Message}}
+{{template "message" $value.Subscribe.Message}}
 {{end -}}
 
 {{- if and $value.Publish $value.Publish.Message.Payload}}
-// {{namify $key}}Message is the message expected for '{{namify $key}}' channel
-{{if $value.Publish.Message.Description -}}
-// {{$value.Publish.Message.Description}}
-{{end -}}
-type {{namify $key}}Message {{template "message" $value.Publish.Message}}
+{{template "message" $value.Publish.Message}}
 {{end -}}
 {{- end}}
 
 {{range $key, $value := .Components.Messages}}
-// {{namify $key}}Message is the message expected for '{{namify $key}}' channel
-{{if $value.Description -}}
-// {{$value.Description}}
-{{end -}}
-type {{namify $key}}Message {{template "message" $value}}
+{{template "message" $value}}
 {{end}}
 
 {{range $key, $value := .Components.Schemas}}

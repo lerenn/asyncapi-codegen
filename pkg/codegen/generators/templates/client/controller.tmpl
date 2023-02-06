@@ -61,8 +61,8 @@ func (cc *ClientController) Subscribe{{namify $key}}(fn func (msg {{channelToMes
     // Asynchronously listen to new messages and pass them to client subscriber
     go func() {
         for um, open := <-msgs; open; um, open = <-msgs{
-            var msg {{channelToMessageTypeName $value}}
-            if err := msg.fromUniversalMessage(um); err != nil {
+            msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
+            if err != nil {
                 log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
                 continue
             }
@@ -140,8 +140,11 @@ func (cc *ClientController) WaitFor{{namify $key}}(correlationID string, pub fun
     for {
         select {
         case um := <-msgs:
-            var msg {{channelToMessageTypeName $value}}
-            msg.fromUniversalMessage(um)
+            msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
+            if err != nil {
+                log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
+                continue
+            }
 
             if correlationID == msg.{{referenceToStructAttributePath $value.Subscribe.Message.CorrelationIDLocation}} {
                 return msg, nil
