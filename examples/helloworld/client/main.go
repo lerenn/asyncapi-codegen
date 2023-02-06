@@ -22,7 +22,7 @@ func main() {
 		panic(err)
 	}
 
-	// Create a new application controller
+	// Create a new client controller
 	ctrl := generated.NewClientController(generated.NewNATSController(nc))
 	defer ctrl.Close()
 

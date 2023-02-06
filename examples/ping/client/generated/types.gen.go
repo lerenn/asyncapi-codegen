@@ -19,8 +19,8 @@ var (
 	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
 )
 
-// BooksListRequestMessage is the message expected for 'BooksListRequest' channel
-type BooksListRequestMessage struct {
+// PingMessage is the message expected for 'Ping' channel
+type PingMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
 		// Correlation ID set by client
@@ -28,14 +28,11 @@ type BooksListRequestMessage struct {
 	}
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		// Genre
-		Genre string `json:"genre"`
-	}
+	Payload string
 }
 
-// fromUniversalMessage will fill BooksListRequestMessage with data from UniversalMessage
-func (msg *BooksListRequestMessage) fromUniversalMessage(um UniversalMessage) error {
+// fromUniversalMessage will fill PingMessage with data from UniversalMessage
+func (msg *PingMessage) fromUniversalMessage(um UniversalMessage) error {
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
@@ -50,8 +47,8 @@ func (msg *BooksListRequestMessage) fromUniversalMessage(um UniversalMessage) er
 	return nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from BooksListRequestMessage data
-func (msg BooksListRequestMessage) toUniversalMessage() (UniversalMessage, error) {
+// toUniversalMessage will generate an UniversalMessage from PingMessage data
+func (msg PingMessage) toUniversalMessage() (UniversalMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -74,8 +71,8 @@ func (msg BooksListRequestMessage) toUniversalMessage() (UniversalMessage, error
 	}, nil
 }
 
-// BooksListResponseMessage is the message expected for 'BooksListResponse' channel
-type BooksListResponseMessage struct {
+// PongMessage is the message expected for 'Pong' channel
+type PongMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
 		// Correlation ID set by client on corresponding request
@@ -83,14 +80,11 @@ type BooksListResponseMessage struct {
 	}
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		// Books list
-		Books []Book `json:"books"`
-	}
+	Payload string
 }
 
-// fromUniversalMessage will fill BooksListResponseMessage with data from UniversalMessage
-func (msg *BooksListResponseMessage) fromUniversalMessage(um UniversalMessage) error {
+// fromUniversalMessage will fill PongMessage with data from UniversalMessage
+func (msg *PongMessage) fromUniversalMessage(um UniversalMessage) error {
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(um.Payload, &msg.Payload)
 	if err != nil {
@@ -105,8 +99,8 @@ func (msg *BooksListResponseMessage) fromUniversalMessage(um UniversalMessage) e
 	return nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from BooksListResponseMessage data
-func (msg BooksListResponseMessage) toUniversalMessage() (UniversalMessage, error) {
+// toUniversalMessage will generate an UniversalMessage from PongMessage data
+func (msg PongMessage) toUniversalMessage() (UniversalMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON

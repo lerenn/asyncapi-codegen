@@ -11,7 +11,7 @@ package main
 import (
 	"log"
 
-	"github.com/lerenn/asyncapi-codegen/examples/library/app/generated"
+	"github.com/lerenn/asyncapi-codegen/examples/ping/server/generated"
 	"github.com/nats-io/nats.go"
 )
 
@@ -23,22 +23,18 @@ type AppSubscriber struct {
 	Controller *generated.AppController
 }
 
-func (as AppSubscriber) BooksListRequest(req generated.BooksListRequestMessage) {
-	var resp generated.BooksListResponseMessage
+func (as AppSubscriber) Ping(req generated.PingMessage) {
+	var resp generated.PongMessage
 
-	log.Println("Received a books list request for:", req.Payload.Genre)
+	log.Println("Received a ping request")
 
-	// Respond with books
-	resp.Payload.Books = []generated.Book{
-		{Title: "Alice in wonderland"},
-		{Title: "1984"},
-	}
+	// Respond with pong
+	resp.Payload = "pong"
 
 	// And with same correlation Id
 	resp.Headers.CorrelationID = req.Headers.CorrelationID
 
-	log.Println("Responding with books list:", resp.Payload.Books)
-	err := as.Controller.PublishBooksListResponse(resp)
+	err := as.Controller.PublishPong(resp)
 	if err != nil {
 		panic(err)
 	}

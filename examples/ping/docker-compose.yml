@@ -7,7 +7,7 @@ services:
         - 4222:4222
     networks:
       - nats-network
-  app:
+  server:
     depends_on:
       - nats
     image: golang:1.19.4
@@ -16,12 +16,12 @@ services:
       - gobuild:/root/.cache/go-build
       - ../../:/go/asyncapi-codegen
     working_dir: /go/asyncapi-codegen
-    command: go run ./examples/library/app
+    command: go run ./examples/ping/server
     networks:
       - nats-network
   client:
     depends_on:
-      - app
+      - server
       - nats
     image: golang:1.19.4
     volumes:
@@ -29,7 +29,7 @@ services:
       - gobuild:/root/.cache/go-build
       - ../../:/go/asyncapi-codegen
     working_dir: /go/asyncapi-codegen
-    command: go run ./examples/library/client
+    command: go run ./examples/ping/client
     networks:
       - nats-network
 

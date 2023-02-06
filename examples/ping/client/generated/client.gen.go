@@ -10,8 +10,8 @@ import (
 
 // ClientSubscriber represents all application handlers that are expecting messages from application
 type ClientSubscriber interface {
-	// BooksListResponse
-	BooksListResponse(msg BooksListResponseMessage)
+	// Pong
+	Pong(msg PongMessage)
 }
 
 // ClientController is the structure that provides publishing capabilities to the
@@ -41,7 +41,7 @@ func (cc *ClientController) Close() {
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
 	// TODO: Check that cs is not nil
 
-	if err := cc.SubscribeBooksListResponse(cs.BooksListResponse); err != nil {
+	if err := cc.SubscribePong(cs.Pong); err != nil {
 		return err
 	}
 
@@ -50,15 +50,15 @@ func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (cc *ClientController) UnsubscribeAll() {
-	cc.UnsubscribeBooksListResponse()
+	cc.UnsubscribePong()
 }
 
-// SubscribeBooksListResponse will subscribe to new messages from 'books.list.response' channel
-func (cc *ClientController) SubscribeBooksListResponse(fn func(msg BooksListResponseMessage)) error {
+// SubscribePong will subscribe to new messages from 'pong' channel
+func (cc *ClientController) SubscribePong(fn func(msg PongMessage)) error {
 	// TODO: check if there is already a subscription
 
 	// Subscribe to broker channel
-	msgs, stop, err := cc.brokerController.Subscribe("books.list.response")
+	msgs, stop, err := cc.brokerController.Subscribe("pong")
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (cc *ClientController) SubscribeBooksListResponse(fn func(msg BooksListResp
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
 		for um, open := <-msgs; open; um, open = <-msgs {
-			var msg BooksListResponseMessage
+			var msg PongMessage
 			if err := msg.fromUniversalMessage(um); err != nil {
 				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
@@ -77,24 +77,24 @@ func (cc *ClientController) SubscribeBooksListResponse(fn func(msg BooksListResp
 	}()
 
 	// Add the stop channel to the inside map
-	cc.stopSubscribers["books.list.response"] = stop
+	cc.stopSubscribers["pong"] = stop
 
 	return nil
 }
 
-// UnsubscribeBooksListResponse will unsubscribe messages from 'books.list.response' channel
-func (cc *ClientController) UnsubscribeBooksListResponse() {
-	stopChan, exists := cc.stopSubscribers["books.list.response"]
+// UnsubscribePong will unsubscribe messages from 'pong' channel
+func (cc *ClientController) UnsubscribePong() {
+	stopChan, exists := cc.stopSubscribers["pong"]
 	if !exists {
 		return
 	}
 
 	stopChan <- true
-	delete(cc.stopSubscribers, "books.list.response")
+	delete(cc.stopSubscribers, "pong")
 }
 
-// PublishBooksListRequest will publish messages to 'books.list.request' channel
-func (cc *ClientController) PublishBooksListRequest(msg BooksListRequestMessage) error {
+// PublishPing will publish messages to 'ping' channel
+func (cc *ClientController) PublishPing(msg PingMessage) error {
 	// TODO: check that 'cc' is not nil
 
 	// Convert to UniversalMessage
@@ -104,7 +104,7 @@ func (cc *ClientController) PublishBooksListRequest(msg BooksListRequestMessage)
 	}
 
 	// Publish on event broker
-	return cc.brokerController.Publish("books.list.request", um)
+	return cc.brokerController.Publish("ping", um)
 }
 
 // Listen will let the controller handle subscriptions and will be interrupted
@@ -113,15 +113,15 @@ func (cc *ClientController) Listen(irq chan interface{}) {
 	<-irq
 }
 
-// WaitForBooksListResponse will wait for a specific message by its correlation ID
+// WaitForPong will wait for a specific message by its correlation ID
 //
 // The pub function is the publication function that should be used to send the message
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
-func (cc *ClientController) WaitForBooksListResponse(correlationID string, pub func() error, timeout time.Duration) (BooksListResponseMessage, error) {
+func (cc *ClientController) WaitForPong(correlationID string, pub func() error, timeout time.Duration) (PongMessage, error) {
 	// Subscribe to broker channel
-	msgs, stop, err := cc.brokerController.Subscribe("books.list.response")
+	msgs, stop, err := cc.brokerController.Subscribe("pong")
 	if err != nil {
-		return BooksListResponseMessage{}, err
+		return PongMessage{}, err
 	}
 
 	// Close subscriber on leave
@@ -129,21 +129,21 @@ func (cc *ClientController) WaitForBooksListResponse(correlationID string, pub f
 
 	// Execute publication
 	if err := pub(); err != nil {
-		return BooksListResponseMessage{}, err
+		return PongMessage{}, err
 	}
 
 	// Wait for corresponding response
 	for {
 		select {
 		case um := <-msgs:
-			var msg BooksListResponseMessage
+			var msg PongMessage
 			msg.fromUniversalMessage(um)
 
 			if correlationID == msg.Headers.CorrelationID {
 				return msg, nil
 			}
 		case <-time.After(timeout): // TODO: make it consumable between two call
-			return BooksListResponseMessage{}, ErrTimedOut
+			return PongMessage{}, ErrTimedOut
 		}
 	}
 }

@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lerenn/asyncapi-codegen/examples/library/client/generated"
+	"github.com/lerenn/asyncapi-codegen/examples/ping/client/generated"
 	"github.com/nats-io/nats.go"
 )
 
@@ -27,27 +27,27 @@ func main() {
 		panic(err)
 	}
 
-	// Create a new application controller
+	// Create a new client controller
 	clientController := generated.NewClientController(generated.NewNATSController(nc))
 
-	// Make a new book list request
-	var req generated.BooksListRequestMessage
-	req.Payload.Genre = "famous"
+	// Make a new ping
+	var req generated.PingMessage
+	req.Payload = "ping"
 	req.Headers.CorrelationID = uuid.New().String()
 
 	// Create the publication function
 	publicationFunc := func() error {
-		log.Println("New book list request for:", req.Payload.Genre)
-		return clientController.PublishBooksListRequest(req)
+		log.Println("New ping request")
+		return clientController.PublishPing(req)
 	}
 
 	// Send request and wait for response
-	resp, err := clientController.WaitForBooksListResponse(req.Headers.CorrelationID, publicationFunc, time.Second)
+	resp, err := clientController.WaitForPong(req.Headers.CorrelationID, publicationFunc, time.Second)
 	if err != nil {
 		panic(err)
 	}
 
-	log.Println("Got books:", resp.Payload.Books)
+	log.Println("Got response:", resp.Payload)
 
 	time.Sleep(time.Second)
 }
