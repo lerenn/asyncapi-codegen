@@ -23,8 +23,6 @@ func NewAppControllerGenerator(spec asyncapi.Specification) AppControllerGenerat
 	return AppControllerGenerator{
 		Specification: spec,
 
-		CorrelationIDLocation: getCorrelationIDsLocationsByChannel(spec),
-
 		PublishCount:   publishCount,
 		SubscribeCount: subscribeCount,
 	}

@@ -1,5 +1,7 @@
 package asyncapi
 
+import "strings"
+
 type Channel struct {
 	Subscribe *Operation `json:"subscribe"`
 	Publish   *Operation `json:"publish"`
@@ -8,29 +10,27 @@ type Channel struct {
 	Name string `json:"-"`
 }
 
-func (c Channel) GetMessageWithoutReferenceRedirect() Message {
-	if c.Subscribe != nil {
-		return c.Subscribe.Message
-	}
+func (c *Channel) Process(spec Specification) {
+	c.setMapsValuesName()
 
-	return c.Publish.Message
+	msg := c.GetMessageWithoutReferenceRedirect()
+	msg.Process(spec)
 }
 
-func (c Channel) CorrelationIDLocation(spec Specification) string {
+func (c *Channel) setMapsValuesName() {
 	msg := c.GetMessageWithoutReferenceRedirect()
 
-	// Let's check the message before the reference
-	if msg.CorrelationID != nil {
-		return msg.CorrelationID.Location
-	}
-
-	// If there is a reference, check it
 	if msg.Reference != "" {
-		correlationID := spec.ReferenceMessage(msg.Reference).CorrelationID
-		if correlationID != nil {
-			return correlationID.Location
-		}
+		msg.Name = strings.Split(msg.Reference, "/")[3]
+	} else {
+		msg.Name = c.Name
+	}
+}
+
+func (c Channel) GetMessageWithoutReferenceRedirect() *Message {
+	if c.Subscribe != nil {
+		return &c.Subscribe.Message
 	}
 
-	return ""
+	return &c.Publish.Message
 }

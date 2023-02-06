@@ -5,7 +5,9 @@ package asyncapi
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -36,6 +38,7 @@ func NewAppController(bs BrokerController) *AppController {
 	}
 }
 
+// Close will clean up any existing resources on the controller
 func (ac *AppController) Close() {
 	ac.UnsubscribeAll()
 
@@ -61,10 +64,10 @@ func (ac *AppController) UnsubscribeAll() {
 	ac.UnsubscribeUserModify()
 }
 
-// Close will clean up any existing resources on the controller
-
 // SubscribeUserDelete will subscribe to new messages from 'user/delete' channel
 func (ac *AppController) SubscribeUserDelete(fn func(msg UserDeleteMessage)) error {
+	// TODO: check if there is already a subscription
+
 	// Subscribe to broker channel
 	msgs, stop, err := ac.brokerController.Subscribe("user/delete")
 	if err != nil {
@@ -73,22 +76,14 @@ func (ac *AppController) SubscribeUserDelete(fn func(msg UserDeleteMessage)) err
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		var msg struct {
-			// Payload will be inserted in the message payload
-			Payload int64
-		}
 		var um UniversalMessage
 
-		for open := true; open; {
-			um, open = <-msgs
-
-			err := json.Unmarshal(um.Payload, &msg.Payload)
-			if err != nil {
+		for open := true; open; um, open = <-msgs {
+			var msg UserDeleteMessage
+			if err := msg.fromUniversalMessage(um); err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
 			}
-
-			// TODO: run checks on msg type
 
 			fn(msg)
 		}
@@ -111,6 +106,8 @@ func (ac *AppController) UnsubscribeUserDelete() {
 	delete(ac.stopSubscribers, "user/delete")
 } // SubscribeUserModify will subscribe to new messages from 'user/modify' channel
 func (ac *AppController) SubscribeUserModify(fn func(msg UserModifyExtraWordingMessage)) error {
+	// TODO: check if there is already a subscription
+
 	// Subscribe to broker channel
 	msgs, stop, err := ac.brokerController.Subscribe("user/modify")
 	if err != nil {
@@ -119,19 +116,14 @@ func (ac *AppController) SubscribeUserModify(fn func(msg UserModifyExtraWordingM
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		var msg UserModifyExtraWordingMessage
 		var um UniversalMessage
 
-		for open := true; open; {
-			um, open = <-msgs
-
-			err := json.Unmarshal(um.Payload, &msg.Payload)
-			if err != nil {
+		for open := true; open; um, open = <-msgs {
+			var msg UserModifyExtraWordingMessage
+			if err := msg.fromUniversalMessage(um); err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
 			}
-
-			// TODO: run checks on msg type
 
 			fn(msg)
 		}
@@ -157,17 +149,11 @@ func (ac *AppController) UnsubscribeUserModify() {
 // PublishUserSignedin will publish messages to 'user/signedin' channel
 func (ac *AppController) PublishUserSignedin(msg UserSignedinMessage) error {
 	// TODO: check that 'ac' is not nil
-	// TODO: implement checks on message
 
-	// Convert to JSON payload
-	payload, err := json.Marshal(msg.Payload)
+	// Convert to UniversalMessage
+	um, err := msg.toUniversalMessage()
 	if err != nil {
 		return err
-	}
-
-	// Create universal message
-	um := UniversalMessage{
-		Payload: payload,
 	}
 
 	// Publish on event broker
@@ -177,25 +163,11 @@ func (ac *AppController) PublishUserSignedin(msg UserSignedinMessage) error {
 // PublishUserSignedup will publish messages to 'user/signedup' channel
 func (ac *AppController) PublishUserSignedup(msg UserSignedUpExtraWordingMessage) error {
 	// TODO: check that 'ac' is not nil
-	// TODO: implement checks on message
 
-	// Convert to JSON payload
-	payload, err := json.Marshal(msg.Payload)
+	// Convert to UniversalMessage
+	um, err := msg.toUniversalMessage()
 	if err != nil {
 		return err
-	}
-
-	// Create a new correlationID if none is specified
-	correlationID := uuid.New().String()
-	// TODO: get if from another place according to spec
-	if msg.Headers.CorrelationID != "" {
-		correlationID = msg.Headers.CorrelationID
-	}
-
-	// Create universal message
-	um := UniversalMessage{
-		Payload:       payload,
-		CorrelationID: correlationID,
 	}
 
 	// Publish on event broker
@@ -262,6 +234,8 @@ func (cc *ClientController) UnsubscribeAll() {
 
 // SubscribeUserSignedin will subscribe to new messages from 'user/signedin' channel
 func (cc *ClientController) SubscribeUserSignedin(fn func(msg UserSignedinMessage)) error {
+	// TODO: check if there is already a subscription
+
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("user/signedin")
 	if err != nil {
@@ -270,22 +244,14 @@ func (cc *ClientController) SubscribeUserSignedin(fn func(msg UserSignedinMessag
 
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
-		var msg struct {
-			// Payload will be inserted in the message payload
-			Payload int64
-		}
 		var um UniversalMessage
 
-		for open := true; open; {
-			um, open = <-msgs
-
-			err := json.Unmarshal(um.Payload, &msg.Payload)
-			if err != nil {
+		for open := true; open; um, open = <-msgs {
+			var msg UserSignedinMessage
+			if err := msg.fromUniversalMessage(um); err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
 			}
-
-			// TODO: run checks on data type
 
 			fn(msg)
 		}
@@ -310,6 +276,8 @@ func (cc *ClientController) UnsubscribeUserSignedin() {
 
 // SubscribeUserSignedup will subscribe to new messages from 'user/signedup' channel
 func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpExtraWordingMessage)) error {
+	// TODO: check if there is already a subscription
+
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("user/signedup")
 	if err != nil {
@@ -318,19 +286,14 @@ func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpExtraW
 
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
-		var msg UserSignedUpExtraWordingMessage
 		var um UniversalMessage
 
-		for open := true; open; {
-			um, open = <-msgs
-
-			err := json.Unmarshal(um.Payload, &msg.Payload)
-			if err != nil {
+		for open := true; open; um, open = <-msgs {
+			var msg UserSignedUpExtraWordingMessage
+			if err := msg.fromUniversalMessage(um); err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
 			}
-
-			// TODO: run checks on data type
 
 			fn(msg)
 		}
@@ -356,17 +319,11 @@ func (cc *ClientController) UnsubscribeUserSignedup() {
 // PublishUserDelete will publish messages to 'user/delete' channel
 func (cc *ClientController) PublishUserDelete(msg UserDeleteMessage) error {
 	// TODO: check that 'cc' is not nil
-	// TODO: implement checks on message
 
-	// Convert to JSON payload
-	payload, err := json.Marshal(msg.Payload)
+	// Convert to UniversalMessage
+	um, err := msg.toUniversalMessage()
 	if err != nil {
 		return err
-	}
-
-	// Create universal message
-	um := UniversalMessage{
-		Payload: payload,
 	}
 
 	// Publish on event broker
@@ -376,21 +333,47 @@ func (cc *ClientController) PublishUserDelete(msg UserDeleteMessage) error {
 // PublishUserModify will publish messages to 'user/modify' channel
 func (cc *ClientController) PublishUserModify(msg UserModifyExtraWordingMessage) error {
 	// TODO: check that 'cc' is not nil
-	// TODO: implement checks on message
 
-	// Convert to JSON payload
-	payload, err := json.Marshal(msg.Payload)
+	// Convert to UniversalMessage
+	um, err := msg.toUniversalMessage()
 	if err != nil {
 		return err
 	}
 
-	// Create universal message
-	um := UniversalMessage{
-		Payload: payload,
-	}
-
 	// Publish on event broker
 	return cc.brokerController.Publish("user/modify", um)
+}
+
+// Listen will let the controller handle subscriptions and will be interrupted
+// only when an struct is sent on the interrupt channel
+func (cc *ClientController) Listen(irq chan interface{}) {
+	<-irq
+}
+
+// WaitForUserSignedup will wait for a specific message by its correlation ID
+func (cc *ClientController) WaitForUserSignedup(correlationID string, timeout time.Duration) (UserSignedUpExtraWordingMessage, error) {
+	// Subscribe to broker channel
+	msgs, stop, err := cc.brokerController.Subscribe("user/signedup")
+	if err != nil {
+		return UserSignedUpExtraWordingMessage{}, err
+	}
+
+	// Close subscriber on leave
+	defer func() { stop <- true }()
+
+	for {
+		select {
+		case um := <-msgs:
+			var msg UserSignedUpExtraWordingMessage
+			msg.fromUniversalMessage(um)
+
+			if correlationID == msg.Headers.CorrelationID {
+				return msg, nil
+			}
+		case <-time.After(timeout): // TODO: make it consumable between two call
+			return UserSignedUpExtraWordingMessage{}, ErrTimedOut
+		}
+	}
 }
 
 const (
@@ -414,16 +397,77 @@ type BrokerController interface {
 	Subscribe(channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
 }
 
+var (
+	// ErrTimedOut is given when any timeout happen
+	ErrTimedOut = errors.New("time out")
+)
+
 // UserDelete
 type UserDeleteMessage struct {
 	// Payload will be inserted in the message payload
 	Payload int64
 }
 
+// fromUniversalMessage will fill UserDeleteMessage with data from UniversalMessage
+func (msg *UserDeleteMessage) fromUniversalMessage(um UniversalMessage) error {
+	err := json.Unmarshal(um.Payload, &msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	// TODO: run checks on msg type
+
+	return nil
+}
+
+// toUniversalMessage will generate an UniversalMessage from UserDeleteMessage data
+func (msg UserDeleteMessage) toUniversalMessage() (UniversalMessage, error) {
+	// TODO: implement checks on message
+
+	// Convert to JSON payload
+	payload, err := json.Marshal(msg.Payload)
+	if err != nil {
+		return UniversalMessage{}, err
+	}
+
+	// Create universal message
+	return UniversalMessage{
+		Payload: payload,
+	}, nil
+}
+
 // UserSignedin
 type UserSignedinMessage struct {
 	// Payload will be inserted in the message payload
 	Payload int64
+}
+
+// fromUniversalMessage will fill UserSignedinMessage with data from UniversalMessage
+func (msg *UserSignedinMessage) fromUniversalMessage(um UniversalMessage) error {
+	err := json.Unmarshal(um.Payload, &msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	// TODO: run checks on msg type
+
+	return nil
+}
+
+// toUniversalMessage will generate an UniversalMessage from UserSignedinMessage data
+func (msg UserSignedinMessage) toUniversalMessage() (UniversalMessage, error) {
+	// TODO: implement checks on message
+
+	// Convert to JSON payload
+	payload, err := json.Marshal(msg.Payload)
+	if err != nil {
+		return UniversalMessage{}, err
+	}
+
+	// Create universal message
+	return UniversalMessage{
+		Payload: payload,
+	}, nil
 }
 
 // UserModifyExtraWording
@@ -433,6 +477,34 @@ type UserModifyExtraWordingMessage struct {
 		// Name
 		Name string `json:"name"`
 	}
+}
+
+// fromUniversalMessage will fill UserModifyExtraWordingMessage with data from UniversalMessage
+func (msg *UserModifyExtraWordingMessage) fromUniversalMessage(um UniversalMessage) error {
+	err := json.Unmarshal(um.Payload, &msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	// TODO: run checks on msg type
+
+	return nil
+}
+
+// toUniversalMessage will generate an UniversalMessage from UserModifyExtraWordingMessage data
+func (msg UserModifyExtraWordingMessage) toUniversalMessage() (UniversalMessage, error) {
+	// TODO: implement checks on message
+
+	// Convert to JSON payload
+	payload, err := json.Marshal(msg.Payload)
+	if err != nil {
+		return UniversalMessage{}, err
+	}
+
+	// Create universal message
+	return UniversalMessage{
+		Payload: payload,
+	}, nil
 }
 
 // UserSignedUpExtraWording
@@ -454,6 +526,42 @@ type UserSignedUpExtraWordingMessage struct {
 		// Schema
 		Schema SchemaStruct `json:"schema"`
 	}
+}
+
+// fromUniversalMessage will fill UserSignedUpExtraWordingMessage with data from UniversalMessage
+func (msg *UserSignedUpExtraWordingMessage) fromUniversalMessage(um UniversalMessage) error {
+	err := json.Unmarshal(um.Payload, &msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	// TODO: run checks on msg type
+
+	return nil
+}
+
+// toUniversalMessage will generate an UniversalMessage from UserSignedUpExtraWordingMessage data
+func (msg UserSignedUpExtraWordingMessage) toUniversalMessage() (UniversalMessage, error) {
+	// TODO: implement checks on message
+
+	// Convert to JSON payload
+	payload, err := json.Marshal(msg.Payload)
+	if err != nil {
+		return UniversalMessage{}, err
+	}
+
+	// Create a new correlationID if none is specified
+	correlationID := uuid.New().String()
+	// TODO: get if from another place according to spec
+	if msg.Headers.CorrelationID != "" {
+		correlationID = msg.Headers.CorrelationID
+	}
+
+	// Create universal message
+	return UniversalMessage{
+		Payload:       payload,
+		CorrelationID: correlationID,
+	}, nil
 }
 
 // UserSignedUpExtraWording

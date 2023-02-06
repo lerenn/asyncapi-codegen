@@ -4,10 +4,8 @@
 package generated
 
 import (
-	"encoding/json"
 	"log"
-
-	"github.com/google/uuid"
+	"time"
 )
 
 // ClientSubscriber represents all application handlers that are expecting messages from application
@@ -57,6 +55,8 @@ func (cc *ClientController) UnsubscribeAll() {
 
 // SubscribeBooksListResponse will subscribe to new messages from 'books.list.response' channel
 func (cc *ClientController) SubscribeBooksListResponse(fn func(msg BooksListResponseMessage)) error {
+	// TODO: check if there is already a subscription
+
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("books.list.response")
 	if err != nil {
@@ -65,19 +65,14 @@ func (cc *ClientController) SubscribeBooksListResponse(fn func(msg BooksListResp
 
 	// Asynchronously listen to new messages and pass them to client subscriber
 	go func() {
-		var msg BooksListResponseMessage
 		var um UniversalMessage
 
-		for open := true; open; {
-			um, open = <-msgs
-
-			err := json.Unmarshal(um.Payload, &msg.Payload)
-			if err != nil {
+		for open := true; open; um, open = <-msgs {
+			var msg BooksListResponseMessage
+			if err := msg.fromUniversalMessage(um); err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
 			}
-
-			// TODO: run checks on data type
 
 			fn(msg)
 		}
@@ -103,27 +98,45 @@ func (cc *ClientController) UnsubscribeBooksListResponse() {
 // PublishBooksListRequest will publish messages to 'books.list.request' channel
 func (cc *ClientController) PublishBooksListRequest(msg BooksListRequestMessage) error {
 	// TODO: check that 'cc' is not nil
-	// TODO: implement checks on message
 
-	// Convert to JSON payload
-	payload, err := json.Marshal(msg.Payload)
+	// Convert to UniversalMessage
+	um, err := msg.toUniversalMessage()
 	if err != nil {
 		return err
 	}
 
-	// Create a new correlationID if none is specified
-	correlationID := uuid.New().String()
-	// TODO: get if from another place according to spec
-	if msg.Headers.CorrelationID != "" {
-		correlationID = msg.Headers.CorrelationID
-	}
-
-	// Create universal message
-	um := UniversalMessage{
-		Payload:       payload,
-		CorrelationID: correlationID,
-	}
-
 	// Publish on event broker
 	return cc.brokerController.Publish("books.list.request", um)
+}
+
+// Listen will let the controller handle subscriptions and will be interrupted
+// only when an struct is sent on the interrupt channel
+func (cc *ClientController) Listen(irq chan interface{}) {
+	<-irq
+}
+
+// WaitForBooksListResponse will wait for a specific message by its correlation ID
+func (cc *ClientController) WaitForBooksListResponse(correlationID string, timeout time.Duration) (BooksListResponseMessage, error) {
+	// Subscribe to broker channel
+	msgs, stop, err := cc.brokerController.Subscribe("books.list.response")
+	if err != nil {
+		return BooksListResponseMessage{}, err
+	}
+
+	// Close subscriber on leave
+	defer func() { stop <- true }()
+
+	for {
+		select {
+		case um := <-msgs:
+			var msg BooksListResponseMessage
+			msg.fromUniversalMessage(um)
+
+			if correlationID == msg.Headers.CorrelationID {
+				return msg, nil
+			}
+		case <-time.After(timeout): // TODO: make it consumable between two call
+			return BooksListResponseMessage{}, ErrTimedOut
+		}
+	}
 }

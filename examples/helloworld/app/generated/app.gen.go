@@ -4,7 +4,6 @@
 package generated
 
 import (
-	"encoding/json"
 	"log"
 )
 
@@ -31,6 +30,7 @@ func NewAppController(bs BrokerController) *AppController {
 	}
 }
 
+// Close will clean up any existing resources on the controller
 func (ac *AppController) Close() {
 	ac.UnsubscribeAll()
 
@@ -52,10 +52,10 @@ func (ac *AppController) UnsubscribeAll() {
 	ac.UnsubscribeHello()
 }
 
-// Close will clean up any existing resources on the controller
-
 // SubscribeHello will subscribe to new messages from 'hello' channel
 func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
+	// TODO: check if there is already a subscription
+
 	// Subscribe to broker channel
 	msgs, stop, err := ac.brokerController.Subscribe("hello")
 	if err != nil {
@@ -64,22 +64,14 @@ func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		var msg struct {
-			// Payload will be inserted in the message payload
-			Payload string
-		}
 		var um UniversalMessage
 
-		for open := true; open; {
-			um, open = <-msgs
-
-			err := json.Unmarshal(um.Payload, &msg.Payload)
-			if err != nil {
+		for open := true; open; um, open = <-msgs {
+			var msg HelloMessage
+			if err := msg.fromUniversalMessage(um); err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
 			}
-
-			// TODO: run checks on msg type
 
 			fn(msg)
 		}

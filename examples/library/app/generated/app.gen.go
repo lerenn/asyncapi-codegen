@@ -4,10 +4,7 @@
 package generated
 
 import (
-	"encoding/json"
 	"log"
-
-	"github.com/google/uuid"
 )
 
 // AppSubscriber represents all application handlers that are expecting messages from clients
@@ -33,6 +30,7 @@ func NewAppController(bs BrokerController) *AppController {
 	}
 }
 
+// Close will clean up any existing resources on the controller
 func (ac *AppController) Close() {
 	ac.UnsubscribeAll()
 
@@ -54,10 +52,10 @@ func (ac *AppController) UnsubscribeAll() {
 	ac.UnsubscribeBooksListRequest()
 }
 
-// Close will clean up any existing resources on the controller
-
 // SubscribeBooksListRequest will subscribe to new messages from 'books.list.request' channel
 func (ac *AppController) SubscribeBooksListRequest(fn func(msg BooksListRequestMessage)) error {
+	// TODO: check if there is already a subscription
+
 	// Subscribe to broker channel
 	msgs, stop, err := ac.brokerController.Subscribe("books.list.request")
 	if err != nil {
@@ -66,19 +64,14 @@ func (ac *AppController) SubscribeBooksListRequest(fn func(msg BooksListRequestM
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		var msg BooksListRequestMessage
 		var um UniversalMessage
 
-		for open := true; open; {
-			um, open = <-msgs
-
-			err := json.Unmarshal(um.Payload, &msg.Payload)
-			if err != nil {
+		for open := true; open; um, open = <-msgs {
+			var msg BooksListRequestMessage
+			if err := msg.fromUniversalMessage(um); err != nil {
 				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
 				continue
 			}
-
-			// TODO: run checks on msg type
 
 			fn(msg)
 		}
@@ -104,25 +97,11 @@ func (ac *AppController) UnsubscribeBooksListRequest() {
 // PublishBooksListResponse will publish messages to 'books.list.response' channel
 func (ac *AppController) PublishBooksListResponse(msg BooksListResponseMessage) error {
 	// TODO: check that 'ac' is not nil
-	// TODO: implement checks on message
 
-	// Convert to JSON payload
-	payload, err := json.Marshal(msg.Payload)
+	// Convert to UniversalMessage
+	um, err := msg.toUniversalMessage()
 	if err != nil {
 		return err
-	}
-
-	// Create a new correlationID if none is specified
-	correlationID := uuid.New().String()
-	// TODO: get if from another place according to spec
-	if msg.Headers.CorrelationID != "" {
-		correlationID = msg.Headers.CorrelationID
-	}
-
-	// Create universal message
-	um := UniversalMessage{
-		Payload:       payload,
-		CorrelationID: correlationID,
 	}
 
 	// Publish on event broker

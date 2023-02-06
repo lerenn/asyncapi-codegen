@@ -16,3 +16,12 @@ func (c *Components) setMapsValuesName() {
 		c.Schemas[name] = schema
 	}
 }
+
+func (c *Components) Process(spec Specification) {
+	c.setMapsValuesName()
+
+	for key, msg := range c.Messages {
+		msg.Process(spec)
+		c.Messages[key] = msg
+	}
+}

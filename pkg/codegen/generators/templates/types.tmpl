@@ -1,3 +1,8 @@
+var (
+    // ErrTimedOut is given when any timeout happen
+    ErrTimedOut = errors.New("time out")
+)
+
 {{range $key, $value := .Channels -}}
 {{- if and $value.Subscribe $value.Subscribe.Message.Payload}}
 // {{if $value.Subscribe.Message.Description}}{{$value.Subscribe.Message.Description}}{{else}}{{namify $key}}{{end}}

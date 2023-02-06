@@ -1,7 +1,4 @@
 {{define "message" -}}
-
-{{- /* If there is a payload, then its override the reference */ -}}
-{{- if .Payload -}}
 struct {
 
 {{- /* Display headers if they exists */}}
@@ -15,8 +12,43 @@ Headers {{template "any" .Headers}}
 Payload {{template "any" .Payload}}
 }
 
-{{- /* If there is nothing to display, then it must be a reference */ -}}
-{{- else -}}
-{{- template "any" . -}} 
-{{- end -}}
+// fromUniversalMessage will fill {{namify .Name}}Message with data from UniversalMessage
+func (msg *{{namify .Name}}Message) fromUniversalMessage(um UniversalMessage) error {
+    err := json.Unmarshal(um.Payload, &msg.Payload)
+    if err != nil {
+        return err
+    }
+    
+    // TODO: run checks on msg type
+
+    return nil
+}
+
+// toUniversalMessage will generate an UniversalMessage from {{namify .Name}}Message data
+func (msg {{namify .Name}}Message) toUniversalMessage() (UniversalMessage, error) {
+    // TODO: implement checks on message
+
+    // Convert to JSON payload
+    payload, err := json.Marshal(msg.Payload)
+    if err != nil {
+        return UniversalMessage{}, err
+    }
+
+    {{if ne $.CorrelationIDLocation "" -}}
+    // Create a new correlationID if none is specified
+    correlationID := uuid.New().String()
+    // TODO: get if from another place according to spec
+    if msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} != "" {
+        correlationID = msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
+    }
+    {{- end}}
+
+    // Create universal message
+    return UniversalMessage{
+        Payload: payload,
+        {{- if ne $.CorrelationIDLocation ""}}
+        CorrelationID: correlationID,
+        {{- end}}
+    }, nil
+}
 {{- end }}

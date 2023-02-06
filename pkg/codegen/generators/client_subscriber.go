@@ -9,10 +9,6 @@ import (
 type ClientSubscriberGenerator struct {
 	Specification asyncapi.Specification
 
-	// CorrelationIDLocation will indicate where the correlation id is
-	// According to this: https://www.asyncapi.com/docs/reference/specification/v2.5.0#correlationIDObject
-	CorrelationIDLocation map[string]string
-
 	SubscribeCount uint
 }
 
@@ -20,9 +16,8 @@ func NewClientSubscriberGenerator(spec asyncapi.Specification) ClientSubscriberG
 	_, subscribeCount := spec.GetPublishSubscribeCount()
 
 	return ClientSubscriberGenerator{
-		Specification:         spec,
-		CorrelationIDLocation: getCorrelationIDsLocationsByChannel(spec),
-		SubscribeCount:        subscribeCount,
+		Specification:  spec,
+		SubscribeCount: subscribeCount,
 	}
 }
 
