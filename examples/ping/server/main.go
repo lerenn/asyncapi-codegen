@@ -19,22 +19,20 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 }
 
-type AppSubscriber struct {
+type ServerSubscriber struct {
 	Controller *generated.AppController
 }
 
-func (as AppSubscriber) Ping(req generated.PingMessage) {
-	var resp generated.PongMessage
-
+func (s ServerSubscriber) Ping(req generated.PingMessage) {
 	log.Println("Received a ping request")
 
-	// Respond with pong
+	// Generate a pong message, with the same correlation Id
+	resp := generated.NewPongMessage()
 	resp.Payload = "pong"
-
-	// And with same correlation Id
 	resp.Headers.CorrelationID = req.Headers.CorrelationID
 
-	err := as.Controller.PublishPong(resp)
+	// Publish the pong message
+	err := s.Controller.PublishPong(resp)
 	if err != nil {
 		panic(err)
 	}
@@ -46,18 +44,18 @@ func main() {
 		panic(err)
 	}
 
-	// Create a new application controller
-	appController := generated.NewAppController(generated.NewNATSController(nc))
+	// Create a new server controller
+	ctrl := generated.NewAppController(generated.NewNATSController(nc))
 
-	// Subscribe to all
+	// Subscribe to all (we could also have just listened on the ping request channel)
 	log.Println("Subscribe to all...")
-	sub := AppSubscriber{Controller: appController}
-	if err := appController.SubscribeAll(sub); err != nil {
+	sub := ServerSubscriber{Controller: ctrl}
+	if err := ctrl.SubscribeAll(sub); err != nil {
 		panic(err)
 	}
 
-	// Listen
+	// Listen to new messages
 	log.Println("Listening to subscriptions...")
 	irq := make(chan interface{})
-	appController.Listen(irq)
+	ctrl.Listen(irq)
 }

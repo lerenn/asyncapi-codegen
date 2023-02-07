@@ -6,6 +6,16 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
 
 *Inspired from popular [deepmap/oapi-codegen](https://github.com/deepmap/oapi-codegen)*
 
+## Contents
+
+* [Supported functionalities](#supported-functionalities)
+* [Concepts](#concepts)
+* [Examples](#examples):
+  * [Basic example](#basic-example)
+  * [Request/Response example](#request-response-example)
+* [CLI options](#cli-options)
+* [Contributing and support](#contributing-and-support)
+
 ## Supported functionalities
 
 * AsyncAPI versions:
@@ -44,7 +54,11 @@ reception with the generated code.
 automatically if you use an implemented message broker. You can also use the
 `none` type in order to implement it yourself.
 
-## Example
+## Examples
+
+Here is a list of example, from basic to advanced ones.
+
+### Basic example
 
 This example will use the AsyncAPI official example of the
 [HelloWorld](https://www.asyncapi.com/docs/tutorials/getting-started/hello-world).
@@ -65,7 +79,7 @@ asyncapi-codegen -i examples/helloworld/asyncapi.yaml -o ./helloworld.gen.go
 
 We can then go through the `helloworld.gen.go` file to understand what will be used.
 
-### Application
+#### Application
 
 Here is the code that is generated for the application side, with corresponding
 comments:
@@ -140,7 +154,7 @@ irq := make(chan interface{})
 ctrl.Listen(irq)
 ```
 
-### Client
+#### Client
 
 Here is the code that is generated for the client side, with corresponding
 comments:
@@ -176,7 +190,7 @@ log.Println("Publishing 'hello world' message")
 ctrl.PublishHello(generated.HelloMessage{Payload: "HelloWorld!"})
 ```
 
-### Types
+#### Types
 
 According to the specification that you pass in parameter, some types will also
 be generated. Here is the ones generated for the HelloWorld example:
@@ -190,7 +204,7 @@ type HelloMessage struct {
 }
 ```
 
-### Broker
+#### Broker
 
 In order to connect your application and your client to your broker, we need to
 provide an adapter to it. Here is the interface that you need to satisfy:
@@ -210,7 +224,91 @@ that aims to abstract the event broker technology.
 You can either generate an already existing adapter, or write your own if it doesn't
 exists or if it doesn't suit your needs.
 
-## Using `asyncapi-codegen`
+### Request/Response example
+
+This example will use a `ping` example that you can find 
+[here](./examples/ping/asyncapi.yaml).
+
+> The code for this example have already been generated and can be
+[read here](./examples/ping/), in the subdirectories `server/generated/`
+and `client/generated/`. You can execute the example with `docker-compose up`.
+
+In order to recreate the code for client and application, you have to run this command:
+
+```shell
+# Install the tool
+go install github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@latest
+
+# Generate the code from the asyncapi file
+asyncapi-codegen -i examples/ping/asyncapi.yaml -o ./ping.gen.go
+```
+
+We can then go through the possible application and client implementations that
+use `ping.gen.go`. 
+
+#### Application (or server in this case)
+
+```golang
+type ServerSubscriber struct {
+	Controller *generated.AppController
+}
+
+func (s ServerSubscriber) Ping(req generated.PingMessage) {
+	// Generate a pong message, with the same correlation Id
+	resp := generated.NewPongMessage()
+	resp.Payload = "pong"
+	resp.Headers.CorrelationID = req.Headers.CorrelationID
+
+	// Publish the pong message
+	err := s.Controller.PublishPong(resp)
+	if err != nil { /* ...*/ }
+}
+
+func main() {
+	/* ... */
+
+	// Create a new server controller
+	ctrl := generated.NewAppController(generated.NewNATSController(nc))
+
+	// Subscribe to all (we could also have just listened on the ping request channel)
+	sub := ServerSubscriber{Controller: ctrl}
+	if err := ctrl.SubscribeAll(sub); err != nil { /* ... */	}
+
+	// Listen to new messages
+	irq := make(chan interface{})
+	ctrl.Listen(irq)
+}
+```
+
+#### Client
+
+```golang
+// Create a new client controller
+ctrl := generated.NewClientController(/* Add corresponding broker controller */)
+
+// Make a new ping message
+req := generated.NewPingMessage()
+req.Payload = "ping"
+
+// Create the publication function to send the message
+publicationFunc := func() error {
+  return ctrl.PublishPing(req)
+}
+
+// The following function will subscribe to the 'pong' channel, execute the publication
+// function and wait for a response. The response will be detected through its
+// correlation ID.
+// 
+// This function is available only if the 'correlationId' field has been filled
+// for any channel in the AsyncAPI specification. You will then be able to use it
+// with the form WaitForXXX where XXX is the channel name.
+resp, err := ctrl.WaitForPong(req.Headers.CorrelationID, publicationFunc, time.Second)
+if err != nil {
+  panic(err)
+}
+```
+
+## CLI options
 
 The default options for oapi-codegen will generate everything; client, application,
 broker, type definitions, and broker implementations but you can generate subsets

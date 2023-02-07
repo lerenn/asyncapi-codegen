@@ -27,20 +27,26 @@ func main() {
 	}
 
 	// Create a new client controller
-	clientController := generated.NewClientController(generated.NewNATSController(nc))
+	ctrl := generated.NewClientController(generated.NewNATSController(nc))
 
-	// Make a new ping
+	// Make a new ping message
 	req := generated.NewPingMessage()
 	req.Payload = "ping"
 
-	// Create the publication function
+	// Create the publication function to send the message
 	publicationFunc := func() error {
 		log.Println("New ping request")
-		return clientController.PublishPing(req)
+		return ctrl.PublishPing(req)
 	}
 
-	// Send request and wait for response
-	resp, err := clientController.WaitForPong(req.Headers.CorrelationID, publicationFunc, time.Second)
+	// The following function will subscribe to the 'pong' channel, execute the publication
+	// function and wait for a response. The response will be detected through its
+	// correlation ID.
+	//
+	// This function is available only if the 'correlationId' field has been filled
+	// for any channel in the AsyncAPI specification. You will then be able to use it
+	// with the form WaitForXXX where XXX is the channel name.
+	resp, err := ctrl.WaitForPong(req.Headers.CorrelationID, publicationFunc, time.Second)
 	if err != nil {
 		panic(err)
 	}
