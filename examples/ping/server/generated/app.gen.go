@@ -4,16 +4,13 @@
 package generated
 
 import (
-	"encoding/json"
 	"log"
-
-	"github.com/google/uuid"
 )
 
 // AppSubscriber represents all application handlers that are expecting messages from clients
 type AppSubscriber interface {
-	// BooksListRequest
-	BooksListRequest(msg BooksListRequestMessage)
+	// Ping
+	Ping(msg PingMessage)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -33,6 +30,7 @@ func NewAppController(bs BrokerController) *AppController {
 	}
 }
 
+// Close will clean up any existing resources on the controller
 func (ac *AppController) Close() {
 	ac.UnsubscribeAll()
 
@@ -42,7 +40,7 @@ func (ac *AppController) Close() {
 func (ac *AppController) SubscribeAll(as AppSubscriber) error {
 	// TODO: Check that as is not nil
 
-	if err := ac.SubscribeBooksListRequest(as.BooksListRequest); err != nil {
+	if err := ac.SubscribePing(as.Ping); err != nil {
 		return err
 	}
 
@@ -51,82 +49,61 @@ func (ac *AppController) SubscribeAll(as AppSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (ac *AppController) UnsubscribeAll() {
-	ac.UnsubscribeBooksListRequest()
+	ac.UnsubscribePing()
 }
 
-// Close will clean up any existing resources on the controller
+// SubscribePing will subscribe to new messages from 'ping' channel
+func (ac *AppController) SubscribePing(fn func(msg PingMessage)) error {
+	// TODO: check if there is already a subscription
 
-// SubscribeBooksListRequest will subscribe to new messages from 'books.list.request' channel
-func (ac *AppController) SubscribeBooksListRequest(fn func(msg BooksListRequestMessage)) error {
 	// Subscribe to broker channel
-	msgs, stop, err := ac.brokerController.Subscribe("books.list.request")
+	msgs, stop, err := ac.brokerController.Subscribe("ping")
 	if err != nil {
 		return err
 	}
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		var msg BooksListRequestMessage
-		var um UniversalMessage
-
-		for open := true; open; {
-			um, open = <-msgs
-
-			err := json.Unmarshal(um.Payload, &msg.Payload)
+		for um, open := <-msgs; open; um, open = <-msgs {
+			msg, err := newPingMessageFromUniversalMessage(um)
 			if err != nil {
-				log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
 				continue
 			}
-
-			// TODO: run checks on msg type
 
 			fn(msg)
 		}
 	}()
 
 	// Add the stop channel to the inside map
-	ac.stopSubscribers["books.list.request"] = stop
+	ac.stopSubscribers["ping"] = stop
 
 	return nil
 }
 
-// UnsubscribeBooksListRequest will unsubscribe messages from 'books.list.request' channel
-func (ac *AppController) UnsubscribeBooksListRequest() {
-	stopChan, exists := ac.stopSubscribers["books.list.request"]
+// UnsubscribePing will unsubscribe messages from 'ping' channel
+func (ac *AppController) UnsubscribePing() {
+	stopChan, exists := ac.stopSubscribers["ping"]
 	if !exists {
 		return
 	}
 
 	stopChan <- true
-	delete(ac.stopSubscribers, "books.list.request")
+	delete(ac.stopSubscribers, "ping")
 }
 
-// PublishBooksListResponse will publish messages to 'books.list.response' channel
-func (ac *AppController) PublishBooksListResponse(msg BooksListResponseMessage) error {
+// PublishPong will publish messages to 'pong' channel
+func (ac *AppController) PublishPong(msg PongMessage) error {
 	// TODO: check that 'ac' is not nil
-	// TODO: implement checks on message
 
-	// Convert to JSON payload
-	payload, err := json.Marshal(msg.Payload)
+	// Convert to UniversalMessage
+	um, err := msg.toUniversalMessage()
 	if err != nil {
 		return err
 	}
 
-	// Create a new correlationID if none is specified
-	correlationID := uuid.New().String()
-	// TODO: get if from another place according to spec
-	if msg.Headers.CorrelationID != "" {
-		correlationID = msg.Headers.CorrelationID
-	}
-
-	// Create universal message
-	um := UniversalMessage{
-		Payload:       payload,
-		CorrelationID: correlationID,
-	}
-
 	// Publish on event broker
-	return ac.brokerController.Publish("books.list.response", um)
+	return ac.brokerController.Publish("pong", um)
 }
 
 // Listen will let the controller handle subscriptions and will be interrupted

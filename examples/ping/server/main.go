@@ -11,29 +11,28 @@ package main
 import (
 	"log"
 
-	"github.com/lerenn/asyncapi-codegen/examples/library/app/generated"
+	"github.com/lerenn/asyncapi-codegen/examples/ping/server/generated"
 	"github.com/nats-io/nats.go"
 )
 
-type AppSubscriber struct {
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+}
+
+type ServerSubscriber struct {
 	Controller *generated.AppController
 }
 
-func (as AppSubscriber) BooksListRequest(req generated.BooksListRequestMessage) {
-	var resp generated.BooksListResponseMessage
+func (s ServerSubscriber) Ping(req generated.PingMessage) {
+	log.Println("Received a ping request")
 
-	log.Printf("Received a books list request (%q)\n", req.Headers.CorrelationID)
-
-	// Respond with books
-	resp.Payload.Books = []generated.Book{
-		{Title: "Alice in wonderland"},
-		{Title: "1984"},
-	}
-
-	// And with same correlation Id
+	// Generate a pong message, with the same correlation Id
+	resp := generated.NewPongMessage()
+	resp.Payload = "pong"
 	resp.Headers.CorrelationID = req.Headers.CorrelationID
 
-	err := as.Controller.PublishBooksListResponse(resp)
+	// Publish the pong message
+	err := s.Controller.PublishPong(resp)
 	if err != nil {
 		panic(err)
 	}
@@ -45,18 +44,18 @@ func main() {
 		panic(err)
 	}
 
-	// Create a new application controller
-	appController := generated.NewAppController(generated.NewNATSController(nc))
+	// Create a new server controller
+	ctrl := generated.NewAppController(generated.NewNATSController(nc))
 
-	// Subscribe to all
+	// Subscribe to all (we could also have just listened on the ping request channel)
 	log.Println("Subscribe to all...")
-	sub := AppSubscriber{Controller: appController}
-	if err := appController.SubscribeAll(sub); err != nil {
+	sub := ServerSubscriber{Controller: ctrl}
+	if err := ctrl.SubscribeAll(sub); err != nil {
 		panic(err)
 	}
 
-	// Listen
+	// Listen to new messages
 	log.Println("Listening to subscriptions...")
 	irq := make(chan interface{})
-	appController.Listen(irq)
+	ctrl.Listen(irq)
 }

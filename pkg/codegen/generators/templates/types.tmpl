@@ -1,21 +1,29 @@
+var (
+    // Generic error for AsyncAPI generated code
+    ErrAsyncAPI = errors.New("error when using AsyncAPI")
+
+    // ErrTimedOut is given when any timeout happen
+    ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
+)
+
 {{range $key, $value := .Channels -}}
 {{- if and $value.Subscribe $value.Subscribe.Message.Payload}}
-// {{if $value.Subscribe.Message.Description}}{{$value.Subscribe.Message.Description}}{{else}}{{namify $key}}{{end}}
-type {{namify $key}}Message {{template "message" $value.Subscribe.Message}}
+{{template "message" $value.Subscribe.Message}}
 {{end -}}
 
 {{- if and $value.Publish $value.Publish.Message.Payload}}
-// {{if $value.Publish.Message.Description}}{{$value.Publish.Message.Description}}{{else}}{{namify $key}}{{end}}
-type {{namify $key}}Message {{template "message" $value.Publish.Message}}
+{{template "message" $value.Publish.Message}}
 {{end -}}
 {{- end}}
 
 {{range $key, $value := .Components.Messages}}
-// {{if $value.Description}}{{$value.Description}}{{else}}{{namify $key}}{{end}}
-type {{namify $key}}Message {{template "message" $value}}
+{{template "message" $value}}
 {{end}}
 
 {{range $key, $value := .Components.Schemas}}
-// {{if $value.Description}}{{$value.Description}}{{else}}{{namify $key}}{{end}}
+// {{namify $key}} is a component of the AsyncAPI specification required in messages
+{{if $value.Description -}}
+// {{$value.Description}}
+{{end -}}
 type {{namify $key}} {{template "any" $value}}
 {{end}}

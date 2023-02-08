@@ -15,6 +15,7 @@ func NewAppController(bs BrokerController) *AppController {
     }
 }
 
+// Close will clean up any existing resources on the controller
 func (ac *AppController) Close() {
 {{if .PublishCount -}}
     ac.UnsubscribeAll()
@@ -43,14 +44,14 @@ func (ac *AppController) UnsubscribeAll() {
     ac.Unsubscribe{{namify $key}}()
     {{end -}}{{- end -}}
 }
-
-// Close will clean up any existing resources on the controller
 {{- end}}
 
 {{range  $key, $value := .Specification.Channels -}}
 {{- if $value.Publish -}}
 // Subscribe{{namify $key}} will subscribe to new messages from '{{$key}}' channel
 func (ac *AppController) Subscribe{{namify $key}}(fn func (msg {{channelToMessageTypeName $value}})) error {
+    // TODO: check if there is already a subscription
+
     // Subscribe to broker channel
     msgs, stop, err := ac.brokerController.Subscribe("{{$key}}")
     if err != nil {
@@ -59,19 +60,12 @@ func (ac *AppController) Subscribe{{namify $key}}(fn func (msg {{channelToMessag
 
     // Asynchronously listen to new messages and pass them to app subscriber
     go func() {
-        var msg {{template "message" $value.Publish.Message}}
-        var um UniversalMessage
-
-        for open := true; open; {
-            um, open = <-msgs
-
-            err := json.Unmarshal(um.Payload, &msg.Payload)
+        for um, open := <-msgs; open; um, open = <-msgs{
+            msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
             if err != nil {
-                log.Println("an error happened when receiving an event:", err) // TODO: add proper error handling
+                log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
                 continue
             }
-            
-            // TODO: run checks on msg type
 
             fn(msg)
         }
@@ -101,29 +95,11 @@ func (ac *AppController) Unsubscribe{{namify $key}}() {
 // Publish{{namify $key}} will publish messages to '{{$key}}' channel
 func (ac *AppController) Publish{{namify $key}}(msg {{channelToMessageTypeName $value}}) error {
     // TODO: check that 'ac' is not nil
-    // TODO: implement checks on message
 
-    // Convert to JSON payload
-    payload, err := json.Marshal(msg.Payload)
-    if err != nil {
+    // Convert to UniversalMessage
+    um, err := msg.toUniversalMessage()
+    if err != nil  {
         return err
-    }
-
-    {{if ne (index $.CorrelationIDLocation $key) "" -}}
-    // Create a new correlationID if none is specified
-    correlationID := uuid.New().String()
-    // TODO: get if from another place according to spec
-    if msg.{{referenceToStructAttributePath (index $.CorrelationIDLocation $key)}} != "" {
-        correlationID = msg.{{referenceToStructAttributePath (index $.CorrelationIDLocation $key)}}
-    }
-    {{- end}}
-
-    // Create universal message
-    um := UniversalMessage{
-        Payload: payload,
-        {{- if ne (index $.CorrelationIDLocation $key) ""}}
-        CorrelationID: correlationID,
-        {{- end}}
     }
 
     // Publish on event broker

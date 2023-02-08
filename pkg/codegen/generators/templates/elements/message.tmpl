@@ -1,8 +1,11 @@
 {{define "message" -}}
 
-{{- /* If there is a payload, then its override the reference */ -}}
-{{- if .Payload -}}
-struct {
+// {{namify .Name}}Message is the message expected for '{{namify .Name}}' channel
+{{if $.Description -}}
+// {{$.Description}}
+{{end -}}
+
+type {{namify .Name}}Message struct {
 
 {{- /* Display headers if they exists */}}
 {{- if .Headers}}
@@ -15,8 +18,62 @@ Headers {{template "any" .Headers}}
 Payload {{template "any" .Payload}}
 }
 
-{{- /* If there is nothing to display, then it must be a reference */ -}}
-{{- else -}}
-{{- template "any" . -}} 
-{{- end -}}
+func New{{namify .Name}}Message() {{namify .Name}}Message {
+    var msg {{namify .Name}}Message
+
+    {{if ne $.CorrelationIDLocation "" -}}
+    // Set correlation ID
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = uuid.New().String()
+    {{- end}}
+    
+    return msg
+}
+
+// new{{namify .Name}}MessageFromUniversalMessage will fill a new {{namify .Name}}Message with data from UniversalMessage
+func new{{namify .Name}}MessageFromUniversalMessage(um UniversalMessage) ({{namify .Name}}Message, error) {
+    var msg {{namify .Name}}Message
+   
+    // Unmarshal payload to expected message payload format
+    err := json.Unmarshal(um.Payload, &msg.Payload)
+    if err != nil {
+        return msg, err
+    }
+
+    {{if ne $.CorrelationIDLocation "" -}}
+    // Get correlation ID
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = um.CorrelationID
+    {{- end}}
+    
+    // TODO: run checks on msg type
+
+    return msg, nil
+}
+
+// toUniversalMessage will generate an UniversalMessage from {{namify .Name}}Message data
+func (msg {{namify .Name}}Message) toUniversalMessage() (UniversalMessage, error) {
+    // TODO: implement checks on message
+
+    // Marshal payload to JSON
+    payload, err := json.Marshal(msg.Payload)
+    if err != nil {
+        return UniversalMessage{}, err
+    }
+
+    {{if ne $.CorrelationIDLocation "" -}}
+    // Set correlation ID if it does not exist
+    var correlationID string
+    if msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} != "" {
+        correlationID = msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
+    } else {
+        correlationID = uuid.New().String()
+    }
+    {{- end}}
+
+    return UniversalMessage{
+        Payload: payload,
+        {{- if ne $.CorrelationIDLocation ""}}
+        CorrelationID: correlationID,
+        {{- end}}
+    }, nil
+}
 {{- end }}

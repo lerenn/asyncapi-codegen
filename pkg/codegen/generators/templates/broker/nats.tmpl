@@ -46,7 +46,10 @@ func (c *NATSController) Subscribe(channel string) (msgs chan UniversalMessage, 
             select {
             // Handle new message
             case msg := <-natsMsgs:
-                msgs <- natsMsgToMsgWrapper(msg)
+                msgs <- UniversalMessage{
+                    Payload: msg.Data,
+                    CorrelationID: msg.Header.Get(CorrelationIDField),
+                }
             // Handle closure request from function caller
             case _ = <-stop:
                 if err := sub.Unsubscribe(); err != nil {
@@ -63,10 +66,4 @@ func (c *NATSController) Subscribe(channel string) (msgs chan UniversalMessage, 
     } ()
 
     return msgs, stop, nil
-}
-
-func natsMsgToMsgWrapper(natsMsg *nats.Msg) UniversalMessage {
-    return UniversalMessage{
-        Payload: natsMsg.Data,
-    }
 }

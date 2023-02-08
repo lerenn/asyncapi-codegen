@@ -13,6 +13,12 @@ type Specification struct {
 
 func (s *Specification) Process() {
 	s.setMapsValuesName()
+
+	for name, ch := range s.Channels {
+		ch.Process(*s)
+		s.Channels[name] = ch
+	}
+	s.Components.Process(*s)
 }
 
 func (s *Specification) setMapsValuesName() {
@@ -20,8 +26,6 @@ func (s *Specification) setMapsValuesName() {
 		ch.Name = name
 		s.Channels[name] = ch
 	}
-
-	s.Components.setMapsValuesName()
 }
 
 func (s Specification) ReferenceMessage(ref string) Message {
