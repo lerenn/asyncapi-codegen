@@ -19,7 +19,7 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
 ## Supported functionalities
 
 * AsyncAPI versions:
-  * 2.5.0
+  * 2.6.0
 * Brokers:
   * NATS
   * Custom (implementation specified by the developer)

@@ -11,7 +11,7 @@ type Message struct {
 	Name string `json:"-"`
 
 	// CorrelationIDLocation will indicate where the correlation id is
-	// According to: https://www.asyncapi.com/docs/reference/specification/v2.5.0#correlationIDObject
+	// According to: https://www.asyncapi.com/docs/reference/specification/v2.6.0#correlationIDObject
 	CorrelationIDLocation string `json:"-"`
 }
 
