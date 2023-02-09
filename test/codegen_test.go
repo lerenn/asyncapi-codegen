@@ -1,4 +1,4 @@
-package codegen
+package test
 
 import (
 	"bufio"
@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen"
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
 	"github.com/stretchr/testify/suite"
 )
@@ -20,20 +21,25 @@ type CodegenSuite struct {
 }
 
 func (suite *CodegenSuite) TestParseGenerate() {
-	cases := []string{
-		"full",
+	cases := []struct {
+		SpecificationPath string
+		ExpectedCodePath  string
+	}{
+		{
+			SpecificationPath: "./official/spec/examples/simple.yml",
+			ExpectedCodePath:  "./official/expected/simple/simple.expected.go",
+		},
 	}
 
 	outputFile := tmpName()
 	// defer os.Remove(outputFile)
 
 	for i, c := range cases {
-		inputFile := "../../test/data/" + c + "/" + c
-		cg, err := FromFile(inputFile + ".yaml")
+		cg, err := codegen.FromFile(c.SpecificationPath)
 		suite.Require().NoError(err, i)
 
-		err = cg.Generate(Options{
-			PackageName: "asyncapi",
+		err = cg.Generate(codegen.Options{
+			PackageName: "test",
 			OutputPath:  outputFile,
 			Generate: generators.Options{
 				Application: true,
@@ -46,7 +52,7 @@ func (suite *CodegenSuite) TestParseGenerate() {
 
 		suite.Require().FileExists(outputFile)
 
-		suite.compareFiles(inputFile+".expected.go", outputFile, i)
+		suite.compareFiles(c.ExpectedCodePath, outputFile, i)
 	}
 }
 
