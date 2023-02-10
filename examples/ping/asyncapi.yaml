@@ -48,10 +48,3 @@ components:
       correlationId:
         description: Default Correlation ID
         location: $message.header#/correlationId
-  schemas:
-    Book:
-      type: object
-      description: Book Information
-      properties:
-        title:
-          type: string 

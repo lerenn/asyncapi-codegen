@@ -223,10 +223,10 @@ func (e *Error) Error() string {
 type UserSignedUpMessage struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
-		// Name of the user
+		// DisplayName is Name of the user
 		DisplayName string `json:"display_name"`
 
-		// Email of the user
+		// Email is Email of the user
 		Email string `json:"email"`
 	}
 }
