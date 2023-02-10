@@ -18,14 +18,14 @@ var (
 	// ErrTimedOut is given when any timeout happen
 	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
 
-	// ErrNilAppController is raised when a nil app controller is user
-	ErrNilAppController = fmt.Errorf("%w: nil app controller has been used", ErrAsyncAPI)
-
 	// ErrNilBrokerController is raised when a nil broker controller is user
 	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
 
-	// ErrNilClientController is raised when a nil client controller is user
-	ErrNilClientController = fmt.Errorf("%w: nil client controller has been used", ErrAsyncAPI)
+	// ErrNilAppSubscriber is raised when a nil app subscriber is user
+	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
+
+	// ErrNilClientSubscriber is raised when a nil client subscriber is user
+	ErrNilClientSubscriber = fmt.Errorf("%w: nil client subscriber has been used", ErrAsyncAPI)
 
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
 	// or more without unsubscribing

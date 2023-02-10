@@ -43,7 +43,7 @@ func (cc *ClientController) Close() {
 // SubscribeAll will subscribe to channels on which the client is expecting messages
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
 	if cs == nil {
-		return ErrNilClientController
+		return ErrNilClientSubscriber
 	}
 
 	if err := cc.SubscribePong(cs.Pong); err != nil {

@@ -30,7 +30,7 @@ func (ac *AppController) Close() {
 // SubscribeAll will subscribe to channels on which the app is expecting messages
 func (ac *AppController) SubscribeAll(as AppSubscriber) error {
     if as == nil {
-        return ErrNilAppController
+        return ErrNilAppSubscriber
     }
 
     {{range  $key, $value := .Specification.Channels -}}{{- if $value.Publish -}}

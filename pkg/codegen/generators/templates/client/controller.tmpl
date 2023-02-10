@@ -30,7 +30,7 @@ func (cc *ClientController) Close() {
 // SubscribeAll will subscribe to channels on which the client is expecting messages
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
     if cs == nil {
-        return ErrNilClientController
+        return ErrNilClientSubscriber
     }
 
     {{range  $key, $value := .Specification.Channels -}}{{- if $value.Subscribe -}}
