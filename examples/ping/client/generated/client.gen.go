@@ -4,6 +4,7 @@
 package generated
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
@@ -22,13 +23,15 @@ type ClientController struct {
 }
 
 // NewClientController links the client to the broker
-func NewClientController(bs BrokerController) *ClientController {
-	// TODO: Check that brokerController is not nil
+func NewClientController(bs BrokerController) (*ClientController, error) {
+	if bs == nil {
+		return nil, ErrNilBrokerController
+	}
 
 	return &ClientController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
-	}
+	}, nil
 }
 
 // Close will clean up any existing resources on the controller
@@ -39,7 +42,9 @@ func (cc *ClientController) Close() {
 
 // SubscribeAll will subscribe to channels on which the client is expecting messages
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
-	// TODO: Check that cs is not nil
+	if cs == nil {
+		return ErrNilClientSubscriber
+	}
 
 	if err := cc.SubscribePong(cs.Pong); err != nil {
 		return err
@@ -55,7 +60,11 @@ func (cc *ClientController) UnsubscribeAll() {
 
 // SubscribePong will subscribe to new messages from 'pong' channel
 func (cc *ClientController) SubscribePong(fn func(msg PongMessage)) error {
-	// TODO: check if there is already a subscription
+	// Check if there is already a subscription
+	_, exists := cc.stopSubscribers["pong"]
+	if exists {
+		return fmt.Errorf("%w: pong channel is already subscribed", ErrAlreadySubscribedChannel)
+	}
 
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("pong")

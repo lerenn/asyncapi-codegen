@@ -23,7 +23,10 @@ func main() {
 	}
 
 	// Create a new application controller
-	ctrl := generated.NewAppController(generated.NewNATSController(nc))
+	ctrl, err := generated.NewAppController(generated.NewNATSController(nc))
+	if err != nil {
+		panic(err)
+	}
 	defer ctrl.Close()
 
 	// Subscribe to HelloWorld messages

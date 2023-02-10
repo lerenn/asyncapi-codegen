@@ -18,13 +18,15 @@ type AppController struct {
 }
 
 // NewAppController links the application to the broker
-func NewAppController(bs BrokerController) *AppController {
-	// TODO: Check that brokerController is not nil
+func NewAppController(bs BrokerController) (*AppController, error) {
+	if bs == nil {
+		return nil, ErrNilBrokerController
+	}
 
 	return &AppController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
-	}
+	}, nil
 }
 
 // Close will clean up any existing resources on the controller
@@ -66,13 +68,15 @@ type ClientController struct {
 }
 
 // NewClientController links the client to the broker
-func NewClientController(bs BrokerController) *ClientController {
-	// TODO: Check that brokerController is not nil
+func NewClientController(bs BrokerController) (*ClientController, error) {
+	if bs == nil {
+		return nil, ErrNilBrokerController
+	}
 
 	return &ClientController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
-	}
+	}, nil
 }
 
 // Close will clean up any existing resources on the controller
@@ -83,7 +87,9 @@ func (cc *ClientController) Close() {
 
 // SubscribeAll will subscribe to channels on which the client is expecting messages
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
-	// TODO: Check that cs is not nil
+	if cs == nil {
+		return ErrNilClientSubscriber
+	}
 
 	if err := cc.SubscribeUserSignedup(cs.UserSignedup); err != nil {
 		return err
@@ -99,7 +105,11 @@ func (cc *ClientController) UnsubscribeAll() {
 
 // SubscribeUserSignedup will subscribe to new messages from 'user/signedup' channel
 func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage)) error {
-	// TODO: check if there is already a subscription
+	// Check if there is already a subscription
+	_, exists := cc.stopSubscribers["user/signedup"]
+	if exists {
+		return fmt.Errorf("%w: user/signedup channel is already subscribed", ErrAlreadySubscribedChannel)
+	}
 
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("user/signedup")
@@ -170,6 +180,19 @@ var (
 
 	// ErrTimedOut is given when any timeout happen
 	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
+
+	// ErrNilBrokerController is raised when a nil broker controller is user
+	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
+
+	// ErrNilAppSubscriber is raised when a nil app subscriber is user
+	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
+
+	// ErrNilClientSubscriber is raised when a nil client subscriber is user
+	ErrNilClientSubscriber = fmt.Errorf("%w: nil client subscriber has been used", ErrAsyncAPI)
+
+	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
+	// or more without unsubscribing
+	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
 )
 
 // UserSignedUpMessage is the message expected for 'UserSignedUp' channel

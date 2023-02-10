@@ -11,13 +11,15 @@ type ClientController struct {
 }
 
 // NewClientController links the client to the broker
-func NewClientController(bs BrokerController) *ClientController {
-	// TODO: Check that brokerController is not nil
+func NewClientController(bs BrokerController) (*ClientController, error) {
+	if bs == nil {
+		return nil, ErrNilBrokerController
+	}
 
 	return &ClientController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
-	}
+	}, nil
 }
 
 // Close will clean up any existing resources on the controller

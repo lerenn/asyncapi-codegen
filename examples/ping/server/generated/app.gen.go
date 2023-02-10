@@ -4,6 +4,7 @@
 package generated
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -21,13 +22,15 @@ type AppController struct {
 }
 
 // NewAppController links the application to the broker
-func NewAppController(bs BrokerController) *AppController {
-	// TODO: Check that brokerController is not nil
+func NewAppController(bs BrokerController) (*AppController, error) {
+	if bs == nil {
+		return nil, ErrNilBrokerController
+	}
 
 	return &AppController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
-	}
+	}, nil
 }
 
 // Close will clean up any existing resources on the controller
@@ -38,7 +41,9 @@ func (ac *AppController) Close() {
 
 // SubscribeAll will subscribe to channels on which the app is expecting messages
 func (ac *AppController) SubscribeAll(as AppSubscriber) error {
-	// TODO: Check that as is not nil
+	if as == nil {
+		return ErrNilAppSubscriber
+	}
 
 	if err := ac.SubscribePing(as.Ping); err != nil {
 		return err
@@ -54,7 +59,11 @@ func (ac *AppController) UnsubscribeAll() {
 
 // SubscribePing will subscribe to new messages from 'ping' channel
 func (ac *AppController) SubscribePing(fn func(msg PingMessage)) error {
-	// TODO: check if there is already a subscription
+	// Check if there is already a subscription
+	_, exists := ac.stopSubscribers["ping"]
+	if exists {
+		return fmt.Errorf("%w: ping channel is already subscribed", ErrAlreadySubscribedChannel)
+	}
 
 	// Subscribe to broker channel
 	msgs, stop, err := ac.brokerController.Subscribe("ping")
