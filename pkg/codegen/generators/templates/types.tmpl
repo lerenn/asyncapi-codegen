@@ -19,6 +19,15 @@ var (
     ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
 )
 
+type Error struct {
+    Channel string
+    Err     error
+}
+
+func (e *Error) Error() string {
+    return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
+}
+
 {{range $key, $value := .Channels -}}
 {{- if and $value.Subscribe $value.Subscribe.Message.Payload}}
 {{template "message" $value.Subscribe.Message}}

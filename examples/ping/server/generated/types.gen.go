@@ -32,6 +32,15 @@ var (
 	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
 )
 
+type Error struct {
+	Channel string
+	Err     error
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
+}
+
 // PingMessage is the message expected for 'Ping' channel
 type PingMessage struct {
 	// Headers will be used to fill the message headers

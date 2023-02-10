@@ -8,6 +8,7 @@ package generated
 type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
+	errChan          chan Error
 }
 
 // NewClientController links the client to the broker
@@ -19,18 +20,23 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 	return &ClientController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
+		errChan:          make(chan Error, 256),
 	}, nil
+}
+
+// Errors will give back the channel that contains errors and that you can listen to handle errors
+// Please take a look at Error struct form information on error
+func (cc ClientController) Errors() <-chan Error {
+	return cc.errChan
 }
 
 // Close will clean up any existing resources on the controller
 func (cc *ClientController) Close() {
-	// Nothing to do
+	close(cc.errChan)
 }
 
 // PublishHello will publish messages to 'hello' channel
 func (cc *ClientController) PublishHello(msg HelloMessage) error {
-	// TODO: check that 'cc' is not nil
-
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
@@ -43,6 +49,6 @@ func (cc *ClientController) PublishHello(msg HelloMessage) error {
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (cc *ClientController) Listen(irq chan interface{}) {
+func (cc *ClientController) Listen(irq <-chan interface{}) {
 	<-irq
 }
