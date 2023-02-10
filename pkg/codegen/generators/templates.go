@@ -11,24 +11,16 @@ import (
 const (
 	templatesDir = "templates"
 
-	importsTemplatePath = templatesDir + "/imports.tmpl"
-	typesTemplatePath   = templatesDir + "/types.tmpl"
-
-	appDir                    = templatesDir + "/app"
-	appControllerTemplatePath = appDir + "/controller.tmpl"
-	appSubscriberTemplatePath = appDir + "/subscriber.tmpl"
-
-	clientDir                    = templatesDir + "/client"
-	clientControllerTemplatePath = clientDir + "/controller.tmpl"
-	clientSubscriberTemplatePath = clientDir + "/subscriber.tmpl"
+	importsTemplatePath    = templatesDir + "/imports.tmpl"
+	typesTemplatePath      = templatesDir + "/types.tmpl"
+	anyTemplatePath        = templatesDir + "/any.tmpl"
+	messageTemplatePath    = templatesDir + "/message.tmpl"
+	subscriberTemplatePath = templatesDir + "/subscriber.tmpl"
+	controllerTemplatePath = templatesDir + "/controller.tmpl"
 
 	brokerDir                    = templatesDir + "/broker"
 	brokerControllerTemplatePath = brokerDir + "/controller.tmpl"
 	brokerNATSTemplatePath       = brokerDir + "/nats.tmpl"
-
-	elementsDir         = templatesDir + "/elements"
-	anyTemplatePath     = elementsDir + "/any.tmpl"
-	messageTemplatePath = elementsDir + "/message.tmpl"
 )
 
 var (

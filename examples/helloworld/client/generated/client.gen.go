@@ -4,14 +4,14 @@
 package generated
 
 // ClientController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the client
+// developer and and connect the broker with the Client
 type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
 	errChan          chan Error
 }
 
-// NewClientController links the client to the broker
+// NewClientController links the Client to the broker
 func NewClientController(bs BrokerController) (*ClientController, error) {
 	if bs == nil {
 		return nil, ErrNilBrokerController
@@ -26,17 +26,17 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 
 // Errors will give back the channel that contains errors and that you can listen to handle errors
 // Please take a look at Error struct form information on error
-func (cc ClientController) Errors() <-chan Error {
-	return cc.errChan
+func (c ClientController) Errors() <-chan Error {
+	return c.errChan
 }
 
 // Close will clean up any existing resources on the controller
-func (cc *ClientController) Close() {
-	close(cc.errChan)
+func (c *ClientController) Close() {
+	close(c.errChan)
 }
 
 // PublishHello will publish messages to 'hello' channel
-func (cc *ClientController) PublishHello(msg HelloMessage) error {
+func (c *ClientController) PublishHello(msg HelloMessage) error {
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
@@ -44,11 +44,11 @@ func (cc *ClientController) PublishHello(msg HelloMessage) error {
 	}
 
 	// Publish on event broker
-	return cc.brokerController.Publish("hello", um)
+	return c.brokerController.Publish("hello", um)
 }
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (cc *ClientController) Listen(irq <-chan interface{}) {
+func (c *ClientController) Listen(irq <-chan interface{}) {
 	<-irq
 }

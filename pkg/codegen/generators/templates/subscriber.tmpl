@@ -1,0 +1,9 @@
+{{if .MethodCount -}}
+// {{ .Prefix }}Subscriber represents all handlers that are expecting messages for {{ .Prefix }}
+type {{ .Prefix }}Subscriber interface {
+{{- range  $key, $value := .Channels}}
+    // {{namify $key}}
+    {{namify $key}}(msg {{channelToMessageTypeName $value}})
+{{end}}
+}
+{{- end}}
