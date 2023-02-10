@@ -3,8 +3,8 @@ version: "3.5"
 services:
   nats:
     image: nats:alpine
-    ports:
-        - 4222:4222
+    # ports:
+    #     - 4222:4222
     networks:
       - nats-network
   app:

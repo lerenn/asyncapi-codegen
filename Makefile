@@ -2,9 +2,16 @@
 lint: ## Lint the code
 	@LOG_LEVEL=error go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1 run
 
+.PHONY: clean
+clean: test/clean ## Clean up the project
+
+.PHONY: test/clean
+test/clean:
+	@$(MAKE) -C examples clean
+
 .PHONY: test/integration
 test/integration: ## Perform integration tests
-	# TODO
+	@$(MAKE) -C examples run
 
 .PHONY: test/unit
 test/unit: ## Perform unit tests
