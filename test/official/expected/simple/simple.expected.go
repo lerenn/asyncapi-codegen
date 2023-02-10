@@ -10,14 +10,14 @@ import (
 )
 
 // AppController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the app
+// developer and and connect the broker with the App
 type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
 	errChan          chan Error
 }
 
-// NewAppController links the application to the broker
+// NewAppController links the App to the broker
 func NewAppController(bs BrokerController) (*AppController, error) {
 	if bs == nil {
 		return nil, ErrNilBrokerController
@@ -32,17 +32,17 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 
 // Errors will give back the channel that contains errors and that you can listen to handle errors
 // Please take a look at Error struct form information on error
-func (ac AppController) Errors() <-chan Error {
-	return ac.errChan
+func (c AppController) Errors() <-chan Error {
+	return c.errChan
 }
 
 // Close will clean up any existing resources on the controller
-func (ac *AppController) Close() {
-	close(ac.errChan)
+func (c *AppController) Close() {
+	close(c.errChan)
 }
 
 // PublishUserSignedup will publish messages to 'user/signedup' channel
-func (ac *AppController) PublishUserSignedup(msg UserSignedUpMessage) error {
+func (c *AppController) PublishUserSignedup(msg UserSignedUpMessage) error {
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
@@ -50,30 +50,30 @@ func (ac *AppController) PublishUserSignedup(msg UserSignedUpMessage) error {
 	}
 
 	// Publish on event broker
-	return ac.brokerController.Publish("user/signedup", um)
+	return c.brokerController.Publish("user/signedup", um)
 }
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (ac *AppController) Listen(irq <-chan interface{}) {
+func (c *AppController) Listen(irq <-chan interface{}) {
 	<-irq
 }
 
-// ClientSubscriber represents all application handlers that are expecting messages from application
+// ClientSubscriber represents all handlers that are expecting messages for Client
 type ClientSubscriber interface {
 	// UserSignedup
 	UserSignedup(msg UserSignedUpMessage)
 }
 
 // ClientController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the client
+// developer and and connect the broker with the Client
 type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
 	errChan          chan Error
 }
 
-// NewClientController links the client to the broker
+// NewClientController links the Client to the broker
 func NewClientController(bs BrokerController) (*ClientController, error) {
 	if bs == nil {
 		return nil, ErrNilBrokerController
@@ -88,23 +88,23 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 
 // Errors will give back the channel that contains errors and that you can listen to handle errors
 // Please take a look at Error struct form information on error
-func (cc ClientController) Errors() <-chan Error {
-	return cc.errChan
+func (c ClientController) Errors() <-chan Error {
+	return c.errChan
 }
 
 // Close will clean up any existing resources on the controller
-func (cc *ClientController) Close() {
-	cc.UnsubscribeAll()
-	close(cc.errChan)
+func (c *ClientController) Close() {
+	c.UnsubscribeAll()
+	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the client is expecting messages
-func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
-	if cs == nil {
+// SubscribeAll will subscribe to channels on which the app is expecting messages
+func (c *ClientController) SubscribeAll(as ClientSubscriber) error {
+	if as == nil {
 		return ErrNilClientSubscriber
 	}
 
-	if err := cc.SubscribeUserSignedup(cs.UserSignedup); err != nil {
+	if err := c.SubscribeUserSignedup(as.UserSignedup); err != nil {
 		return err
 	}
 
@@ -112,30 +112,30 @@ func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
 }
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
-func (cc *ClientController) UnsubscribeAll() {
-	cc.UnsubscribeUserSignedup()
+func (c *ClientController) UnsubscribeAll() {
+	c.UnsubscribeUserSignedup()
 }
 
 // SubscribeUserSignedup will subscribe to new messages from 'user/signedup' channel
-func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage)) error {
+func (c *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage)) error {
 	// Check if there is already a subscription
-	_, exists := cc.stopSubscribers["user/signedup"]
+	_, exists := c.stopSubscribers["user/signedup"]
 	if exists {
 		return fmt.Errorf("%w: user/signedup channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := cc.brokerController.Subscribe("user/signedup")
+	msgs, stop, err := c.brokerController.Subscribe("user/signedup")
 	if err != nil {
 		return err
 	}
 
-	// Asynchronously listen to new messages and pass them to client subscriber
+	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newUserSignedUpMessageFromUniversalMessage(um)
 			if err != nil {
-				cc.errChan <- Error{
+				c.errChan <- Error{
 					Channel: "user/signedup",
 					Err:     err,
 				}
@@ -146,25 +146,25 @@ func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessag
 	}()
 
 	// Add the stop channel to the inside map
-	cc.stopSubscribers["user/signedup"] = stop
+	c.stopSubscribers["user/signedup"] = stop
 
 	return nil
 }
 
 // UnsubscribeUserSignedup will unsubscribe messages from 'user/signedup' channel
-func (cc *ClientController) UnsubscribeUserSignedup() {
-	stopChan, exists := cc.stopSubscribers["user/signedup"]
+func (c *ClientController) UnsubscribeUserSignedup() {
+	stopChan, exists := c.stopSubscribers["user/signedup"]
 	if !exists {
 		return
 	}
 
 	stopChan <- true
-	delete(cc.stopSubscribers, "user/signedup")
+	delete(c.stopSubscribers, "user/signedup")
 }
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (cc *ClientController) Listen(irq <-chan interface{}) {
+func (c *ClientController) Listen(irq <-chan interface{}) {
 	<-irq
 }
 

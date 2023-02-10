@@ -96,15 +96,21 @@ func (cg CodeGen) generateTypes() (string, error) {
 func (cg CodeGen) generateApp(opts Options) (string, error) {
 	var content string
 
-	// Generate application input
-	subscriber, err := generators.NewAppSubscriberGenerator(cg.Specification).Generate()
+	// Generate application subscriber
+	subscriber, err := generators.NewSubscriberGenerator(
+		generators.SideIsApplication,
+		cg.Specification,
+	).Generate()
 	if err != nil {
 		return "", err
 	}
 	content += subscriber
 
-	// Generate application output
-	controller, err := generators.NewAppControllerGenerator(cg.Specification).Generate()
+	// Generate application controller
+	controller, err := generators.NewControllerGenerator(
+		generators.SideIsApplication,
+		cg.Specification,
+	).Generate()
 	if err != nil {
 		return "", err
 	}
@@ -116,15 +122,20 @@ func (cg CodeGen) generateApp(opts Options) (string, error) {
 func (cg CodeGen) generateClient(opts Options) (string, error) {
 	var content string
 
-	// Generate client input
-	subscriber, err := generators.NewClientSubscriberGenerator(cg.Specification).Generate()
+	// Generate client subscriber
+	subscriber, err := generators.NewSubscriberGenerator(
+		generators.SideIsClient,
+		cg.Specification,
+	).Generate()
 	if err != nil {
 		return "", err
 	}
 	content += subscriber
-
-	// Generate client output
-	controller, err := generators.NewClientControllerGenerator(cg.Specification).Generate()
+	// Generate client controller
+	controller, err := generators.NewControllerGenerator(
+		generators.SideIsClient,
+		cg.Specification,
+	).Generate()
 	if err != nil {
 		return "", err
 	}

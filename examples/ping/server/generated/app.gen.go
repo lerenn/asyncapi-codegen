@@ -7,21 +7,21 @@ import (
 	"fmt"
 )
 
-// AppSubscriber represents all application handlers that are expecting messages from clients
+// AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// Ping
 	Ping(msg PingMessage)
 }
 
 // AppController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the app
+// developer and and connect the broker with the App
 type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
 	errChan          chan Error
 }
 
-// NewAppController links the application to the broker
+// NewAppController links the App to the broker
 func NewAppController(bs BrokerController) (*AppController, error) {
 	if bs == nil {
 		return nil, ErrNilBrokerController
@@ -36,23 +36,23 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 
 // Errors will give back the channel that contains errors and that you can listen to handle errors
 // Please take a look at Error struct form information on error
-func (ac AppController) Errors() <-chan Error {
-	return ac.errChan
+func (c AppController) Errors() <-chan Error {
+	return c.errChan
 }
 
 // Close will clean up any existing resources on the controller
-func (ac *AppController) Close() {
-	ac.UnsubscribeAll()
-	close(ac.errChan)
+func (c *AppController) Close() {
+	c.UnsubscribeAll()
+	close(c.errChan)
 }
 
 // SubscribeAll will subscribe to channels on which the app is expecting messages
-func (ac *AppController) SubscribeAll(as AppSubscriber) error {
+func (c *AppController) SubscribeAll(as AppSubscriber) error {
 	if as == nil {
 		return ErrNilAppSubscriber
 	}
 
-	if err := ac.SubscribePing(as.Ping); err != nil {
+	if err := c.SubscribePing(as.Ping); err != nil {
 		return err
 	}
 
@@ -60,20 +60,20 @@ func (ac *AppController) SubscribeAll(as AppSubscriber) error {
 }
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
-func (ac *AppController) UnsubscribeAll() {
-	ac.UnsubscribePing()
+func (c *AppController) UnsubscribeAll() {
+	c.UnsubscribePing()
 }
 
 // SubscribePing will subscribe to new messages from 'ping' channel
-func (ac *AppController) SubscribePing(fn func(msg PingMessage)) error {
+func (c *AppController) SubscribePing(fn func(msg PingMessage)) error {
 	// Check if there is already a subscription
-	_, exists := ac.stopSubscribers["ping"]
+	_, exists := c.stopSubscribers["ping"]
 	if exists {
 		return fmt.Errorf("%w: ping channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := ac.brokerController.Subscribe("ping")
+	msgs, stop, err := c.brokerController.Subscribe("ping")
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (ac *AppController) SubscribePing(fn func(msg PingMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newPingMessageFromUniversalMessage(um)
 			if err != nil {
-				ac.errChan <- Error{
+				c.errChan <- Error{
 					Channel: "ping",
 					Err:     err,
 				}
@@ -94,24 +94,24 @@ func (ac *AppController) SubscribePing(fn func(msg PingMessage)) error {
 	}()
 
 	// Add the stop channel to the inside map
-	ac.stopSubscribers["ping"] = stop
+	c.stopSubscribers["ping"] = stop
 
 	return nil
 }
 
 // UnsubscribePing will unsubscribe messages from 'ping' channel
-func (ac *AppController) UnsubscribePing() {
-	stopChan, exists := ac.stopSubscribers["ping"]
+func (c *AppController) UnsubscribePing() {
+	stopChan, exists := c.stopSubscribers["ping"]
 	if !exists {
 		return
 	}
 
 	stopChan <- true
-	delete(ac.stopSubscribers, "ping")
+	delete(c.stopSubscribers, "ping")
 }
 
 // PublishPong will publish messages to 'pong' channel
-func (ac *AppController) PublishPong(msg PongMessage) error {
+func (c *AppController) PublishPong(msg PongMessage) error {
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
@@ -119,11 +119,11 @@ func (ac *AppController) PublishPong(msg PongMessage) error {
 	}
 
 	// Publish on event broker
-	return ac.brokerController.Publish("pong", um)
+	return c.brokerController.Publish("pong", um)
 }
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (ac *AppController) Listen(irq <-chan interface{}) {
+func (c *AppController) Listen(irq <-chan interface{}) {
 	<-irq
 }

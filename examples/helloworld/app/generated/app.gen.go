@@ -7,21 +7,21 @@ import (
 	"fmt"
 )
 
-// AppSubscriber represents all application handlers that are expecting messages from clients
+// AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// Hello
 	Hello(msg HelloMessage)
 }
 
 // AppController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the app
+// developer and and connect the broker with the App
 type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
 	errChan          chan Error
 }
 
-// NewAppController links the application to the broker
+// NewAppController links the App to the broker
 func NewAppController(bs BrokerController) (*AppController, error) {
 	if bs == nil {
 		return nil, ErrNilBrokerController
@@ -36,23 +36,23 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 
 // Errors will give back the channel that contains errors and that you can listen to handle errors
 // Please take a look at Error struct form information on error
-func (ac AppController) Errors() <-chan Error {
-	return ac.errChan
+func (c AppController) Errors() <-chan Error {
+	return c.errChan
 }
 
 // Close will clean up any existing resources on the controller
-func (ac *AppController) Close() {
-	ac.UnsubscribeAll()
-	close(ac.errChan)
+func (c *AppController) Close() {
+	c.UnsubscribeAll()
+	close(c.errChan)
 }
 
 // SubscribeAll will subscribe to channels on which the app is expecting messages
-func (ac *AppController) SubscribeAll(as AppSubscriber) error {
+func (c *AppController) SubscribeAll(as AppSubscriber) error {
 	if as == nil {
 		return ErrNilAppSubscriber
 	}
 
-	if err := ac.SubscribeHello(as.Hello); err != nil {
+	if err := c.SubscribeHello(as.Hello); err != nil {
 		return err
 	}
 
@@ -60,20 +60,20 @@ func (ac *AppController) SubscribeAll(as AppSubscriber) error {
 }
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
-func (ac *AppController) UnsubscribeAll() {
-	ac.UnsubscribeHello()
+func (c *AppController) UnsubscribeAll() {
+	c.UnsubscribeHello()
 }
 
 // SubscribeHello will subscribe to new messages from 'hello' channel
-func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
+func (c *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 	// Check if there is already a subscription
-	_, exists := ac.stopSubscribers["hello"]
+	_, exists := c.stopSubscribers["hello"]
 	if exists {
 		return fmt.Errorf("%w: hello channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := ac.brokerController.Subscribe("hello")
+	msgs, stop, err := c.brokerController.Subscribe("hello")
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newHelloMessageFromUniversalMessage(um)
 			if err != nil {
-				ac.errChan <- Error{
+				c.errChan <- Error{
 					Channel: "hello",
 					Err:     err,
 				}
@@ -94,24 +94,24 @@ func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 	}()
 
 	// Add the stop channel to the inside map
-	ac.stopSubscribers["hello"] = stop
+	c.stopSubscribers["hello"] = stop
 
 	return nil
 }
 
 // UnsubscribeHello will unsubscribe messages from 'hello' channel
-func (ac *AppController) UnsubscribeHello() {
-	stopChan, exists := ac.stopSubscribers["hello"]
+func (c *AppController) UnsubscribeHello() {
+	stopChan, exists := c.stopSubscribers["hello"]
 	if !exists {
 		return
 	}
 
 	stopChan <- true
-	delete(ac.stopSubscribers, "hello")
+	delete(c.stopSubscribers, "hello")
 }
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (ac *AppController) Listen(irq <-chan interface{}) {
+func (c *AppController) Listen(irq <-chan interface{}) {
 	<-irq
 }
