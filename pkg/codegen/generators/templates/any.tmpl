@@ -5,7 +5,7 @@
 {{- /* Type Object */ -}}
 {{- if eq .Type "object" -}}struct {
     {{- range $key, $value := .Properties}}
-    // {{if $value.Description}}{{$value.Description}}{{else}}{{namify $key}}{{end}}
+    // {{namify $key}}{{if $value.Description}} is {{$value.Description}}{{end}}
     {{namify $key}} {{template "any" $value}} `json:"{{snakeCase $key}}"`
     {{end -}}
 }
@@ -43,6 +43,6 @@ float64
 
 {{- /* If no know type but reference a component */ -}}
 {{- if .Reference -}}
-{{ referenceToTypeName .Reference }}
+{{ referenceToTypeName .Reference }}Schema
 {{- end -}}
 {{- end -}}

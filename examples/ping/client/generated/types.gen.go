@@ -45,7 +45,7 @@ func (e *Error) Error() string {
 type PingMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
-		// Correlation ID set by client
+		// CorrelationID is Correlation ID set by client
 		CorrelationID string `json:"correlation_id"`
 	}
 
@@ -108,7 +108,7 @@ func (msg PingMessage) toUniversalMessage() (UniversalMessage, error) {
 type PongMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
-		// Correlation ID set by client on corresponding request
+		// CorrelationID is Correlation ID set by client on corresponding request
 		CorrelationID string `json:"correlation_id"`
 	}
 
@@ -165,11 +165,4 @@ func (msg PongMessage) toUniversalMessage() (UniversalMessage, error) {
 		Payload:       payload,
 		CorrelationID: correlationID,
 	}, nil
-}
-
-// Book is a component of the AsyncAPI specification required in messages
-// Book Information
-type Book struct {
-	// Title
-	Title string `json:"title"`
 }
