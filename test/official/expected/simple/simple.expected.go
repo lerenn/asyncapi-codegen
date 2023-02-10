@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 )
 
 // AppController is the structure that provides publishing capabilities to the
@@ -15,6 +14,7 @@ import (
 type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
+	errChan          chan Error
 }
 
 // NewAppController links the application to the broker
@@ -26,18 +26,23 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 	return &AppController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
+		errChan:          make(chan Error, 256),
 	}, nil
+}
+
+// Errors will give back the channel that contains errors and that you can listen to handle errors
+// Please take a look at Error struct form information on error
+func (ac AppController) Errors() <-chan Error {
+	return ac.errChan
 }
 
 // Close will clean up any existing resources on the controller
 func (ac *AppController) Close() {
-	// Nothing to do
+	close(ac.errChan)
 }
 
 // PublishUserSignedup will publish messages to 'user/signedup' channel
 func (ac *AppController) PublishUserSignedup(msg UserSignedUpMessage) error {
-	// TODO: check that 'ac' is not nil
-
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
@@ -50,7 +55,7 @@ func (ac *AppController) PublishUserSignedup(msg UserSignedUpMessage) error {
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (ac *AppController) Listen(irq chan interface{}) {
+func (ac *AppController) Listen(irq <-chan interface{}) {
 	<-irq
 }
 
@@ -65,6 +70,7 @@ type ClientSubscriber interface {
 type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
+	errChan          chan Error
 }
 
 // NewClientController links the client to the broker
@@ -76,13 +82,20 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 	return &ClientController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
+		errChan:          make(chan Error, 256),
 	}, nil
+}
+
+// Errors will give back the channel that contains errors and that you can listen to handle errors
+// Please take a look at Error struct form information on error
+func (cc ClientController) Errors() <-chan Error {
+	return cc.errChan
 }
 
 // Close will clean up any existing resources on the controller
 func (cc *ClientController) Close() {
 	cc.UnsubscribeAll()
-
+	close(cc.errChan)
 }
 
 // SubscribeAll will subscribe to channels on which the client is expecting messages
@@ -122,11 +135,13 @@ func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessag
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newUserSignedUpMessageFromUniversalMessage(um)
 			if err != nil {
-				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
-				continue
+				cc.errChan <- Error{
+					Channel: "user/signedup",
+					Err:     err,
+				}
+			} else {
+				fn(msg)
 			}
-
-			fn(msg)
 		}
 	}()
 
@@ -149,7 +164,7 @@ func (cc *ClientController) UnsubscribeUserSignedup() {
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (cc *ClientController) Listen(irq chan interface{}) {
+func (cc *ClientController) Listen(irq <-chan interface{}) {
 	<-irq
 }
 
@@ -194,6 +209,15 @@ var (
 	// or more without unsubscribing
 	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
 )
+
+type Error struct {
+	Channel string
+	Err     error
+}
+
+func (e *Error) Error() string {
+	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
+}
 
 // UserSignedUpMessage is the message expected for 'UserSignedUp' channel
 type UserSignedUpMessage struct {

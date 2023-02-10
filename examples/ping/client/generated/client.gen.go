@@ -5,7 +5,6 @@ package generated
 
 import (
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -20,6 +19,7 @@ type ClientSubscriber interface {
 type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
+	errChan          chan Error
 }
 
 // NewClientController links the client to the broker
@@ -31,13 +31,20 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 	return &ClientController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
+		errChan:          make(chan Error, 256),
 	}, nil
+}
+
+// Errors will give back the channel that contains errors and that you can listen to handle errors
+// Please take a look at Error struct form information on error
+func (cc ClientController) Errors() <-chan Error {
+	return cc.errChan
 }
 
 // Close will clean up any existing resources on the controller
 func (cc *ClientController) Close() {
 	cc.UnsubscribeAll()
-
+	close(cc.errChan)
 }
 
 // SubscribeAll will subscribe to channels on which the client is expecting messages
@@ -77,11 +84,13 @@ func (cc *ClientController) SubscribePong(fn func(msg PongMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
-				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
-				continue
+				cc.errChan <- Error{
+					Channel: "pong",
+					Err:     err,
+				}
+			} else {
+				fn(msg)
 			}
-
-			fn(msg)
 		}
 	}()
 
@@ -104,8 +113,6 @@ func (cc *ClientController) UnsubscribePong() {
 
 // PublishPing will publish messages to 'ping' channel
 func (cc *ClientController) PublishPing(msg PingMessage) error {
-	// TODO: check that 'cc' is not nil
-
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
@@ -118,7 +125,7 @@ func (cc *ClientController) PublishPing(msg PingMessage) error {
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (cc *ClientController) Listen(irq chan interface{}) {
+func (cc *ClientController) Listen(irq <-chan interface{}) {
 	<-irq
 }
 
@@ -147,7 +154,10 @@ func (cc *ClientController) WaitForPong(correlationID string, pub func() error, 
 		case um := <-msgs:
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
-				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
+				cc.errChan <- Error{
+					Channel: "pong",
+					Err:     err,
+				}
 				continue
 			}
 

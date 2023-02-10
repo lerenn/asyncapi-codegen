@@ -5,7 +5,6 @@ package generated
 
 import (
 	"fmt"
-	"log"
 )
 
 // AppSubscriber represents all application handlers that are expecting messages from clients
@@ -19,6 +18,7 @@ type AppSubscriber interface {
 type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
+	errChan          chan Error
 }
 
 // NewAppController links the application to the broker
@@ -30,13 +30,20 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 	return &AppController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
+		errChan:          make(chan Error, 256),
 	}, nil
+}
+
+// Errors will give back the channel that contains errors and that you can listen to handle errors
+// Please take a look at Error struct form information on error
+func (ac AppController) Errors() <-chan Error {
+	return ac.errChan
 }
 
 // Close will clean up any existing resources on the controller
 func (ac *AppController) Close() {
 	ac.UnsubscribeAll()
-
+	close(ac.errChan)
 }
 
 // SubscribeAll will subscribe to channels on which the app is expecting messages
@@ -76,11 +83,13 @@ func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newHelloMessageFromUniversalMessage(um)
 			if err != nil {
-				log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
-				continue
+				ac.errChan <- Error{
+					Channel: "hello",
+					Err:     err,
+				}
+			} else {
+				fn(msg)
 			}
-
-			fn(msg)
 		}
 	}()
 
@@ -103,6 +112,6 @@ func (ac *AppController) UnsubscribeHello() {
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (ac *AppController) Listen(irq chan interface{}) {
+func (ac *AppController) Listen(irq <-chan interface{}) {
 	<-irq
 }

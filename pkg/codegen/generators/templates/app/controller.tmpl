@@ -2,7 +2,8 @@
 // developer and and connect the broker with the app
 type AppController struct {
     brokerController BrokerController
-    stopSubscribers map[string]chan interface{}
+    stopSubscribers  map[string]chan interface{}
+    errChan          chan Error
 }
 
 // NewAppController links the application to the broker
@@ -13,17 +14,23 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 
     return &AppController{
         brokerController: bs,
-        stopSubscribers: make(map[string]chan interface{}),
+        stopSubscribers:  make(map[string]chan interface{}),
+        errChan:          make(chan Error, 256),
     }, nil
+}
+
+// Errors will give back the channel that contains errors and that you can listen to handle errors
+// Please take a look at Error struct form information on error
+func (ac AppController) Errors() <-chan Error {
+    return ac.errChan
 }
 
 // Close will clean up any existing resources on the controller
 func (ac *AppController) Close() {
 {{if .PublishCount -}}
     ac.UnsubscribeAll()
-{{else -}}
-    // Nothing to do
-{{- end}}
+{{end -}}
+    close(ac.errChan)
 }
 
 {{if .PublishCount -}}
@@ -71,11 +78,13 @@ func (ac *AppController) Subscribe{{namify $key}}(fn func (msg {{channelToMessag
         for um, open := <-msgs; open; um, open = <-msgs{
             msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
             if err != nil {
-                log.Printf("an error happened when receiving an event: %s (msg: %+v)\n", err, msg) // TODO: add proper error handling
-                continue
+                ac.errChan <- Error{
+                    Channel: "{{$key}}",
+                    Err: err,
+                }
+            } else {
+                fn(msg)
             }
-
-            fn(msg)
         }
     } ()
 
@@ -102,8 +111,6 @@ func (ac *AppController) Unsubscribe{{namify $key}}() {
 {{if $value.Subscribe}}
 // Publish{{namify $key}} will publish messages to '{{$key}}' channel
 func (ac *AppController) Publish{{namify $key}}(msg {{channelToMessageTypeName $value}}) error {
-    // TODO: check that 'ac' is not nil
-
     // Convert to UniversalMessage
     um, err := msg.toUniversalMessage()
     if err != nil  {
@@ -118,6 +125,6 @@ func (ac *AppController) Publish{{namify $key}}(msg {{channelToMessageTypeName $
 
 // Listen will let the controller handle subscriptions and will be interrupted
 // only when an struct is sent on the interrupt channel
-func (ac *AppController) Listen(irq chan interface{}){
+func (ac *AppController) Listen(irq <-chan interface{}){
 	<-irq
 }

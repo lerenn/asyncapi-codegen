@@ -94,6 +94,15 @@ type AppController struct
 // BrokerController that you pass in argument to subscription and publication method.
 func NewAppController(bs BrokerController) *AppController
 
+// Errors will give back the channel that contains errors and that you can listen to handle errors
+// Please take a look at Error struct form information on error
+func (ac AppController) Errors() <-chan Error
+
+// Close function will clean up all resources and subscriptions left in the
+// application controller. This should be call right after NewAppController
+// with a `defer`
+func (ac *AppController) Close()
+
 // SubscribeAll will subscribe to all channel that the application should listen to.
 //
 // In order to use it, you'll have to implement the AppSubscriber interface and 
@@ -107,11 +116,6 @@ func (ac *AppController) SubscribeAll(as AppSubscriber) error
 // UnsubscribeAll will unsubscribe all channel that have subscribed to through
 // SubscribeAll or SubscribeXXX where XXX correspond to the channel name.
 func (ac *AppController) UnsubscribeAll()
-
-// Close function will clean up all resources and subscriptions left in the
-// application controller. This should be call right after NewAppController
-// with a `defer`
-func (ac *AppController) Close()
 
 // SubscribeHello will subscribe to new messages on the "hello" channel.
 // It will expect messages as specified in the AsyncAPI specification.
@@ -168,6 +172,15 @@ type ClientController struct
 // NewClientController will create a new Client Controller and will connect the
 // BrokerController that you pass in argument to subscription and publication method.
 func NewClientController(bs BrokerController) *ClientController
+
+// Errors will give back the channel that contains errors and that you can listen to handle errors
+// Please take a look at Error struct form information on error
+func (cc ClientController) Errors() <-chan Error
+
+// Close function will clean up all resources and subscriptions left in the
+// application controller. This should be call right after NewAppController
+// with a `defer`
+func (cc *ClientController) Close()
 
 // PublishHello will publish a hello world message on the "hello" channel as
 // specified in the AsyncAPI specification.
