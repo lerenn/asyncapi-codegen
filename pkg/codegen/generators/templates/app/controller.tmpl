@@ -29,7 +29,9 @@ func (ac *AppController) Close() {
 {{if .PublishCount -}}
 // SubscribeAll will subscribe to channels on which the app is expecting messages
 func (ac *AppController) SubscribeAll(as AppSubscriber) error {
-    // TODO: Check that as is not nil
+    if as == nil {
+        return ErrNilAppController
+    }
 
     {{range  $key, $value := .Specification.Channels -}}{{- if $value.Publish -}}
     if err := ac.Subscribe{{namify $key}}(as.{{namify $key}}); err != nil {

@@ -87,7 +87,9 @@ func (cc *ClientController) Close() {
 
 // SubscribeAll will subscribe to channels on which the client is expecting messages
 func (cc *ClientController) SubscribeAll(cs ClientSubscriber) error {
-	// TODO: Check that cs is not nil
+	if cs == nil {
+		return ErrNilClientController
+	}
 
 	if err := cc.SubscribeUserSignedup(cs.UserSignedup); err != nil {
 		return err
@@ -175,8 +177,14 @@ var (
 	// ErrTimedOut is given when any timeout happen
 	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
 
+	// ErrNilAppController is raised when a nil app controller is user
+	ErrNilAppController = fmt.Errorf("%w: nil app controller has been used", ErrAsyncAPI)
+
 	// ErrNilBrokerController is raised when a nil broker controller is user
 	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
+
+	// ErrNilClientController is raised when a nil client controller is user
+	ErrNilClientController = fmt.Errorf("%w: nil client controller has been used", ErrAsyncAPI)
 )
 
 // UserSignedUpMessage is the message expected for 'UserSignedUp' channel

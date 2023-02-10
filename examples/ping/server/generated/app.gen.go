@@ -40,7 +40,9 @@ func (ac *AppController) Close() {
 
 // SubscribeAll will subscribe to channels on which the app is expecting messages
 func (ac *AppController) SubscribeAll(as AppSubscriber) error {
-	// TODO: Check that as is not nil
+	if as == nil {
+		return ErrNilAppController
+	}
 
 	if err := ac.SubscribePing(as.Ping); err != nil {
 		return err
