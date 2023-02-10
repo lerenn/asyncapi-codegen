@@ -45,7 +45,11 @@ func main() {
 	}
 
 	// Create a new server controller
-	ctrl := generated.NewAppController(generated.NewNATSController(nc))
+	ctrl, err := generated.NewAppController(generated.NewNATSController(nc))
+	if err != nil {
+		panic(err)
+	}
+	defer ctrl.Close()
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
 	log.Println("Subscribe to all...")

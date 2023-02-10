@@ -139,7 +139,7 @@ code with NATS (you can also find it [here](./examples/helloworld/app/main.go)):
 nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
-ctrl := generated.NewAppController(generated.NewNATSController(nc))
+ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
 defer ctrl.Close()
 
 // Subscribe to HelloWorld messages
@@ -182,7 +182,7 @@ code with NATS (you can also find it [here](./examples/helloworld/app/main.go)):
 nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
-ctrl := generated.NewClientController(generated.NewNATSController(nc))
+ctrl, _ := generated.NewClientController(generated.NewNATSController(nc))
 defer ctrl.Close()
 
 // Send HelloWorld
@@ -260,19 +260,19 @@ func (s ServerSubscriber) Ping(req generated.PingMessage) {
 	resp.Headers.CorrelationID = req.Headers.CorrelationID
 
 	// Publish the pong message
-	err := s.Controller.PublishPong(resp)
-	if err != nil { /* ...*/ }
+	s.Controller.PublishPong(resp)
 }
 
 func main() {
 	/* ... */
 
 	// Create a new server controller
-	ctrl := generated.NewAppController(generated.NewNATSController(nc))
+	ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+	defer ctrl.Close()
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
 	sub := ServerSubscriber{Controller: ctrl}
-	if err := ctrl.SubscribeAll(sub); err != nil { /* ... */	}
+	ctrl.SubscribeAll(sub)
 
 	// Listen to new messages
 	irq := make(chan interface{})
@@ -284,7 +284,8 @@ func main() {
 
 ```golang
 // Create a new client controller
-ctrl := generated.NewClientController(/* Add corresponding broker controller */)
+ctrl, _ := generated.NewClientController(/* Add corresponding broker controller */)
+defer ctrl.Close()
 
 // Make a new ping message
 req := generated.NewPingMessage()
@@ -302,10 +303,7 @@ publicationFunc := func() error {
 // This function is available only if the 'correlationId' field has been filled
 // for any channel in the AsyncAPI specification. You will then be able to use it
 // with the form WaitForXXX where XXX is the channel name.
-resp, err := ctrl.WaitForPong(req.Headers.CorrelationID, publicationFunc, time.Second)
-if err != nil {
-  panic(err)
-}
+resp, _ := ctrl.WaitForPong(req.Headers.CorrelationID, publicationFunc, time.Second)
 ```
 
 ## CLI options

@@ -23,7 +23,10 @@ func main() {
 	}
 
 	// Create a new client controller
-	ctrl := generated.NewClientController(generated.NewNATSController(nc))
+	ctrl, err := generated.NewClientController(generated.NewNATSController(nc))
+	if err != nil {
+		panic(err)
+	}
 	defer ctrl.Close()
 
 	// Send HelloWorld

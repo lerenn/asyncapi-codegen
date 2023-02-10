@@ -18,13 +18,15 @@ type AppController struct {
 }
 
 // NewAppController links the application to the broker
-func NewAppController(bs BrokerController) *AppController {
-	// TODO: Check that brokerController is not nil
+func NewAppController(bs BrokerController) (*AppController, error) {
+	if bs == nil {
+		return nil, ErrNilBrokerController
+	}
 
 	return &AppController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
-	}
+	}, nil
 }
 
 // Close will clean up any existing resources on the controller
@@ -66,13 +68,15 @@ type ClientController struct {
 }
 
 // NewClientController links the client to the broker
-func NewClientController(bs BrokerController) *ClientController {
-	// TODO: Check that brokerController is not nil
+func NewClientController(bs BrokerController) (*ClientController, error) {
+	if bs == nil {
+		return nil, ErrNilBrokerController
+	}
 
 	return &ClientController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
-	}
+	}, nil
 }
 
 // Close will clean up any existing resources on the controller
@@ -170,6 +174,9 @@ var (
 
 	// ErrTimedOut is given when any timeout happen
 	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
+
+	// ErrNilBrokerController is raised when a nil broker controller is user
+	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
 )
 
 // UserSignedUpMessage is the message expected for 'UserSignedUp' channel

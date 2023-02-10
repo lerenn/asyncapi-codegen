@@ -17,6 +17,9 @@ var (
 
 	// ErrTimedOut is given when any timeout happen
 	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
+
+	// ErrNilBrokerController is raised when a nil broker controller is user
+	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
 )
 
 // PingMessage is the message expected for 'Ping' channel
