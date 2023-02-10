@@ -54,7 +54,11 @@ func (cc *ClientController) UnsubscribeAll() {
 {{- if $value.Subscribe}}
 // Subscribe{{namify $key}} will subscribe to new messages from '{{$key}}' channel
 func (cc *ClientController) Subscribe{{namify $key}}(fn func (msg {{channelToMessageTypeName $value}})) error {
-    // TODO: check if there is already a subscription
+    // Check if there is already a subscription
+    _, exists := cc.stopSubscribers["{{$key}}"]
+    if exists {
+        return fmt.Errorf("%w: {{$key}} channel is already subscribed", ErrAlreadySubscribedChannel)
+    }
 
     // Subscribe to broker channel
     msgs, stop, err := cc.brokerController.Subscribe("{{$key}}")

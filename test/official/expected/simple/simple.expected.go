@@ -105,7 +105,11 @@ func (cc *ClientController) UnsubscribeAll() {
 
 // SubscribeUserSignedup will subscribe to new messages from 'user/signedup' channel
 func (cc *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage)) error {
-	// TODO: check if there is already a subscription
+	// Check if there is already a subscription
+	_, exists := cc.stopSubscribers["user/signedup"]
+	if exists {
+		return fmt.Errorf("%w: user/signedup channel is already subscribed", ErrAlreadySubscribedChannel)
+	}
 
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("user/signedup")
@@ -185,6 +189,10 @@ var (
 
 	// ErrNilClientController is raised when a nil client controller is user
 	ErrNilClientController = fmt.Errorf("%w: nil client controller has been used", ErrAsyncAPI)
+
+	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
+	// or more without unsubscribing
+	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
 )
 
 // UserSignedUpMessage is the message expected for 'UserSignedUp' channel

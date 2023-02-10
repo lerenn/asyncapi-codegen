@@ -26,6 +26,10 @@ var (
 
 	// ErrNilClientController is raised when a nil client controller is user
 	ErrNilClientController = fmt.Errorf("%w: nil client controller has been used", ErrAsyncAPI)
+
+	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
+	// or more without unsubscribing
+	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
 )
 
 // PingMessage is the message expected for 'Ping' channel

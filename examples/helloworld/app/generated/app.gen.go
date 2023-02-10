@@ -4,6 +4,7 @@
 package generated
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -58,7 +59,11 @@ func (ac *AppController) UnsubscribeAll() {
 
 // SubscribeHello will subscribe to new messages from 'hello' channel
 func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
-	// TODO: check if there is already a subscription
+	// Check if there is already a subscription
+	_, exists := ac.stopSubscribers["hello"]
+	if exists {
+		return fmt.Errorf("%w: hello channel is already subscribed", ErrAlreadySubscribedChannel)
+	}
 
 	// Subscribe to broker channel
 	msgs, stop, err := ac.brokerController.Subscribe("hello")

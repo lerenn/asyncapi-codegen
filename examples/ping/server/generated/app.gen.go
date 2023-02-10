@@ -4,6 +4,7 @@
 package generated
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -58,7 +59,11 @@ func (ac *AppController) UnsubscribeAll() {
 
 // SubscribePing will subscribe to new messages from 'ping' channel
 func (ac *AppController) SubscribePing(fn func(msg PingMessage)) error {
-	// TODO: check if there is already a subscription
+	// Check if there is already a subscription
+	_, exists := ac.stopSubscribers["ping"]
+	if exists {
+		return fmt.Errorf("%w: ping channel is already subscribed", ErrAlreadySubscribedChannel)
+	}
 
 	// Subscribe to broker channel
 	msgs, stop, err := ac.brokerController.Subscribe("ping")

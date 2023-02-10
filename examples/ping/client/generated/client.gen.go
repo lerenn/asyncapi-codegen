@@ -4,6 +4,7 @@
 package generated
 
 import (
+	"fmt"
 	"log"
 	"time"
 )
@@ -59,7 +60,11 @@ func (cc *ClientController) UnsubscribeAll() {
 
 // SubscribePong will subscribe to new messages from 'pong' channel
 func (cc *ClientController) SubscribePong(fn func(msg PongMessage)) error {
-	// TODO: check if there is already a subscription
+	// Check if there is already a subscription
+	_, exists := cc.stopSubscribers["pong"]
+	if exists {
+		return fmt.Errorf("%w: pong channel is already subscribed", ErrAlreadySubscribedChannel)
+	}
 
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("pong")
