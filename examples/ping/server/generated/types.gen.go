@@ -32,6 +32,10 @@ var (
 	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
 )
 
+type MessageWithCorrelationID interface {
+	CorrelationID() string
+}
+
 type Error struct {
 	Channel string
 	Err     error
@@ -45,8 +49,8 @@ func (e *Error) Error() string {
 type PingMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
-		// CorrelationID is Correlation ID set by client
-		CorrelationID string `json:"correlation_id"`
+		// Description: Correlation ID set by client
+		CorrelationID *string `json:"correlation_id"`
 	}
 
 	// Payload will be inserted in the message payload
@@ -57,7 +61,8 @@ func NewPingMessage() PingMessage {
 	var msg PingMessage
 
 	// Set correlation ID
-	msg.Headers.CorrelationID = uuid.New().String()
+	u := uuid.New().String()
+	msg.Headers.CorrelationID = &u
 
 	return msg
 }
@@ -91,11 +96,12 @@ func (msg PingMessage) toUniversalMessage() (UniversalMessage, error) {
 	}
 
 	// Set correlation ID if it does not exist
-	var correlationID string
-	if msg.Headers.CorrelationID != "" {
+	var correlationID *string
+	if msg.Headers.CorrelationID != nil {
 		correlationID = msg.Headers.CorrelationID
 	} else {
-		correlationID = uuid.New().String()
+		u := uuid.New().String()
+		correlationID = &u
 	}
 
 	return UniversalMessage{
@@ -104,12 +110,20 @@ func (msg PingMessage) toUniversalMessage() (UniversalMessage, error) {
 	}, nil
 }
 
+func (msg PingMessage) CorrelationID() string {
+	if msg.Headers.CorrelationID != nil {
+		return *msg.Headers.CorrelationID
+	}
+
+	return ""
+}
+
 // PongMessage is the message expected for 'Pong' channel
 type PongMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
-		// CorrelationID is Correlation ID set by client on corresponding request
-		CorrelationID string `json:"correlation_id"`
+		// Description: Correlation ID set by client on corresponding request
+		CorrelationID *string `json:"correlation_id"`
 	}
 
 	// Payload will be inserted in the message payload
@@ -120,7 +134,8 @@ func NewPongMessage() PongMessage {
 	var msg PongMessage
 
 	// Set correlation ID
-	msg.Headers.CorrelationID = uuid.New().String()
+	u := uuid.New().String()
+	msg.Headers.CorrelationID = &u
 
 	return msg
 }
@@ -154,15 +169,24 @@ func (msg PongMessage) toUniversalMessage() (UniversalMessage, error) {
 	}
 
 	// Set correlation ID if it does not exist
-	var correlationID string
-	if msg.Headers.CorrelationID != "" {
+	var correlationID *string
+	if msg.Headers.CorrelationID != nil {
 		correlationID = msg.Headers.CorrelationID
 	} else {
-		correlationID = uuid.New().String()
+		u := uuid.New().String()
+		correlationID = &u
 	}
 
 	return UniversalMessage{
 		Payload:       payload,
 		CorrelationID: correlationID,
 	}, nil
+}
+
+func (msg PongMessage) CorrelationID() string {
+	if msg.Headers.CorrelationID != nil {
+		return *msg.Headers.CorrelationID
+	}
+
+	return ""
 }

@@ -5,8 +5,10 @@
 {{- /* Type Object */ -}}
 {{- if eq .Type "object" -}}struct {
     {{- range $key, $value := .Properties}}
-    // {{namify $key}}{{if $value.Description}} is {{$value.Description}}{{end}}
-    {{namify $key}} {{template "any" $value}} `json:"{{snakeCase $key}}"`
+    {{- if $value.Description}}
+    // Description: {{$value.Description}}
+    {{- end}}
+    {{namify $key}} {{if not (isRequired . $key)}}*{{end}}{{template "any" $value}} `json:"{{snakeCase $key}}"`
     {{end -}}
 }
 {{- end -}}

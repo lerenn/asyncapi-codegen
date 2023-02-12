@@ -23,7 +23,8 @@ func New{{namify .Name}}Message() {{namify .Name}}Message {
 
     {{if ne $.CorrelationIDLocation "" -}}
     // Set correlation ID
-    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = uuid.New().String()
+    u := uuid.New().String()
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired}}&{{end}}u
     {{- end}}
     
     return msg
@@ -61,11 +62,12 @@ func (msg {{namify .Name}}Message) toUniversalMessage() (UniversalMessage, error
 
     {{if ne $.CorrelationIDLocation "" -}}
     // Set correlation ID if it does not exist
-    var correlationID string
-    if msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} != "" {
+    var correlationID {{if not $.CorrelationIDRequired}}*{{end}}string
+    if msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} != {{if $.CorrelationIDRequired}}""{{else}}nil{{end}} {
         correlationID = msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
     } else {
-        correlationID = uuid.New().String()
+        u := uuid.New().String()
+        correlationID = {{if not $.CorrelationIDRequired}}&{{end}}u
     }
     {{- end}}
 
@@ -76,4 +78,18 @@ func (msg {{namify .Name}}Message) toUniversalMessage() (UniversalMessage, error
         {{- end}}
     }, nil
 }
+
+{{if ne $.CorrelationIDLocation "" -}}
+func (msg {{namify .Name}}Message) CorrelationID() string {
+    {{if $.CorrelationIDRequired -}}
+        return msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
+    {{- else -}}
+    if msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} != nil{
+        return *msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
+    }
+
+    return ""
+    {{- end}}
+}
+{{- end -}}
 {{- end }}

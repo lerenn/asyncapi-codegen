@@ -16,8 +16,8 @@ func (c *NATSController) Publish(channel string, um UniversalMessage) error {
 
     // Set message content
 	msg.Data = um.Payload
-	if um.CorrelationID != "" {
-		msg.Header.Add(CorrelationIDField, um.CorrelationID)
+	if um.CorrelationID != nil {
+		msg.Header.Add(CorrelationIDField, *um.CorrelationID)
 	}
 
     // Publish message
@@ -46,9 +46,18 @@ func (c *NATSController) Subscribe(channel string) (msgs chan UniversalMessage, 
             select {
             // Handle new message
             case msg := <-natsMsgs:
+                var correlationID *string
+
+                // Add correlation ID if not empty
+                str := msg.Header.Get(CorrelationIDField)
+                if str != "" {
+                    correlationID = &str
+                }
+
+                // Create message
                 msgs <- UniversalMessage{
                     Payload: msg.Data,
-                    CorrelationID: msg.Header.Get(CorrelationIDField),
+                    CorrelationID: correlationID,
                 }
             // Handle closure request from function caller
             case _ = <-stop:
