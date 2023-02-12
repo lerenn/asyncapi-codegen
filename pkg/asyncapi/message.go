@@ -23,6 +23,7 @@ type Message struct {
 }
 
 func (msg *Message) Process(spec Specification) {
+	msg.createCorrelationIDFieldIfMissing()
 	msg.CorrelationIDLocation = msg.getCorrelationIDLocation(spec)
 	msg.CorrelationIDRequired = msg.isCorrelationIDRequired()
 }
@@ -45,19 +46,61 @@ func (msg Message) getCorrelationIDLocation(spec Specification) string {
 }
 
 func (msg Message) isCorrelationIDRequired() bool {
-	if msg.CorrelationID == nil {
+	if msg.CorrelationID == nil || msg.CorrelationID.Location == "" {
 		return false
 	}
 
+	correlationIDParent := msg.createTreeUntilCorrelationID()
 	path := strings.Split(msg.CorrelationID.Location, "/")
-
 	name := path[len(path)-1]
-	if strings.HasPrefix(msg.CorrelationID.Location, "$message.header") && msg.Headers != nil && utils.IsInSlice(msg.Headers.Required, name) {
-		return true
-	} else if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload") && msg.Payload != nil && utils.IsInSlice(msg.Payload.Required, name) {
-		return true
+	return utils.IsInSlice(correlationIDParent.Required, name)
+}
+
+func (msg *Message) createCorrelationIDFieldIfMissing() {
+	_ = msg.createTreeUntilCorrelationID()
+}
+
+func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
+	// Check that correlationID exists
+	if msg.CorrelationID == nil || msg.CorrelationID.Location == "" {
+		return utils.ToNullable(NewAny())
 	}
 
-	// TODO: support more sublevels in header and payload
-	return false
+	// Get root from header or payload
+	var child *Any
+	path := strings.Split(msg.CorrelationID.Location, "/")
+	if strings.HasPrefix(msg.CorrelationID.Location, "$message.header#") {
+		if msg.Headers == nil {
+			msg.Headers = utils.ToNullable(NewAny())
+			msg.Headers.Name = "headers"
+			msg.Headers.Type = "object"
+		}
+		child = msg.Headers
+	} else if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") && msg.Payload != nil {
+		if msg.Payload == nil {
+			msg.Payload = utils.ToNullable(NewAny())
+			msg.Payload.Name = "headers"
+			msg.Payload.Type = "object"
+		}
+		child = msg.Payload
+	}
+
+	// Go down the path to correlation ID
+	var exists bool
+	for i, v := range path[1:] {
+		correlationIDParent = child
+		child, exists = correlationIDParent.Properties[v]
+		if !exists {
+			child = utils.ToNullable(NewAny())
+			child.Name = v
+			if i == len(path)-2 { // As there is -1 in the loop slice
+				child.Type = "string"
+			} else {
+				child.Type = "object"
+			}
+			correlationIDParent.Properties[v] = child
+		}
+	}
+
+	return correlationIDParent
 }
