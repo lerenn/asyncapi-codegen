@@ -133,7 +133,7 @@ func (c *ClientController) Listen(irq <-chan interface{}) {
 //
 // The pub function is the publication function that should be used to send the message
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
-func (cc *ClientController) WaitForPong(correlationID string, pub func() error, timeout time.Duration) (PongMessage, error) {
+func (cc *ClientController) WaitForPong(msg MessageWithCorrelationID, pub func() error, timeout time.Duration) (PongMessage, error) {
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("pong")
 	if err != nil {
@@ -161,7 +161,7 @@ func (cc *ClientController) WaitForPong(correlationID string, pub func() error, 
 				continue
 			}
 
-			if correlationID == msg.Headers.CorrelationID {
+			if msg.Headers.CorrelationID != nil && msg.CorrelationID() == *msg.Headers.CorrelationID {
 				return msg, nil
 			}
 		case <-time.After(timeout): // TODO: make it consumable between two call

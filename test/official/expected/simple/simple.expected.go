@@ -175,7 +175,7 @@ const (
 
 // UniversalMessage is a wrapper that will contain all information regarding a message
 type UniversalMessage struct {
-	CorrelationID string
+	CorrelationID *string
 	Payload       []byte
 }
 
@@ -210,6 +210,10 @@ var (
 	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
 )
 
+type MessageWithCorrelationID interface {
+	CorrelationID() string
+}
+
 type Error struct {
 	Channel string
 	Err     error
@@ -223,11 +227,11 @@ func (e *Error) Error() string {
 type UserSignedUpMessage struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
-		// DisplayName is Name of the user
-		DisplayName string `json:"display_name"`
+		// Description: Name of the user
+		DisplayName *string `json:"display_name"`
 
-		// Email is Email of the user
-		Email string `json:"email"`
+		// Description: Email of the user
+		Email *string `json:"email"`
 	}
 }
 

@@ -3,6 +3,7 @@ package templates
 import (
 	"testing"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -34,5 +35,22 @@ func (suite *HelpersSuite) TestNamify() {
 
 	for i, c := range cases {
 		suite.Require().Equal(c.Out, Namify(c.In), i)
+	}
+}
+
+func (suite *HelpersSuite) TestIsRequired() {
+	cases := []struct {
+		Any    asyncapi.Any
+		Field  string
+		Result bool
+	}{
+		// Is required
+		{Any: asyncapi.Any{Required: []string{"field"}}, Field: "field", Result: true},
+		// Is not required
+		{Any: asyncapi.Any{Required: []string{"another_field"}}, Field: "field", Result: false},
+	}
+
+	for i, c := range cases {
+		suite.Require().Equal(c.Result, IsRequired(c.Any, c.Field), i)
 	}
 }

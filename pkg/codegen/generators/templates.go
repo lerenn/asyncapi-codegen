@@ -6,6 +6,7 @@ import (
 	"text/template"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/templates"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
 
 const (
@@ -43,5 +44,7 @@ func templateFunctions() template.FuncMap {
 		"referenceToTypeName":            templates.ReferenceToTypeName,
 		"channelToMessageTypeName":       templates.ChannelToMessageTypeName,
 		"hasField":                       templates.HasField,
+		"isInSlice":                      utils.IsInSlice,
+		"isRequired":                     templates.IsRequired,
 	}
 }

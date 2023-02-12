@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	"github.com/stoewer/go-strcase"
 )
 
@@ -69,7 +70,7 @@ func ReferenceToStructAttributePath(ref string) string {
 
 	elems := strings.Split(ref, "/")[1:]
 	for k, v := range elems {
-		// If this is  concerning the header, then it will be named "headers"
+		// If this is concerning the header, then it will be named "headers"
 		if v == "header" {
 			v = "headers"
 		}
@@ -99,4 +100,8 @@ func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 	}
 
 	return ReferenceToTypeName(msg.Reference)
+}
+
+func IsRequired(any asyncapi.Any, field string) bool {
+	return utils.IsInSlice(any.Required, field)
 }

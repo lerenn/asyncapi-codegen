@@ -30,6 +30,10 @@ var (
 	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
 )
 
+type MessageWithCorrelationID interface {
+	CorrelationID() string
+}
+
 type Error struct {
 	Channel string
 	Err     error

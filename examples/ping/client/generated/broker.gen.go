@@ -10,7 +10,7 @@ const (
 
 // UniversalMessage is a wrapper that will contain all information regarding a message
 type UniversalMessage struct {
-	CorrelationID string
+	CorrelationID *string
 	Payload       []byte
 }
 
