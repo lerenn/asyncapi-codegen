@@ -3,6 +3,7 @@ package asyncapi
 import (
 	"testing"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -37,6 +38,21 @@ func (suite *MessageSuite) TestIsCorrelationIDRequired() {
 				},
 				CorrelationID: &CorrelationID{
 					Location: "$message.payload#/correlationId",
+				},
+			},
+			Required: true,
+		},
+		{
+			Message: Message{
+				Headers: &Any{
+					Properties: map[string]*Any{
+						"toto": utils.ToNullable(Any{
+							Required: []string{"correlationId"},
+						}),
+					},
+				},
+				CorrelationID: &CorrelationID{
+					Location: "$message.header#/toto/correlationId",
 				},
 			},
 			Required: true,
