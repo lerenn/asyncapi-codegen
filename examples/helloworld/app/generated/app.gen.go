@@ -111,7 +111,7 @@ func (c *AppController) UnsubscribeHello() {
 }
 
 // Listen will let the controller handle subscriptions and will be interrupted
-// only when an struct is sent on the interrupt channel
-func (c *AppController) Listen(irq <-chan interface{}) {
-	<-irq
+// only when an struct is sent on the stop channel
+func (c *AppController) Listen(stop <-chan interface{}) {
+	<-stop
 }

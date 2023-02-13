@@ -120,9 +120,9 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(msg {{channelToMessage
 {{end}}
 
 // Listen will let the controller handle subscriptions and will be interrupted
-// only when an struct is sent on the interrupt channel
-func (c *{{ .Prefix }}Controller) Listen(irq <-chan interface{}){
-	<-irq
+// only when an struct is sent on the stop channel
+func (c *{{ .Prefix }}Controller) Listen(stop <-chan interface{}){
+	<-stop
 }
 
 {{if eq .Prefix "Client" -}}
