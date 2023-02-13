@@ -27,11 +27,11 @@ type ServerSubscriber struct {
 func (s ServerSubscriber) Ping(req generated.PingMessage) {
 	log.Println("Received a ping request")
 
-	// Generate a pong message, with the same correlation Id
+	// Generate a pong message, set as a response of the request
 	resp := generated.NewPongMessage()
+	resp.SetAsResponseFrom(req)
 	resp.Payload.Message = "pong"
 	resp.Payload.Time = time.Now()
-	resp.Headers.CorrelationID = req.Headers.CorrelationID
 
 	// Publish the pong message
 	err := s.Controller.PublishPong(resp)

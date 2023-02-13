@@ -417,12 +417,21 @@ func (msg LightMeasuredMessage) toUniversalMessage() (UniversalMessage, error) {
 	}, nil
 }
 
+// CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
 func (msg LightMeasuredMessage) CorrelationID() string {
 	if msg.Headers.Mqmd.CorrelID != nil {
 		return *msg.Headers.Mqmd.CorrelID
 	}
 
 	return ""
+}
+
+// SetAsResponseFrom will correlate the message with the one passed in parameter.
+// It will assign the 'req' message correlation ID to the message correlation ID,
+// both specified in AsyncAPI spec.
+func (msg *LightMeasuredMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
+	id := req.CorrelationID()
+	msg.Headers.Mqmd.CorrelID = &id
 }
 
 // DimLightPayloadSchema is a schema from the AsyncAPI specification required in messages

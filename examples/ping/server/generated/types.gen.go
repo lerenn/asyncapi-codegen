@@ -111,12 +111,21 @@ func (msg PingMessage) toUniversalMessage() (UniversalMessage, error) {
 	}, nil
 }
 
+// CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
 func (msg PingMessage) CorrelationID() string {
 	if msg.Headers.CorrelationID != nil {
 		return *msg.Headers.CorrelationID
 	}
 
 	return ""
+}
+
+// SetAsResponseFrom will correlate the message with the one passed in parameter.
+// It will assign the 'req' message correlation ID to the message correlation ID,
+// both specified in AsyncAPI spec.
+func (msg *PingMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
+	id := req.CorrelationID()
+	msg.Headers.CorrelationID = &id
 }
 
 // PongMessage is the message expected for 'Pong' channel
@@ -190,10 +199,19 @@ func (msg PongMessage) toUniversalMessage() (UniversalMessage, error) {
 	}, nil
 }
 
+// CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
 func (msg PongMessage) CorrelationID() string {
 	if msg.Headers.CorrelationID != nil {
 		return *msg.Headers.CorrelationID
 	}
 
 	return ""
+}
+
+// SetAsResponseFrom will correlate the message with the one passed in parameter.
+// It will assign the 'req' message correlation ID to the message correlation ID,
+// both specified in AsyncAPI spec.
+func (msg *PongMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
+	id := req.CorrelationID()
+	msg.Headers.CorrelationID = &id
 }
