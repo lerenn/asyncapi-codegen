@@ -8,8 +8,8 @@ import (
 
 type ControllerGenerator struct {
 	MethodCount       uint
-	SubscribeChannels map[string]asyncapi.Channel
-	PublishChannels   map[string]asyncapi.Channel
+	SubscribeChannels map[string]*asyncapi.Channel
+	PublishChannels   map[string]*asyncapi.Channel
 	Prefix            string
 }
 
@@ -25,8 +25,8 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	}
 
 	// Get channels based on publish/subscribe
-	gen.SubscribeChannels = make(map[string]asyncapi.Channel)
-	gen.PublishChannels = make(map[string]asyncapi.Channel)
+	gen.SubscribeChannels = make(map[string]*asyncapi.Channel)
+	gen.PublishChannels = make(map[string]*asyncapi.Channel)
 	for k, v := range spec.Channels {
 		// Channels are reverse on application side
 		if side == SideIsApplication {

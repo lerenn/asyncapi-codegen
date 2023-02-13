@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -127,7 +128,13 @@ type PongMessage struct {
 	}
 
 	// Payload will be inserted in the message payload
-	Payload string
+	Payload struct {
+		// Description: Pong message
+		Message string `json:"message"`
+
+		// Description: Pong creation time
+		Time time.Time `json:"time"`
+	}
 }
 
 func NewPongMessage() PongMessage {

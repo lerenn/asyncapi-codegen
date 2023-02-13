@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -442,4 +443,4 @@ type LightMeasuredPayloadSchema struct {
 
 // SentAtSchema is a schema from the AsyncAPI specification required in messages
 // Description: Date and time when the message was sent.
-type SentAtSchema string
+type SentAtSchema time.Time

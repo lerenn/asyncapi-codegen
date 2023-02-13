@@ -5,32 +5,17 @@ import (
 )
 
 type Specification struct {
-	Version    string             `json:"asyncapi"`
-	Info       Info               `json:"info"`
-	Channels   map[string]Channel `json:"channels"`
-	Components Components         `json:"components"`
+	Version    string              `json:"asyncapi"`
+	Info       Info                `json:"info"`
+	Channels   map[string]*Channel `json:"channels"`
+	Components Components          `json:"components"`
 }
 
 func (s *Specification) Process() {
-	s.setMapsValuesName()
-
 	for name, ch := range s.Channels {
-		ch.Process(*s)
-		s.Channels[name] = ch
+		ch.Process(name, *s)
 	}
 	s.Components.Process(*s)
-}
-
-func (s *Specification) setMapsValuesName() {
-	for name, ch := range s.Channels {
-		ch.Name = name
-		s.Channels[name] = ch
-	}
-}
-
-func (s Specification) ReferenceMessage(ref string) Message {
-	name := strings.Split(ref, "/")[3]
-	return s.Components.Messages[name]
 }
 
 func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount uint) {
@@ -43,4 +28,30 @@ func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount 
 	}
 
 	return publishCount, subscribeCount
+}
+
+func (s Specification) ReferenceMessage(ref string) *Message {
+	msg, _ := s.reference(ref).(*Message)
+	return msg
+}
+
+func (s Specification) ReferenceAny(ref string) *Any {
+	msg, _ := s.reference(ref).(*Any)
+	return msg
+}
+
+func (s Specification) reference(ref string) interface{} {
+	refPath := strings.Split(ref, "/")[1:]
+
+	if refPath[0] == "components" {
+		if refPath[1] == "messages" {
+			msg := s.Components.Messages[refPath[2]]
+			return msg.referenceFrom(refPath[3:])
+		} else if refPath[1] == "schemas" {
+			schema := s.Components.Schemas[refPath[2]]
+			return schema.referenceFrom(refPath[3:])
+		}
+	}
+
+	return nil
 }

@@ -10,6 +10,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/lerenn/asyncapi-codegen/examples/ping/server/generated"
 	"github.com/nats-io/nats.go"
@@ -28,7 +29,8 @@ func (s ServerSubscriber) Ping(req generated.PingMessage) {
 
 	// Generate a pong message, with the same correlation Id
 	resp := generated.NewPongMessage()
-	resp.Payload = "pong"
+	resp.Payload.Message = "pong"
+	resp.Payload.Time = time.Now()
 	resp.Headers.CorrelationID = req.Headers.CorrelationID
 
 	// Publish the pong message

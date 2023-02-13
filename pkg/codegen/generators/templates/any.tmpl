@@ -8,14 +8,18 @@
     {{- if $value.Description}}
     // Description: {{$value.Description}}
     {{- end}}
-    {{namify $key}} {{if not (isRequired . $key)}}*{{end}}{{template "any" $value}} `json:"{{snakeCase $key}}"`
+    {{namify $key}} {{if not (isRequired $ $key)}}*{{end}}{{template "any" $value}} `json:"{{snakeCase $key}}"`
     {{end -}}
 }
 {{- end -}}
 
 {{- /* Type String */ -}}
 {{- if eq .Type "string" -}}
+{{- if or (eq .Format "date") (eq .Format "date-time") -}}
+time.Time
+{{- else -}}
 string
+{{- end -}}
 {{- end -}}
 
 {{- /* Type Integer */ -}}

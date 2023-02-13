@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	"github.com/stoewer/go-strcase"
 )
 
@@ -103,5 +102,5 @@ func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 }
 
 func IsRequired(any asyncapi.Any, field string) bool {
-	return utils.IsInSlice(any.Required, field)
+	return any.IsFieldRequired(field)
 }
