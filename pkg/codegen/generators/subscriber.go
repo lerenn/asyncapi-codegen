@@ -8,7 +8,7 @@ import (
 
 type SubscriberGenerator struct {
 	MethodCount uint
-	Channels    map[string]asyncapi.Channel
+	Channels    map[string]*asyncapi.Channel
 	Prefix      string
 }
 
@@ -24,7 +24,7 @@ func NewSubscriberGenerator(side Side, spec asyncapi.Specification) SubscriberGe
 	}
 
 	// Get channels based on publish/subscribe
-	gen.Channels = make(map[string]asyncapi.Channel)
+	gen.Channels = make(map[string]*asyncapi.Channel)
 	for k, v := range spec.Channels {
 		// Channels are reverse on application side
 		if v.Publish != nil && side == SideIsApplication {

@@ -43,8 +43,18 @@ components:
             description: Correlation ID set by client on corresponding request
             type: string
       payload:
-        description: Pong message
-        type: string
+        type: object
+        required:
+          - message
+          - time
+        properties:
+          message:
+            description: Pong message
+            type: string
+          time:
+            description: Pong creation time
+            type: string
+            format: date-time
       correlationId:
         description: Default Correlation ID
         location: $message.header#/correlationId

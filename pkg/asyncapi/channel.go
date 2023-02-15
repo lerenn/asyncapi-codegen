@@ -10,21 +10,23 @@ type Channel struct {
 	Name string `json:"-"`
 }
 
-func (c *Channel) Process(spec Specification) {
-	c.setMapsValuesName()
+func (c *Channel) Process(name string, spec Specification) {
+	// Set channel name
+	c.Name = name
 
-	msg := c.GetChannelMessage()
-	msg.Process(spec)
-}
-
-func (c *Channel) setMapsValuesName() {
+	// Get message
 	msg := c.GetChannelMessage()
 
+	// Get message name
+	var msgName string
 	if msg.Reference != "" {
-		msg.Name = strings.Split(msg.Reference, "/")[3]
+		msgName = strings.Split(msg.Reference, "/")[3]
 	} else {
-		msg.Name = c.Name
+		msgName = c.Name
 	}
+
+	// Process message
+	msg.Process(msgName, spec)
 }
 
 // GetChannelMessage will return the channel message

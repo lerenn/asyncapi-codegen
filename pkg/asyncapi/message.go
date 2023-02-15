@@ -14,7 +14,8 @@ type Message struct {
 	Reference     string         `json:"$ref"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
-	Name string `json:"-"`
+	Name        string   `json:"-"`
+	ReferenceTo *Message `json:"-"`
 
 	// CorrelationIDLocation will indicate where the correlation id is
 	// According to: https://www.asyncapi.com/docs/reference/specification/v2.6.0#correlationIDObject
@@ -22,7 +23,23 @@ type Message struct {
 	CorrelationIDRequired bool   `json:"-"`
 }
 
-func (msg *Message) Process(spec Specification) {
+func (msg *Message) Process(name string, spec Specification) {
+	msg.Name = name
+
+	// Add pointer to reference if there is one
+	if msg.Reference != "" {
+		msg.ReferenceTo = spec.ReferenceMessage(msg.Reference)
+	}
+
+	// Process Headers and Payload
+	if msg.Headers != nil {
+		msg.Headers.Process("headers", spec)
+	}
+	if msg.Payload != nil {
+		msg.Payload.Process("payload", spec)
+	}
+
+	// Process correlation ID
 	msg.createCorrelationIDFieldIfMissing()
 	msg.CorrelationIDLocation = msg.getCorrelationIDLocation(spec)
 	msg.CorrelationIDRequired = msg.isCorrelationIDRequired()
@@ -52,8 +69,7 @@ func (msg Message) isCorrelationIDRequired() bool {
 
 	correlationIDParent := msg.createTreeUntilCorrelationID()
 	path := strings.Split(msg.CorrelationID.Location, "/")
-	name := path[len(path)-1]
-	return utils.IsInSlice(correlationIDParent.Required, name)
+	return correlationIDParent.IsFieldRequired(path[len(path)-1])
 }
 
 func (msg *Message) createCorrelationIDFieldIfMissing() {
@@ -91,6 +107,7 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 		correlationIDParent = child
 		child, exists = correlationIDParent.Properties[v]
 		if !exists {
+			// Create child
 			child = utils.ToNullable(NewAny())
 			child.Name = v
 			if i == len(path)-2 { // As there is -1 in the loop slice
@@ -98,9 +115,29 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 			} else {
 				child.Type = "object"
 			}
+
+			// Add it to parent
+			if correlationIDParent.Properties == nil {
+				correlationIDParent.Properties = make(map[string]*Any)
+			}
 			correlationIDParent.Properties[v] = child
 		}
 	}
 
 	return correlationIDParent
+}
+
+func (msg *Message) referenceFrom(ref []string) interface{} {
+	if len(ref) == 0 {
+		return msg
+	}
+
+	var next *Any
+	if ref[0] == "payload" {
+		next = msg.Payload
+	} else if ref[0] == "header" {
+		next = msg.Headers
+	}
+
+	return next.referenceFrom(ref[1:])
 }

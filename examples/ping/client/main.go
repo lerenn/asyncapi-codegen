@@ -55,7 +55,7 @@ func main() {
 		panic(err)
 	}
 
-	log.Println("Got response:", resp.Payload)
+	log.Println("Got response:", resp.Payload.Message, "send at", resp.Payload.Time)
 
 	time.Sleep(time.Second)
 }
