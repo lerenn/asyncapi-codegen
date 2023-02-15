@@ -53,12 +53,6 @@ func (c *AppController) PublishUserSignedup(msg UserSignedUpMessage) error {
 	return c.brokerController.Publish("user/signedup", um)
 }
 
-// Listen will let the controller handle subscriptions and will be interrupted
-// only when an struct is sent on the stop channel
-func (c *AppController) Listen(stop <-chan interface{}) {
-	<-stop
-}
-
 // ClientSubscriber represents all handlers that are expecting messages for Client
 type ClientSubscriber interface {
 	// UserSignedup
@@ -160,12 +154,6 @@ func (c *ClientController) UnsubscribeUserSignedup() {
 
 	stopChan <- true
 	delete(c.stopSubscribers, "user/signedup")
-}
-
-// Listen will let the controller handle subscriptions and will be interrupted
-// only when an struct is sent on the stop channel
-func (c *ClientController) Listen(stop <-chan interface{}) {
-	<-stop
 }
 
 const (

@@ -127,12 +127,6 @@ func (c *AppController) PublishSmartylightingStreetlights10ActionStreetlightIDDi
 	return c.brokerController.Publish("smartylighting/streetlights/1/0/action/{streetlightId}/dim", um)
 }
 
-// Listen will let the controller handle subscriptions and will be interrupted
-// only when an struct is sent on the stop channel
-func (c *AppController) Listen(stop <-chan interface{}) {
-	<-stop
-}
-
 // ClientSubscriber represents all handlers that are expecting messages for Client
 type ClientSubscriber interface {
 	// SmartylightingStreetlights10ActionStreetlightIDDim
@@ -246,12 +240,6 @@ func (c *ClientController) PublishSmartylightingStreetlights10EventStreetlightID
 
 	// Publish on event broker
 	return c.brokerController.Publish("smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured", um)
-}
-
-// Listen will let the controller handle subscriptions and will be interrupted
-// only when an struct is sent on the stop channel
-func (c *ClientController) Listen(stop <-chan interface{}) {
-	<-stop
 }
 
 const (

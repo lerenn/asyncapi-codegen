@@ -128,11 +128,6 @@ func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error
 // It should be only used when wanting specifically that, otherwise the clean up
 // will be handled by the Close function.
 func (ac *AppController) UnsubscribeHello()
-
-// Listen will wait on the irq channel given in paramter.
-// Thus you will be able to listen to new messages on subscribed channels, and
-// interrupt the listening if you want by sending anything on the IRQ channel.
-func (ac *AppController) Listen(irq chan interface{})
 ```
 
 And here is an example of the application that could be written to use this generated
@@ -152,10 +147,8 @@ ctrl.SubscribeHello(func(msg generated.HelloMessage) {
   log.Println("Received message:", msg.Payload)
 })
 
-// Listen to new messages
-log.Println("Listening to subscriptions...")
-irq := make(chan interface{})
-ctrl.Listen(irq)
+// Process messages until interruption signal
+/* ... */
 ```
 
 #### Client
@@ -288,9 +281,8 @@ func main() {
 	sub := ServerSubscriber{Controller: ctrl}
 	ctrl.SubscribeAll(sub)
 
-	// Listen to new messages
-	irq := make(chan interface{})
-	ctrl.Listen(irq)
+	// Process messages until interruption signal
+	/* ... */
 }
 ```
 

@@ -10,6 +10,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/examples/ping/server/generated"
@@ -60,8 +62,8 @@ func main() {
 		panic(err)
 	}
 
-	// Listen to new messages
-	log.Println("Listening to subscriptions...")
-	irq := make(chan interface{})
-	ctrl.Listen(irq)
+	// Process messages until interruption signal
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
 }
