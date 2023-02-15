@@ -109,9 +109,3 @@ func (c *AppController) UnsubscribeHello() {
 	stopChan <- true
 	delete(c.stopSubscribers, "hello")
 }
-
-// Listen will let the controller handle subscriptions and will be interrupted
-// only when an struct is sent on the stop channel
-func (c *AppController) Listen(stop <-chan interface{}) {
-	<-stop
-}

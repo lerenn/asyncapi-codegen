@@ -123,12 +123,6 @@ func (c *ClientController) PublishPing(msg PingMessage) error {
 	return c.brokerController.Publish("ping", um)
 }
 
-// Listen will let the controller handle subscriptions and will be interrupted
-// only when an struct is sent on the stop channel
-func (c *ClientController) Listen(stop <-chan interface{}) {
-	<-stop
-}
-
 // WaitForPong will wait for a specific message by its correlation ID
 //
 // The pub function is the publication function that should be used to send the message

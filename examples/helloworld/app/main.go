@@ -10,6 +10,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
 
 	"github.com/lerenn/asyncapi-codegen/examples/helloworld/app/generated"
 	"github.com/nats-io/nats.go"
@@ -35,8 +37,8 @@ func main() {
 		log.Println("Received message:", msg.Payload)
 	})
 
-	// Listen to new messages
-	log.Println("Listening to subscriptions...")
-	irq := make(chan interface{})
-	ctrl.Listen(irq)
+	// Process messages until interruption signal
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
 }

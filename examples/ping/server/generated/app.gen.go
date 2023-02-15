@@ -121,9 +121,3 @@ func (c *AppController) PublishPong(msg PongMessage) error {
 	// Publish on event broker
 	return c.brokerController.Publish("pong", um)
 }
-
-// Listen will let the controller handle subscriptions and will be interrupted
-// only when an struct is sent on the stop channel
-func (c *AppController) Listen(stop <-chan interface{}) {
-	<-stop
-}
