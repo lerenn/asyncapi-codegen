@@ -80,6 +80,7 @@ func (msg {{namify .Name}}Message) toUniversalMessage() (UniversalMessage, error
 }
 
 {{if ne $.CorrelationIDLocation "" -}}
+// CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
 func (msg {{namify .Name}}Message) CorrelationID() string {
     {{if $.CorrelationIDRequired -}}
         return msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
@@ -90,6 +91,14 @@ func (msg {{namify .Name}}Message) CorrelationID() string {
 
     return ""
     {{- end}}
+}
+
+// SetAsResponseFrom will correlate the message with the one passed in parameter.
+// It will assign the 'req' message correlation ID to the message correlation ID,
+// both specified in AsyncAPI spec.
+func (msg *{{namify .Name}}Message) SetAsResponseFrom(req MessageWithCorrelationID) {
+    id := req.CorrelationID()
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
 }
 {{- end -}}
 {{- end }}
