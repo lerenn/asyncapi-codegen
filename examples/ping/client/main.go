@@ -9,6 +9,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"time"
 
@@ -50,7 +51,7 @@ func main() {
 	// This function is available only if the 'correlationId' field has been filled
 	// for any channel in the AsyncAPI specification. You will then be able to use it
 	// with the form WaitForXXX where XXX is the channel name.
-	resp, err := ctrl.WaitForPong(req, publicationFunc, time.Second)
+	resp, err := ctrl.WaitForPong(context.Background(), req, publicationFunc)
 	if err != nil {
 		panic(err)
 	}

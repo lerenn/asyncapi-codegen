@@ -208,8 +208,8 @@ var (
 	// Generic error for AsyncAPI generated code
 	ErrAsyncAPI = errors.New("error when using AsyncAPI")
 
-	// ErrTimedOut is given when any timeout happen
-	ErrTimedOut = fmt.Errorf("%w: time out", ErrAsyncAPI)
+	// ErrContextCancelled is given when a given context is cancelled
+	ErrContextCancelled = fmt.Errorf("%w: context cancelled", ErrAsyncAPI)
 
 	// ErrNilBrokerController is raised when a nil broker controller is user
 	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)

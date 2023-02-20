@@ -4,8 +4,8 @@
 package generated
 
 import (
+	"context"
 	"fmt"
-	"time"
 )
 
 // ClientSubscriber represents all handlers that are expecting messages for Client
@@ -139,7 +139,7 @@ func (c *ClientController) handleError(channelName string, err error) {
 //
 // The pub function is the publication function that should be used to send the message
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
-func (cc *ClientController) WaitForPong(msg MessageWithCorrelationID, pub func() error, timeout time.Duration) (PongMessage, error) {
+func (cc *ClientController) WaitForPong(ctx context.Context, msg MessageWithCorrelationID, pub func() error) (PongMessage, error) {
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe("pong")
 	if err != nil {
@@ -167,8 +167,8 @@ func (cc *ClientController) WaitForPong(msg MessageWithCorrelationID, pub func()
 			if msg.Headers.CorrelationID != nil && msg.CorrelationID() == *msg.Headers.CorrelationID {
 				return msg, nil
 			}
-		case <-time.After(timeout): // TODO: make it consumable between two call
-			return PongMessage{}, ErrTimedOut
+		case <-ctx.Done(): // TODO: make it consumable between two call
+			return PongMessage{}, ErrContextCancelled
 		}
 	}
 }
