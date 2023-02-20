@@ -83,10 +83,7 @@ func (c *AppController) SubscribePing(fn func(msg PingMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newPingMessageFromUniversalMessage(um)
 			if err != nil {
-				c.errChan <- Error{
-					Channel: "ping",
-					Err:     err,
-				}
+				c.handleError("ping", err)
 			} else {
 				fn(msg)
 			}
@@ -120,4 +117,19 @@ func (c *AppController) PublishPong(msg PongMessage) error {
 
 	// Publish on event broker
 	return c.brokerController.Publish("pong", um)
+}
+
+func (c *AppController) handleError(channelName string, err error) {
+	// Wrap error with the channel name
+	errWrapped := Error{
+		Channel: channelName,
+		Err:     err,
+	}
+
+	// Send it to the error channel
+	select {
+	case c.errChan <- errWrapped:
+	default:
+		// Drop error if it's full or closed
+	}
 }
