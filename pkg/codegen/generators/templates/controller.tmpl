@@ -138,7 +138,7 @@ func (c *{{ $.Prefix }}Controller) handleError(channelName string, err error) {
 //
 // The pub function is the publication function that should be used to send the message
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
-func (cc *ClientController) WaitFor{{namify $key}}(msg MessageWithCorrelationID, pub func() error, timeout time.Duration) ({{channelToMessageTypeName $value}}, error) {
+func (cc *ClientController) WaitFor{{namify $key}}(ctx context.Context, msg MessageWithCorrelationID, pub func() error) ({{channelToMessageTypeName $value}}, error) {
     // Subscribe to broker channel
     msgs, stop, err := cc.brokerController.Subscribe("{{$key}}")
     if err != nil {
@@ -167,8 +167,8 @@ func (cc *ClientController) WaitFor{{namify $key}}(msg MessageWithCorrelationID,
                 msg.CorrelationID() == {{if not $value.Subscribe.Message.CorrelationIDRequired}}*{{end}}msg.{{referenceToStructAttributePath $value.Subscribe.Message.CorrelationIDLocation}} {
                 return msg, nil
             }
-        case <-time.After(timeout): // TODO: make it consumable between two call
-            return {{channelToMessageTypeName $value}}{}, ErrTimedOut
+        case <-ctx.Done(): // TODO: make it consumable between two call
+            return {{channelToMessageTypeName $value}}{}, ErrContextCancelled
         }
     }
 }
