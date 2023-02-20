@@ -46,3 +46,18 @@ func (c *ClientController) PublishHello(msg HelloMessage) error {
 	// Publish on event broker
 	return c.brokerController.Publish("hello", um)
 }
+
+func (c *ClientController) handleError(channelName string, err error) {
+	// Wrap error with the channel name
+	errWrapped := Error{
+		Channel: channelName,
+		Err:     err,
+	}
+
+	// Send it to the error channel
+	select {
+	case c.errChan <- errWrapped:
+	default:
+		// Drop error if it's full or closed
+	}
+}

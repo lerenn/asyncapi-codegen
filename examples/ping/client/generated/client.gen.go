@@ -84,10 +84,7 @@ func (c *ClientController) SubscribePong(fn func(msg PongMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
-				c.errChan <- Error{
-					Channel: "pong",
-					Err:     err,
-				}
+				c.handleError("pong", err)
 			} else {
 				fn(msg)
 			}
@@ -123,6 +120,21 @@ func (c *ClientController) PublishPing(msg PingMessage) error {
 	return c.brokerController.Publish("ping", um)
 }
 
+func (c *ClientController) handleError(channelName string, err error) {
+	// Wrap error with the channel name
+	errWrapped := Error{
+		Channel: channelName,
+		Err:     err,
+	}
+
+	// Send it to the error channel
+	select {
+	case c.errChan <- errWrapped:
+	default:
+		// Drop error if it's full or closed
+	}
+}
+
 // WaitForPong will wait for a specific message by its correlation ID
 //
 // The pub function is the publication function that should be used to send the message
@@ -148,10 +160,7 @@ func (cc *ClientController) WaitForPong(msg MessageWithCorrelationID, pub func()
 		case um := <-msgs:
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
-				cc.errChan <- Error{
-					Channel: "pong",
-					Err:     err,
-				}
+				cc.handleError("pong", err)
 				continue
 			}
 

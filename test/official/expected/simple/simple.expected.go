@@ -53,6 +53,21 @@ func (c *AppController) PublishUserSignedup(msg UserSignedUpMessage) error {
 	return c.brokerController.Publish("user/signedup", um)
 }
 
+func (c *AppController) handleError(channelName string, err error) {
+	// Wrap error with the channel name
+	errWrapped := Error{
+		Channel: channelName,
+		Err:     err,
+	}
+
+	// Send it to the error channel
+	select {
+	case c.errChan <- errWrapped:
+	default:
+		// Drop error if it's full or closed
+	}
+}
+
 // ClientSubscriber represents all handlers that are expecting messages for Client
 type ClientSubscriber interface {
 	// UserSignedup
@@ -129,10 +144,7 @@ func (c *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newUserSignedUpMessageFromUniversalMessage(um)
 			if err != nil {
-				c.errChan <- Error{
-					Channel: "user/signedup",
-					Err:     err,
-				}
+				c.handleError("user/signedup", err)
 			} else {
 				fn(msg)
 			}
@@ -154,6 +166,21 @@ func (c *ClientController) UnsubscribeUserSignedup() {
 
 	stopChan <- true
 	delete(c.stopSubscribers, "user/signedup")
+}
+
+func (c *ClientController) handleError(channelName string, err error) {
+	// Wrap error with the channel name
+	errWrapped := Error{
+		Channel: channelName,
+		Err:     err,
+	}
+
+	// Send it to the error channel
+	select {
+	case c.errChan <- errWrapped:
+	default:
+		// Drop error if it's full or closed
+	}
 }
 
 const (

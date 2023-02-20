@@ -88,10 +88,7 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newLightMeasuredMessageFromUniversalMessage(um)
 			if err != nil {
-				c.errChan <- Error{
-					Channel: "smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured",
-					Err:     err,
-				}
+				c.handleError("smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured", err)
 			} else {
 				fn(msg)
 			}
@@ -125,6 +122,21 @@ func (c *AppController) PublishSmartylightingStreetlights10ActionStreetlightIDDi
 
 	// Publish on event broker
 	return c.brokerController.Publish("smartylighting/streetlights/1/0/action/{streetlightId}/dim", um)
+}
+
+func (c *AppController) handleError(channelName string, err error) {
+	// Wrap error with the channel name
+	errWrapped := Error{
+		Channel: channelName,
+		Err:     err,
+	}
+
+	// Send it to the error channel
+	select {
+	case c.errChan <- errWrapped:
+	default:
+		// Drop error if it's full or closed
+	}
 }
 
 // ClientSubscriber represents all handlers that are expecting messages for Client
@@ -203,10 +215,7 @@ func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetligh
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newDimLightMessageFromUniversalMessage(um)
 			if err != nil {
-				c.errChan <- Error{
-					Channel: "smartylighting/streetlights/1/0/action/{streetlightId}/dim",
-					Err:     err,
-				}
+				c.handleError("smartylighting/streetlights/1/0/action/{streetlightId}/dim", err)
 			} else {
 				fn(msg)
 			}
@@ -240,6 +249,21 @@ func (c *ClientController) PublishSmartylightingStreetlights10EventStreetlightID
 
 	// Publish on event broker
 	return c.brokerController.Publish("smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured", um)
+}
+
+func (c *ClientController) handleError(channelName string, err error) {
+	// Wrap error with the channel name
+	errWrapped := Error{
+		Channel: channelName,
+		Err:     err,
+	}
+
+	// Send it to the error channel
+	select {
+	case c.errChan <- errWrapped:
+	default:
+		// Drop error if it's full or closed
+	}
 }
 
 const (

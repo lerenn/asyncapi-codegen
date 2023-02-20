@@ -83,10 +83,7 @@ func (c *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newHelloMessageFromUniversalMessage(um)
 			if err != nil {
-				c.errChan <- Error{
-					Channel: "hello",
-					Err:     err,
-				}
+				c.handleError("hello", err)
 			} else {
 				fn(msg)
 			}
@@ -108,4 +105,19 @@ func (c *AppController) UnsubscribeHello() {
 
 	stopChan <- true
 	delete(c.stopSubscribers, "hello")
+}
+
+func (c *AppController) handleError(channelName string, err error) {
+	// Wrap error with the channel name
+	errWrapped := Error{
+		Channel: channelName,
+		Err:     err,
+	}
+
+	// Send it to the error channel
+	select {
+	case c.errChan <- errWrapped:
+	default:
+		// Drop error if it's full or closed
+	}
 }

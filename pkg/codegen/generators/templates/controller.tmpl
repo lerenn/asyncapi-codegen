@@ -77,10 +77,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(fn func (msg {{chann
         for um, open := <-msgs; open; um, open = <-msgs{
             msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
             if err != nil {
-                c.errChan <- Error{
-                    Channel: "{{$key}}",
-                    Err: err,
-                }
+                c.handleError("{{$key}}", err)
             } else {
                 fn(msg)
             }
@@ -119,6 +116,21 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(msg {{channelToMessage
 }
 {{end}}
 
+func (c *{{ $.Prefix }}Controller) handleError(channelName string, err error) {
+    // Wrap error with the channel name
+    errWrapped := Error{
+        Channel: channelName,
+        Err: err,
+    }
+
+    // Send it to the error channel
+    select{
+    case c.errChan <- errWrapped:
+    default:
+        // Drop error if it's full or closed
+    }
+}
+
 {{if eq .Prefix "Client" -}}
 {{- range  $key, $value := .SubscribeChannels -}}
 {{- if ne $value.Subscribe.Message.CorrelationIDLocation ""}}
@@ -147,10 +159,7 @@ func (cc *ClientController) WaitFor{{namify $key}}(msg MessageWithCorrelationID,
         case um := <-msgs:
             msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
             if err != nil {
-                cc.errChan <- Error{
-                    Channel: "{{$key}}",
-                    Err: err,
-                }
+                cc.handleError("{{$key}}", err)
                 continue
             }
 
