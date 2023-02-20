@@ -52,4 +52,23 @@ func (e *Error) Error() string {
 // Description: {{$value.Description}}
 {{end -}}
 type {{namify $key}}Schema {{template "any" $value}}
+
+{{/* Create specific marshaling for time */ -}}
+{{- if or (eq $value.Format "date") (eq $value.Format "date-time") -}}
+// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
+func (t {{namify $key}}Schema) MarshalJSON() ([]byte, error) {
+    return json.Marshal(time.Time(t))
+}
+
+// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
+func (t *{{namify $key}}Schema) UnmarshalJSON(data []byte) error {
+    var timeFormat time.Time
+    if err := json.Unmarshal(data, &timeFormat);  err != nil {
+        return err
+    }
+
+    *t = {{namify $key}}Schema(timeFormat)
+    return nil
+}
+{{- end -}} 
 {{end}}
