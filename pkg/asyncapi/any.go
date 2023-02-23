@@ -34,7 +34,11 @@ func (a *Any) Process(name string, spec Specification) {
 	}
 
 	for _, p := range a.Properties {
-		p.Process(name, spec)
+		p.Process("", spec)
+	}
+
+	if a.Items != nil {
+		a.Items.Process("", spec)
 	}
 }
 

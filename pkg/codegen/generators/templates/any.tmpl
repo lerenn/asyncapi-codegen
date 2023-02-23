@@ -1,9 +1,9 @@
 {{define "any" -}}
 
-{{- if hasField . "Type" -}}
+{{- if .Type -}}
 
 {{- /* Type Object */ -}}
-{{- if eq .Type "object" -}}struct {
+{{- if or (eq .Type "object") .Properties -}}struct {
     {{- range $key, $value := .Properties}}
     {{- if $value.Description}}
     // Description: {{$value.Description}}
@@ -11,44 +11,47 @@
     {{namify $key}} {{if not (isRequired $ $key)}}*{{end}}{{template "any" $value}} `json:"{{snakeCase $key}}"`
     {{end -}}
 }
-{{- end -}}
 
 {{- /* Type String */ -}}
-{{- if eq .Type "string" -}}
+{{- else if eq .Type "string" -}}
 {{- if or (eq .Format "date") (eq .Format "date-time") -}}
 time.Time
 {{- else -}}
 string
 {{- end -}}
-{{- end -}}
 
 {{- /* Type Integer */ -}}
-{{- if eq .Type "integer" -}}
+{{- else if eq .Type "integer" -}}
 {{- if and .Format (eq .Format "int32") -}}
 int32
 {{- else -}}
 int64
 {{- end -}}
-{{- end -}}
 
 {{- /* Type Array */ -}}
-{{- if eq .Type "array" -}}
+{{- else if eq .Type "array" -}}
 []{{- template "any" .Items -}}
-{{- end -}}
 
 {{- /* Type Number */ -}}
-{{- if eq .Type "number" -}}
+{{- else if eq .Type "number" -}}
 {{- if and .Format (eq .Format "float") -}}
 float32
 {{- else -}}
 float64
 {{- end -}}
-{{- end -}}
 
+{{- /* Unknown type */ -}}
+{{- else -}}
+// WARNING: no generation occured here as it has unknown type '{{.Type}}'
 {{- end -}}
 
 {{- /* If no know type but reference a component */ -}}
-{{- if .Reference -}}
+{{- else if .Reference -}}
 {{ referenceToTypeName .Reference }}Schema
+
+{{- /* Should not get to this point */ -}}
+{{- else -}}
+// WARNING: potential error in AsyncAPI generation
 {{- end -}}
+
 {{- end -}}
