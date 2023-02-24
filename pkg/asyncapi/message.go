@@ -24,7 +24,7 @@ type Message struct {
 }
 
 func (msg *Message) Process(name string, spec Specification) {
-	msg.Name = name
+	msg.Name = utils.UpperFirstLetter(name)
 
 	// Add pointer to reference if there is one
 	if msg.Reference != "" {
@@ -33,10 +33,10 @@ func (msg *Message) Process(name string, spec Specification) {
 
 	// Process Headers and Payload
 	if msg.Headers != nil {
-		msg.Headers.Process("headers", spec)
+		msg.Headers.Process(name+"Headers", spec)
 	}
 	if msg.Payload != nil {
-		msg.Payload.Process("payload", spec)
+		msg.Payload.Process(name+"Payload", spec)
 	}
 
 	// Process correlation ID

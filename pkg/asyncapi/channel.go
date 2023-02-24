@@ -1,6 +1,10 @@
 package asyncapi
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+)
 
 type Channel struct {
 	Subscribe *Operation `json:"subscribe"`
@@ -12,7 +16,7 @@ type Channel struct {
 
 func (c *Channel) Process(name string, spec Specification) {
 	// Set channel name
-	c.Name = name
+	c.Name = utils.UpperFirstLetter(name)
 
 	// Get message
 	msg := c.GetChannelMessage()

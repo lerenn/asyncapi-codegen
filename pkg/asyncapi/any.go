@@ -5,6 +5,8 @@ import (
 )
 
 type Any struct {
+	AnyOf       []*Any          `json:"anyOf"`
+	OneOf       []*Any          `json:"oneOf"`
 	Type        string          `json:"type"`
 	Description string          `json:"description"`
 	Format      string          `json:"format"`
@@ -26,19 +28,31 @@ func NewAny() Any {
 }
 
 func (a *Any) Process(name string, spec Specification) {
-	a.Name = name
+	a.Name = utils.UpperFirstLetter(name)
 
 	// Add pointer to reference if there is one
 	if a.Reference != "" {
 		a.ReferenceTo = spec.ReferenceAny(a.Reference)
 	}
 
-	for _, p := range a.Properties {
-		p.Process("", spec)
+	// Process Properties
+	for n, p := range a.Properties {
+		p.Process(n, spec)
 	}
 
+	// Process Items
 	if a.Items != nil {
-		a.Items.Process("", spec)
+		a.Items.Process(name+"Items", spec)
+	}
+
+	// Process AnyOf
+	for _, v := range a.AnyOf {
+		v.Process(name+"AnyOf", spec)
+	}
+
+	// Process OneOf
+	for _, v := range a.OneOf {
+		v.Process(name+"OneOf", spec)
 	}
 }
 
