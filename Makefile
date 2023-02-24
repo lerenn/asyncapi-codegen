@@ -5,6 +5,9 @@ lint: ## Lint the code
 .PHONY: clean
 clean: test/clean ## Clean up the project
 
+.PHONY: check
+check: generate lint test ## Check that everything is ready for commit
+
 .PHONY: test/clean
 test/clean:
 	@$(MAKE) -C examples clean
