@@ -1,4 +1,4 @@
-# AsyncAPI Client and Server Code Generator
+# AsyncAPI Codegen
 
 Generate Go client and server boilerplate from AsyncAPI specifications.
 
