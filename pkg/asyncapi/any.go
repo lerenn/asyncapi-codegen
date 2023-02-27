@@ -5,6 +5,7 @@ import (
 )
 
 type Any struct {
+	AllOf       []*Any          `json:"allOf"`
 	AnyOf       []*Any          `json:"anyOf"`
 	OneOf       []*Any          `json:"oneOf"`
 	Type        string          `json:"type"`
@@ -53,6 +54,15 @@ func (a *Any) Process(name string, spec Specification) {
 	// Process OneOf
 	for _, v := range a.OneOf {
 		v.Process(name+"OneOf", spec)
+	}
+
+	// Process AllOf
+	for _, v := range a.AllOf {
+		// Process the AllOf
+		v.Process(name+"AllOf", spec)
+
+		// Merge With
+		a.MergeWith(spec, *v)
 	}
 }
 
