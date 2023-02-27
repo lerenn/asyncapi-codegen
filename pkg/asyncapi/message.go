@@ -1,14 +1,17 @@
 package asyncapi
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/mohae/deepcopy"
 )
 
 type Message struct {
 	Description   string         `json:"description"`
 	Headers       *Any           `json:"headers"`
+	OneOf         []*Message     `json:"oneOf"`
 	Payload       *Any           `json:"payload"`
 	CorrelationID *CorrelationID `json:"correlationID"`
 	Reference     string         `json:"$ref"`
@@ -37,6 +40,15 @@ func (msg *Message) Process(name string, spec Specification) {
 	}
 	if msg.Payload != nil {
 		msg.Payload.Process(name+"Payload", spec)
+	}
+
+	// Process OneOf
+	for k, v := range msg.OneOf {
+		// Process the OneOf
+		v.Process(name+strconv.Itoa(k), spec)
+
+		// Merge the OneOf as one payload
+		msg.MergeWith(spec, *v)
 	}
 
 	// Process correlation ID
@@ -79,7 +91,7 @@ func (msg *Message) createCorrelationIDFieldIfMissing() {
 func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 	// Check that correlationID exists
 	if msg.CorrelationID == nil || msg.CorrelationID.Location == "" {
-		return utils.ToNullable(NewAny())
+		return utils.ToReference(NewAny())
 	}
 
 	// Get root from header or payload
@@ -87,14 +99,14 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 	path := strings.Split(msg.CorrelationID.Location, "/")
 	if strings.HasPrefix(msg.CorrelationID.Location, "$message.header#") {
 		if msg.Headers == nil {
-			msg.Headers = utils.ToNullable(NewAny())
+			msg.Headers = utils.ToReference(NewAny())
 			msg.Headers.Name = "headers"
 			msg.Headers.Type = "object"
 		}
 		child = msg.Headers
 	} else if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") && msg.Payload != nil {
 		if msg.Payload == nil {
-			msg.Payload = utils.ToNullable(NewAny())
+			msg.Payload = utils.ToReference(NewAny())
 			msg.Payload.Name = "headers"
 			msg.Payload.Type = "object"
 		}
@@ -108,7 +120,7 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 		child, exists = correlationIDParent.Properties[v]
 		if !exists {
 			// Create child
-			child = utils.ToNullable(NewAny())
+			child = utils.ToReference(NewAny())
 			child.Name = v
 			if i == len(path)-2 { // As there is -1 in the loop slice
 				child.Type = "string"
@@ -140,4 +152,37 @@ func (msg *Message) referenceFrom(ref []string) interface{} {
 	}
 
 	return next.referenceFrom(ref[1:])
+}
+
+func (msg *Message) MergeWith(spec Specification, msg2 Message) {
+	// Remove reference if merging
+	if msg.Reference != "" {
+		refMsg := spec.ReferenceMessage(msg.Reference)
+		msg.Reference = ""
+		msg.MergeWith(spec, *refMsg)
+	}
+
+	// Get reference from msg2
+	if msg2.Reference != "" {
+		refMsg2 := spec.ReferenceMessage(msg2.Reference)
+		msg2.MergeWith(spec, *refMsg2)
+	}
+
+	// Merge Payload
+	if msg2.Payload != nil {
+		if msg.Payload == nil {
+			msg.Payload = deepcopy.Copy(msg2.Payload).(*Any)
+		} else {
+			msg.Payload.MergeWith(spec, *msg2.Payload)
+		}
+	}
+
+	// Merge Headers
+	if msg2.Headers != nil {
+		if msg.Headers == nil {
+			msg.Headers = deepcopy.Copy(msg2.Headers).(*Any)
+		} else {
+			msg.Headers.MergeWith(spec, *msg2.Headers)
+		}
+	}
 }

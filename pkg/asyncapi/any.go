@@ -67,3 +67,56 @@ func (a *Any) referenceFrom(ref []string) *Any {
 
 	return a.Properties[ref[0]].referenceFrom(ref[1:])
 }
+
+func (a *Any) MergeWith(spec Specification, a2 Any) {
+	a.Type = "object"
+
+	// Remove reference if merging
+	if a.Reference != "" {
+		refAny := spec.ReferenceAny(a.Reference)
+		a.Reference = ""
+		a.MergeWith(spec, *refAny)
+	}
+
+	// Getting merged with reference
+	if a2.Reference != "" {
+		refAny2 := spec.ReferenceAny(a2.Reference)
+		a2.MergeWith(spec, *refAny2)
+	}
+
+	// Merge AnyOf
+	if a2.AnyOf != nil {
+		if a.AnyOf == nil {
+			copy(a2.AnyOf, a.AnyOf)
+		} else {
+			a.AnyOf = append(a.AnyOf, a2.AnyOf...)
+		}
+	}
+
+	// Merge OneOf
+	if a2.OneOf != nil {
+		if a.OneOf == nil {
+			copy(a2.OneOf, a.OneOf)
+		} else {
+			a.OneOf = append(a.OneOf, a2.OneOf...)
+		}
+	}
+
+	// Merge properties
+	if a2.Properties != nil {
+		if a.Properties == nil {
+			a.Properties = make(map[string]*Any)
+		}
+
+		for k, v := range a2.Properties {
+			_, exists := a.Properties[k]
+			if !exists {
+				a.Properties[k] = v
+			}
+		}
+	}
+
+	// Merge requirements
+	a.Required = append(a.Required, a2.Required...)
+	a.Required = utils.RemoveDuplicate(a.Required)
+}

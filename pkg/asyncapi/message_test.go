@@ -46,7 +46,7 @@ func (suite *MessageSuite) TestIsCorrelationIDRequired() {
 			Message: Message{
 				Headers: &Any{
 					Properties: map[string]*Any{
-						"toto": utils.ToNullable(Any{
+						"toto": utils.ToReference(Any{
 							Required: []string{"correlationId"},
 						}),
 					},
