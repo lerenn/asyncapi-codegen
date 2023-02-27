@@ -45,6 +45,24 @@ float64
 // WARNING: no generation occured here as it has unknown type '{{.Type}}'
 {{- end -}}
 
+{{- /* AnyOf or OneOf */ -}}
+{{- else if or .AnyOf .OneOf -}}
+{{$xxxOf := $.AnyOf}}{{- if .OneOf }}{{$xxxOf = $.OneOf}}{{end -}}
+
+struct {
+    {{- if .OneOf }}
+    // WARNING: only one of the following field can be used
+    {{ end }}
+
+{{- range  $key, $value := $xxxOf}}
+    // {{ if $value.Reference}}{{ referenceToTypeName .Reference }}{{else}}AnyOf{{$key}}{{end}}
+{{- if $value.Description}}
+    // Description: {{$value.Description}}
+{{- end}}
+    {{ if $value.Reference}}{{ referenceToTypeName .Reference }}{{else}}AnyOf{{$key}}{{end}} *{{template "any" $value}}
+{{end -}}
+}
+
 {{- /* If no know type but reference a component */ -}}
 {{- else if .Reference -}}
 {{ referenceToTypeName .Reference }}Schema
