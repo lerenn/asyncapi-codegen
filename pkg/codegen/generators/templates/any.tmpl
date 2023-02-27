@@ -4,11 +4,13 @@
 
 {{- /* Type Object */ -}}
 {{- if or (eq .Type "object") .Properties -}}struct {
-    {{- range $key, $value := .Properties}}
-    {{- if $value.Description}}
+    {{- range $key, $value := .Properties -}}
+    {{if $value.Description}}
     // Description: {{$value.Description}}
-    {{- end}}
-    {{namify $key}} {{if not (isRequired $ $key)}}*{{end}}{{template "any" $value}} `json:"{{snakeCase $key}}"`
+    {{else if and $value.ReferenceTo $value.ReferenceTo.Description}}
+    // Description: {{$value.ReferenceTo.Description}}
+    {{end -}}
+    {{namify $key}} {{if and (not (isRequired $ $key)) (ne $value.Type "array")}}*{{end}}{{template "any" $value}} `json:"{{snakeCase $key}}"`
     {{end -}}
 }
 

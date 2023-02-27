@@ -242,11 +242,8 @@ func (e *Error) Error() string {
 type TestMessagesMessage struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
-		// ObjectWithKey
-		ObjectWithKey *ObjectWithKeySchema
-
-		// ObjectWithKey2
-		ObjectWithKey2 *ObjectWithKey2Schema
+		Key  *string `json:"key"`
+		Key2 *string `json:"key2"`
 	}
 }
 
