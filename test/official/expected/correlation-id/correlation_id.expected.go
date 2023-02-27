@@ -451,6 +451,7 @@ type DimLightPayloadSchema struct {
 	// Description: Percentage to which the light should be dimmed to.
 	Percentage *int64 `json:"percentage"`
 
+	// Description: Date and time when the message was sent.
 	SentAt *SentAtSchema `json:"sent_at"`
 }
 
@@ -459,6 +460,7 @@ type LightMeasuredPayloadSchema struct {
 	// Description: Light intensity measured in lumens.
 	Lumens *int64 `json:"lumens"`
 
+	// Description: Date and time when the message was sent.
 	SentAt *SentAtSchema `json:"sent_at"`
 }
 

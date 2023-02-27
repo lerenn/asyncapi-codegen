@@ -322,8 +322,6 @@ func (e *Error) Error() string {
 type Test2Message struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
-		Key *string `json:"key"`
-
 		Key2 *string `json:"key2"`
 	}
 }
@@ -452,13 +450,8 @@ func (msg TestMessage2Message) toUniversalMessage() (UniversalMessage, error) {
 type TestMessagesMessage struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
-		// WARNING: only one of the following field can be used
-
-		// ObjectWithKey
-		ObjectWithKey *ObjectWithKeySchema
-
-		// ObjectWithKey2
-		ObjectWithKey2 *ObjectWithKey2Schema
+		Key  *string `json:"key"`
+		Key2 *string `json:"key2"`
 	}
 }
 
