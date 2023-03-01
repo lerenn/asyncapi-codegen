@@ -10,17 +10,34 @@ import (
 )
 
 var (
+	// ErrInvalidGenerate happens when using an invalid generation argument
 	ErrInvalidGenerate = errors.New("invalid generate argument")
 )
 
+// Flags contains all command line flags
 type Flags struct {
-	InputPath   string
-	OutputPath  string
+	// InputPath is the path of the AsyncAPI specification file
+	InputPath string
+
+	// OutputPath is the path of the generated code file
+	OutputPath string
+
+	// PackageName is the package name of the generated code
 	PackageName string
-	Generate    string
-	Broker      string
+
+	// Generate contains options, separated by commas, regarding which
+	// golang code should be generated
+	Generate string
+
+	// Broker contains the broker name whose code should be generated
+	Broker string
+
+	// DisableFormatting states if the formatting should be disabled when
+	// writing the generated code
+	DisableFormatting bool
 }
 
+// ProcessFlags processes command line flags and fill the Flags structure with them
 func ProcessFlags() Flags {
 	var f Flags
 
@@ -28,16 +45,19 @@ func ProcessFlags() Flags {
 	flag.StringVar(&f.OutputPath, "o", "asyncapi.gen.go", "Destination file")
 	flag.StringVar(&f.PackageName, "p", "asyncapi", "Golang package name")
 	flag.StringVar(&f.Generate, "g", "client,application,broker,types", "Generation options")
+	flag.BoolVar(&f.DisableFormatting, "disable-formatting", false, "Disables the code generation formatting")
 
 	flag.Parse()
 
 	return f
 }
 
+// ToCodegenOptions processes command line flags structure to code generation tool options
 func (f Flags) ToCodegenOptions() (codegen.Options, error) {
 	opt := codegen.Options{
-		OutputPath:  f.OutputPath,
-		PackageName: f.PackageName,
+		OutputPath:        f.OutputPath,
+		PackageName:       f.PackageName,
+		DisableFormatting: f.DisableFormatting,
 	}
 
 	if f.Generate != "" {
