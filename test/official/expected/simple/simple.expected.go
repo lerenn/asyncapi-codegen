@@ -72,7 +72,7 @@ func (c *AppController) handleError(channelName string, err error) {
 // ClientSubscriber represents all handlers that are expecting messages for Client
 type ClientSubscriber interface {
 	// UserSignedup
-	UserSignedup(msg UserSignedUpMessage)
+	UserSignedup(msg UserSignedUpMessage, done bool)
 }
 
 // ClientController is the structure that provides publishing capabilities to the
@@ -134,8 +134,12 @@ func (c *ClientController) UnsubscribeAll() {
 	}
 }
 
-// SubscribeUserSignedup will subscribe to new messages from 'user/signedup' channel
-func (c *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage)) error {
+// SubscribeUserSignedup will subscribe to new messages from 'user/signedup' channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+// The 'done' argument indicates when the subscription is canceled and can be
+// used to clean up resources.
+func (c *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage, done bool)) error {
 	// Get channel path
 	path := "user/signedup"
 
@@ -153,12 +157,24 @@ func (c *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		for um, open := <-msgs; open; um, open = <-msgs {
+		for {
+			// Wait for next message
+			um, open := <-msgs
+
+			// Process message
 			msg, err := newUserSignedUpMessageFromUniversalMessage(um)
 			if err != nil {
 				c.handleError(path, err)
-			} else {
-				fn(msg)
+			}
+
+			// Send info if message is correct or susbcription is closed
+			if err == nil || !open {
+				fn(msg, !open)
+			}
+
+			// If subscription is closed, then exit the function
+			if !open {
+				return
 			}
 		}
 	}()
@@ -225,8 +241,8 @@ var (
 	// Generic error for AsyncAPI generated code
 	ErrAsyncAPI = errors.New("error when using AsyncAPI")
 
-	// ErrContextCancelled is given when a given context is cancelled
-	ErrContextCancelled = fmt.Errorf("%w: context cancelled", ErrAsyncAPI)
+	// ErrContextCanceled is given when a given context is canceled
+	ErrContextCanceled = fmt.Errorf("%w: context canceled", ErrAsyncAPI)
 
 	// ErrNilBrokerController is raised when a nil broker controller is user
 	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
@@ -240,6 +256,9 @@ var (
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
 	// or more without unsubscribing
 	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
+
+	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens
+	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
 )
 
 type MessageWithCorrelationID interface {

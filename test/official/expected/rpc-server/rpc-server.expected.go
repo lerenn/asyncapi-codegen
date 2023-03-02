@@ -15,7 +15,7 @@ import (
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// RpcQueue
-	RpcQueue(msg RpcQueueMessage)
+	RpcQueue(msg RpcQueueMessage, done bool)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -77,8 +77,12 @@ func (c *AppController) UnsubscribeAll() {
 	}
 }
 
-// SubscribeRpcQueue will subscribe to new messages from 'rpc_queue' channel
-func (c *AppController) SubscribeRpcQueue(fn func(msg RpcQueueMessage)) error {
+// SubscribeRpcQueue will subscribe to new messages from 'rpc_queue' channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+// The 'done' argument indicates when the subscription is canceled and can be
+// used to clean up resources.
+func (c *AppController) SubscribeRpcQueue(fn func(msg RpcQueueMessage, done bool)) error {
 	// Get channel path
 	path := "rpc_queue"
 
@@ -96,12 +100,24 @@ func (c *AppController) SubscribeRpcQueue(fn func(msg RpcQueueMessage)) error {
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		for um, open := <-msgs; open; um, open = <-msgs {
+		for {
+			// Wait for next message
+			um, open := <-msgs
+
+			// Process message
 			msg, err := newRpcQueueMessageFromUniversalMessage(um)
 			if err != nil {
 				c.handleError(path, err)
-			} else {
-				fn(msg)
+			}
+
+			// Send info if message is correct or susbcription is closed
+			if err == nil || !open {
+				fn(msg, !open)
+			}
+
+			// If subscription is closed, then exit the function
+			if !open {
+				return
 			}
 		}
 	}()
@@ -159,7 +175,7 @@ func (c *AppController) handleError(channelName string, err error) {
 // ClientSubscriber represents all handlers that are expecting messages for Client
 type ClientSubscriber interface {
 	// Queue
-	Queue(msg QueueMessage)
+	Queue(msg QueueMessage, done bool)
 }
 
 // ClientController is the structure that provides publishing capabilities to the
@@ -216,8 +232,12 @@ func (c *ClientController) UnsubscribeAll() {
 	}
 }
 
-// SubscribeQueue will subscribe to new messages from '{queue}' channel
-func (c *ClientController) SubscribeQueue(params QueueParameters, fn func(msg QueueMessage)) error {
+// SubscribeQueue will subscribe to new messages from '{queue}' channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+// The 'done' argument indicates when the subscription is canceled and can be
+// used to clean up resources.
+func (c *ClientController) SubscribeQueue(params QueueParameters, fn func(msg QueueMessage, done bool)) error {
 	// Get channel path
 	path := fmt.Sprintf("%s", params.Queue)
 
@@ -235,12 +255,24 @@ func (c *ClientController) SubscribeQueue(params QueueParameters, fn func(msg Qu
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		for um, open := <-msgs; open; um, open = <-msgs {
+		for {
+			// Wait for next message
+			um, open := <-msgs
+
+			// Process message
 			msg, err := newQueueMessageFromUniversalMessage(um)
 			if err != nil {
 				c.handleError(path, err)
-			} else {
-				fn(msg)
+			}
+
+			// Send info if message is correct or susbcription is closed
+			if err == nil || !open {
+				fn(msg, !open)
+			}
+
+			// If subscription is closed, then exit the function
+			if !open {
+				return
 			}
 		}
 	}()
@@ -320,18 +352,22 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 	// Wait for corresponding response
 	for {
 		select {
-		case um := <-msgs:
+		case um, open := <-msgs:
+			// Get new message
 			msg, err := newQueueMessageFromUniversalMessage(um)
 			if err != nil {
 				cc.handleError(path, err)
-				continue
 			}
 
-			if msg.Headers.CorrelationID != nil && msg.CorrelationID() == *msg.Headers.CorrelationID {
+			// If valid message with corresponding correlation ID, return message
+			if err == nil &&
+				msg.Headers.CorrelationID != nil && msg.CorrelationID() == *msg.Headers.CorrelationID {
 				return msg, nil
+			} else if !open { // If message is invalid or not corresponding and the subscription is closed, then return error
+				return QueueMessage{}, ErrSubscriptionCanceled
 			}
-		case <-ctx.Done(): // TODO: make it consumable between two call
-			return QueueMessage{}, ErrContextCancelled
+		case <-ctx.Done(): // Return error if context is done
+			return QueueMessage{}, ErrContextCanceled
 		}
 	}
 }
@@ -361,8 +397,8 @@ var (
 	// Generic error for AsyncAPI generated code
 	ErrAsyncAPI = errors.New("error when using AsyncAPI")
 
-	// ErrContextCancelled is given when a given context is cancelled
-	ErrContextCancelled = fmt.Errorf("%w: context cancelled", ErrAsyncAPI)
+	// ErrContextCanceled is given when a given context is canceled
+	ErrContextCanceled = fmt.Errorf("%w: context canceled", ErrAsyncAPI)
 
 	// ErrNilBrokerController is raised when a nil broker controller is user
 	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
@@ -376,6 +412,9 @@ var (
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
 	// or more without unsubscribing
 	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
+
+	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens
+	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
 )
 
 type MessageWithCorrelationID interface {

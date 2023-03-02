@@ -10,7 +10,7 @@ import (
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// Ping
-	Ping(msg PingMessage)
+	Ping(msg PingMessage, done bool)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -72,8 +72,12 @@ func (c *AppController) UnsubscribeAll() {
 	}
 }
 
-// SubscribePing will subscribe to new messages from 'ping' channel
-func (c *AppController) SubscribePing(fn func(msg PingMessage)) error {
+// SubscribePing will subscribe to new messages from 'ping' channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+// The 'done' argument indicates when the subscription is canceled and can be
+// used to clean up resources.
+func (c *AppController) SubscribePing(fn func(msg PingMessage, done bool)) error {
 	// Get channel path
 	path := "ping"
 
@@ -91,12 +95,24 @@ func (c *AppController) SubscribePing(fn func(msg PingMessage)) error {
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		for um, open := <-msgs; open; um, open = <-msgs {
+		for {
+			// Wait for next message
+			um, open := <-msgs
+
+			// Process message
 			msg, err := newPingMessageFromUniversalMessage(um)
 			if err != nil {
 				c.handleError(path, err)
-			} else {
-				fn(msg)
+			}
+
+			// Send info if message is correct or susbcription is closed
+			if err == nil || !open {
+				fn(msg, !open)
+			}
+
+			// If subscription is closed, then exit the function
+			if !open {
+				return
 			}
 		}
 	}()
