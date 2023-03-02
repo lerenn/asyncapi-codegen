@@ -50,7 +50,8 @@ func (c *AppController) PublishUserSignedup(msg UserSignedUpMessage) error {
 	}
 
 	// Publish on event broker
-	return c.brokerController.Publish("user/signedup", um)
+	path := "user/signedup"
+	return c.brokerController.Publish(path, um)
 }
 
 func (c *AppController) handleError(channelName string, err error) {
@@ -107,7 +108,8 @@ func (c *ClientController) Close() {
 	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *ClientController) SubscribeAll(as ClientSubscriber) error {
 	if as == nil {
 		return ErrNilClientSubscriber
@@ -122,19 +124,29 @@ func (c *ClientController) SubscribeAll(as ClientSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *ClientController) UnsubscribeAll() {
+	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribeUserSignedup()
+
+	// Unsubscribe remaining channels
+	for n, stopChan := range c.stopSubscribers {
+		stopChan <- true
+		delete(c.stopSubscribers, n)
+	}
 }
 
 // SubscribeUserSignedup will subscribe to new messages from 'user/signedup' channel
 func (c *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage)) error {
+	// Get channel path
+	path := "user/signedup"
+
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers["user/signedup"]
+	_, exists := c.stopSubscribers[path]
 	if exists {
 		return fmt.Errorf("%w: user/signedup channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe("user/signedup")
+	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
 		return err
 	}
@@ -144,7 +156,7 @@ func (c *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newUserSignedUpMessageFromUniversalMessage(um)
 			if err != nil {
-				c.handleError("user/signedup", err)
+				c.handleError(path, err)
 			} else {
 				fn(msg)
 			}
@@ -152,20 +164,25 @@ func (c *ClientController) SubscribeUserSignedup(fn func(msg UserSignedUpMessage
 	}()
 
 	// Add the stop channel to the inside map
-	c.stopSubscribers["user/signedup"] = stop
+	c.stopSubscribers[path] = stop
 
 	return nil
 }
 
 // UnsubscribeUserSignedup will unsubscribe messages from 'user/signedup' channel
 func (c *ClientController) UnsubscribeUserSignedup() {
-	stopChan, exists := c.stopSubscribers["user/signedup"]
+	// Get channel path
+	path := "user/signedup"
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
 	if !exists {
 		return
 	}
 
+	// Stop the channel and remove the entry
 	stopChan <- true
-	delete(c.stopSubscribers, "user/signedup")
+	delete(c.stopSubscribers, path)
 }
 
 func (c *ClientController) handleError(channelName string, err error) {

@@ -46,7 +46,8 @@ func (c *AppController) Close() {
 	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *AppController) SubscribeAll(as AppSubscriber) error {
 	if as == nil {
 		return ErrNilAppSubscriber
@@ -61,19 +62,29 @@ func (c *AppController) SubscribeAll(as AppSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll() {
+	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribeHello()
+
+	// Unsubscribe remaining channels
+	for n, stopChan := range c.stopSubscribers {
+		stopChan <- true
+		delete(c.stopSubscribers, n)
+	}
 }
 
 // SubscribeHello will subscribe to new messages from 'hello' channel
 func (c *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
+	// Get channel path
+	path := "hello"
+
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers["hello"]
+	_, exists := c.stopSubscribers[path]
 	if exists {
 		return fmt.Errorf("%w: hello channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe("hello")
+	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
 		return err
 	}
@@ -83,7 +94,7 @@ func (c *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newHelloMessageFromUniversalMessage(um)
 			if err != nil {
-				c.handleError("hello", err)
+				c.handleError(path, err)
 			} else {
 				fn(msg)
 			}
@@ -91,20 +102,25 @@ func (c *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 	}()
 
 	// Add the stop channel to the inside map
-	c.stopSubscribers["hello"] = stop
+	c.stopSubscribers[path] = stop
 
 	return nil
 }
 
 // UnsubscribeHello will unsubscribe messages from 'hello' channel
 func (c *AppController) UnsubscribeHello() {
-	stopChan, exists := c.stopSubscribers["hello"]
+	// Get channel path
+	path := "hello"
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
 	if !exists {
 		return
 	}
 
+	// Stop the channel and remove the entry
 	stopChan <- true
-	delete(c.stopSubscribers, "hello")
+	delete(c.stopSubscribers, path)
 }
 
 func (c *AppController) handleError(channelName string, err error) {

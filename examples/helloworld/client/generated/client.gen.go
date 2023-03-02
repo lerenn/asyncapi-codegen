@@ -44,7 +44,8 @@ func (c *ClientController) PublishHello(msg HelloMessage) error {
 	}
 
 	// Publish on event broker
-	return c.brokerController.Publish("hello", um)
+	path := "hello"
+	return c.brokerController.Publish(path, um)
 }
 
 func (c *ClientController) handleError(channelName string, err error) {

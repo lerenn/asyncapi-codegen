@@ -12,8 +12,8 @@ type Specification struct {
 }
 
 func (s *Specification) Process() {
-	for name, ch := range s.Channels {
-		ch.Process(name, *s)
+	for path, ch := range s.Channels {
+		ch.Process(path, *s)
 	}
 	s.Components.Process(*s)
 }

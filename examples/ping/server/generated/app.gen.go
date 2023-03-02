@@ -46,7 +46,8 @@ func (c *AppController) Close() {
 	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *AppController) SubscribeAll(as AppSubscriber) error {
 	if as == nil {
 		return ErrNilAppSubscriber
@@ -61,19 +62,29 @@ func (c *AppController) SubscribeAll(as AppSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll() {
+	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribePing()
+
+	// Unsubscribe remaining channels
+	for n, stopChan := range c.stopSubscribers {
+		stopChan <- true
+		delete(c.stopSubscribers, n)
+	}
 }
 
 // SubscribePing will subscribe to new messages from 'ping' channel
 func (c *AppController) SubscribePing(fn func(msg PingMessage)) error {
+	// Get channel path
+	path := "ping"
+
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers["ping"]
+	_, exists := c.stopSubscribers[path]
 	if exists {
 		return fmt.Errorf("%w: ping channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe("ping")
+	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
 		return err
 	}
@@ -83,7 +94,7 @@ func (c *AppController) SubscribePing(fn func(msg PingMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newPingMessageFromUniversalMessage(um)
 			if err != nil {
-				c.handleError("ping", err)
+				c.handleError(path, err)
 			} else {
 				fn(msg)
 			}
@@ -91,20 +102,25 @@ func (c *AppController) SubscribePing(fn func(msg PingMessage)) error {
 	}()
 
 	// Add the stop channel to the inside map
-	c.stopSubscribers["ping"] = stop
+	c.stopSubscribers[path] = stop
 
 	return nil
 }
 
 // UnsubscribePing will unsubscribe messages from 'ping' channel
 func (c *AppController) UnsubscribePing() {
-	stopChan, exists := c.stopSubscribers["ping"]
+	// Get channel path
+	path := "ping"
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
 	if !exists {
 		return
 	}
 
+	// Stop the channel and remove the entry
 	stopChan <- true
-	delete(c.stopSubscribers, "ping")
+	delete(c.stopSubscribers, path)
 }
 
 // PublishPong will publish messages to 'pong' channel
@@ -116,7 +132,8 @@ func (c *AppController) PublishPong(msg PongMessage) error {
 	}
 
 	// Publish on event broker
-	return c.brokerController.Publish("pong", um)
+	path := "pong"
+	return c.brokerController.Publish(path, um)
 }
 
 func (c *AppController) handleError(channelName string, err error) {

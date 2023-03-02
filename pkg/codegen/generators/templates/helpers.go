@@ -104,3 +104,22 @@ func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 func IsRequired(any asyncapi.Any, field string) bool {
 	return any.IsFieldRequired(field)
 }
+
+func GenerateChannelPath(ch asyncapi.Channel) string {
+	// If there is no parameter, then just return the path
+	if ch.Parameters == nil {
+		return fmt.Sprintf("%q", ch.Path)
+	}
+
+	parameterRegexp := regexp.MustCompile("{[^{}]*}")
+
+	matches := parameterRegexp.FindAllString(ch.Path, -1)
+	format := parameterRegexp.ReplaceAllString(ch.Path, "%s")
+
+	sprint := fmt.Sprintf("fmt.Sprintf(%q, ", format)
+	for _, m := range matches {
+		sprint += fmt.Sprintf("params.%s,", Namify(m))
+	}
+
+	return sprint[:len(sprint)-1] + ")"
+}

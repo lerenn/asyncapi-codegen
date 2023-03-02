@@ -51,14 +51,11 @@ func (c *AppController) Close() {
 	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *AppController) SubscribeAll(as AppSubscriber) error {
 	if as == nil {
 		return ErrNilAppSubscriber
-	}
-
-	if err := c.SubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured(as.SmartylightingStreetlights10EventStreetlightIDLightingMeasured); err != nil {
-		return err
 	}
 
 	return nil
@@ -66,19 +63,28 @@ func (c *AppController) SubscribeAll(as AppSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll() {
-	c.UnsubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured()
+	// Unsubscribe channels with no parameters (if any)
+
+	// Unsubscribe remaining channels
+	for n, stopChan := range c.stopSubscribers {
+		stopChan <- true
+		delete(c.stopSubscribers, n)
+	}
 }
 
 // SubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured will subscribe to new messages from 'smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured' channel
-func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured(fn func(msg LightMeasuredMessage)) error {
+func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured(params SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters, fn func(msg LightMeasuredMessage)) error {
+	// Get channel path
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%s/lighting/measured", params.StreetlightID)
+
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers["smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured"]
+	_, exists := c.stopSubscribers[path]
 	if exists {
 		return fmt.Errorf("%w: smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe("smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured")
+	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
 		return err
 	}
@@ -88,7 +94,7 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newLightMeasuredMessageFromUniversalMessage(um)
 			if err != nil {
-				c.handleError("smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured", err)
+				c.handleError(path, err)
 			} else {
 				fn(msg)
 			}
@@ -96,24 +102,29 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 	}()
 
 	// Add the stop channel to the inside map
-	c.stopSubscribers["smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured"] = stop
+	c.stopSubscribers[path] = stop
 
 	return nil
 }
 
 // UnsubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured will unsubscribe messages from 'smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured' channel
-func (c *AppController) UnsubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured() {
-	stopChan, exists := c.stopSubscribers["smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured"]
+func (c *AppController) UnsubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured(params SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters) {
+	// Get channel path
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%s/lighting/measured", params.StreetlightID)
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
 	if !exists {
 		return
 	}
 
+	// Stop the channel and remove the entry
 	stopChan <- true
-	delete(c.stopSubscribers, "smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured")
+	delete(c.stopSubscribers, path)
 }
 
 // PublishSmartylightingStreetlights10ActionStreetlightIDDim will publish messages to 'smartylighting/streetlights/1/0/action/{streetlightId}/dim' channel
-func (c *AppController) PublishSmartylightingStreetlights10ActionStreetlightIDDim(msg DimLightMessage) error {
+func (c *AppController) PublishSmartylightingStreetlights10ActionStreetlightIDDim(params SmartylightingStreetlights10ActionStreetlightIDDimParameters, msg DimLightMessage) error {
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
@@ -121,7 +132,8 @@ func (c *AppController) PublishSmartylightingStreetlights10ActionStreetlightIDDi
 	}
 
 	// Publish on event broker
-	return c.brokerController.Publish("smartylighting/streetlights/1/0/action/{streetlightId}/dim", um)
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%s/dim", params.StreetlightID)
+	return c.brokerController.Publish(path, um)
 }
 
 func (c *AppController) handleError(channelName string, err error) {
@@ -178,14 +190,11 @@ func (c *ClientController) Close() {
 	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *ClientController) SubscribeAll(as ClientSubscriber) error {
 	if as == nil {
 		return ErrNilClientSubscriber
-	}
-
-	if err := c.SubscribeSmartylightingStreetlights10ActionStreetlightIDDim(as.SmartylightingStreetlights10ActionStreetlightIDDim); err != nil {
-		return err
 	}
 
 	return nil
@@ -193,19 +202,28 @@ func (c *ClientController) SubscribeAll(as ClientSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *ClientController) UnsubscribeAll() {
-	c.UnsubscribeSmartylightingStreetlights10ActionStreetlightIDDim()
+	// Unsubscribe channels with no parameters (if any)
+
+	// Unsubscribe remaining channels
+	for n, stopChan := range c.stopSubscribers {
+		stopChan <- true
+		delete(c.stopSubscribers, n)
+	}
 }
 
 // SubscribeSmartylightingStreetlights10ActionStreetlightIDDim will subscribe to new messages from 'smartylighting/streetlights/1/0/action/{streetlightId}/dim' channel
-func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetlightIDDim(fn func(msg DimLightMessage)) error {
+func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetlightIDDim(params SmartylightingStreetlights10ActionStreetlightIDDimParameters, fn func(msg DimLightMessage)) error {
+	// Get channel path
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%s/dim", params.StreetlightID)
+
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers["smartylighting/streetlights/1/0/action/{streetlightId}/dim"]
+	_, exists := c.stopSubscribers[path]
 	if exists {
 		return fmt.Errorf("%w: smartylighting/streetlights/1/0/action/{streetlightId}/dim channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe("smartylighting/streetlights/1/0/action/{streetlightId}/dim")
+	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
 		return err
 	}
@@ -215,7 +233,7 @@ func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetligh
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newDimLightMessageFromUniversalMessage(um)
 			if err != nil {
-				c.handleError("smartylighting/streetlights/1/0/action/{streetlightId}/dim", err)
+				c.handleError(path, err)
 			} else {
 				fn(msg)
 			}
@@ -223,24 +241,29 @@ func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetligh
 	}()
 
 	// Add the stop channel to the inside map
-	c.stopSubscribers["smartylighting/streetlights/1/0/action/{streetlightId}/dim"] = stop
+	c.stopSubscribers[path] = stop
 
 	return nil
 }
 
 // UnsubscribeSmartylightingStreetlights10ActionStreetlightIDDim will unsubscribe messages from 'smartylighting/streetlights/1/0/action/{streetlightId}/dim' channel
-func (c *ClientController) UnsubscribeSmartylightingStreetlights10ActionStreetlightIDDim() {
-	stopChan, exists := c.stopSubscribers["smartylighting/streetlights/1/0/action/{streetlightId}/dim"]
+func (c *ClientController) UnsubscribeSmartylightingStreetlights10ActionStreetlightIDDim(params SmartylightingStreetlights10ActionStreetlightIDDimParameters) {
+	// Get channel path
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%s/dim", params.StreetlightID)
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
 	if !exists {
 		return
 	}
 
+	// Stop the channel and remove the entry
 	stopChan <- true
-	delete(c.stopSubscribers, "smartylighting/streetlights/1/0/action/{streetlightId}/dim")
+	delete(c.stopSubscribers, path)
 }
 
 // PublishSmartylightingStreetlights10EventStreetlightIDLightingMeasured will publish messages to 'smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured' channel
-func (c *ClientController) PublishSmartylightingStreetlights10EventStreetlightIDLightingMeasured(msg LightMeasuredMessage) error {
+func (c *ClientController) PublishSmartylightingStreetlights10EventStreetlightIDLightingMeasured(params SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters, msg LightMeasuredMessage) error {
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
@@ -248,7 +271,8 @@ func (c *ClientController) PublishSmartylightingStreetlights10EventStreetlightID
 	}
 
 	// Publish on event broker
-	return c.brokerController.Publish("smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured", um)
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%s/lighting/measured", params.StreetlightID)
+	return c.brokerController.Publish(path, um)
 }
 
 func (c *ClientController) handleError(channelName string, err error) {
@@ -319,6 +343,16 @@ type Error struct {
 
 func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
+}
+
+// SmartylightingStreetlights10ActionStreetlightIDDimParameters represents SmartylightingStreetlights10ActionStreetlightIDDim channel parameters
+type SmartylightingStreetlights10ActionStreetlightIDDimParameters struct {
+	StreetlightID string
+}
+
+// SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters represents SmartylightingStreetlights10EventStreetlightIDLightingMeasured channel parameters
+type SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters struct {
+	StreetlightID string
 }
 
 // DimLightMessage is the message expected for 'DimLight' channel

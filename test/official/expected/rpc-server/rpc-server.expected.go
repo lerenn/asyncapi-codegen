@@ -51,7 +51,8 @@ func (c *AppController) Close() {
 	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *AppController) SubscribeAll(as AppSubscriber) error {
 	if as == nil {
 		return ErrNilAppSubscriber
@@ -66,19 +67,29 @@ func (c *AppController) SubscribeAll(as AppSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll() {
+	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribeRpcQueue()
+
+	// Unsubscribe remaining channels
+	for n, stopChan := range c.stopSubscribers {
+		stopChan <- true
+		delete(c.stopSubscribers, n)
+	}
 }
 
 // SubscribeRpcQueue will subscribe to new messages from 'rpc_queue' channel
 func (c *AppController) SubscribeRpcQueue(fn func(msg RpcQueueMessage)) error {
+	// Get channel path
+	path := "rpc_queue"
+
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers["rpc_queue"]
+	_, exists := c.stopSubscribers[path]
 	if exists {
 		return fmt.Errorf("%w: rpc_queue channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe("rpc_queue")
+	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
 		return err
 	}
@@ -88,7 +99,7 @@ func (c *AppController) SubscribeRpcQueue(fn func(msg RpcQueueMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newRpcQueueMessageFromUniversalMessage(um)
 			if err != nil {
-				c.handleError("rpc_queue", err)
+				c.handleError(path, err)
 			} else {
 				fn(msg)
 			}
@@ -96,24 +107,29 @@ func (c *AppController) SubscribeRpcQueue(fn func(msg RpcQueueMessage)) error {
 	}()
 
 	// Add the stop channel to the inside map
-	c.stopSubscribers["rpc_queue"] = stop
+	c.stopSubscribers[path] = stop
 
 	return nil
 }
 
 // UnsubscribeRpcQueue will unsubscribe messages from 'rpc_queue' channel
 func (c *AppController) UnsubscribeRpcQueue() {
-	stopChan, exists := c.stopSubscribers["rpc_queue"]
+	// Get channel path
+	path := "rpc_queue"
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
 	if !exists {
 		return
 	}
 
+	// Stop the channel and remove the entry
 	stopChan <- true
-	delete(c.stopSubscribers, "rpc_queue")
+	delete(c.stopSubscribers, path)
 }
 
 // PublishQueue will publish messages to '{queue}' channel
-func (c *AppController) PublishQueue(msg QueueMessage) error {
+func (c *AppController) PublishQueue(params QueueParameters, msg QueueMessage) error {
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
@@ -121,7 +137,8 @@ func (c *AppController) PublishQueue(msg QueueMessage) error {
 	}
 
 	// Publish on event broker
-	return c.brokerController.Publish("{queue}", um)
+	path := fmt.Sprintf("%s", params.Queue)
+	return c.brokerController.Publish(path, um)
 }
 
 func (c *AppController) handleError(channelName string, err error) {
@@ -178,14 +195,11 @@ func (c *ClientController) Close() {
 	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *ClientController) SubscribeAll(as ClientSubscriber) error {
 	if as == nil {
 		return ErrNilClientSubscriber
-	}
-
-	if err := c.SubscribeQueue(as.Queue); err != nil {
-		return err
 	}
 
 	return nil
@@ -193,19 +207,28 @@ func (c *ClientController) SubscribeAll(as ClientSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *ClientController) UnsubscribeAll() {
-	c.UnsubscribeQueue()
+	// Unsubscribe channels with no parameters (if any)
+
+	// Unsubscribe remaining channels
+	for n, stopChan := range c.stopSubscribers {
+		stopChan <- true
+		delete(c.stopSubscribers, n)
+	}
 }
 
 // SubscribeQueue will subscribe to new messages from '{queue}' channel
-func (c *ClientController) SubscribeQueue(fn func(msg QueueMessage)) error {
+func (c *ClientController) SubscribeQueue(params QueueParameters, fn func(msg QueueMessage)) error {
+	// Get channel path
+	path := fmt.Sprintf("%s", params.Queue)
+
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers["{queue}"]
+	_, exists := c.stopSubscribers[path]
 	if exists {
 		return fmt.Errorf("%w: {queue} channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe("{queue}")
+	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
 		return err
 	}
@@ -215,7 +238,7 @@ func (c *ClientController) SubscribeQueue(fn func(msg QueueMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newQueueMessageFromUniversalMessage(um)
 			if err != nil {
-				c.handleError("{queue}", err)
+				c.handleError(path, err)
 			} else {
 				fn(msg)
 			}
@@ -223,20 +246,25 @@ func (c *ClientController) SubscribeQueue(fn func(msg QueueMessage)) error {
 	}()
 
 	// Add the stop channel to the inside map
-	c.stopSubscribers["{queue}"] = stop
+	c.stopSubscribers[path] = stop
 
 	return nil
 }
 
 // UnsubscribeQueue will unsubscribe messages from '{queue}' channel
-func (c *ClientController) UnsubscribeQueue() {
-	stopChan, exists := c.stopSubscribers["{queue}"]
+func (c *ClientController) UnsubscribeQueue(params QueueParameters) {
+	// Get channel path
+	path := fmt.Sprintf("%s", params.Queue)
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
 	if !exists {
 		return
 	}
 
+	// Stop the channel and remove the entry
 	stopChan <- true
-	delete(c.stopSubscribers, "{queue}")
+	delete(c.stopSubscribers, path)
 }
 
 // PublishRpcQueue will publish messages to 'rpc_queue' channel
@@ -248,7 +276,8 @@ func (c *ClientController) PublishRpcQueue(msg RpcQueueMessage) error {
 	}
 
 	// Publish on event broker
-	return c.brokerController.Publish("rpc_queue", um)
+	path := "rpc_queue"
+	return c.brokerController.Publish(path, um)
 }
 
 func (c *ClientController) handleError(channelName string, err error) {
@@ -270,9 +299,12 @@ func (c *ClientController) handleError(channelName string, err error) {
 //
 // The pub function is the publication function that should be used to send the message
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
-func (cc *ClientController) WaitForQueue(ctx context.Context, msg MessageWithCorrelationID, pub func() error) (QueueMessage, error) {
+func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParameters, msg MessageWithCorrelationID, pub func() error) (QueueMessage, error) {
+	// Get channel path
+	path := fmt.Sprintf("%s", params.Queue)
+
 	// Subscribe to broker channel
-	msgs, stop, err := cc.brokerController.Subscribe("{queue}")
+	msgs, stop, err := cc.brokerController.Subscribe(path)
 	if err != nil {
 		return QueueMessage{}, err
 	}
@@ -291,7 +323,7 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, msg MessageWithCor
 		case um := <-msgs:
 			msg, err := newQueueMessageFromUniversalMessage(um)
 			if err != nil {
-				cc.handleError("{queue}", err)
+				cc.handleError(path, err)
 				continue
 			}
 
@@ -440,6 +472,11 @@ func (msg RpcQueueMessage) CorrelationID() string {
 func (msg *RpcQueueMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	id := req.CorrelationID()
 	msg.Headers.CorrelationID = &id
+}
+
+// QueueParameters represents Queue channel parameters
+type QueueParameters struct {
+	Queue string
 }
 
 // QueueMessage is the message expected for 'Queue' channel

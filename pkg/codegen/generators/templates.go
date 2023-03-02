@@ -17,6 +17,7 @@ const (
 	messageTemplatePath    = templatesDir + "/message.tmpl"
 	subscriberTemplatePath = templatesDir + "/subscriber.tmpl"
 	controllerTemplatePath = templatesDir + "/controller.tmpl"
+	parametersTemplatePath = templatesDir + "/parameters.tmpl"
 
 	brokerDir                    = templatesDir + "/broker"
 	brokerControllerTemplatePath = brokerDir + "/controller.tmpl"
@@ -44,5 +45,6 @@ func templateFunctions() template.FuncMap {
 		"channelToMessageTypeName":       templates.ChannelToMessageTypeName,
 		"hasField":                       templates.HasField,
 		"isRequired":                     templates.IsRequired,
+		"generateChannelPath":            templates.GenerateChannelPath,
 	}
 }

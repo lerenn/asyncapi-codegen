@@ -48,7 +48,8 @@ func (c *AppController) Close() {
 	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *AppController) SubscribeAll(as AppSubscriber) error {
 	if as == nil {
 		return ErrNilAppSubscriber
@@ -63,19 +64,29 @@ func (c *AppController) SubscribeAll(as AppSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll() {
+	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribeTest()
+
+	// Unsubscribe remaining channels
+	for n, stopChan := range c.stopSubscribers {
+		stopChan <- true
+		delete(c.stopSubscribers, n)
+	}
 }
 
 // SubscribeTest will subscribe to new messages from 'test' channel
 func (c *AppController) SubscribeTest(fn func(msg TestMessagesMessage)) error {
+	// Get channel path
+	path := "test"
+
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers["test"]
+	_, exists := c.stopSubscribers[path]
 	if exists {
 		return fmt.Errorf("%w: test channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe("test")
+	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
 		return err
 	}
@@ -85,7 +96,7 @@ func (c *AppController) SubscribeTest(fn func(msg TestMessagesMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newTestMessagesMessageFromUniversalMessage(um)
 			if err != nil {
-				c.handleError("test", err)
+				c.handleError(path, err)
 			} else {
 				fn(msg)
 			}
@@ -93,20 +104,25 @@ func (c *AppController) SubscribeTest(fn func(msg TestMessagesMessage)) error {
 	}()
 
 	// Add the stop channel to the inside map
-	c.stopSubscribers["test"] = stop
+	c.stopSubscribers[path] = stop
 
 	return nil
 }
 
 // UnsubscribeTest will unsubscribe messages from 'test' channel
 func (c *AppController) UnsubscribeTest() {
-	stopChan, exists := c.stopSubscribers["test"]
+	// Get channel path
+	path := "test"
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
 	if !exists {
 		return
 	}
 
+	// Stop the channel and remove the entry
 	stopChan <- true
-	delete(c.stopSubscribers, "test")
+	delete(c.stopSubscribers, path)
 }
 
 func (c *AppController) handleError(channelName string, err error) {
@@ -165,7 +181,8 @@ func (c *ClientController) PublishTest(msg TestMessagesMessage) error {
 	}
 
 	// Publish on event broker
-	return c.brokerController.Publish("test", um)
+	path := "test"
+	return c.brokerController.Publish(path, um)
 }
 
 func (c *ClientController) handleError(channelName string, err error) {
