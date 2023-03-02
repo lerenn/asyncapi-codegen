@@ -26,7 +26,7 @@ type ServerSubscriber struct {
 	Controller *generated.AppController
 }
 
-func (s ServerSubscriber) Ping(req generated.PingMessage) {
+func (s ServerSubscriber) Ping(req generated.PingMessage, _ bool) {
 	log.Println("Received a ping request")
 
 	// Generate a pong message, set as a response of the request

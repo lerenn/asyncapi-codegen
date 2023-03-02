@@ -123,7 +123,7 @@ func (ac *AppController) UnsubscribeAll()
 //
 // You just have to give a function that match the signature of the callback and
 // then process the received message.
-func (ac *AppController) SubscribeHello(fn func(msg HelloMessage)) error
+func (ac *AppController) SubscribeHello(fn func(msg HelloMessage, done bool)) error
 
 // UnsubscribeHello will unsubscribe only the subscription on the "hello" channel.
 // It should be only used when wanting specifically that, otherwise the clean up
@@ -144,7 +144,7 @@ defer ctrl.Close()
 
 // Subscribe to HelloWorld messages
 log.Println("Subscribe to hello world...")
-ctrl.SubscribeHello(func(msg generated.HelloMessage) {
+ctrl.SubscribeHello(func(msg generated.HelloMessage, _ bool) {
   log.Println("Received message:", msg.Payload)
 })
 
@@ -178,7 +178,7 @@ func (cc *ClientController) Close()
 
 // PublishHello will publish a hello world message on the "hello" channel as
 // specified in the AsyncAPI specification.
-func (cc *ClientController) PublishHello(msg HelloMessage) error
+func (cc *ClientController) PublishHello(msg HelloMessage, done bool) error
 ```
 
 And here is an example of the client that could be written to use this generated
@@ -260,7 +260,7 @@ type ServerSubscriber struct {
 	Controller *generated.AppController
 }
 
-func (s ServerSubscriber) Ping(req generated.PingMessage) {
+func (s ServerSubscriber) Ping(req generated.PingMessage, _ bool) {
 	// Generate a pong message, set as a response of the request
 	resp := generated.NewPongMessage()
 	resp.SetAsResponseFrom(req)

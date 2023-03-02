@@ -33,7 +33,7 @@ func main() {
 
 	// Subscribe to HelloWorld messages
 	log.Println("Subscribe to hello world...")
-	ctrl.SubscribeHello(func(msg generated.HelloMessage) {
+	ctrl.SubscribeHello(func(msg generated.HelloMessage, _ bool) {
 		log.Println("Received message:", msg.Payload)
 	})
 

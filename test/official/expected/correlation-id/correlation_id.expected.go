@@ -15,7 +15,7 @@ import (
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// SmartylightingStreetlights10EventStreetlightIDLightingMeasured
-	SmartylightingStreetlights10EventStreetlightIDLightingMeasured(msg LightMeasuredMessage)
+	SmartylightingStreetlights10EventStreetlightIDLightingMeasured(msg LightMeasuredMessage, done bool)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -72,8 +72,12 @@ func (c *AppController) UnsubscribeAll() {
 	}
 }
 
-// SubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured will subscribe to new messages from 'smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured' channel
-func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured(params SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters, fn func(msg LightMeasuredMessage)) error {
+// SubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured will subscribe to new messages from 'smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured' channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+// The 'done' argument indicates when the subscription is canceled and can be
+// used to clean up resources.
+func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured(params SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters, fn func(msg LightMeasuredMessage, done bool)) error {
 	// Get channel path
 	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%s/lighting/measured", params.StreetlightID)
 
@@ -91,12 +95,24 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		for um, open := <-msgs; open; um, open = <-msgs {
+		for {
+			// Wait for next message
+			um, open := <-msgs
+
+			// Process message
 			msg, err := newLightMeasuredMessageFromUniversalMessage(um)
 			if err != nil {
 				c.handleError(path, err)
-			} else {
-				fn(msg)
+			}
+
+			// Send info if message is correct or susbcription is closed
+			if err == nil || !open {
+				fn(msg, !open)
+			}
+
+			// If subscription is closed, then exit the function
+			if !open {
+				return
 			}
 		}
 	}()
@@ -154,7 +170,7 @@ func (c *AppController) handleError(channelName string, err error) {
 // ClientSubscriber represents all handlers that are expecting messages for Client
 type ClientSubscriber interface {
 	// SmartylightingStreetlights10ActionStreetlightIDDim
-	SmartylightingStreetlights10ActionStreetlightIDDim(msg DimLightMessage)
+	SmartylightingStreetlights10ActionStreetlightIDDim(msg DimLightMessage, done bool)
 }
 
 // ClientController is the structure that provides publishing capabilities to the
@@ -211,8 +227,12 @@ func (c *ClientController) UnsubscribeAll() {
 	}
 }
 
-// SubscribeSmartylightingStreetlights10ActionStreetlightIDDim will subscribe to new messages from 'smartylighting/streetlights/1/0/action/{streetlightId}/dim' channel
-func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetlightIDDim(params SmartylightingStreetlights10ActionStreetlightIDDimParameters, fn func(msg DimLightMessage)) error {
+// SubscribeSmartylightingStreetlights10ActionStreetlightIDDim will subscribe to new messages from 'smartylighting/streetlights/1/0/action/{streetlightId}/dim' channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+// The 'done' argument indicates when the subscription is canceled and can be
+// used to clean up resources.
+func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetlightIDDim(params SmartylightingStreetlights10ActionStreetlightIDDimParameters, fn func(msg DimLightMessage, done bool)) error {
 	// Get channel path
 	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%s/dim", params.StreetlightID)
 
@@ -230,12 +250,24 @@ func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetligh
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		for um, open := <-msgs; open; um, open = <-msgs {
+		for {
+			// Wait for next message
+			um, open := <-msgs
+
+			// Process message
 			msg, err := newDimLightMessageFromUniversalMessage(um)
 			if err != nil {
 				c.handleError(path, err)
-			} else {
-				fn(msg)
+			}
+
+			// Send info if message is correct or susbcription is closed
+			if err == nil || !open {
+				fn(msg, !open)
+			}
+
+			// If subscription is closed, then exit the function
+			if !open {
+				return
 			}
 		}
 	}()
@@ -315,8 +347,8 @@ var (
 	// Generic error for AsyncAPI generated code
 	ErrAsyncAPI = errors.New("error when using AsyncAPI")
 
-	// ErrContextCancelled is given when a given context is cancelled
-	ErrContextCancelled = fmt.Errorf("%w: context cancelled", ErrAsyncAPI)
+	// ErrContextCanceled is given when a given context is canceled
+	ErrContextCanceled = fmt.Errorf("%w: context canceled", ErrAsyncAPI)
 
 	// ErrNilBrokerController is raised when a nil broker controller is user
 	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
@@ -330,6 +362,9 @@ var (
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
 	// or more without unsubscribing
 	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
+
+	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens
+	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
 )
 
 type MessageWithCorrelationID interface {

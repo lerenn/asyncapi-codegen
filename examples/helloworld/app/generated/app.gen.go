@@ -10,7 +10,7 @@ import (
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// Hello
-	Hello(msg HelloMessage)
+	Hello(msg HelloMessage, done bool)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -72,8 +72,12 @@ func (c *AppController) UnsubscribeAll() {
 	}
 }
 
-// SubscribeHello will subscribe to new messages from 'hello' channel
-func (c *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
+// SubscribeHello will subscribe to new messages from 'hello' channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+// The 'done' argument indicates when the subscription is canceled and can be
+// used to clean up resources.
+func (c *AppController) SubscribeHello(fn func(msg HelloMessage, done bool)) error {
 	// Get channel path
 	path := "hello"
 
@@ -91,12 +95,24 @@ func (c *AppController) SubscribeHello(fn func(msg HelloMessage)) error {
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		for um, open := <-msgs; open; um, open = <-msgs {
+		for {
+			// Wait for next message
+			um, open := <-msgs
+
+			// Process message
 			msg, err := newHelloMessageFromUniversalMessage(um)
 			if err != nil {
 				c.handleError(path, err)
-			} else {
-				fn(msg)
+			}
+
+			// Send info if message is correct or susbcription is closed
+			if err == nil || !open {
+				fn(msg, !open)
+			}
+
+			// If subscription is closed, then exit the function
+			if !open {
+				return
 			}
 		}
 	}()

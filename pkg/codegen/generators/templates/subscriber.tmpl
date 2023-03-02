@@ -3,7 +3,7 @@
 type {{ .Prefix }}Subscriber interface {
 {{- range  $key, $value := .Channels}}
     // {{namify $key}}
-    {{namify $key}}(msg {{channelToMessageTypeName $value}})
+    {{namify $key}}(msg {{channelToMessageTypeName $value}}, done bool)
 {{end}}
 }
 {{- end}}

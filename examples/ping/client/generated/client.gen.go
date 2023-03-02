@@ -11,7 +11,7 @@ import (
 // ClientSubscriber represents all handlers that are expecting messages for Client
 type ClientSubscriber interface {
 	// Pong
-	Pong(msg PongMessage)
+	Pong(msg PongMessage, done bool)
 }
 
 // ClientController is the structure that provides publishing capabilities to the
@@ -73,8 +73,12 @@ func (c *ClientController) UnsubscribeAll() {
 	}
 }
 
-// SubscribePong will subscribe to new messages from 'pong' channel
-func (c *ClientController) SubscribePong(fn func(msg PongMessage)) error {
+// SubscribePong will subscribe to new messages from 'pong' channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+// The 'done' argument indicates when the subscription is canceled and can be
+// used to clean up resources.
+func (c *ClientController) SubscribePong(fn func(msg PongMessage, done bool)) error {
 	// Get channel path
 	path := "pong"
 
@@ -92,12 +96,24 @@ func (c *ClientController) SubscribePong(fn func(msg PongMessage)) error {
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
-		for um, open := <-msgs; open; um, open = <-msgs {
+		for {
+			// Wait for next message
+			um, open := <-msgs
+
+			// Process message
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
 				c.handleError(path, err)
-			} else {
-				fn(msg)
+			}
+
+			// Send info if message is correct or susbcription is closed
+			if err == nil || !open {
+				fn(msg, !open)
+			}
+
+			// If subscription is closed, then exit the function
+			if !open {
+				return
 			}
 		}
 	}()
@@ -177,18 +193,22 @@ func (cc *ClientController) WaitForPong(ctx context.Context, msg MessageWithCorr
 	// Wait for corresponding response
 	for {
 		select {
-		case um := <-msgs:
+		case um, open := <-msgs:
+			// Get new message
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
 				cc.handleError(path, err)
-				continue
 			}
 
-			if msg.Headers.CorrelationID != nil && msg.CorrelationID() == *msg.Headers.CorrelationID {
+			// If valid message with corresponding correlation ID, return message
+			if err == nil &&
+				msg.Headers.CorrelationID != nil && msg.CorrelationID() == *msg.Headers.CorrelationID {
 				return msg, nil
+			} else if !open { // If message is invalid or not corresponding and the subscription is closed, then return error
+				return PongMessage{}, ErrSubscriptionCanceled
 			}
-		case <-ctx.Done(): // TODO: make it consumable between two call
-			return PongMessage{}, ErrContextCancelled
+		case <-ctx.Done(): // Return error if context is done
+			return PongMessage{}, ErrContextCanceled
 		}
 	}
 }
