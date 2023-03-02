@@ -33,6 +33,10 @@ func (e *Error) Error() string {
 }
 
 {{range $key, $value := .Channels -}}
+{{- if $value.Parameters -}} 
+{{template "parameters" $value}}
+{{end -}}
+
 {{- if and $value.Subscribe $value.Subscribe.Message.Payload}}
 {{template "message" $value.Subscribe.Message}}
 {{end -}}

@@ -7,16 +7,20 @@ import (
 )
 
 type Channel struct {
+	Parameters map[string]*Parameter `json:"parameters"`
+
 	Subscribe *Operation `json:"subscribe"`
 	Publish   *Operation `json:"publish"`
 
 	// Non AsyncAPI fields
 	Name string `json:"-"`
+	Path string `json:"-"`
 }
 
-func (c *Channel) Process(name string, spec Specification) {
-	// Set channel name
-	c.Name = utils.UpperFirstLetter(name)
+func (c *Channel) Process(path string, spec Specification) {
+	// Set channel name and path
+	c.Name = utils.UpperFirstLetter(path)
+	c.Path = path
 
 	// Get message
 	msg := c.GetChannelMessage()
@@ -31,6 +35,11 @@ func (c *Channel) Process(name string, spec Specification) {
 
 	// Process message
 	msg.Process(msgName, spec)
+
+	// Process parameters
+	for n, p := range c.Parameters {
+		p.Process(n, spec)
+	}
 }
 
 // GetChannelMessage will return the channel message

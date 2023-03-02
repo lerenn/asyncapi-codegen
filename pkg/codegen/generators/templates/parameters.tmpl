@@ -1,0 +1,11 @@
+{{define "parameters"}}
+// {{ namify .Name }}Parameters represents {{ namify .Name }} channel parameters
+type {{ namify .Name }}Parameters struct {
+{{range $key, $value := .Parameters -}}
+    {{- if $value.Description}}
+    // Description: {{$value.Description}}
+    {{end}}
+    {{ namify $key }} string
+{{end -}}
+}
+{{end}}

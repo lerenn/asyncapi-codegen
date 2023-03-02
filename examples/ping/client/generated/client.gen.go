@@ -47,7 +47,8 @@ func (c *ClientController) Close() {
 	close(c.errChan)
 }
 
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *ClientController) SubscribeAll(as ClientSubscriber) error {
 	if as == nil {
 		return ErrNilClientSubscriber
@@ -62,19 +63,29 @@ func (c *ClientController) SubscribeAll(as ClientSubscriber) error {
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *ClientController) UnsubscribeAll() {
+	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribePong()
+
+	// Unsubscribe remaining channels
+	for n, stopChan := range c.stopSubscribers {
+		stopChan <- true
+		delete(c.stopSubscribers, n)
+	}
 }
 
 // SubscribePong will subscribe to new messages from 'pong' channel
 func (c *ClientController) SubscribePong(fn func(msg PongMessage)) error {
+	// Get channel path
+	path := "pong"
+
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers["pong"]
+	_, exists := c.stopSubscribers[path]
 	if exists {
 		return fmt.Errorf("%w: pong channel is already subscribed", ErrAlreadySubscribedChannel)
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe("pong")
+	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
 		return err
 	}
@@ -84,7 +95,7 @@ func (c *ClientController) SubscribePong(fn func(msg PongMessage)) error {
 		for um, open := <-msgs; open; um, open = <-msgs {
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
-				c.handleError("pong", err)
+				c.handleError(path, err)
 			} else {
 				fn(msg)
 			}
@@ -92,20 +103,25 @@ func (c *ClientController) SubscribePong(fn func(msg PongMessage)) error {
 	}()
 
 	// Add the stop channel to the inside map
-	c.stopSubscribers["pong"] = stop
+	c.stopSubscribers[path] = stop
 
 	return nil
 }
 
 // UnsubscribePong will unsubscribe messages from 'pong' channel
 func (c *ClientController) UnsubscribePong() {
-	stopChan, exists := c.stopSubscribers["pong"]
+	// Get channel path
+	path := "pong"
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
 	if !exists {
 		return
 	}
 
+	// Stop the channel and remove the entry
 	stopChan <- true
-	delete(c.stopSubscribers, "pong")
+	delete(c.stopSubscribers, path)
 }
 
 // PublishPing will publish messages to 'ping' channel
@@ -117,7 +133,8 @@ func (c *ClientController) PublishPing(msg PingMessage) error {
 	}
 
 	// Publish on event broker
-	return c.brokerController.Publish("ping", um)
+	path := "ping"
+	return c.brokerController.Publish(path, um)
 }
 
 func (c *ClientController) handleError(channelName string, err error) {
@@ -140,8 +157,11 @@ func (c *ClientController) handleError(channelName string, err error) {
 // The pub function is the publication function that should be used to send the message
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
 func (cc *ClientController) WaitForPong(ctx context.Context, msg MessageWithCorrelationID, pub func() error) (PongMessage, error) {
+	// Get channel path
+	path := "pong"
+
 	// Subscribe to broker channel
-	msgs, stop, err := cc.brokerController.Subscribe("pong")
+	msgs, stop, err := cc.brokerController.Subscribe(path)
 	if err != nil {
 		return PongMessage{}, err
 	}
@@ -160,7 +180,7 @@ func (cc *ClientController) WaitForPong(ctx context.Context, msg MessageWithCorr
 		case um := <-msgs:
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
-				cc.handleError("pong", err)
+				cc.handleError(path, err)
 				continue
 			}
 

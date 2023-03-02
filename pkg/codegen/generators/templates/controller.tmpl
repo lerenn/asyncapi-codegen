@@ -34,16 +34,19 @@ func (c *{{ .Prefix }}Controller) Close() {
 }
 
 {{if .MethodCount -}}
-// SubscribeAll will subscribe to channels on which the app is expecting messages
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
 func (c *{{ .Prefix }}Controller) SubscribeAll(as {{ .Prefix }}Subscriber) error {
     if as == nil {
         return ErrNil{{ .Prefix }}Subscriber
     }
 
     {{range  $key, $value := .SubscribeChannels -}}
+    {{- if not .Parameters }}
     if err := c.Subscribe{{namify $key}}(as.{{namify $key}}); err != nil {
         return err
     }
+    {{- end}}
     {{- end}}
 
     return nil
@@ -51,23 +54,39 @@ func (c *{{ .Prefix }}Controller) SubscribeAll(as {{ .Prefix }}Subscriber) error
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *{{ .Prefix }}Controller) UnsubscribeAll() {
-    {{range  $key, $value := .SubscribeChannels -}}
+    // Unsubscribe channels with no parameters (if any)
+    {{- range  $key, $value := .SubscribeChannels}}
+    {{- if not .Parameters}}
     c.Unsubscribe{{namify $key}}()
-    {{end -}}
+    {{- end}}
+    {{- end}}
+
+    // Unsubscribe remaining channels
+    for n, stopChan := range c.stopSubscribers {
+        stopChan <- true
+        delete(c.stopSubscribers, n)
+    }
 }
 {{- end}}
 
 {{range  $key, $value := .SubscribeChannels -}}
 // Subscribe{{namify $key}} will subscribe to new messages from '{{$key}}' channel
+{{- if .Parameters}}
+func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(params {{namify $key}}Parameters, fn func (msg {{channelToMessageTypeName $value}})) error {
+{{- else}}
 func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(fn func (msg {{channelToMessageTypeName $value}})) error {
+{{- end }}
+    // Get channel path
+    path := {{ generateChannelPath $value }}
+
     // Check if there is already a subscription
-    _, exists := c.stopSubscribers["{{$key}}"]
+    _, exists := c.stopSubscribers[path]
     if exists {
         return fmt.Errorf("%w: {{$key}} channel is already subscribed", ErrAlreadySubscribedChannel)
     }
 
     // Subscribe to broker channel
-    msgs, stop, err := c.brokerController.Subscribe("{{$key}}")
+    msgs, stop, err := c.brokerController.Subscribe(path)
     if err != nil {
         return err
     }
@@ -77,7 +96,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(fn func (msg {{chann
         for um, open := <-msgs; open; um, open = <-msgs{
             msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
             if err != nil {
-                c.handleError("{{$key}}", err)
+                c.handleError(path, err)
             } else {
                 fn(msg)
             }
@@ -85,26 +104,39 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(fn func (msg {{chann
     } ()
 
     // Add the stop channel to the inside map
-    c.stopSubscribers["{{$key}}"] = stop
+    c.stopSubscribers[path] = stop
 
     return nil
 }
 
 // Unsubscribe{{namify $key}} will unsubscribe messages from '{{$key}}' channel
+{{- if .Parameters}}
+func (c *{{ $.Prefix }}Controller) Unsubscribe{{namify $key}}(params {{namify $key}}Parameters) {
+{{- else}}
 func (c *{{ $.Prefix }}Controller) Unsubscribe{{namify $key}}() {
-    stopChan, exists := c.stopSubscribers["{{$key}}"]
+{{- end}}
+    // Get channel path
+    path := {{ generateChannelPath $value }}
+
+    // Get stop channel
+    stopChan, exists := c.stopSubscribers[path]
     if !exists {
         return
     }
 
+    // Stop the channel and remove the entry
     stopChan <- true
-    delete(c.stopSubscribers, "{{$key}}") 
+    delete(c.stopSubscribers, path)
 }
 {{- end}}
 
 {{- range  $key, $value := .PublishChannels}}
 // Publish{{namify $key}} will publish messages to '{{$key}}' channel
+{{- if .Parameters }}
+func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(params {{namify $key}}Parameters, msg {{channelToMessageTypeName $value}}) error {
+{{- else }}
 func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(msg {{channelToMessageTypeName $value}}) error {
+{{- end }}
     // Convert to UniversalMessage
     um, err := msg.toUniversalMessage()
     if err != nil  {
@@ -112,7 +144,8 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(msg {{channelToMessage
     }
 
     // Publish on event broker
-    return c.brokerController.Publish("{{$key}}", um)
+    path := {{ generateChannelPath $value }}
+    return c.brokerController.Publish(path, um)
 }
 {{end}}
 
@@ -138,9 +171,16 @@ func (c *{{ $.Prefix }}Controller) handleError(channelName string, err error) {
 //
 // The pub function is the publication function that should be used to send the message
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
+{{- if .Parameters}}
+func (cc *ClientController) WaitFor{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters, msg MessageWithCorrelationID, pub func() error) ({{channelToMessageTypeName $value}}, error) {
+{{- else}}
 func (cc *ClientController) WaitFor{{namify $key}}(ctx context.Context, msg MessageWithCorrelationID, pub func() error) ({{channelToMessageTypeName $value}}, error) {
+{{- end}}
+    // Get channel path
+    path := {{ generateChannelPath $value }}
+
     // Subscribe to broker channel
-    msgs, stop, err := cc.brokerController.Subscribe("{{$key}}")
+    msgs, stop, err := cc.brokerController.Subscribe(path)
     if err != nil {
         return {{channelToMessageTypeName $value}}{}, err
     }
@@ -159,7 +199,7 @@ func (cc *ClientController) WaitFor{{namify $key}}(ctx context.Context, msg Mess
         case um := <-msgs:
             msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
             if err != nil {
-                cc.handleError("{{$key}}", err)
+                cc.handleError(path, err)
                 continue
             }
 
