@@ -44,8 +44,13 @@ func (c AppController) Errors() <-chan Error {
 
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close() {
+	// Unsubscribing remaining channels
 	c.UnsubscribeAll()
-	close(c.errChan)
+	// Close the channel and put its reference to nil, if not already closed (= being nil)
+	if c.errChan != nil {
+		close(c.errChan)
+		c.errChan = nil
+	}
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
@@ -185,7 +190,12 @@ func (c ClientController) Errors() <-chan Error {
 
 // Close will clean up any existing resources on the controller
 func (c *ClientController) Close() {
-	close(c.errChan)
+	// Unsubscribing remaining channels
+	// Close the channel and put its reference to nil, if not already closed (= being nil)
+	if c.errChan != nil {
+		close(c.errChan)
+		c.errChan = nil
+	}
 }
 
 // PublishTest will publish messages to 'test' channel
