@@ -32,7 +32,12 @@ func (c ClientController) Errors() <-chan Error {
 
 // Close will clean up any existing resources on the controller
 func (c *ClientController) Close() {
-	close(c.errChan)
+	// Unsubscribing remaining channels
+	// Close the channel and put its reference to nil, if not already closed (= being nil)
+	if c.errChan != nil {
+		close(c.errChan)
+		c.errChan = nil
+	}
 }
 
 // PublishHello will publish messages to 'hello' channel
