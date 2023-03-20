@@ -89,7 +89,7 @@ func (c *AppController) SubscribeHello(fn func(msg HelloMessage, done bool)) err
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
-		return fmt.Errorf("%w: hello channel is already subscribed", ErrAlreadySubscribedChannel)
+		return fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
 	}
 
 	// Subscribe to broker channel

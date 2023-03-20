@@ -92,7 +92,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(fn func (msg {{chann
     // Check if there is already a subscription
     _, exists := c.stopSubscribers[path]
     if exists {
-        return fmt.Errorf("%w: {{$key}} channel is already subscribed", ErrAlreadySubscribedChannel)
+        return fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
     }
 
     // Subscribe to broker channel

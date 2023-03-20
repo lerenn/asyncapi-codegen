@@ -6,7 +6,7 @@
 {{- if or (eq .Type "object") .Properties -}}struct {
     {{- range $key, $value := .Properties -}}
     {{if $value.Description}}
-    // Description: {{$value.Description}}
+    // Description: {{multiLineComment $value.Description}}
     {{else if and $value.ReferenceTo $value.ReferenceTo.Description}}
     // Description: {{$value.ReferenceTo.Description}}
     {{end -}}
@@ -59,7 +59,7 @@ struct {
 {{- range  $key, $value := $xxxOf}}
     // {{ if $value.Reference}}{{ referenceToTypeName .Reference }}{{else}}AnyOf{{$key}}{{end}}
 {{- if $value.Description}}
-    // Description: {{$value.Description}}
+    // Description: {{multiLineComment $value.Description}}
 {{- end}}
     {{ if $value.Reference}}{{ referenceToTypeName .Reference }}{{else}}AnyOf{{$key}}{{end}} *{{template "any" $value}}
 {{end -}}
@@ -72,6 +72,7 @@ struct {
 {{- /* Should not get to this point */ -}}
 {{- else -}}
 // WARNING: potential error in AsyncAPI generation
+// Infos on type: {{ describeStruct . }}
 {{- end -}}
 
 {{- end -}}

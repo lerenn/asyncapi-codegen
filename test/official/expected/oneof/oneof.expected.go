@@ -91,7 +91,7 @@ func (c *AppController) SubscribeTest(fn func(msg TestMessagesMessage, done bool
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
-		return fmt.Errorf("%w: test channel is already subscribed", ErrAlreadySubscribedChannel)
+		return fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
 	}
 
 	// Subscribe to broker channel
@@ -256,7 +256,7 @@ func (c *ClientController) SubscribeTest2(fn func(msg Test2Message, done bool)) 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
-		return fmt.Errorf("%w: test2 channel is already subscribed", ErrAlreadySubscribedChannel)
+		return fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
 	}
 
 	// Subscribe to broker channel

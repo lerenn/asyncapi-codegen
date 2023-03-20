@@ -123,3 +123,11 @@ func GenerateChannelPath(ch asyncapi.Channel) string {
 
 	return sprint[:len(sprint)-1] + ")"
 }
+
+func DescribeStruct(st interface{}) string {
+	return fmt.Sprintf("%+v", st)
+}
+
+func MultiLineComment(comment string) string {
+	return strings.Replace(comment, "\n", "\n//", -1)
+}

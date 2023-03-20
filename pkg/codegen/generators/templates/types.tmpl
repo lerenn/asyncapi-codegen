@@ -56,7 +56,7 @@ func (e *Error) Error() string {
 {{range $key, $value := .Components.Schemas}}
 // {{namify $key}}Schema is a schema from the AsyncAPI specification required in messages
 {{if $value.Description -}}
-// Description: {{$value.Description}}
+// Description: {{multiLineComment $value.Description}}
 {{end -}}
 type {{namify $key}}Schema {{template "any" $value}}
 

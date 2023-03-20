@@ -94,7 +94,7 @@ func (c *AppController) SubscribeRpcQueue(fn func(msg RpcQueueMessage, done bool
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
-		return fmt.Errorf("%w: rpc_queue channel is already subscribed", ErrAlreadySubscribedChannel)
+		return fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
 	}
 
 	// Subscribe to broker channel
@@ -254,7 +254,7 @@ func (c *ClientController) SubscribeQueue(params QueueParameters, fn func(msg Qu
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
-		return fmt.Errorf("%w: {queue} channel is already subscribed", ErrAlreadySubscribedChannel)
+		return fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
 	}
 
 	// Subscribe to broker channel
