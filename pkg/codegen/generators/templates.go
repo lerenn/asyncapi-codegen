@@ -17,7 +17,7 @@ const (
 	messageTemplatePath    = templatesDir + "/message.tmpl"
 	subscriberTemplatePath = templatesDir + "/subscriber.tmpl"
 	controllerTemplatePath = templatesDir + "/controller.tmpl"
-	parametersTemplatePath = templatesDir + "/parameters.tmpl"
+	parameterTemplatePath  = templatesDir + "/parameter.tmpl"
 
 	brokerDir                    = templatesDir + "/broker"
 	brokerControllerTemplatePath = brokerDir + "/controller.tmpl"

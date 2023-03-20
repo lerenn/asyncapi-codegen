@@ -30,6 +30,11 @@ func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount 
 	return publishCount, subscribeCount
 }
 
+func (s Specification) ReferenceParameter(ref string) *Parameter {
+	param, _ := s.reference(ref).(*Parameter)
+	return param
+}
+
 func (s Specification) ReferenceMessage(ref string) *Message {
 	msg, _ := s.reference(ref).(*Message)
 	return msg
@@ -44,12 +49,15 @@ func (s Specification) reference(ref string) interface{} {
 	refPath := strings.Split(ref, "/")[1:]
 
 	if refPath[0] == "components" {
-		if refPath[1] == "messages" {
+		switch refPath[1] {
+		case "messages":
 			msg := s.Components.Messages[refPath[2]]
 			return msg.referenceFrom(refPath[3:])
-		} else if refPath[1] == "schemas" {
+		case "schemas":
 			schema := s.Components.Schemas[refPath[2]]
 			return schema.referenceFrom(refPath[3:])
+		case "parameters":
+			return s.Components.Parameters[refPath[2]]
 		}
 	}
 

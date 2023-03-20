@@ -2,7 +2,7 @@
 
 // {{namify .Name}}Message is the message expected for '{{namify .Name}}' channel
 {{if $.Description -}}
-// {{$.Description}}
+// {{multiLineComment $.Description}}
 {{end -}}
 
 type {{namify .Name}}Message struct {
