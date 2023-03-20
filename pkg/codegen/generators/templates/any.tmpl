@@ -14,6 +14,10 @@
     {{end -}}
 }
 
+{{- /* Type Boolean */ -}}
+{{- else if eq .Type "boolean" -}}
+bool
+
 {{- /* Type String */ -}}
 {{- else if eq .Type "string" -}}
 {{- if or (eq .Format "date") (eq .Format "date-time") -}}
