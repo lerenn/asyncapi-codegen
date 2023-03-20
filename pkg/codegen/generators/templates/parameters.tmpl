@@ -3,7 +3,7 @@
 type {{ namify .Name }}Parameters struct {
 {{- range $key, $value := .Parameters}}
     {{- if $value.Description}}
-    // Description: {{$value.Description}}
+    // Description: {{multiLineComment $value.Description}}
     {{end}}
     {{- namify $key }} string
 {{end -}}

@@ -1,6 +1,6 @@
 .PHONY: lint
 lint: ## Lint the code
-	@LOG_LEVEL=error go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1 run
+	@LOG_LEVEL=error go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51 run
 
 .PHONY: clean
 clean: test/clean ## Clean up the project

@@ -90,7 +90,7 @@ func (c *ClientController) SubscribePong(fn func(msg PongMessage, done bool)) er
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
-		return fmt.Errorf("%w: pong channel is already subscribed", ErrAlreadySubscribedChannel)
+		return fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
 	}
 
 	// Subscribe to broker channel

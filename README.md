@@ -123,6 +123,9 @@ func (ac *AppController) UnsubscribeAll()
 //
 // You just have to give a function that match the signature of the callback and
 // then process the received message.
+//
+// The `done` argument is true when the subscription is closed. It can be used to
+// cleanup resources, such as channels.
 func (ac *AppController) SubscribeHello(fn func(msg HelloMessage, done bool)) error
 
 // UnsubscribeHello will unsubscribe only the subscription on the "hello" channel.
@@ -178,7 +181,7 @@ func (cc *ClientController) Close()
 
 // PublishHello will publish a hello world message on the "hello" channel as
 // specified in the AsyncAPI specification.
-func (cc *ClientController) PublishHello(msg HelloMessage, done bool) error
+func (cc *ClientController) PublishHello(msg HelloMessage) error
 ```
 
 And here is an example of the client that could be written to use this generated

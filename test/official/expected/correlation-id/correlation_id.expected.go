@@ -89,7 +89,7 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
-		return fmt.Errorf("%w: smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured channel is already subscribed", ErrAlreadySubscribedChannel)
+		return fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
 	}
 
 	// Subscribe to broker channel
@@ -249,7 +249,7 @@ func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetligh
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
-		return fmt.Errorf("%w: smartylighting/streetlights/1/0/action/{streetlightId}/dim channel is already subscribed", ErrAlreadySubscribedChannel)
+		return fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
 	}
 
 	// Subscribe to broker channel

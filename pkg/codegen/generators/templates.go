@@ -46,5 +46,7 @@ func templateFunctions() template.FuncMap {
 		"hasField":                       templates.HasField,
 		"isRequired":                     templates.IsRequired,
 		"generateChannelPath":            templates.GenerateChannelPath,
+		"describeStruct":                 templates.DescribeStruct,
+		"multiLineComment":               templates.MultiLineComment,
 	}
 }
