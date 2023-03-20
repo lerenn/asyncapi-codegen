@@ -158,7 +158,7 @@ func (c *AppController) PublishQueue(params QueueParameters, msg QueueMessage) e
 	}
 
 	// Publish on event broker
-	path := fmt.Sprintf("%s", params.Queue)
+	path := fmt.Sprintf("%v", params.Queue)
 	return c.brokerController.Publish(path, um)
 }
 
@@ -249,7 +249,7 @@ func (c *ClientController) UnsubscribeAll() {
 // used to clean up resources.
 func (c *ClientController) SubscribeQueue(params QueueParameters, fn func(msg QueueMessage, done bool)) error {
 	// Get channel path
-	path := fmt.Sprintf("%s", params.Queue)
+	path := fmt.Sprintf("%v", params.Queue)
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -296,7 +296,7 @@ func (c *ClientController) SubscribeQueue(params QueueParameters, fn func(msg Qu
 // UnsubscribeQueue will unsubscribe messages from '{queue}' channel
 func (c *ClientController) UnsubscribeQueue(params QueueParameters) {
 	// Get channel path
-	path := fmt.Sprintf("%s", params.Queue)
+	path := fmt.Sprintf("%v", params.Queue)
 
 	// Get stop channel
 	stopChan, exists := c.stopSubscribers[path]
@@ -343,7 +343,7 @@ func (c *ClientController) handleError(channelName string, err error) {
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
 func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParameters, msg MessageWithCorrelationID, pub func() error) (QueueMessage, error) {
 	// Get channel path
-	path := fmt.Sprintf("%s", params.Queue)
+	path := fmt.Sprintf("%v", params.Queue)
 
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe(path)

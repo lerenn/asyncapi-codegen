@@ -84,7 +84,7 @@ func (c *AppController) UnsubscribeAll() {
 // used to clean up resources.
 func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured(params SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters, fn func(msg LightMeasuredMessage, done bool)) error {
 	// Get channel path
-	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%s/lighting/measured", params.StreetlightID)
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%v/lighting/measured", params.StreetlightID)
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -131,7 +131,7 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 // UnsubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured will unsubscribe messages from 'smartylighting/streetlights/1/0/event/{streetlightId}/lighting/measured' channel
 func (c *AppController) UnsubscribeSmartylightingStreetlights10EventStreetlightIDLightingMeasured(params SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters) {
 	// Get channel path
-	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%s/lighting/measured", params.StreetlightID)
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%v/lighting/measured", params.StreetlightID)
 
 	// Get stop channel
 	stopChan, exists := c.stopSubscribers[path]
@@ -153,7 +153,7 @@ func (c *AppController) PublishSmartylightingStreetlights10ActionStreetlightIDDi
 	}
 
 	// Publish on event broker
-	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%s/dim", params.StreetlightID)
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%v/dim", params.StreetlightID)
 	return c.brokerController.Publish(path, um)
 }
 
@@ -244,7 +244,7 @@ func (c *ClientController) UnsubscribeAll() {
 // used to clean up resources.
 func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetlightIDDim(params SmartylightingStreetlights10ActionStreetlightIDDimParameters, fn func(msg DimLightMessage, done bool)) error {
 	// Get channel path
-	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%s/dim", params.StreetlightID)
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%v/dim", params.StreetlightID)
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -291,7 +291,7 @@ func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetligh
 // UnsubscribeSmartylightingStreetlights10ActionStreetlightIDDim will unsubscribe messages from 'smartylighting/streetlights/1/0/action/{streetlightId}/dim' channel
 func (c *ClientController) UnsubscribeSmartylightingStreetlights10ActionStreetlightIDDim(params SmartylightingStreetlights10ActionStreetlightIDDimParameters) {
 	// Get channel path
-	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%s/dim", params.StreetlightID)
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%v/dim", params.StreetlightID)
 
 	// Get stop channel
 	stopChan, exists := c.stopSubscribers[path]
@@ -313,7 +313,7 @@ func (c *ClientController) PublishSmartylightingStreetlights10EventStreetlightID
 	}
 
 	// Publish on event broker
-	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%s/lighting/measured", params.StreetlightID)
+	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%v/lighting/measured", params.StreetlightID)
 	return c.brokerController.Publish(path, um)
 }
 
@@ -392,11 +392,13 @@ func (e *Error) Error() string {
 
 // SmartylightingStreetlights10ActionStreetlightIDDimParameters represents SmartylightingStreetlights10ActionStreetlightIDDim channel parameters
 type SmartylightingStreetlights10ActionStreetlightIDDimParameters struct {
+	// Description: The ID of the streetlight.
 	StreetlightID string
 }
 
 // SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters represents SmartylightingStreetlights10EventStreetlightIDLightingMeasured channel parameters
 type SmartylightingStreetlights10EventStreetlightIDLightingMeasuredParameters struct {
+	// Description: The ID of the streetlight.
 	StreetlightID string
 }
 

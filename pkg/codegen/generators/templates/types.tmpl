@@ -36,9 +36,15 @@ func (e *Error) Error() string {
 }
 
 {{range $key, $value := .Channels -}}
-{{- if $value.Parameters -}} 
-{{template "parameters" $value}}
-{{end -}}
+
+{{- if $value.Parameters -}}
+// {{ namify .Name }}Parameters represents {{ namify .Name }} channel parameters
+type {{ namify .Name }}Parameters struct {
+{{- range $key, $value := .Parameters}}
+    {{- template "parameter" $value}}
+{{- end}}
+}
+{{end}}
 
 {{- if and $value.Subscribe $value.Subscribe.Message.Payload}}
 {{template "message" $value.Subscribe.Message}}

@@ -15,7 +15,7 @@ func (tg TypesGenerator) Generate() (string, error) {
 		typesTemplatePath,
 		anyTemplatePath,
 		messageTemplatePath,
-		parametersTemplatePath,
+		parameterTemplatePath,
 	)
 	if err != nil {
 		return "", err

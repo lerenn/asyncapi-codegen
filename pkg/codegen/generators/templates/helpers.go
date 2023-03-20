@@ -114,7 +114,7 @@ func GenerateChannelPath(ch asyncapi.Channel) string {
 	parameterRegexp := regexp.MustCompile("{[^{}]*}")
 
 	matches := parameterRegexp.FindAllString(ch.Path, -1)
-	format := parameterRegexp.ReplaceAllString(ch.Path, "%s")
+	format := parameterRegexp.ReplaceAllString(ch.Path, "%v")
 
 	sprint := fmt.Sprintf("fmt.Sprintf(%q, ", format)
 	for _, m := range matches {
@@ -129,5 +129,6 @@ func DescribeStruct(st interface{}) string {
 }
 
 func MultiLineComment(comment string) string {
-	return strings.Replace(comment, "\n", "\n//", -1)
+	comment = strings.TrimSuffix(comment, "\n")
+	return strings.Replace(comment, "\n", "\n// ", -1)
 }
