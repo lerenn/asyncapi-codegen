@@ -36,6 +36,14 @@ var (
 	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
 )
 
+type Logger interface {
+	// Info logs information based on a message and key-value elements
+	Info(msg string, keyvals ...interface{})
+
+	// Error logs error based on a message and key-value elements
+	Error(msg string, keyvals ...interface{})
+}
+
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 }

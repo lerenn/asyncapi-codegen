@@ -17,6 +17,9 @@ type UniversalMessage struct {
 // BrokerController represents the functions that should be implemented to connect
 // the broker to the application or the client
 type BrokerController interface {
+	// AttachLogger attaches a logger that will log operations on broker controller
+	AttachLogger(logger Logger)
+
 	// Publish a message to the broker
 	Publish(channel string, mw UniversalMessage) error
 
