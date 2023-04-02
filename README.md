@@ -14,6 +14,7 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
 * [Examples](#examples):
   * [Basic example](#basic-example)
   * [Request/Response example](#request-response-example)
+  * [Logging example](#logging-example)
 * [CLI options](#cli-options)
 * [Contributing and support](#contributing-and-support)
 
@@ -24,6 +25,7 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
 * Brokers:
   * NATS
   * Custom (implementation specified by the developer)
+  * *Open a ticket for any missing one that you would want to have here!*
 * Formats:
   * JSON
 
@@ -95,9 +97,11 @@ type AppController struct
 // BrokerController that you pass in argument to subscription and publication method.
 func NewAppController(bs BrokerController) *AppController
 
-// Errors will give back the channel that contains errors and that you can listen to handle errors
-// Please take a look at Error struct form information on error
-func (ac AppController) Errors() <-chan Error
+// AttachLogger attaches a logger that will log operations on controller
+func (c {{ .Prefix }}Controller) AttachLogger(logger Logger) {
+    c.logger = logger
+    c.brokerController.AttachLogger(logger)
+}
 
 // Close function will clean up all resources and subscriptions left in the
 // application controller. This should be call right after NewAppController
@@ -170,9 +174,11 @@ type ClientController struct
 // BrokerController that you pass in argument to subscription and publication method.
 func NewClientController(bs BrokerController) *ClientController
 
-// Errors will give back the channel that contains errors and that you can listen to handle errors
-// Please take a look at Error struct form information on error
-func (cc ClientController) Errors() <-chan Error
+// AttachLogger attaches a logger that will log operations on controller
+func (c {{ .Prefix }}Controller) AttachLogger(logger Logger) {
+    c.logger = logger
+    c.brokerController.AttachLogger(logger)
+}
 
 // Close function will clean up all resources and subscriptions left in the
 // application controller. This should be call right after NewAppController
@@ -314,6 +320,55 @@ publicationFunc := func() error {
 // for any channel in the AsyncAPI specification. You will then be able to use it
 // with the form WaitForXXX where XXX is the channel name.
 resp, _ := ctrl.WaitForPong(context.Background(), req, publicationFunc)
+```
+
+### Logging example
+
+It is possible to add your own logger to the generated code, all you have to do
+is to fill the following interface:
+
+```golang
+type Logger interface {
+    // Info logs information based on a message and key-value elements
+    Info(msg string, keyvals ...interface{})
+
+    // Error logs error based on a message and key-value elements
+    Error(msg string, keyvals ...interface{})
+}
+```
+
+In this interface, `keyvals` will be added as pair to add informations to the log.
+
+Here is a basic implementation:
+
+```golang
+type SimpleLogger struct{}
+
+func (logger SimpleLogger) formatKeyValues(keyvals ...interface{}) string {
+	var formattedKeyValues string
+	for i := 0; i < len(keyvals)-1; i += 2 {
+		formattedKeyValues = fmt.Sprintf("%s, %s: %+v", formattedKeyValues, keyvals[i], keyvals[i+1])
+	}
+	return formattedKeyValues
+}
+
+func (logger SimpleLogger) Info(msg string, keyvals ...interface{}) {
+	log.Printf("INFO: %s%s", msg, logger.formatKeyValues(keyvals...))
+}
+
+func (logger SimpleLogger) Error(msg string, keyvals ...interface{}) {
+	log.Printf("ERROR: %s%s", msg, logger.formatKeyValues(keyvals...))
+}
+```
+
+You can then create a controller with a logger using similar lines:
+
+```golang
+// Create a new app controller with a NATS controller for example
+ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+
+// Attach a new logger
+ctrl.AttachLogger(SimpleLogger{})
 ```
 
 ## CLI options
