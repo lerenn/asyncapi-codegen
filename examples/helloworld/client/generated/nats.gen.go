@@ -23,7 +23,7 @@ func NewNATSController(connection *nats.Conn) *NATSController {
 }
 
 // AttachLogger attaches a logger that will log operations on broker controller
-func (c NATSController) AttachLogger(logger Logger) {
+func (c *NATSController) AttachLogger(logger Logger) {
 	c.logger = logger
 }
 
