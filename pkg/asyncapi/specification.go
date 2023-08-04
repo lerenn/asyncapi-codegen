@@ -18,11 +18,17 @@ func (s *Specification) Process() {
 	s.Components.Process(*s)
 }
 
+// GetPublishSubscribeCount gets the count of 'publish' channels and the count
+// of 'subscribe' channels inside the Specification
 func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount uint) {
 	for _, c := range s.Channels {
+		// Check that the publish channel is present
 		if c.Publish != nil {
 			publishCount++
-		} else if c.Subscribe != nil {
+		}
+
+		// Check that the subscribe channel is present
+		if c.Subscribe != nil {
 			subscribeCount++
 		}
 	}
