@@ -87,7 +87,7 @@ func (cg CodeGen) Generate(opt Options) error {
 		fileContent = []byte(content)
 	}
 
-	return os.WriteFile(opt.OutputPath, fileContent, 0755)
+	return os.WriteFile(opt.OutputPath, fileContent, 0644)
 }
 
 func (cg CodeGen) generateImports(opts Options) (string, error) {
