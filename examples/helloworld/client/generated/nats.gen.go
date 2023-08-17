@@ -13,13 +13,23 @@ import (
 type NATSController struct {
 	connection *nats.Conn
 	logger     Logger
+	queueName  string
 }
 
 // NewNATSController creates a new NATSController that fulfill the BrokerLinker interface
 func NewNATSController(connection *nats.Conn) *NATSController {
 	return &NATSController{
 		connection: connection,
+		queueName:  "asyncapi",
 	}
+}
+
+// SetQueueName sets a custom queue name for channel subscription
+//
+// It can be used for multiple applications listening one the same channel but
+// wants to listen on different queues.
+func (c *NATSController) SetQueueName(name string) {
+	c.queueName = name
 }
 
 // AttachLogger attaches a logger that will log operations on broker controller
@@ -50,7 +60,7 @@ func (c *NATSController) Publish(channel string, um UniversalMessage) error {
 func (c *NATSController) Subscribe(channel string) (msgs chan UniversalMessage, stop chan interface{}, err error) {
 	// Subscribe to channel
 	natsMsgs := make(chan *nats.Msg, 64)
-	sub, err := c.connection.ChanSubscribe(channel, natsMsgs)
+	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueName, natsMsgs)
 	if err != nil {
 		return nil, nil, err
 	}
