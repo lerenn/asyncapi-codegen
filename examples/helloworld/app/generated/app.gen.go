@@ -33,25 +33,25 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 	}, nil
 }
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c *AppController) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c *AppController) SetLogger(logger Logger) {
 	c.logger = logger
-	c.brokerController.AttachLogger(logger)
+	c.brokerController.SetLogger(logger)
 }
 
 // logError logs error if the logger has been set
-func (c AppController) logError(msg string, keyvals ...interface{}) {
+func (c AppController) logError(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "App")
-		c.logger.Error(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "App"})
+		c.logger.Error(msg, info...)
 	}
 }
 
 // logInfo logs information if the logger has been set
-func (c AppController) logInfo(msg string, keyvals ...interface{}) {
+func (c AppController) logInfo(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "App")
-		c.logger.Info(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "App"})
+		c.logger.Info(msg, info...)
 	}
 }
 
@@ -101,15 +101,15 @@ func (c *AppController) SubscribeHello(fn func(msg HelloMessage, done bool)) err
 	_, exists := c.stopSubscribers[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
-		c.logError(err.Error(), "channel", path)
+		c.logError(err.Error(), LogInfo{"channel", path})
 		return err
 	}
 
 	// Subscribe to broker channel
-	c.logInfo("Subscribing to channel", "channel", path, "operation", "subscribe")
+	c.logInfo("Subscribing to channel", LogInfo{"channel", path}, LogInfo{"operation", "subscribe"})
 	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
-		c.logError(err.Error(), "channel", path, "operation", "subscribe")
+		c.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "subscribe"})
 		return err
 	}
 
@@ -122,12 +122,12 @@ func (c *AppController) SubscribeHello(fn func(msg HelloMessage, done bool)) err
 			// Process message
 			msg, err := newHelloMessageFromUniversalMessage(um)
 			if err != nil {
-				c.logError(err.Error(), "channel", path, "operation", "subscribe", "message", msg)
+				c.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "subscribe"}, LogInfo{"message", msg})
 			}
 
 			// Send info if message is correct or susbcription is closed
 			if err == nil || !open {
-				c.logInfo("Received new message", "channel", path, "operation", "subscribe", "message", msg)
+				c.logInfo("Received new message", LogInfo{"channel", path}, LogInfo{"operation", "subscribe"}, LogInfo{"message", msg})
 				fn(msg, !open)
 			}
 
@@ -156,7 +156,7 @@ func (c *AppController) UnsubscribeHello() {
 	}
 
 	// Stop the channel and remove the entry
-	c.logInfo("Unsubscribing from channel", "channel", path, "operation", "unsubscribe")
+	c.logInfo("Unsubscribing from channel", LogInfo{"channel", path}, LogInfo{"operation", "unsubscribe"})
 	stopChan <- true
 	delete(c.stopSubscribers, path)
 }

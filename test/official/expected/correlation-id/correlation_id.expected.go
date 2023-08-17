@@ -38,25 +38,25 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 	}, nil
 }
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c *AppController) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c *AppController) SetLogger(logger Logger) {
 	c.logger = logger
-	c.brokerController.AttachLogger(logger)
+	c.brokerController.SetLogger(logger)
 }
 
 // logError logs error if the logger has been set
-func (c AppController) logError(msg string, keyvals ...interface{}) {
+func (c AppController) logError(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "App")
-		c.logger.Error(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "App"})
+		c.logger.Error(msg, info...)
 	}
 }
 
 // logInfo logs information if the logger has been set
-func (c AppController) logInfo(msg string, keyvals ...interface{}) {
+func (c AppController) logInfo(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "App")
-		c.logger.Info(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "App"})
+		c.logger.Info(msg, info...)
 	}
 }
 
@@ -101,15 +101,15 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 	_, exists := c.stopSubscribers[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
-		c.logError(err.Error(), "channel", path)
+		c.logError(err.Error(), LogInfo{"channel", path})
 		return err
 	}
 
 	// Subscribe to broker channel
-	c.logInfo("Subscribing to channel", "channel", path, "operation", "subscribe")
+	c.logInfo("Subscribing to channel", LogInfo{"channel", path}, LogInfo{"operation", "subscribe"})
 	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
-		c.logError(err.Error(), "channel", path, "operation", "subscribe")
+		c.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "subscribe"})
 		return err
 	}
 
@@ -122,12 +122,12 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 			// Process message
 			msg, err := newLightMeasuredMessageFromUniversalMessage(um)
 			if err != nil {
-				c.logError(err.Error(), "channel", path, "operation", "subscribe", "message", msg)
+				c.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "subscribe"}, LogInfo{"message", msg})
 			}
 
 			// Send info if message is correct or susbcription is closed
 			if err == nil || !open {
-				c.logInfo("Received new message", "channel", path, "operation", "subscribe", "message", msg)
+				c.logInfo("Received new message", LogInfo{"channel", path}, LogInfo{"operation", "subscribe"}, LogInfo{"message", msg})
 				fn(msg, !open)
 			}
 
@@ -156,7 +156,7 @@ func (c *AppController) UnsubscribeSmartylightingStreetlights10EventStreetlightI
 	}
 
 	// Stop the channel and remove the entry
-	c.logInfo("Unsubscribing from channel", "channel", path, "operation", "unsubscribe")
+	c.logInfo("Unsubscribing from channel", LogInfo{"channel", path}, LogInfo{"operation", "unsubscribe"})
 	stopChan <- true
 	delete(c.stopSubscribers, path)
 }
@@ -173,7 +173,7 @@ func (c *AppController) PublishSmartylightingStreetlights10ActionStreetlightIDDi
 	path := fmt.Sprintf("smartylighting/streetlights/1/0/action/%v/dim", params.StreetlightID)
 
 	// Publish on event broker
-	c.logInfo("Publishing to channel", "channel", path, "operation", "publish", "message", msg)
+	c.logInfo("Publishing to channel", LogInfo{"channel", path}, LogInfo{"operation", "publish"}, LogInfo{"message", msg})
 	return c.brokerController.Publish(path, um)
 }
 
@@ -203,25 +203,25 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 	}, nil
 }
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c *ClientController) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c *ClientController) SetLogger(logger Logger) {
 	c.logger = logger
-	c.brokerController.AttachLogger(logger)
+	c.brokerController.SetLogger(logger)
 }
 
 // logError logs error if the logger has been set
-func (c ClientController) logError(msg string, keyvals ...interface{}) {
+func (c ClientController) logError(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "Client")
-		c.logger.Error(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "Client"})
+		c.logger.Error(msg, info...)
 	}
 }
 
 // logInfo logs information if the logger has been set
-func (c ClientController) logInfo(msg string, keyvals ...interface{}) {
+func (c ClientController) logInfo(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "Client")
-		c.logger.Info(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "Client"})
+		c.logger.Info(msg, info...)
 	}
 }
 
@@ -266,15 +266,15 @@ func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetligh
 	_, exists := c.stopSubscribers[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
-		c.logError(err.Error(), "channel", path)
+		c.logError(err.Error(), LogInfo{"channel", path})
 		return err
 	}
 
 	// Subscribe to broker channel
-	c.logInfo("Subscribing to channel", "channel", path, "operation", "subscribe")
+	c.logInfo("Subscribing to channel", LogInfo{"channel", path}, LogInfo{"operation", "subscribe"})
 	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
-		c.logError(err.Error(), "channel", path, "operation", "subscribe")
+		c.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "subscribe"})
 		return err
 	}
 
@@ -287,12 +287,12 @@ func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetligh
 			// Process message
 			msg, err := newDimLightMessageFromUniversalMessage(um)
 			if err != nil {
-				c.logError(err.Error(), "channel", path, "operation", "subscribe", "message", msg)
+				c.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "subscribe"}, LogInfo{"message", msg})
 			}
 
 			// Send info if message is correct or susbcription is closed
 			if err == nil || !open {
-				c.logInfo("Received new message", "channel", path, "operation", "subscribe", "message", msg)
+				c.logInfo("Received new message", LogInfo{"channel", path}, LogInfo{"operation", "subscribe"}, LogInfo{"message", msg})
 				fn(msg, !open)
 			}
 
@@ -321,7 +321,7 @@ func (c *ClientController) UnsubscribeSmartylightingStreetlights10ActionStreetli
 	}
 
 	// Stop the channel and remove the entry
-	c.logInfo("Unsubscribing from channel", "channel", path, "operation", "unsubscribe")
+	c.logInfo("Unsubscribing from channel", LogInfo{"channel", path}, LogInfo{"operation", "unsubscribe"})
 	stopChan <- true
 	delete(c.stopSubscribers, path)
 }
@@ -338,7 +338,7 @@ func (c *ClientController) PublishSmartylightingStreetlights10EventStreetlightID
 	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%v/lighting/measured", params.StreetlightID)
 
 	// Publish on event broker
-	c.logInfo("Publishing to channel", "channel", path, "operation", "publish", "message", msg)
+	c.logInfo("Publishing to channel", LogInfo{"channel", path}, LogInfo{"operation", "publish"}, LogInfo{"message", msg})
 	return c.brokerController.Publish(path, um)
 }
 
@@ -356,8 +356,8 @@ type UniversalMessage struct {
 // BrokerController represents the functions that should be implemented to connect
 // the broker to the application or the client
 type BrokerController interface {
-	// AttachLogger attaches a logger that will log operations on broker controller
-	AttachLogger(logger Logger)
+	// SetLogger set a logger that will log operations on broker controller
+	SetLogger(logger Logger)
 
 	// Publish a message to the broker
 	Publish(channel string, mw UniversalMessage) error
@@ -393,12 +393,17 @@ var (
 	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
 )
 
+type LogInfo struct {
+	Key   string
+	Value interface{}
+}
+
 type Logger interface {
 	// Info logs information based on a message and key-value elements
-	Info(msg string, keyvals ...interface{})
+	Info(msg string, info ...LogInfo)
 
 	// Error logs error based on a message and key-value elements
-	Error(msg string, keyvals ...interface{})
+	Error(msg string, info ...LogInfo)
 }
 
 type MessageWithCorrelationID interface {

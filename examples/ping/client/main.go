@@ -35,7 +35,7 @@ func main() {
 	defer ctrl.Close()
 
 	// Attach a logger (optional)
-	// ctrl.AttachLogger(SimpleLogger{})
+	// ctrl.SetLogger(SimpleLogger{})
 
 	// Make a new ping message
 	req := generated.NewPingMessage()

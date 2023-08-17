@@ -34,25 +34,25 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 	}, nil
 }
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c *ClientController) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c *ClientController) SetLogger(logger Logger) {
 	c.logger = logger
-	c.brokerController.AttachLogger(logger)
+	c.brokerController.SetLogger(logger)
 }
 
 // logError logs error if the logger has been set
-func (c ClientController) logError(msg string, keyvals ...interface{}) {
+func (c ClientController) logError(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "Client")
-		c.logger.Error(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "Client"})
+		c.logger.Error(msg, info...)
 	}
 }
 
 // logInfo logs information if the logger has been set
-func (c ClientController) logInfo(msg string, keyvals ...interface{}) {
+func (c ClientController) logInfo(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "Client")
-		c.logger.Info(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "Client"})
+		c.logger.Info(msg, info...)
 	}
 }
 
@@ -102,15 +102,15 @@ func (c *ClientController) SubscribePong(fn func(msg PongMessage, done bool)) er
 	_, exists := c.stopSubscribers[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
-		c.logError(err.Error(), "channel", path)
+		c.logError(err.Error(), LogInfo{"channel", path})
 		return err
 	}
 
 	// Subscribe to broker channel
-	c.logInfo("Subscribing to channel", "channel", path, "operation", "subscribe")
+	c.logInfo("Subscribing to channel", LogInfo{"channel", path}, LogInfo{"operation", "subscribe"})
 	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
-		c.logError(err.Error(), "channel", path, "operation", "subscribe")
+		c.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "subscribe"})
 		return err
 	}
 
@@ -123,12 +123,12 @@ func (c *ClientController) SubscribePong(fn func(msg PongMessage, done bool)) er
 			// Process message
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
-				c.logError(err.Error(), "channel", path, "operation", "subscribe", "message", msg)
+				c.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "subscribe"}, LogInfo{"message", msg})
 			}
 
 			// Send info if message is correct or susbcription is closed
 			if err == nil || !open {
-				c.logInfo("Received new message", "channel", path, "operation", "subscribe", "message", msg)
+				c.logInfo("Received new message", LogInfo{"channel", path}, LogInfo{"operation", "subscribe"}, LogInfo{"message", msg})
 				fn(msg, !open)
 			}
 
@@ -157,7 +157,7 @@ func (c *ClientController) UnsubscribePong() {
 	}
 
 	// Stop the channel and remove the entry
-	c.logInfo("Unsubscribing from channel", "channel", path, "operation", "unsubscribe")
+	c.logInfo("Unsubscribing from channel", LogInfo{"channel", path}, LogInfo{"operation", "unsubscribe"})
 	stopChan <- true
 	delete(c.stopSubscribers, path)
 }
@@ -174,7 +174,7 @@ func (c *ClientController) PublishPing(msg PingMessage) error {
 	path := "ping"
 
 	// Publish on event broker
-	c.logInfo("Publishing to channel", "channel", path, "operation", "publish", "message", msg)
+	c.logInfo("Publishing to channel", LogInfo{"channel", path}, LogInfo{"operation", "publish"}, LogInfo{"message", msg})
 	return c.brokerController.Publish(path, um)
 }
 
@@ -187,10 +187,10 @@ func (cc *ClientController) WaitForPong(ctx context.Context, publishMsg MessageW
 	path := "pong"
 
 	// Subscribe to broker channel
-	cc.logInfo("Wait for response", "channel", path, "operation", "wait-for", "correlation-id", publishMsg.CorrelationID())
+	cc.logInfo("Wait for response", LogInfo{"channel", path}, LogInfo{"operation", "wait-for"}, LogInfo{"correlation-id", publishMsg.CorrelationID()})
 	msgs, stop, err := cc.brokerController.Subscribe(path)
 	if err != nil {
-		cc.logError(err.Error(), "channel", path, "operation", "wait-for")
+		cc.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "wait-for"})
 		return PongMessage{}, err
 	}
 
@@ -198,7 +198,13 @@ func (cc *ClientController) WaitForPong(ctx context.Context, publishMsg MessageW
 	defer func() { stop <- true }()
 
 	// Execute publication
-	cc.logInfo("Sending request", "channel", path, "operation", "wait-for", "message", publishMsg, "correlation-id", publishMsg.CorrelationID())
+	cc.logInfo(
+		"Sending request",
+		LogInfo{"channel", path},
+		LogInfo{"operation", "wait-for"},
+		LogInfo{"message", publishMsg},
+		LogInfo{"correlation-id", publishMsg.CorrelationID()},
+	)
 	if err := pub(); err != nil {
 		return PongMessage{}, err
 	}
@@ -210,19 +216,35 @@ func (cc *ClientController) WaitForPong(ctx context.Context, publishMsg MessageW
 			// Get new message
 			msg, err := newPongMessageFromUniversalMessage(um)
 			if err != nil {
-				cc.logError(err.Error(), "channel", path, "operation", "wait-for")
+				cc.logError(err.Error(), LogInfo{"channel", path}, LogInfo{"operation", "wait-for"})
 			}
 
 			// If valid message with corresponding correlation ID, return message
 			if err == nil && publishMsg.CorrelationID() == msg.CorrelationID() {
-				cc.logInfo("Received expected message", "channel", path, "operation", "wait-for", "message", msg, "correlation-id", msg.CorrelationID())
+				cc.logInfo(
+					"Received expected message",
+					LogInfo{"channel", path},
+					LogInfo{"operation", "wait-for"},
+					LogInfo{"message", msg},
+					LogInfo{"correlation-id", msg.CorrelationID()},
+				)
 				return msg, nil
 			} else if !open { // If message is invalid or not corresponding and the subscription is closed, then return error
-				cc.logError("Channel closed before getting message", "channel", path, "operation", "wait-for", "correlation-id", publishMsg.CorrelationID())
+				cc.logError(
+					"Channel closed before getting message",
+					LogInfo{"channel", path},
+					LogInfo{"operation", "wait-for"},
+					LogInfo{"correlation-id", publishMsg.CorrelationID()},
+				)
 				return PongMessage{}, ErrSubscriptionCanceled
 			}
 		case <-ctx.Done(): // Return error if context is done
-			cc.logError("Context done before getting message", "channel", path, "operation", "wait-for", "correlation-id", publishMsg.CorrelationID())
+			cc.logError(
+				"Context done before getting message",
+				LogInfo{"channel", path},
+				LogInfo{"operation", "wait-for"},
+				LogInfo{"correlation-id", publishMsg.CorrelationID()},
+			)
 			return PongMessage{}, ErrContextCanceled
 		}
 	}

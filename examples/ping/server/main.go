@@ -56,7 +56,7 @@ func main() {
 	defer ctrl.Close()
 
 	// Attach a logger (optional)
-	// ctrl.AttachLogger(SimpleLogger{})
+	// ctrl.SetLogger(SimpleLogger{})
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
 	log.Println("Subscribe to all...")

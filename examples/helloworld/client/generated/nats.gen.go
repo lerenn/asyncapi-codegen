@@ -32,8 +32,8 @@ func (c *NATSController) SetQueueName(name string) {
 	c.queueName = name
 }
 
-// AttachLogger attaches a logger that will log operations on broker controller
-func (c *NATSController) AttachLogger(logger Logger) {
+// SetLogger set a custom logger that will log operations on broker controller
+func (c *NATSController) SetLogger(logger Logger) {
 	c.logger = logger
 }
 
@@ -89,11 +89,11 @@ func (c *NATSController) Subscribe(channel string) (msgs chan UniversalMessage, 
 			// Handle closure request from function caller
 			case _ = <-stop:
 				if err := sub.Unsubscribe(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
-					c.logger.Error(err.Error(), "module", "asyncapi", "controller", "nats")
+					c.logger.Error(err.Error(), LogInfo{"module", "asyncapi"}, LogInfo{"controller", "nats"})
 				}
 
 				if err := sub.Drain(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
-					c.logger.Error(err.Error(), "module", "asyncapi", "controller", "nats")
+					c.logger.Error(err.Error(), LogInfo{"module", "asyncapi"}, LogInfo{"controller", "nats"})
 				}
 
 				close(msgs)

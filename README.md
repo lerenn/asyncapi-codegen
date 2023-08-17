@@ -15,7 +15,7 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
   * [Basic example](#basic-example)
   * [Request/Response example](#request-response-example)
 * [CLI options](#cli-options)
-* [Broker-specific operations](#broker-specific-operations)
+* [Advanced topics](#advanced-topics)
 * [Contributing and support](#contributing-and-support)
 
 ## Supported functionalities
@@ -97,10 +97,10 @@ type AppController struct
 // BrokerController that you pass in argument to subscription and publication method.
 func NewAppController(bs BrokerController) *AppController
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c {{ .Prefix }}Controller) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c {{ .Prefix }}Controller) SetLogger(logger Logger) {
     c.logger = logger
-    c.brokerController.AttachLogger(logger)
+    c.brokerController.SetLogger(logger)
 }
 
 // Close function will clean up all resources and subscriptions left in the
@@ -174,10 +174,10 @@ type ClientController struct
 // BrokerController that you pass in argument to subscription and publication method.
 func NewClientController(bs BrokerController) *ClientController
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c {{ .Prefix }}Controller) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c {{ .Prefix }}Controller) SetLogger(logger Logger) {
     c.logger = logger
-    c.brokerController.AttachLogger(logger)
+    c.brokerController.SetLogger(logger)
 }
 
 // Close function will clean up all resources and subscriptions left in the
@@ -345,7 +345,7 @@ You can also specify some specific implementation for the broker of your choice:
 
 * `nats`: generate the NATS message broker boilerplate.
 
-## Broker-specific operations
+## Advanced topics
 
 ### Use of queue groups and queue name customization
 
@@ -361,18 +361,18 @@ queues:
 broker.SetQueueName("my-custom-queue-name")
 ```
 
-### Enable logging on request/responses
+### Custom logging
 
-It is possible to add your own logger to the generated code, all you have to do
+It is possible to set your own logger to the generated code, all you have to do
 is to fill the following interface:
 
 ```golang
 type Logger interface {
     // Info logs information based on a message and key-value elements
-    Info(msg string, keyvals ...interface{})
+    Info(msg string, info ...LogInfo)
 
     // Error logs error based on a message and key-value elements
-    Error(msg string, keyvals ...interface{})
+    Error(msg string, info ...LogInfo)
 }
 ```
 
@@ -383,20 +383,20 @@ Here is a basic implementation example:
 ```golang
 type SimpleLogger struct{}
 
-func (logger SimpleLogger) formatKeyValues(keyvals ...interface{}) string {
-	var formattedKeyValues string
+func (logger SimpleLogger) formatlogInfo(info ...LogInfo) string {
+	var formattedLogInfo string
 	for i := 0; i < len(keyvals)-1; i += 2 {
-		formattedKeyValues = fmt.Sprintf("%s, %s: %+v", formattedKeyValues, keyvals[i], keyvals[i+1])
+		formattedLogInfo = fmt.Sprintf("%s, %s: %+v", formattedLogInfo, info.Key, info.Value)
 	}
-	return formattedKeyValues
+	return formattedLogInfo
 }
 
-func (logger SimpleLogger) Info(msg string, keyvals ...interface{}) {
-	log.Printf("INFO: %s%s", msg, logger.formatKeyValues(keyvals...))
+func (logger SimpleLogger) Info(msg string, info ...LogInfo) {
+	log.Printf("INFO: %s%s", msg, logger.formatlogInfo(info...))
 }
 
-func (logger SimpleLogger) Error(msg string, keyvals ...interface{}) {
-	log.Printf("ERROR: %s%s", msg, logger.formatKeyValues(keyvals...))
+func (logger SimpleLogger) Error(msg string, info ...LogInfo) {
+	log.Printf("ERROR: %s%s", msg, logger.formatlogInfo(info...))
 }
 ```
 
@@ -406,8 +406,8 @@ You can then create a controller with a logger using similar lines:
 // Create a new app controller with a NATS controller for example
 ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
 
-// Attach a new logger
-ctrl.AttachLogger(SimpleLogger{})
+// Set a logger
+ctrl.SetLogger(SimpleLogger{})
 ```
 
 ## Contributing and support

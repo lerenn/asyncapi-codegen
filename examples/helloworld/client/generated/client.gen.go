@@ -23,25 +23,25 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 	}, nil
 }
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c *ClientController) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c *ClientController) SetLogger(logger Logger) {
 	c.logger = logger
-	c.brokerController.AttachLogger(logger)
+	c.brokerController.SetLogger(logger)
 }
 
 // logError logs error if the logger has been set
-func (c ClientController) logError(msg string, keyvals ...interface{}) {
+func (c ClientController) logError(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "Client")
-		c.logger.Error(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "Client"})
+		c.logger.Error(msg, info...)
 	}
 }
 
 // logInfo logs information if the logger has been set
-func (c ClientController) logInfo(msg string, keyvals ...interface{}) {
+func (c ClientController) logInfo(msg string, info ...LogInfo) {
 	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "Client")
-		c.logger.Info(msg, keyvals...)
+		info = append(info, LogInfo{"module", "asyncapi"}, LogInfo{"controller", "Client"})
+		c.logger.Info(msg, info...)
 	}
 }
 
@@ -62,6 +62,6 @@ func (c *ClientController) PublishHello(msg HelloMessage) error {
 	path := "hello"
 
 	// Publish on event broker
-	c.logInfo("Publishing to channel", "channel", path, "operation", "publish", "message", msg)
+	c.logInfo("Publishing to channel", LogInfo{"channel", path}, LogInfo{"operation", "publish"}, LogInfo{"message", msg})
 	return c.brokerController.Publish(path, um)
 }
