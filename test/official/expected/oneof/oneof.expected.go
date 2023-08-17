@@ -371,6 +371,9 @@ type BrokerController interface {
 
 	// Subscribe to messages from the broker
 	Subscribe(channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
+
+	// SetQueueName sets the name of the queue that will be used by the broker
+	SetQueueName(name string)
 }
 
 var (
