@@ -10,16 +10,13 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/examples/ping/client/generated"
+	"github.com/lerenn/asyncapi-codegen/pkg/log"
 	"github.com/nats-io/nats.go"
 )
-
-func init() {
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-}
 
 func main() {
 	nc, err := nats.Connect("nats://nats:4222")
@@ -35,7 +32,8 @@ func main() {
 	defer ctrl.Close()
 
 	// Attach a logger (optional)
-	// ctrl.SetLogger(SimpleLogger{})
+	logger := log.NewECS()
+	ctrl.SetLogger(logger)
 
 	// Make a new ping message
 	req := generated.NewPingMessage()
@@ -43,7 +41,7 @@ func main() {
 
 	// Create the publication function to send the message
 	publicationFunc := func() error {
-		log.Println("New ping request")
+		logger.Info(log.Context{}, "New ping request")
 		return ctrl.PublishPing(req)
 	}
 
@@ -59,7 +57,10 @@ func main() {
 		panic(err)
 	}
 
-	log.Println("Got response:", resp.Payload.Message, "send at", resp.Payload.Time)
+	// Log response
+	msg := fmt.Sprintf("Got response (%+v) sent at %s", resp.Payload.Message, resp.Payload.Time)
+	logger.Info(log.Context{}, msg)
 
+	// Wait for the message to be received
 	time.Sleep(time.Second)
 }

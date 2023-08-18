@@ -28,6 +28,8 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
   * *Open a ticket for any missing one that you would want to have here!*
 * Formats:
   * JSON
+* Logging:
+  * JSON (ECS compatible)
 
 ## Concepts
 
@@ -361,7 +363,24 @@ queues:
 broker.SetQueueName("my-custom-queue-name")
 ```
 
-### Custom logging
+### Logging
+
+#### Enable logging
+
+To enable logging, the only thing you have to do is to set a logger to your
+controller with the function `SetLogger()`:
+
+```golang
+// Create a new app controller with a NATS controller for example
+ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+
+// Set a logger
+ctrl.SetLogger(SimpleLogger{})
+```
+
+You can find all loggers in the directory `pkg/log`.
+
+#### Custom logging
 
 It is possible to set your own logger to the generated code, all you have to do
 is to fill the following interface:
@@ -369,34 +388,32 @@ is to fill the following interface:
 ```golang
 type Logger interface {
     // Info logs information based on a message and key-value elements
-    Info(msg string, info ...LogInfo)
+    Info(ctx log.Context, msg string, info ...log.AdditionalInfo)
 
     // Error logs error based on a message and key-value elements
-    Error(msg string, info ...LogInfo)
+    Error(ctx log.Context, msg string, info ...log.AdditionalInfo)
 }
 ```
-
-In this interface, `keyvals` will be added as pair to add informations to the log.
 
 Here is a basic implementation example:
 
 ```golang
 type SimpleLogger struct{}
 
-func (logger SimpleLogger) formatlogInfo(info ...LogInfo) string {
+func (logger SimpleLogger) formatLog(ctx log.Context, info ...log.AdditionalInfo) string {
 	var formattedLogInfo string
 	for i := 0; i < len(keyvals)-1; i += 2 {
 		formattedLogInfo = fmt.Sprintf("%s, %s: %+v", formattedLogInfo, info.Key, info.Value)
 	}
-	return formattedLogInfo
+	return fmt.Sprintf("%s, context: %+v", formattedLogInfo, ctx)
 }
 
-func (logger SimpleLogger) Info(msg string, info ...LogInfo) {
-	log.Printf("INFO: %s%s", msg, logger.formatlogInfo(info...))
+func (logger SimpleLogger) Info(ctx log.Context, msg string, info ...log.AdditionalInfo) {
+	log.Printf("INFO: %s%s", msg, logger.formatLog(ctx, info...))
 }
 
-func (logger SimpleLogger) Error(msg string, info ...LogInfo) {
-	log.Printf("ERROR: %s%s", msg, logger.formatlogInfo(info...))
+func (logger SimpleLogger) Error(ctx log.Context, msg string, info ...log.AdditionalInfo) {
+	log.Printf("ERROR: %s%s", msg, logger.formatLog(ctx, info...))
 }
 ```
 

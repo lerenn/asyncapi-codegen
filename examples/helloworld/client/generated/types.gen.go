@@ -33,19 +33,6 @@ var (
 	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
 )
 
-type LogInfo struct {
-	Key   string
-	Value interface{}
-}
-
-type Logger interface {
-	// Info logs information based on a message and key-value elements
-	Info(msg string, info ...LogInfo)
-
-	// Error logs error based on a message and key-value elements
-	Error(msg string, info ...LogInfo)
-}
-
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 }

@@ -6,13 +6,15 @@ package generated
 import (
 	"errors"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/log"
+
 	"github.com/nats-io/nats.go"
 )
 
 // NATSController is the NATS implementation for asyncapi-codegen
 type NATSController struct {
 	connection *nats.Conn
-	logger     Logger
+	logger     log.Logger
 	queueName  string
 }
 
@@ -33,7 +35,7 @@ func (c *NATSController) SetQueueName(name string) {
 }
 
 // SetLogger set a custom logger that will log operations on broker controller
-func (c *NATSController) SetLogger(logger Logger) {
+func (c *NATSController) SetLogger(logger log.Logger) {
 	c.logger = logger
 }
 
@@ -89,11 +91,11 @@ func (c *NATSController) Subscribe(channel string) (msgs chan UniversalMessage, 
 			// Handle closure request from function caller
 			case _ = <-stop:
 				if err := sub.Unsubscribe(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
-					c.logger.Error(err.Error(), LogInfo{"module", "asyncapi"}, LogInfo{"controller", "nats"})
+					c.logger.Error(log.Context{Module: "asyncapi", Provider: "broker"}, err.Error())
 				}
 
 				if err := sub.Drain(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
-					c.logger.Error(err.Error(), LogInfo{"module", "asyncapi"}, LogInfo{"controller", "nats"})
+					c.logger.Error(log.Context{Module: "asyncapi", Provider: "broker"}, err.Error())
 				}
 
 				close(msgs)
