@@ -15,7 +15,7 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
   * [Basic example](#basic-example)
   * [Request/Response example](#request-response-example)
 * [CLI options](#cli-options)
-* [Broker-specific operations](#broker-specific-operations)
+* [Advanced topics](#advanced-topics)
 * [Contributing and support](#contributing-and-support)
 
 ## Supported functionalities
@@ -28,6 +28,8 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
   * *Open a ticket for any missing one that you would want to have here!*
 * Formats:
   * JSON
+* Logging:
+  * JSON (ECS compatible)
 
 ## Concepts
 
@@ -97,10 +99,10 @@ type AppController struct
 // BrokerController that you pass in argument to subscription and publication method.
 func NewAppController(bs BrokerController) *AppController
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c {{ .Prefix }}Controller) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c {{ .Prefix }}Controller) SetLogger(logger Logger) {
     c.logger = logger
-    c.brokerController.AttachLogger(logger)
+    c.brokerController.SetLogger(logger)
 }
 
 // Close function will clean up all resources and subscriptions left in the
@@ -174,10 +176,10 @@ type ClientController struct
 // BrokerController that you pass in argument to subscription and publication method.
 func NewClientController(bs BrokerController) *ClientController
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c {{ .Prefix }}Controller) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c {{ .Prefix }}Controller) SetLogger(logger Logger) {
     c.logger = logger
-    c.brokerController.AttachLogger(logger)
+    c.brokerController.SetLogger(logger)
 }
 
 // Close function will clean up all resources and subscriptions left in the
@@ -345,7 +347,7 @@ You can also specify some specific implementation for the broker of your choice:
 
 * `nats`: generate the NATS message broker boilerplate.
 
-## Broker-specific operations
+## Advanced topics
 
 ### Use of queue groups and queue name customization
 
@@ -361,42 +363,57 @@ queues:
 broker.SetQueueName("my-custom-queue-name")
 ```
 
-### Enable logging on request/responses
+### Logging
 
-It is possible to add your own logger to the generated code, all you have to do
+#### Enable logging
+
+To enable logging, the only thing you have to do is to set a logger to your
+controller with the function `SetLogger()`:
+
+```golang
+// Create a new app controller with a NATS controller for example
+ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+
+// Set a logger
+ctrl.SetLogger(SimpleLogger{})
+```
+
+You can find all loggers in the directory `pkg/log`.
+
+#### Custom logging
+
+It is possible to set your own logger to the generated code, all you have to do
 is to fill the following interface:
 
 ```golang
 type Logger interface {
     // Info logs information based on a message and key-value elements
-    Info(msg string, keyvals ...interface{})
+    Info(ctx log.Context, msg string, info ...log.AdditionalInfo)
 
     // Error logs error based on a message and key-value elements
-    Error(msg string, keyvals ...interface{})
+    Error(ctx log.Context, msg string, info ...log.AdditionalInfo)
 }
 ```
-
-In this interface, `keyvals` will be added as pair to add informations to the log.
 
 Here is a basic implementation example:
 
 ```golang
 type SimpleLogger struct{}
 
-func (logger SimpleLogger) formatKeyValues(keyvals ...interface{}) string {
-	var formattedKeyValues string
+func (logger SimpleLogger) formatLog(ctx log.Context, info ...log.AdditionalInfo) string {
+	var formattedLogInfo string
 	for i := 0; i < len(keyvals)-1; i += 2 {
-		formattedKeyValues = fmt.Sprintf("%s, %s: %+v", formattedKeyValues, keyvals[i], keyvals[i+1])
+		formattedLogInfo = fmt.Sprintf("%s, %s: %+v", formattedLogInfo, info.Key, info.Value)
 	}
-	return formattedKeyValues
+	return fmt.Sprintf("%s, context: %+v", formattedLogInfo, ctx)
 }
 
-func (logger SimpleLogger) Info(msg string, keyvals ...interface{}) {
-	log.Printf("INFO: %s%s", msg, logger.formatKeyValues(keyvals...))
+func (logger SimpleLogger) Info(ctx log.Context, msg string, info ...log.AdditionalInfo) {
+	log.Printf("INFO: %s%s", msg, logger.formatLog(ctx, info...))
 }
 
-func (logger SimpleLogger) Error(msg string, keyvals ...interface{}) {
-	log.Printf("ERROR: %s%s", msg, logger.formatKeyValues(keyvals...))
+func (logger SimpleLogger) Error(ctx log.Context, msg string, info ...log.AdditionalInfo) {
+	log.Printf("ERROR: %s%s", msg, logger.formatLog(ctx, info...))
 }
 ```
 
@@ -406,8 +423,8 @@ You can then create a controller with a logger using similar lines:
 // Create a new app controller with a NATS controller for example
 ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
 
-// Attach a new logger
-ctrl.AttachLogger(SimpleLogger{})
+// Set a logger
+ctrl.SetLogger(SimpleLogger{})
 ```
 
 ## Contributing and support

@@ -5,6 +5,8 @@ package generated
 
 import (
 	"fmt"
+
+	"github.com/lerenn/asyncapi-codegen/pkg/log"
 )
 
 // AppSubscriber represents all handlers that are expecting messages for App
@@ -18,7 +20,7 @@ type AppSubscriber interface {
 type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           Logger
+	logger           log.Logger
 }
 
 // NewAppController links the App to the broker
@@ -30,35 +32,40 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 	return &AppController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
+		logger:           log.Silent{},
 	}, nil
 }
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c *AppController) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c *AppController) SetLogger(logger log.Logger) {
 	c.logger = logger
-	c.brokerController.AttachLogger(logger)
+	c.brokerController.SetLogger(logger)
 }
 
-// logError logs error if the logger has been set
-func (c AppController) logError(msg string, keyvals ...interface{}) {
-	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "App")
-		c.logger.Error(msg, keyvals...)
-	}
+// LogError logs error if the logger has been set
+func (c AppController) LogError(ctx log.Context, msg string) {
+	// Add more context
+	ctx.Module = "asyncapi"
+	ctx.Provider = "app"
+
+	// Log error
+	c.logger.Error(ctx, msg)
 }
 
-// logInfo logs information if the logger has been set
-func (c AppController) logInfo(msg string, keyvals ...interface{}) {
-	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "App")
-		c.logger.Info(msg, keyvals...)
-	}
+// LogInfo logs information if the logger has been set
+func (c AppController) LogInfo(ctx log.Context, msg string) {
+	// Add more context
+	ctx.Module = "asyncapi"
+	ctx.Provider = "app"
+
+	// Log info
+	c.logger.Info(ctx, msg)
 }
 
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close() {
 	// Unsubscribing remaining channels
-	c.logInfo("Closing App controller")
+	c.LogInfo(log.Context{}, "Closing App controller")
 	c.UnsubscribeAll()
 }
 
@@ -101,15 +108,15 @@ func (c *AppController) SubscribePing(fn func(msg PingMessage, done bool)) error
 	_, exists := c.stopSubscribers[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
-		c.logError(err.Error(), "channel", path)
+		c.LogError(log.Context{Action: path}, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	c.logInfo("Subscribing to channel", "channel", path, "operation", "subscribe")
+	c.LogInfo(log.Context{Action: path, Operation: "subscribe"}, "Subscribing to channel")
 	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
-		c.logError(err.Error(), "channel", path, "operation", "subscribe")
+		c.LogError(log.Context{Action: path, Operation: "subscribe"}, err.Error())
 		return err
 	}
 
@@ -122,12 +129,12 @@ func (c *AppController) SubscribePing(fn func(msg PingMessage, done bool)) error
 			// Process message
 			msg, err := newPingMessageFromUniversalMessage(um)
 			if err != nil {
-				c.logError(err.Error(), "channel", path, "operation", "subscribe", "message", msg)
+				c.LogError(log.Context{Action: path, Operation: "subscribe", Message: msg}, err.Error())
 			}
 
 			// Send info if message is correct or susbcription is closed
 			if err == nil || !open {
-				c.logInfo("Received new message", "channel", path, "operation", "subscribe", "message", msg)
+				c.LogInfo(log.Context{Action: path, Operation: "subscribe", Message: msg}, "Received new message")
 				fn(msg, !open)
 			}
 
@@ -156,7 +163,7 @@ func (c *AppController) UnsubscribePing() {
 	}
 
 	// Stop the channel and remove the entry
-	c.logInfo("Unsubscribing from channel", "channel", path, "operation", "unsubscribe")
+	c.LogInfo(log.Context{Action: path, Operation: "unsubscribe"}, "Unsubscribing from channel")
 	stopChan <- true
 	delete(c.stopSubscribers, path)
 }
@@ -173,6 +180,6 @@ func (c *AppController) PublishPong(msg PongMessage) error {
 	path := "pong"
 
 	// Publish on event broker
-	c.logInfo("Publishing to channel", "channel", path, "operation", "publish", "message", msg)
+	c.LogInfo(log.Context{Action: path, Operation: "publish", Message: msg}, "Publishing to channel")
 	return c.brokerController.Publish(path, um)
 }

@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/lerenn/asyncapi-codegen/pkg/log"
 )
 
 // AppSubscriber represents all handlers that are expecting messages for App
@@ -20,7 +22,7 @@ type AppSubscriber interface {
 type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           Logger
+	logger           log.Logger
 }
 
 // NewAppController links the App to the broker
@@ -32,35 +34,40 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 	return &AppController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
+		logger:           log.Silent{},
 	}, nil
 }
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c *AppController) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c *AppController) SetLogger(logger log.Logger) {
 	c.logger = logger
-	c.brokerController.AttachLogger(logger)
+	c.brokerController.SetLogger(logger)
 }
 
-// logError logs error if the logger has been set
-func (c AppController) logError(msg string, keyvals ...interface{}) {
-	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "App")
-		c.logger.Error(msg, keyvals...)
-	}
+// LogError logs error if the logger has been set
+func (c AppController) LogError(ctx log.Context, msg string) {
+	// Add more context
+	ctx.Module = "asyncapi"
+	ctx.Provider = "app"
+
+	// Log error
+	c.logger.Error(ctx, msg)
 }
 
-// logInfo logs information if the logger has been set
-func (c AppController) logInfo(msg string, keyvals ...interface{}) {
-	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "App")
-		c.logger.Info(msg, keyvals...)
-	}
+// LogInfo logs information if the logger has been set
+func (c AppController) LogInfo(ctx log.Context, msg string) {
+	// Add more context
+	ctx.Module = "asyncapi"
+	ctx.Provider = "app"
+
+	// Log info
+	c.logger.Info(ctx, msg)
 }
 
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close() {
 	// Unsubscribing remaining channels
-	c.logInfo("Closing App controller")
+	c.LogInfo(log.Context{}, "Closing App controller")
 	c.UnsubscribeAll()
 }
 
@@ -103,15 +110,15 @@ func (c *AppController) SubscribeTest(fn func(msg TestMessagesMessage, done bool
 	_, exists := c.stopSubscribers[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
-		c.logError(err.Error(), "channel", path)
+		c.LogError(log.Context{Action: path}, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	c.logInfo("Subscribing to channel", "channel", path, "operation", "subscribe")
+	c.LogInfo(log.Context{Action: path, Operation: "subscribe"}, "Subscribing to channel")
 	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
-		c.logError(err.Error(), "channel", path, "operation", "subscribe")
+		c.LogError(log.Context{Action: path, Operation: "subscribe"}, err.Error())
 		return err
 	}
 
@@ -124,12 +131,12 @@ func (c *AppController) SubscribeTest(fn func(msg TestMessagesMessage, done bool
 			// Process message
 			msg, err := newTestMessagesMessageFromUniversalMessage(um)
 			if err != nil {
-				c.logError(err.Error(), "channel", path, "operation", "subscribe", "message", msg)
+				c.LogError(log.Context{Action: path, Operation: "subscribe", Message: msg}, err.Error())
 			}
 
 			// Send info if message is correct or susbcription is closed
 			if err == nil || !open {
-				c.logInfo("Received new message", "channel", path, "operation", "subscribe", "message", msg)
+				c.LogInfo(log.Context{Action: path, Operation: "subscribe", Message: msg}, "Received new message")
 				fn(msg, !open)
 			}
 
@@ -158,7 +165,7 @@ func (c *AppController) UnsubscribeTest() {
 	}
 
 	// Stop the channel and remove the entry
-	c.logInfo("Unsubscribing from channel", "channel", path, "operation", "unsubscribe")
+	c.LogInfo(log.Context{Action: path, Operation: "unsubscribe"}, "Unsubscribing from channel")
 	stopChan <- true
 	delete(c.stopSubscribers, path)
 }
@@ -175,7 +182,7 @@ func (c *AppController) PublishTest2(msg Test2Message) error {
 	path := "test2"
 
 	// Publish on event broker
-	c.logInfo("Publishing to channel", "channel", path, "operation", "publish", "message", msg)
+	c.LogInfo(log.Context{Action: path, Operation: "publish", Message: msg}, "Publishing to channel")
 	return c.brokerController.Publish(path, um)
 }
 
@@ -190,7 +197,7 @@ type ClientSubscriber interface {
 type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           Logger
+	logger           log.Logger
 }
 
 // NewClientController links the Client to the broker
@@ -202,35 +209,40 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 	return &ClientController{
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
+		logger:           log.Silent{},
 	}, nil
 }
 
-// AttachLogger attaches a logger that will log operations on controller
-func (c *ClientController) AttachLogger(logger Logger) {
+// SetLogger attaches a logger that will log operations on controller
+func (c *ClientController) SetLogger(logger log.Logger) {
 	c.logger = logger
-	c.brokerController.AttachLogger(logger)
+	c.brokerController.SetLogger(logger)
 }
 
-// logError logs error if the logger has been set
-func (c ClientController) logError(msg string, keyvals ...interface{}) {
-	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "Client")
-		c.logger.Error(msg, keyvals...)
-	}
+// LogError logs error if the logger has been set
+func (c ClientController) LogError(ctx log.Context, msg string) {
+	// Add more context
+	ctx.Module = "asyncapi"
+	ctx.Provider = "client"
+
+	// Log error
+	c.logger.Error(ctx, msg)
 }
 
-// logInfo logs information if the logger has been set
-func (c ClientController) logInfo(msg string, keyvals ...interface{}) {
-	if c.logger != nil {
-		keyvals = append(keyvals, "module", "asyncapi", "controller", "Client")
-		c.logger.Info(msg, keyvals...)
-	}
+// LogInfo logs information if the logger has been set
+func (c ClientController) LogInfo(ctx log.Context, msg string) {
+	// Add more context
+	ctx.Module = "asyncapi"
+	ctx.Provider = "client"
+
+	// Log info
+	c.logger.Info(ctx, msg)
 }
 
 // Close will clean up any existing resources on the controller
 func (c *ClientController) Close() {
 	// Unsubscribing remaining channels
-	c.logInfo("Closing Client controller")
+	c.LogInfo(log.Context{}, "Closing Client controller")
 	c.UnsubscribeAll()
 }
 
@@ -273,15 +285,15 @@ func (c *ClientController) SubscribeTest2(fn func(msg Test2Message, done bool)) 
 	_, exists := c.stopSubscribers[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
-		c.logError(err.Error(), "channel", path)
+		c.LogError(log.Context{Action: path}, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	c.logInfo("Subscribing to channel", "channel", path, "operation", "subscribe")
+	c.LogInfo(log.Context{Action: path, Operation: "subscribe"}, "Subscribing to channel")
 	msgs, stop, err := c.brokerController.Subscribe(path)
 	if err != nil {
-		c.logError(err.Error(), "channel", path, "operation", "subscribe")
+		c.LogError(log.Context{Action: path, Operation: "subscribe"}, err.Error())
 		return err
 	}
 
@@ -294,12 +306,12 @@ func (c *ClientController) SubscribeTest2(fn func(msg Test2Message, done bool)) 
 			// Process message
 			msg, err := newTest2MessageFromUniversalMessage(um)
 			if err != nil {
-				c.logError(err.Error(), "channel", path, "operation", "subscribe", "message", msg)
+				c.LogError(log.Context{Action: path, Operation: "subscribe", Message: msg}, err.Error())
 			}
 
 			// Send info if message is correct or susbcription is closed
 			if err == nil || !open {
-				c.logInfo("Received new message", "channel", path, "operation", "subscribe", "message", msg)
+				c.LogInfo(log.Context{Action: path, Operation: "subscribe", Message: msg}, "Received new message")
 				fn(msg, !open)
 			}
 
@@ -328,7 +340,7 @@ func (c *ClientController) UnsubscribeTest2() {
 	}
 
 	// Stop the channel and remove the entry
-	c.logInfo("Unsubscribing from channel", "channel", path, "operation", "unsubscribe")
+	c.LogInfo(log.Context{Action: path, Operation: "unsubscribe"}, "Unsubscribing from channel")
 	stopChan <- true
 	delete(c.stopSubscribers, path)
 }
@@ -345,7 +357,7 @@ func (c *ClientController) PublishTest(msg TestMessagesMessage) error {
 	path := "test"
 
 	// Publish on event broker
-	c.logInfo("Publishing to channel", "channel", path, "operation", "publish", "message", msg)
+	c.LogInfo(log.Context{Action: path, Operation: "publish", Message: msg}, "Publishing to channel")
 	return c.brokerController.Publish(path, um)
 }
 
@@ -363,8 +375,8 @@ type UniversalMessage struct {
 // BrokerController represents the functions that should be implemented to connect
 // the broker to the application or the client
 type BrokerController interface {
-	// AttachLogger attaches a logger that will log operations on broker controller
-	AttachLogger(logger Logger)
+	// SetLogger set a logger that will log operations on broker controller
+	SetLogger(logger log.Logger)
 
 	// Publish a message to the broker
 	Publish(channel string, mw UniversalMessage) error
@@ -399,14 +411,6 @@ var (
 	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens
 	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
 )
-
-type Logger interface {
-	// Info logs information based on a message and key-value elements
-	Info(msg string, keyvals ...interface{})
-
-	// Error logs error based on a message and key-value elements
-	Error(msg string, keyvals ...interface{})
-}
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string
