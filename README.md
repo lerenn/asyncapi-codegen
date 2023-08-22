@@ -99,16 +99,10 @@ type AppController struct
 // BrokerController that you pass in argument to subscription and publication method.
 func NewAppController(bs BrokerController) *AppController
 
-// SetLogger attaches a logger that will log operations on controller
-func (c {{ .Prefix }}Controller) SetLogger(logger Logger) {
-    c.logger = logger
-    c.brokerController.SetLogger(logger)
-}
-
 // Close function will clean up all resources and subscriptions left in the
 // application controller. This should be call right after NewAppController
 // with a `defer`
-func (ac *AppController) Close()
+func (ac *AppController) Close(ctx context.Context)
 
 // SubscribeAll will subscribe to all channel that the application should listen to.
 //
@@ -118,11 +112,11 @@ func (ac *AppController) Close()
 //
 // In the HelloWorld example, only one function will listen on application side,
 // making it a bit overkill. You can directly use the SubscribeHello method.
-func (ac *AppController) SubscribeAll(as AppSubscriber) error
+func (ac *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) error
 
 // UnsubscribeAll will unsubscribe all channel that have subscribed to through
 // SubscribeAll or SubscribeXXX where XXX correspond to the channel name.
-func (ac *AppController) UnsubscribeAll()
+func (ac *AppController) UnsubscribeAll(ctx context.Context)
 
 // SubscribeHello will subscribe to new messages on the "hello" channel.
 // It will expect messages as specified in the AsyncAPI specification.
@@ -132,12 +126,15 @@ func (ac *AppController) UnsubscribeAll()
 //
 // The `done` argument is true when the subscription is closed. It can be used to
 // cleanup resources, such as channels.
-func (ac *AppController) SubscribeHello(fn func(msg HelloMessage, done bool)) error
+//
+// The subscription will be canceled if the context is canceled, if the subscription
+// is explicitely unsubscribed or if the controller is closed
+func (ac *AppController) SubscribeHello(ctx context.Context, fn func(msg HelloMessage, done bool)) error
 
 // UnsubscribeHello will unsubscribe only the subscription on the "hello" channel.
 // It should be only used when wanting specifically that, otherwise the clean up
 // will be handled by the Close function.
-func (ac *AppController) UnsubscribeHello()
+func (ac *AppController) UnsubscribeHello(ctx context.Context)
 ```
 
 And here is an example of the application that could be written to use this generated
@@ -149,11 +146,12 @@ nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
 ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
-defer ctrl.Close()
+defer ctrl.Close(context.Background())
 
 // Subscribe to HelloWorld messages
+// Note: it will indefinitely wait for messages as context has no timeout
 log.Println("Subscribe to hello world...")
-ctrl.SubscribeHello(func(msg generated.HelloMessage, _ bool) {
+ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg generated.HelloMessage, _ bool) {
   log.Println("Received message:", msg.Payload)
 })
 
@@ -176,20 +174,14 @@ type ClientController struct
 // BrokerController that you pass in argument to subscription and publication method.
 func NewClientController(bs BrokerController) *ClientController
 
-// SetLogger attaches a logger that will log operations on controller
-func (c {{ .Prefix }}Controller) SetLogger(logger Logger) {
-    c.logger = logger
-    c.brokerController.SetLogger(logger)
-}
-
 // Close function will clean up all resources and subscriptions left in the
 // application controller. This should be call right after NewAppController
 // with a `defer`
-func (cc *ClientController) Close()
+func (cc *ClientController) Close(ctx context.Context)
 
 // PublishHello will publish a hello world message on the "hello" channel as
 // specified in the AsyncAPI specification.
-func (cc *ClientController) PublishHello(msg HelloMessage) error
+func (cc *ClientController) PublishHello(ctx context.Context, msg HelloMessage) error
 ```
 
 And here is an example of the client that could be written to use this generated
@@ -201,11 +193,11 @@ nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
 ctrl, _ := generated.NewClientController(generated.NewNATSController(nc))
-defer ctrl.Close()
+defer ctrl.Close(context.Background())
 
 // Send HelloWorld
 log.Println("Publishing 'hello world' message")
-ctrl.PublishHello(generated.HelloMessage{Payload: "HelloWorld!"})
+ctrl.PublishHello(context.Background(), generated.HelloMessage{Payload: "HelloWorld!"})
 ```
 
 #### Types
@@ -229,10 +221,10 @@ provide an adapter to it. Here is the interface that you need to satisfy:
 
 ```go
 type BrokerController interface {
-  // Publish will be called under the hood by any PublishXXX function
-	Publish(channel string, mw UniversalMessage) error
-  // Subscribe will be called under the hood by any SubscribeXXX function
-	Subscribe(channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
+  	// Publish will be called under the hood by any PublishXXX function
+	Publish(ctx context.Context, channel string, mw UniversalMessage) error
+  	// Subscribe will be called under the hood by any SubscribeXXX function
+	Subscribe(ctx context.Context, channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
 }
 ```
 
@@ -279,7 +271,7 @@ func (s ServerSubscriber) Ping(req generated.PingMessage, _ bool) {
 	resp.Payload.Time = time.Now()
 
 	// Publish the pong message
-	s.Controller.PublishPong(resp)
+	s.Controller.PublishPong(cresp)
 }
 
 func main() {
@@ -287,11 +279,11 @@ func main() {
 
 	// Create a new server controller
 	ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
-	defer ctrl.Close()
+	defer ctrl.Close(context.Background())
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
 	sub := ServerSubscriber{Controller: ctrl}
-	ctrl.SubscribeAll(sub)
+	ctrl.SubscribeAll(context.Background(), sub)
 
 	// Process messages until interruption signal
 	/* ... */
@@ -303,15 +295,15 @@ func main() {
 ```golang
 // Create a new client controller
 ctrl, _ := generated.NewClientController(/* Add corresponding broker controller */)
-defer ctrl.Close()
+defer ctrl.Close(context.Background())
 
 // Make a new ping message
 req := generated.NewPingMessage()
 req.Payload = "ping"
 
 // Create the publication function to send the message
-publicationFunc := func() error {
-  return ctrl.PublishPing(req)
+publicationFunc := func(ctx context.Context) error {
+	return ctrl.PublishPing(ctx, req)
 }
 
 // The following function will subscribe to the 'pong' channel, execute the publication
@@ -373,9 +365,11 @@ controller with the function `SetLogger()`:
 ```golang
 // Create a new app controller with a NATS controller for example
 ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
-
-// Set a logger
-ctrl.SetLogger(SimpleLogger{})
+	
+// Attach a logger (optional)
+// You can find loggers in `github.com/lerenn/asyncapi-codegen/pkg/log` or create your own
+logger := log.NewECS()
+ctrl.SetLogger(logger)
 ```
 
 You can find all loggers in the directory `pkg/log`.

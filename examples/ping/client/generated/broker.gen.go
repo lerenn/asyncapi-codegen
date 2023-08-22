@@ -4,6 +4,8 @@
 package generated
 
 import (
+	"context"
+
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 )
 
@@ -25,10 +27,10 @@ type BrokerController interface {
 	SetLogger(logger log.Logger)
 
 	// Publish a message to the broker
-	Publish(channel string, mw UniversalMessage) error
+	Publish(ctx context.Context, channel string, mw UniversalMessage) error
 
 	// Subscribe to messages from the broker
-	Subscribe(channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
+	Subscribe(ctx context.Context, channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
 
 	// SetQueueName sets the name of the queue that will be used by the broker
 	SetQueueName(name string)

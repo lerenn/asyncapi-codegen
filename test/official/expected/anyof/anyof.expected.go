@@ -4,17 +4,19 @@
 package anyof
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 
+	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 )
 
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// Test
-	Test(msg TestMessagesMessage, done bool)
+	Test(ctx context.Context, msg TestMessagesMessage, done bool)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -44,41 +46,28 @@ func (c *AppController) SetLogger(logger log.Logger) {
 	c.brokerController.SetLogger(logger)
 }
 
-// LogError logs error if the logger has been set
-func (c AppController) LogError(ctx log.Context, msg string) {
-	// Add more context
-	ctx.Module = "asyncapi"
-	ctx.Provider = "app"
-
-	// Log error
-	c.logger.Error(ctx, msg)
-}
-
-// LogInfo logs information if the logger has been set
-func (c AppController) LogInfo(ctx log.Context, msg string) {
-	// Add more context
-	ctx.Module = "asyncapi"
-	ctx.Provider = "app"
-
-	// Log info
-	c.logger.Info(ctx, msg)
+func addAppContextValues(ctx context.Context, path, operation string) context.Context {
+	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "app")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsAction, path)
+	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *AppController) Close() {
+func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.LogInfo(log.Context{}, "Closing App controller")
-	c.UnsubscribeAll()
+	c.logger.Info(ctx, "Closing App controller")
+	c.UnsubscribeAll(ctx)
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
 // For channels with parameters, they should be subscribed independently.
-func (c *AppController) SubscribeAll(as AppSubscriber) error {
+func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) error {
 	if as == nil {
 		return ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeTest(as.Test); err != nil {
+	if err := c.SubscribeTest(ctx, as.Test); err != nil {
 		return err
 	}
 
@@ -86,9 +75,9 @@ func (c *AppController) SubscribeAll(as AppSubscriber) error {
 }
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
-func (c *AppController) UnsubscribeAll() {
+func (c *AppController) UnsubscribeAll(ctx context.Context) {
 	// Unsubscribe channels with no parameters (if any)
-	c.UnsubscribeTest()
+	c.UnsubscribeTest(ctx)
 
 	// Unsubscribe remaining channels
 	for n, stopChan := range c.stopSubscribers {
@@ -102,23 +91,26 @@ func (c *AppController) UnsubscribeAll() {
 // Callback function 'fn' will be called each time a new message is received.
 // The 'done' argument indicates when the subscription is canceled and can be
 // used to clean up resources.
-func (c *AppController) SubscribeTest(fn func(msg TestMessagesMessage, done bool)) error {
+func (c *AppController) SubscribeTest(ctx context.Context, fn func(ctx context.Context, msg TestMessagesMessage, done bool)) error {
 	// Get channel path
 	path := "test"
+
+	// Set context
+	ctx = addAppContextValues(ctx, path, "subscribe")
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
-		c.LogError(log.Context{Action: path}, err.Error())
+		c.logger.Error(ctx, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	c.LogInfo(log.Context{Action: path, Operation: "subscribe"}, "Subscribing to channel")
-	msgs, stop, err := c.brokerController.Subscribe(path)
+	c.logger.Info(ctx, "Subscribing to channel")
+	msgs, stop, err := c.brokerController.Subscribe(ctx, path)
 	if err != nil {
-		c.LogError(log.Context{Action: path, Operation: "subscribe"}, err.Error())
+		c.logger.Error(ctx, err.Error())
 		return err
 	}
 
@@ -131,13 +123,15 @@ func (c *AppController) SubscribeTest(fn func(msg TestMessagesMessage, done bool
 			// Process message
 			msg, err := newTestMessagesMessageFromUniversalMessage(um)
 			if err != nil {
-				c.LogError(log.Context{Action: path, Operation: "subscribe", Message: msg}, err.Error())
+				ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, um)
+				c.logger.Error(ctx, err.Error())
 			}
+			ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
 
 			// Send info if message is correct or susbcription is closed
 			if err == nil || !open {
-				c.LogInfo(log.Context{Action: path, Operation: "subscribe", Message: msg}, "Received new message")
-				fn(msg, !open)
+				c.logger.Info(ctx, "Received new message")
+				fn(ctx, msg, !open)
 			}
 
 			// If subscription is closed, then exit the function
@@ -154,9 +148,12 @@ func (c *AppController) SubscribeTest(fn func(msg TestMessagesMessage, done bool
 }
 
 // UnsubscribeTest will unsubscribe messages from 'test' channel
-func (c *AppController) UnsubscribeTest() {
+func (c *AppController) UnsubscribeTest(ctx context.Context) {
 	// Get channel path
 	path := "test"
+
+	// Set context
+	ctx = addAppContextValues(ctx, path, "unsubscribe")
 
 	// Get stop channel
 	stopChan, exists := c.stopSubscribers[path]
@@ -165,7 +162,7 @@ func (c *AppController) UnsubscribeTest() {
 	}
 
 	// Stop the channel and remove the entry
-	c.LogInfo(log.Context{Action: path, Operation: "unsubscribe"}, "Unsubscribing from channel")
+	c.logger.Info(ctx, "Unsubscribing from channel")
 	stopChan <- true
 	delete(c.stopSubscribers, path)
 }
@@ -197,45 +194,36 @@ func (c *ClientController) SetLogger(logger log.Logger) {
 	c.brokerController.SetLogger(logger)
 }
 
-// LogError logs error if the logger has been set
-func (c ClientController) LogError(ctx log.Context, msg string) {
-	// Add more context
-	ctx.Module = "asyncapi"
-	ctx.Provider = "client"
-
-	// Log error
-	c.logger.Error(ctx, msg)
-}
-
-// LogInfo logs information if the logger has been set
-func (c ClientController) LogInfo(ctx log.Context, msg string) {
-	// Add more context
-	ctx.Module = "asyncapi"
-	ctx.Provider = "client"
-
-	// Log info
-	c.logger.Info(ctx, msg)
+func addClientContextValues(ctx context.Context, path, operation string) context.Context {
+	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "client")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsAction, path)
+	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *ClientController) Close() {
+func (c *ClientController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
 // PublishTest will publish messages to 'test' channel
-func (c *ClientController) PublishTest(msg TestMessagesMessage) error {
+func (c *ClientController) PublishTest(ctx context.Context, msg TestMessagesMessage) error {
+	// Get channel path
+	path := "test"
+
+	// Set context
+	ctx = addClientContextValues(ctx, path, "publish")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
+
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
 		return err
 	}
 
-	// Get channel path
-	path := "test"
-
 	// Publish on event broker
-	c.LogInfo(log.Context{Action: path, Operation: "publish", Message: msg}, "Publishing to channel")
-	return c.brokerController.Publish(path, um)
+	c.logger.Info(ctx, "Publishing to channel")
+	return c.brokerController.Publish(ctx, path, um)
 }
 
 const (
@@ -256,10 +244,10 @@ type BrokerController interface {
 	SetLogger(logger log.Logger)
 
 	// Publish a message to the broker
-	Publish(channel string, mw UniversalMessage) error
+	Publish(ctx context.Context, channel string, mw UniversalMessage) error
 
 	// Subscribe to messages from the broker
-	Subscribe(channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
+	Subscribe(ctx context.Context, channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
 
 	// SetQueueName sets the name of the queue that will be used by the broker
 	SetQueueName(name string)

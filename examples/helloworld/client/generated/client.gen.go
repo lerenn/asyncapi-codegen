@@ -4,6 +4,9 @@
 package generated
 
 import (
+	"context"
+
+	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 )
 
@@ -34,43 +37,34 @@ func (c *ClientController) SetLogger(logger log.Logger) {
 	c.brokerController.SetLogger(logger)
 }
 
-// LogError logs error if the logger has been set
-func (c ClientController) LogError(ctx log.Context, msg string) {
-	// Add more context
-	ctx.Module = "asyncapi"
-	ctx.Provider = "client"
-
-	// Log error
-	c.logger.Error(ctx, msg)
-}
-
-// LogInfo logs information if the logger has been set
-func (c ClientController) LogInfo(ctx log.Context, msg string) {
-	// Add more context
-	ctx.Module = "asyncapi"
-	ctx.Provider = "client"
-
-	// Log info
-	c.logger.Info(ctx, msg)
+func addClientContextValues(ctx context.Context, path, operation string) context.Context {
+	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "client")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsAction, path)
+	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *ClientController) Close() {
+func (c *ClientController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
 // PublishHello will publish messages to 'hello' channel
-func (c *ClientController) PublishHello(msg HelloMessage) error {
+func (c *ClientController) PublishHello(ctx context.Context, msg HelloMessage) error {
+	// Get channel path
+	path := "hello"
+
+	// Set context
+	ctx = addClientContextValues(ctx, path, "publish")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
+
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
 	if err != nil {
 		return err
 	}
 
-	// Get channel path
-	path := "hello"
-
 	// Publish on event broker
-	c.LogInfo(log.Context{Action: path, Operation: "publish", Message: msg}, "Publishing to channel")
-	return c.brokerController.Publish(path, um)
+	c.logger.Info(ctx, "Publishing to channel")
+	return c.brokerController.Publish(ctx, path, um)
 }

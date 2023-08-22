@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer ctrl.Close()
+	defer ctrl.Close(context.Background())
 
 	// Attach a logger (optional)
 	logger := log.NewECS()
@@ -40,9 +40,10 @@ func main() {
 	req.Payload = "ping"
 
 	// Create the publication function to send the message
-	publicationFunc := func() error {
-		logger.Info(log.Context{}, "New ping request")
-		return ctrl.PublishPing(req)
+	// Note: it will indefinitely wait to publish as context has no timeout
+	publicationFunc := func(ctx context.Context) error {
+		logger.Info(ctx, "New ping request")
+		return ctrl.PublishPing(ctx, req)
 	}
 
 	// The following function will subscribe to the 'pong' channel, execute the publication
@@ -52,6 +53,8 @@ func main() {
 	// This function is available only if the 'correlationId' field has been filled
 	// for any channel in the AsyncAPI specification. You will then be able to use it
 	// with the form WaitForXXX where XXX is the channel name.
+	//
+	// Note: it will indefinitely wait for messages as context has no timeout
 	resp, err := ctrl.WaitForPong(context.Background(), req, publicationFunc)
 	if err != nil {
 		panic(err)
@@ -59,7 +62,7 @@ func main() {
 
 	// Log response
 	msg := fmt.Sprintf("Got response (%+v) sent at %s", resp.Payload.Message, resp.Payload.Time)
-	logger.Info(log.Context{}, msg)
+	logger.Info(context.Background(), msg)
 
 	// Wait for the message to be received
 	time.Sleep(time.Second)

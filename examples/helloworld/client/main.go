@@ -9,6 +9,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/lerenn/asyncapi-codegen/examples/helloworld/client/generated"
@@ -27,11 +28,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer ctrl.Close()
+	defer ctrl.Close(context.Background())
 
 	// Send HelloWorld
+	// Note: it will indefinitely wait to publish as context has no timeout
 	log.Println("Publishing 'hello world' message")
-	if err := ctrl.PublishHello(generated.HelloMessage{
+	if err := ctrl.PublishHello(context.Background(), generated.HelloMessage{
 		Payload: "HelloWorld!",
 	}); err != nil {
 		panic(err)
