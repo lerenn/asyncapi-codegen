@@ -2,7 +2,7 @@
 
 Generate Go client and server boilerplate from AsyncAPI specifications.
 
-**Important: Do not hesitate raise an issue on any bug or missing feature.**
+**⚠️ Do not hesitate raise an issue on any bug or missing feature.**
 **Contributions are welcomed!**
 
 *Inspired from popular [deepmap/oapi-codegen](https://github.com/deepmap/oapi-codegen)*
