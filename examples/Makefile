@@ -6,7 +6,9 @@ clean: ## Clean remains of run
 .PHONY: run
 run: ## Run the examples
 	@docker-compose -f helloworld/docker-compose.yml run client
+	@docker-compose -f helloworld/docker-compose.yml logs app
 	@docker-compose -f ping/docker-compose.yml run client
+	@docker-compose -f ping/docker-compose.yml logs server
 
 .PHONY: help
 help: ## Display this help message

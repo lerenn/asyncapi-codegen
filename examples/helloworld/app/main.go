@@ -9,6 +9,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -29,11 +30,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer ctrl.Close()
+	defer ctrl.Close(context.Background())
 
 	// Subscribe to HelloWorld messages
+	// Note: it will indefinitely wait for messages as context has no timeout
 	log.Println("Subscribe to hello world...")
-	ctrl.SubscribeHello(func(msg generated.HelloMessage, _ bool) {
+	ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg generated.HelloMessage, _ bool) {
 		log.Println("Received message:", msg.Payload)
 	})
 

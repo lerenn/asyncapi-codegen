@@ -9,26 +9,21 @@
 package main
 
 import (
-	"log"
+	"context"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/examples/ping/server/generated"
+	"github.com/lerenn/asyncapi-codegen/pkg/log"
 	"github.com/nats-io/nats.go"
 )
-
-func init() {
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-}
 
 type ServerSubscriber struct {
 	Controller *generated.AppController
 }
 
-func (s ServerSubscriber) Ping(req generated.PingMessage, _ bool) {
-	log.Println("Received a ping request")
-
+func (s ServerSubscriber) Ping(ctx context.Context, req generated.PingMessage, _ bool) {
 	// Generate a pong message, set as a response of the request
 	resp := generated.NewPongMessage()
 	resp.SetAsResponseFrom(req)
@@ -36,7 +31,8 @@ func (s ServerSubscriber) Ping(req generated.PingMessage, _ bool) {
 	resp.Payload.Time = time.Now()
 
 	// Publish the pong message
-	err := s.Controller.PublishPong(resp)
+	// Note: it will indefinitely wait to publish as context has no timeout
+	err := s.Controller.PublishPong(ctx, resp)
 	if err != nil {
 		panic(err)
 	}
@@ -53,15 +49,15 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer ctrl.Close()
+	defer ctrl.Close(context.Background())
 
 	// Attach a logger (optional)
-	// ctrl.SetLogger(SimpleLogger{})
+	logger := log.NewECS()
+	ctrl.SetLogger(logger)
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
-	log.Println("Subscribe to all...")
 	sub := ServerSubscriber{Controller: ctrl}
-	if err := ctrl.SubscribeAll(sub); err != nil {
+	if err := ctrl.SubscribeAll(context.Background(), sub); err != nil {
 		panic(err)
 	}
 

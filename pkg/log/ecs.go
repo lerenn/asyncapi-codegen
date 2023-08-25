@@ -1,11 +1,14 @@
 package log
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
 	"time"
+
+	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 )
 
 type ECS struct{}
@@ -54,26 +57,26 @@ func structureLogs(info []AdditionalInfo) map[string]any {
 	return structuredLog
 }
 
-func (logger ECS) formatLog(ctx Context, msg string, info ...AdditionalInfo) string {
+func (logger ECS) formatLog(ctx context.Context, msg string, info ...AdditionalInfo) string {
 	// Add additional keys from context
-	if ctx.Module != "" {
-		info = append(info, AdditionalInfo{"event.module", ctx.Module})
-	}
-	if ctx.Provider != "" {
-		info = append(info, AdditionalInfo{"event.provider", ctx.Provider})
-	}
-	if ctx.Action != "" {
-		info = append(info, AdditionalInfo{"event.action", ctx.Action})
-	}
-	if ctx.Operation != "" {
-		info = append(info, AdditionalInfo{"event.reason", ctx.Operation})
-	}
-	if ctx.Message != nil {
-		info = append(info, AdditionalInfo{"event.original", ctx.Message})
-	}
-	if ctx.CorrelationID != "" {
-		info = append(info, AdditionalInfo{"trace.id", ctx.CorrelationID})
-	}
+	aapiContext.IfSet(ctx, aapiContext.KeyIsModule, func(value any) {
+		info = append(info, AdditionalInfo{"event.module", value})
+	})
+	aapiContext.IfSet(ctx, aapiContext.KeyIsProvider, func(value any) {
+		info = append(info, AdditionalInfo{"event.provider", value})
+	})
+	aapiContext.IfSet(ctx, aapiContext.KeyIsAction, func(value any) {
+		info = append(info, AdditionalInfo{"event.action", value})
+	})
+	aapiContext.IfSet(ctx, aapiContext.KeyIsOperation, func(value any) {
+		info = append(info, AdditionalInfo{"event.reason", value})
+	})
+	aapiContext.IfSet(ctx, aapiContext.KeyIsMessage, func(value any) {
+		info = append(info, AdditionalInfo{"event.original", value})
+	})
+	aapiContext.IfSet(ctx, aapiContext.KeyIsCorrelationID, func(value any) {
+		info = append(info, AdditionalInfo{"trace.id", value})
+	})
 
 	// Add additional keys
 	info = append(info, AdditionalInfo{"message", msg})
@@ -92,7 +95,7 @@ func (logger ECS) formatLog(ctx Context, msg string, info ...AdditionalInfo) str
 	return string(b)
 }
 
-func (logger ECS) Info(ctx Context, msg string, info ...AdditionalInfo) {
+func (logger ECS) Info(ctx context.Context, msg string, info ...AdditionalInfo) {
 	// Add additional keys
 	info = append(info, AdditionalInfo{"log.level", "info"})
 
@@ -100,7 +103,7 @@ func (logger ECS) Info(ctx Context, msg string, info ...AdditionalInfo) {
 	log.Print(logger.formatLog(ctx, msg, info...))
 }
 
-func (logger ECS) Error(ctx Context, msg string, info ...AdditionalInfo) {
+func (logger ECS) Error(ctx context.Context, msg string, info ...AdditionalInfo) {
 	// Add additional keys
 	info = append(info, AdditionalInfo{"log.level", "error"})
 

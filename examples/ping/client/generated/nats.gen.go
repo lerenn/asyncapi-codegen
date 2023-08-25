@@ -4,6 +4,7 @@
 package generated
 
 import (
+	"context"
 	"errors"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
@@ -40,7 +41,7 @@ func (c *NATSController) SetLogger(logger log.Logger) {
 }
 
 // Publish a message to the broker
-func (c *NATSController) Publish(channel string, um UniversalMessage) error {
+func (c *NATSController) Publish(_ context.Context, channel string, um UniversalMessage) error {
 	msg := nats.NewMsg(channel)
 
 	// Set message content
@@ -59,7 +60,7 @@ func (c *NATSController) Publish(channel string, um UniversalMessage) error {
 }
 
 // Subscribe to messages from the broker
-func (c *NATSController) Subscribe(channel string) (msgs chan UniversalMessage, stop chan interface{}, err error) {
+func (c *NATSController) Subscribe(ctx context.Context, channel string) (msgs chan UniversalMessage, stop chan interface{}, err error) {
 	// Subscribe to channel
 	natsMsgs := make(chan *nats.Msg, 64)
 	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueName, natsMsgs)
@@ -91,11 +92,11 @@ func (c *NATSController) Subscribe(channel string) (msgs chan UniversalMessage, 
 			// Handle closure request from function caller
 			case _ = <-stop:
 				if err := sub.Unsubscribe(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
-					c.logger.Error(log.Context{Module: "asyncapi", Provider: "broker"}, err.Error())
+					c.logger.Error(ctx, err.Error())
 				}
 
 				if err := sub.Drain(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
-					c.logger.Error(log.Context{Module: "asyncapi", Provider: "broker"}, err.Error())
+					c.logger.Error(ctx, err.Error())
 				}
 
 				close(msgs)
