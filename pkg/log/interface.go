@@ -9,7 +9,7 @@ type AdditionalInfo struct {
 }
 
 // Logger is the interface that must be implemented by a logger
-type Logger interface {
+type Interface interface {
 	// Info logs information based on a message and key-value elements
 	Info(ctx context.Context, msg string, info ...AdditionalInfo)
 

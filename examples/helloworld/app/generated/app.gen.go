@@ -9,6 +9,7 @@ import (
 
 	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
+	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
 )
 
 // AppSubscriber represents all handlers that are expecting messages for App
@@ -22,7 +23,8 @@ type AppSubscriber interface {
 type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           log.Logger
+	logger           log.Interface
+	middlewares      []middleware.Interface
 }
 
 // NewAppController links the App to the broker
@@ -35,19 +37,32 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
+		middlewares:      make([]middleware.Interface, 0),
 	}, nil
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *AppController) SetLogger(logger log.Logger) {
+func (c *AppController) SetLogger(logger log.Interface) {
 	c.logger = logger
 	c.brokerController.SetLogger(logger)
+}
+
+// AddMiddlewares attaches middlewares that will be executed when sending or
+// receiving messages
+func (c *AppController) AddMiddlewares(middleware ...middleware.Interface) {
+	c.middlewares = append(c.middlewares, middleware...)
+}
+
+func (c AppController) executeMiddlewares(ctx context.Context, um UniversalMessage) {
+	for _, m := range c.middlewares {
+		m(ctx, um.Payload)
+	}
 }
 
 func addAppContextValues(ctx context.Context, path, operation string) context.Context {
 	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
 	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "app")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsAction, path)
+	ctx = context.WithValue(ctx, aapiContext.KeyIsChannel, path)
 	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
 }
 
@@ -95,6 +110,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 
 	// Set context
 	ctx = addAppContextValues(ctx, path, "subscribe")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsDirection, "reception")
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -117,6 +133,9 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 		for {
 			// Wait for next message
 			um, open := <-msgs
+
+			// Execute middlewares
+			c.executeMiddlewares(ctx, um)
 
 			// Process message
 			msg, err := newHelloMessageFromUniversalMessage(um)

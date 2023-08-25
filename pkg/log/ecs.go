@@ -65,7 +65,7 @@ func (logger ECS) formatLog(ctx context.Context, msg string, info ...AdditionalI
 	aapiContext.IfSet(ctx, aapiContext.KeyIsProvider, func(value any) {
 		info = append(info, AdditionalInfo{"event.provider", value})
 	})
-	aapiContext.IfSet(ctx, aapiContext.KeyIsAction, func(value any) {
+	aapiContext.IfSet(ctx, aapiContext.KeyIsChannel, func(value any) {
 		info = append(info, AdditionalInfo{"event.action", value})
 	})
 	aapiContext.IfSet(ctx, aapiContext.KeyIsOperation, func(value any) {

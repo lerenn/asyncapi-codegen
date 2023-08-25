@@ -8,28 +8,51 @@ const Prefix = "aapi-"
 type Key string
 
 const (
-	// Module is the name of the module this data is coming from.
+	// KeyIsModule is the name of the module this data is coming from.
 	// When coming from a generated client, it is `asyncapi`
 	KeyIsModule Key = Prefix + "module"
-	// Provider is the name of the provider this data is coming from.
+	// KeyIsProvider is the name of the provider this data is coming from.
 	// When coming from generated code, it is `app`, `client` or `broker`
 	KeyIsProvider Key = Prefix + "provider"
-	// Action is the name of the action this data is coming from.
-	// When coming from generated code, it is the name of the channel
-	KeyIsAction Key = Prefix + "action"
-	// Operation is the name of the operation this data is coming from.
+	// KeyIsChannel is the name of the channel this data is coming from.
+	KeyIsChannel Key = Prefix + "channel"
+	// KeyIsOperation is the name of the operation this data is coming from.
 	// When coming from generated code, it is `subscribe`, `publish`, `wait-for`, etc
 	KeyIsOperation Key = Prefix + "operation"
-	// Message is the message that has been sent or received
+	// KeyIsMessage is the message that has been sent or received
 	KeyIsMessage Key = Prefix + "message"
-	// CorrelationID is the correlation ID of the message
+	// KeyIsCorrelationID is the correlation ID of the message
 	KeyIsCorrelationID Key = Prefix + "correlationID"
+	// KeyIsDirection is the direction of the message
+	// It can be either "publication" or "reception"
+	KeyIsDirection Key = Prefix + "direction"
 )
 
-// IfSet executes the function if the key is set in the context
-func IfSet(ctx context.Context, key Key, f func(value any)) {
+// String returns the string representation of the key
+func (k Key) String() string {
+	return string(k)
+}
+
+// IfSetAsString executes the function if the key is set in the context as a string
+func IfSet[T any](ctx context.Context, key Key, fn func(value T)) {
+	// Get value
 	value := ctx.Value(key)
-	if value != nil {
-		f(value)
+	if value == nil {
+		return
 	}
+
+	// Get value as type T
+	if tValue, ok := value.(T); ok {
+		fn(tValue)
+	}
+}
+
+// IfEquals executes the function if the key is set in the context as a string
+// and the value is equal to the expected value
+func IfEquals[T comparable](ctx context.Context, key Key, expected T, fn func()) {
+	IfSet(ctx, key, func(value T) {
+		if value == expected {
+			fn()
+		}
+	})
 }

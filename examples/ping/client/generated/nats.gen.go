@@ -15,7 +15,7 @@ import (
 // NATSController is the NATS implementation for asyncapi-codegen
 type NATSController struct {
 	connection *nats.Conn
-	logger     log.Logger
+	logger     log.Interface
 	queueName  string
 }
 
@@ -36,7 +36,7 @@ func (c *NATSController) SetQueueName(name string) {
 }
 
 // SetLogger set a custom logger that will log operations on broker controller
-func (c *NATSController) SetLogger(logger log.Logger) {
+func (c *NATSController) SetLogger(logger log.Interface) {
 	c.logger = logger
 }
 

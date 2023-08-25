@@ -3,7 +3,8 @@
 type {{ .Prefix }}Controller struct {
     brokerController BrokerController
     stopSubscribers  map[string]chan interface{}
-    logger           log.Logger
+    logger           log.Interface
+    middlewares      []middleware.Interface
 }
 
 // New{{ .Prefix }}Controller links the {{ .Prefix }} to the broker
@@ -15,20 +16,33 @@ func New{{ .Prefix }}Controller(bs BrokerController) (*{{ .Prefix }}Controller, 
     return &{{ .Prefix }}Controller{
         brokerController: bs,
         stopSubscribers:  make(map[string]chan interface{}),
-        logger: log.Silent{},
+        logger:           log.Silent{},
+        middlewares:      make([]middleware.Interface, 0),
     }, nil
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *{{ .Prefix }}Controller) SetLogger(logger log.Logger) {
+func (c *{{ .Prefix }}Controller) SetLogger(logger log.Interface) {
     c.logger = logger
     c.brokerController.SetLogger(logger)
+}
+
+// AddMiddlewares attaches middlewares that will be executed when sending or
+// receiving messages
+func (c *{{ .Prefix }}Controller) AddMiddlewares(middleware ...middleware.Interface) {
+    c.middlewares = append(c.middlewares, middleware...)
+}
+
+func (c {{ .Prefix }}Controller) executeMiddlewares(ctx context.Context, um UniversalMessage) {
+    for _, m := range c.middlewares {
+        m(ctx, um.Payload)
+    }
 }
 
 func add{{ .Prefix }}ContextValues(ctx context.Context, path, operation string) context.Context {
     ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
     ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "{{ snakeCase .Prefix }}")
-    ctx = context.WithValue(ctx, aapiContext.KeyIsAction, path)
+    ctx = context.WithValue(ctx, aapiContext.KeyIsChannel, path)
     return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
 }
 
@@ -93,6 +107,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
 
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path, "subscribe")
+    ctx = context.WithValue(ctx, aapiContext.KeyIsDirection, "reception")
     
     // Check if there is already a subscription
     _, exists := c.stopSubscribers[path]
@@ -117,7 +132,9 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
             um, open := <-msgs
 
             {{- /* TODO: check context deadline/canceled */}}
-            {{- /* TODO: add middlewares here */}}
+            
+            // Execute middlewares
+            c.executeMiddlewares(ctx, um)
 
             // Process message
             msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)
@@ -184,6 +201,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path, "publish")
     ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
+    ctx = context.WithValue(ctx, aapiContext.KeyIsDirection, "publication")
 
     // Convert to UniversalMessage
     um, err := msg.toUniversalMessage()
@@ -191,9 +209,12 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
         return err
     }
 
+    // Execute middlewares
+    c.executeMiddlewares(ctx, um)
+
     // Publish on event broker
     c.logger.Info(ctx, "Publishing to channel")
-    {{- /* TODO: add middlewares here */}}
+    
     return c.brokerController.Publish(ctx, path, um)
 }
 {{end}}
@@ -217,6 +238,7 @@ func (cc *ClientController) WaitFor{{namify $key}}(ctx context.Context, publishM
     ctx = add{{ $.Prefix }}ContextValues(ctx, path, "wait-for")
     ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, publishMsg)
     ctx = context.WithValue(ctx, aapiContext.KeyIsCorrelationID, publishMsg.CorrelationID())
+    ctx = context.WithValue(ctx, aapiContext.KeyIsDirection, "reception")
 
     // Subscribe to broker channel
     cc.logger.Info(ctx, "Wait for response")
@@ -239,7 +261,8 @@ func (cc *ClientController) WaitFor{{namify $key}}(ctx context.Context, publishM
     for {
         select {
         case um, open := <-msgs:
-            {{- /* TODO: add middlewares here */}}
+            // Execute middlewares
+            cc.executeMiddlewares(ctx, um)
 
             // Get new message
             msg, err := new{{channelToMessageTypeName $value}}FromUniversalMessage(um)

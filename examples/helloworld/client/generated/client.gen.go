@@ -8,6 +8,7 @@ import (
 
 	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
+	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
 )
 
 // ClientController is the structure that provides publishing capabilities to the
@@ -15,7 +16,8 @@ import (
 type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           log.Logger
+	logger           log.Interface
+	middlewares      []middleware.Interface
 }
 
 // NewClientController links the Client to the broker
@@ -28,19 +30,32 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
+		middlewares:      make([]middleware.Interface, 0),
 	}, nil
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *ClientController) SetLogger(logger log.Logger) {
+func (c *ClientController) SetLogger(logger log.Interface) {
 	c.logger = logger
 	c.brokerController.SetLogger(logger)
+}
+
+// AddMiddlewares attaches middlewares that will be executed when sending or
+// receiving messages
+func (c *ClientController) AddMiddlewares(middleware ...middleware.Interface) {
+	c.middlewares = append(c.middlewares, middleware...)
+}
+
+func (c ClientController) executeMiddlewares(ctx context.Context, um UniversalMessage) {
+	for _, m := range c.middlewares {
+		m(ctx, um.Payload)
+	}
 }
 
 func addClientContextValues(ctx context.Context, path, operation string) context.Context {
 	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
 	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "client")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsAction, path)
+	ctx = context.WithValue(ctx, aapiContext.KeyIsChannel, path)
 	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
 }
 
@@ -57,6 +72,7 @@ func (c *ClientController) PublishHello(ctx context.Context, msg HelloMessage) e
 	// Set context
 	ctx = addClientContextValues(ctx, path, "publish")
 	ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
+	ctx = context.WithValue(ctx, aapiContext.KeyIsDirection, "publication")
 
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
@@ -64,7 +80,11 @@ func (c *ClientController) PublishHello(ctx context.Context, msg HelloMessage) e
 		return err
 	}
 
+	// Execute middlewares
+	c.executeMiddlewares(ctx, um)
+
 	// Publish on event broker
 	c.logger.Info(ctx, "Publishing to channel")
+
 	return c.brokerController.Publish(ctx, path, um)
 }

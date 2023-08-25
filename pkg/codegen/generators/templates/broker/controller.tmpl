@@ -14,7 +14,7 @@ type UniversalMessage struct {
 // the broker to the application or the client
 type BrokerController interface {
     // SetLogger set a logger that will log operations on broker controller
-    SetLogger(logger log.Logger)
+    SetLogger(logger log.Interface)
 
     // Publish a message to the broker
     Publish(ctx context.Context, channel string, mw UniversalMessage) error

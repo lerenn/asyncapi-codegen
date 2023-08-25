@@ -11,6 +11,7 @@ import (
 
 	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
+	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
 )
 
 // ClientSubscriber represents all handlers that are expecting messages for Client
@@ -27,7 +28,8 @@ type ClientSubscriber interface {
 type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           log.Logger
+	logger           log.Interface
+	middlewares      []middleware.Interface
 }
 
 // NewClientController links the Client to the broker
@@ -40,19 +42,32 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
+		middlewares:      make([]middleware.Interface, 0),
 	}, nil
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *ClientController) SetLogger(logger log.Logger) {
+func (c *ClientController) SetLogger(logger log.Interface) {
 	c.logger = logger
 	c.brokerController.SetLogger(logger)
+}
+
+// AddMiddlewares attaches middlewares that will be executed when sending or
+// receiving messages
+func (c *ClientController) AddMiddlewares(middleware ...middleware.Interface) {
+	c.middlewares = append(c.middlewares, middleware...)
+}
+
+func (c ClientController) executeMiddlewares(ctx context.Context, um UniversalMessage) {
+	for _, m := range c.middlewares {
+		m(ctx, um.Payload)
+	}
 }
 
 func addClientContextValues(ctx context.Context, path, operation string) context.Context {
 	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
 	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "client")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsAction, path)
+	ctx = context.WithValue(ctx, aapiContext.KeyIsChannel, path)
 	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
 }
 
@@ -100,6 +115,7 @@ func (c *ClientController) SubscribeStatus(ctx context.Context, fn func(ctx cont
 
 	// Set context
 	ctx = addClientContextValues(ctx, path, "subscribe")
+	ctx = context.WithValue(ctx, aapiContext.KeyIsDirection, "reception")
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -122,6 +138,9 @@ func (c *ClientController) SubscribeStatus(ctx context.Context, fn func(ctx cont
 		for {
 			// Wait for next message
 			um, open := <-msgs
+
+			// Execute middlewares
+			c.executeMiddlewares(ctx, um)
 
 			// Process message
 			msg, err := newStatusMessageFromUniversalMessage(um)
@@ -178,6 +197,7 @@ func (c *ClientController) PublishChat(ctx context.Context, msg ChatMessage) err
 	// Set context
 	ctx = addClientContextValues(ctx, path, "publish")
 	ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
+	ctx = context.WithValue(ctx, aapiContext.KeyIsDirection, "publication")
 
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
@@ -185,8 +205,12 @@ func (c *ClientController) PublishChat(ctx context.Context, msg ChatMessage) err
 		return err
 	}
 
+	// Execute middlewares
+	c.executeMiddlewares(ctx, um)
+
 	// Publish on event broker
 	c.logger.Info(ctx, "Publishing to channel")
+
 	return c.brokerController.Publish(ctx, path, um)
 }
 
@@ -205,7 +229,7 @@ type UniversalMessage struct {
 // the broker to the application or the client
 type BrokerController interface {
 	// SetLogger set a logger that will log operations on broker controller
-	SetLogger(logger log.Logger)
+	SetLogger(logger log.Interface)
 
 	// Publish a message to the broker
 	Publish(ctx context.Context, channel string, mw UniversalMessage) error
