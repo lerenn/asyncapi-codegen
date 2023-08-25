@@ -55,7 +55,7 @@ func (c *ClientController) AddMiddlewares(middleware ...middleware.Interface) {
 
 func (c ClientController) executeMiddlewares(ctx context.Context, um UniversalMessage) {
 	for _, m := range c.middlewares {
-		m(ctx, um.Payload)
+		ctx = m(ctx, um.Payload)
 	}
 }
 
