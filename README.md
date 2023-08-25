@@ -368,15 +368,20 @@ import(
 	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 )
 
-func myMiddleware(ctx context.Context, payload any) {
+func myMiddleware(ctx context.Context, payload any) context.Context {
 	// Execute this middleware only if this is a received message
 	aapiContext.IfEquals(ctx, aapiContext.KeyIsDirection, "reception", func() {
 		// Do specific stuff if message is received
 	})
+
+	return ctx
 }
 ```
 
 You can even discriminate on more specification. Please see the [Context section](#context).
+
+**Note:** the returned context will be the one that will be passed to following
+middlewares, and finally to the generated code (and subscription callback).
 
 ### Context
 
