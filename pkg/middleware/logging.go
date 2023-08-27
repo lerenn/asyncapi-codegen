@@ -7,6 +7,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 )
 
+// Logging is a middleware that logs messages in reception and in publication
 func Logging(logger log.Interface) Middleware {
 	return func(ctx context.Context, next Next) context.Context {
 		apiContext.IfEquals(ctx, apiContext.KeyIsMessageDirection, "reception", func() {
