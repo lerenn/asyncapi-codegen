@@ -9,8 +9,9 @@ import (
 	"errors"
 	"fmt"
 
-	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
+	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
+	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
 
 	"github.com/google/uuid"
 )
@@ -26,7 +27,8 @@ type AppSubscriber interface {
 type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           log.Logger
+	logger           log.Interface
+	middlewares      []middleware.Middleware
 }
 
 // NewAppController links the App to the broker
@@ -39,27 +41,70 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
+		middlewares:      make([]middleware.Middleware, 0),
 	}, nil
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *AppController) SetLogger(logger log.Logger) {
+func (c *AppController) SetLogger(logger log.Interface) {
 	c.logger = logger
 	c.brokerController.SetLogger(logger)
 }
 
-func addAppContextValues(ctx context.Context, path, operation string) context.Context {
-	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "app")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsAction, path)
-	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
+// AddMiddlewares attaches middlewares that will be executed when sending or
+// receiving messages
+func (c *AppController) AddMiddlewares(middleware ...middleware.Middleware) {
+	c.middlewares = append(c.middlewares, middleware...)
+}
+
+func (c AppController) wrapMiddlewares(middlewares []middleware.Middleware, last middleware.Next) func(ctx context.Context) {
+	var called bool
+
+	// If there is no more middleware
+	if len(middlewares) == 0 {
+		return func(ctx context.Context) {
+			if !called {
+				called = true
+				last(ctx)
+			}
+		}
+	}
+
+	// Wrap middleware into a check function that will call execute the middleware
+	// and call the next wrapped middleware if the returned function has not been
+	// called already
+	next := c.wrapMiddlewares(middlewares[1:], last)
+	return func(ctx context.Context) {
+		// Call the middleware and the following if it has not been done already
+		if !called {
+			called = true
+			ctx = middlewares[0](ctx, next)
+
+			// If next has already been called in middleware, it should not be
+			// executed again
+			next(ctx)
+		}
+	}
+}
+
+func (c AppController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
+	// Wrap middleware to have 'next' function when calling them
+	wrapped := c.wrapMiddlewares(c.middlewares, callback)
+
+	// Execute wrapped middlewares
+	wrapped(ctx)
+}
+
+func addAppContextValues(ctx context.Context, path string) context.Context {
+	ctx = context.WithValue(ctx, apiContext.KeyIsProvider, "app")
+	return context.WithValue(ctx, apiContext.KeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.logger.Info(ctx, "Closing App controller")
 	c.UnsubscribeAll(ctx)
+	c.logger.Info(ctx, "Closed app controller")
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
@@ -98,7 +143,7 @@ func (c *AppController) SubscribeRpcQueue(ctx context.Context, fn func(ctx conte
 	path := "rpc_queue"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path, "subscribe")
+	ctx = addAppContextValues(ctx, path)
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -109,12 +154,12 @@ func (c *AppController) SubscribeRpcQueue(ctx context.Context, fn func(ctx conte
 	}
 
 	// Subscribe to broker channel
-	c.logger.Info(ctx, "Subscribing to channel")
 	msgs, stop, err := c.brokerController.Subscribe(ctx, path)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
+	c.logger.Info(ctx, "Subscribed to channel")
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
@@ -122,18 +167,28 @@ func (c *AppController) SubscribeRpcQueue(ctx context.Context, fn func(ctx conte
 			// Wait for next message
 			um, open := <-msgs
 
+			// Add correlation ID to context if it exists
+			if um.CorrelationID != nil {
+				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+			}
+
 			// Process message
 			msg, err := newRpcQueueMessageFromUniversalMessage(um)
 			if err != nil {
-				ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, um)
+				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, um)
 				c.logger.Error(ctx, err.Error())
 			}
-			ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
 
-			// Send info if message is correct or susbcription is closed
-			if err == nil || !open {
-				c.logger.Info(ctx, "Received new message")
-				fn(ctx, msg, !open)
+			// Add context
+			msgCtx := context.WithValue(ctx, apiContext.KeyIsMessage, msg)
+			msgCtx = context.WithValue(msgCtx, apiContext.KeyIsMessageDirection, "reception")
+
+			// Process message if no error and still open
+			if err == nil && open {
+				// Execute middlewares with the callback
+				c.executeMiddlewares(msgCtx, func(ctx context.Context) {
+					fn(ctx, msg, !open)
+				})
 			}
 
 			// If subscription is closed, then exit the function
@@ -155,7 +210,7 @@ func (c *AppController) UnsubscribeRpcQueue(ctx context.Context) {
 	path := "rpc_queue"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path, "unsubscribe")
+	ctx = addAppContextValues(ctx, path)
 
 	// Get stop channel
 	stopChan, exists := c.stopSubscribers[path]
@@ -164,9 +219,10 @@ func (c *AppController) UnsubscribeRpcQueue(ctx context.Context) {
 	}
 
 	// Stop the channel and remove the entry
-	c.logger.Info(ctx, "Unsubscribing from channel")
 	stopChan <- true
 	delete(c.stopSubscribers, path)
+
+	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
 // PublishQueue will publish messages to '{queue}' channel
@@ -175,8 +231,9 @@ func (c *AppController) PublishQueue(ctx context.Context, params QueueParameters
 	path := fmt.Sprintf("%v", params.Queue)
 
 	// Set context
-	ctx = addAppContextValues(ctx, path, "publish")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
+	ctx = addAppContextValues(ctx, path)
+	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
+	ctx = context.WithValue(ctx, apiContext.KeyIsMessageDirection, "publication")
 
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
@@ -184,9 +241,18 @@ func (c *AppController) PublishQueue(ctx context.Context, params QueueParameters
 		return err
 	}
 
-	// Publish on event broker
-	c.logger.Info(ctx, "Publishing to channel")
-	return c.brokerController.Publish(ctx, path, um)
+	// Add correlation ID to context if it exists
+	if um.CorrelationID != nil {
+		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+	}
+
+	// Publish the message on event-broker through middlewares
+	c.executeMiddlewares(ctx, func(ctx context.Context) {
+		err = c.brokerController.Publish(ctx, path, um)
+	})
+
+	// Return error from publication on broker
+	return err
 }
 
 // ClientSubscriber represents all handlers that are expecting messages for Client
@@ -200,7 +266,8 @@ type ClientSubscriber interface {
 type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           log.Logger
+	logger           log.Interface
+	middlewares      []middleware.Middleware
 }
 
 // NewClientController links the Client to the broker
@@ -213,27 +280,70 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
+		middlewares:      make([]middleware.Middleware, 0),
 	}, nil
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *ClientController) SetLogger(logger log.Logger) {
+func (c *ClientController) SetLogger(logger log.Interface) {
 	c.logger = logger
 	c.brokerController.SetLogger(logger)
 }
 
-func addClientContextValues(ctx context.Context, path, operation string) context.Context {
-	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "client")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsAction, path)
-	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
+// AddMiddlewares attaches middlewares that will be executed when sending or
+// receiving messages
+func (c *ClientController) AddMiddlewares(middleware ...middleware.Middleware) {
+	c.middlewares = append(c.middlewares, middleware...)
+}
+
+func (c ClientController) wrapMiddlewares(middlewares []middleware.Middleware, last middleware.Next) func(ctx context.Context) {
+	var called bool
+
+	// If there is no more middleware
+	if len(middlewares) == 0 {
+		return func(ctx context.Context) {
+			if !called {
+				called = true
+				last(ctx)
+			}
+		}
+	}
+
+	// Wrap middleware into a check function that will call execute the middleware
+	// and call the next wrapped middleware if the returned function has not been
+	// called already
+	next := c.wrapMiddlewares(middlewares[1:], last)
+	return func(ctx context.Context) {
+		// Call the middleware and the following if it has not been done already
+		if !called {
+			called = true
+			ctx = middlewares[0](ctx, next)
+
+			// If next has already been called in middleware, it should not be
+			// executed again
+			next(ctx)
+		}
+	}
+}
+
+func (c ClientController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
+	// Wrap middleware to have 'next' function when calling them
+	wrapped := c.wrapMiddlewares(c.middlewares, callback)
+
+	// Execute wrapped middlewares
+	wrapped(ctx)
+}
+
+func addClientContextValues(ctx context.Context, path string) context.Context {
+	ctx = context.WithValue(ctx, apiContext.KeyIsProvider, "client")
+	return context.WithValue(ctx, apiContext.KeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
 func (c *ClientController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.logger.Info(ctx, "Closing Client controller")
 	c.UnsubscribeAll(ctx)
+	c.logger.Info(ctx, "Closed client controller")
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
@@ -267,7 +377,7 @@ func (c *ClientController) SubscribeQueue(ctx context.Context, params QueueParam
 	path := fmt.Sprintf("%v", params.Queue)
 
 	// Set context
-	ctx = addClientContextValues(ctx, path, "subscribe")
+	ctx = addClientContextValues(ctx, path)
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -278,12 +388,12 @@ func (c *ClientController) SubscribeQueue(ctx context.Context, params QueueParam
 	}
 
 	// Subscribe to broker channel
-	c.logger.Info(ctx, "Subscribing to channel")
 	msgs, stop, err := c.brokerController.Subscribe(ctx, path)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
+	c.logger.Info(ctx, "Subscribed to channel")
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
@@ -291,18 +401,28 @@ func (c *ClientController) SubscribeQueue(ctx context.Context, params QueueParam
 			// Wait for next message
 			um, open := <-msgs
 
+			// Add correlation ID to context if it exists
+			if um.CorrelationID != nil {
+				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+			}
+
 			// Process message
 			msg, err := newQueueMessageFromUniversalMessage(um)
 			if err != nil {
-				ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, um)
+				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, um)
 				c.logger.Error(ctx, err.Error())
 			}
-			ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
 
-			// Send info if message is correct or susbcription is closed
-			if err == nil || !open {
-				c.logger.Info(ctx, "Received new message")
-				fn(ctx, msg, !open)
+			// Add context
+			msgCtx := context.WithValue(ctx, apiContext.KeyIsMessage, msg)
+			msgCtx = context.WithValue(msgCtx, apiContext.KeyIsMessageDirection, "reception")
+
+			// Process message if no error and still open
+			if err == nil && open {
+				// Execute middlewares with the callback
+				c.executeMiddlewares(msgCtx, func(ctx context.Context) {
+					fn(ctx, msg, !open)
+				})
 			}
 
 			// If subscription is closed, then exit the function
@@ -324,7 +444,7 @@ func (c *ClientController) UnsubscribeQueue(ctx context.Context, params QueuePar
 	path := fmt.Sprintf("%v", params.Queue)
 
 	// Set context
-	ctx = addClientContextValues(ctx, path, "unsubscribe")
+	ctx = addClientContextValues(ctx, path)
 
 	// Get stop channel
 	stopChan, exists := c.stopSubscribers[path]
@@ -333,9 +453,10 @@ func (c *ClientController) UnsubscribeQueue(ctx context.Context, params QueuePar
 	}
 
 	// Stop the channel and remove the entry
-	c.logger.Info(ctx, "Unsubscribing from channel")
 	stopChan <- true
 	delete(c.stopSubscribers, path)
+
+	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
 // PublishRpcQueue will publish messages to 'rpc_queue' channel
@@ -344,8 +465,9 @@ func (c *ClientController) PublishRpcQueue(ctx context.Context, msg RpcQueueMess
 	path := "rpc_queue"
 
 	// Set context
-	ctx = addClientContextValues(ctx, path, "publish")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
+	ctx = addClientContextValues(ctx, path)
+	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
+	ctx = context.WithValue(ctx, apiContext.KeyIsMessageDirection, "publication")
 
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
@@ -353,9 +475,18 @@ func (c *ClientController) PublishRpcQueue(ctx context.Context, msg RpcQueueMess
 		return err
 	}
 
-	// Publish on event broker
-	c.logger.Info(ctx, "Publishing to channel")
-	return c.brokerController.Publish(ctx, path, um)
+	// Add correlation ID to context if it exists
+	if um.CorrelationID != nil {
+		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+	}
+
+	// Publish the message on event-broker through middlewares
+	c.executeMiddlewares(ctx, func(ctx context.Context) {
+		err = c.brokerController.Publish(ctx, path, um)
+	})
+
+	// Return error from publication on broker
+	return err
 }
 
 // WaitForQueue will wait for a specific message by its correlation ID
@@ -367,24 +498,27 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 	path := fmt.Sprintf("%v", params.Queue)
 
 	// Set context
-	ctx = addClientContextValues(ctx, path, "wait-for")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, publishMsg)
-	ctx = context.WithValue(ctx, aapiContext.KeyIsCorrelationID, publishMsg.CorrelationID())
+	ctx = addClientContextValues(ctx, path)
 
 	// Subscribe to broker channel
-	cc.logger.Info(ctx, "Wait for response")
 	msgs, stop, err := cc.brokerController.Subscribe(ctx, path)
 	if err != nil {
 		cc.logger.Error(ctx, err.Error())
 		return QueueMessage{}, err
 	}
+	cc.logger.Info(ctx, "Subscribed to channel")
 
 	// Close subscriber on leave
-	defer func() { stop <- true }()
+	defer func() {
+		// Unsubscribe
+		stop <- true
 
-	// Execute publication
-	cc.logger.Info(ctx, "Sending request")
-	if err := pub(ctx); err != nil {
+		// Logging unsubscribing
+		cc.logger.Info(ctx, "Unsubscribed from channel")
+	}()
+
+	// Execute callback for publication
+	if err = pub(ctx); err != nil {
 		return QueueMessage{}, err
 	}
 
@@ -392,7 +526,6 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 	for {
 		select {
 		case um, open := <-msgs:
-
 			// Get new message
 			msg, err := newQueueMessageFromUniversalMessage(um)
 			if err != nil {
@@ -401,13 +534,22 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 
 			// If valid message with corresponding correlation ID, return message
 			if err == nil && publishMsg.CorrelationID() == msg.CorrelationID() {
-				cc.logger.Info(ctx, "Received expected message")
+				// Set context with received values
+				msgCtx := context.WithValue(ctx, apiContext.KeyIsMessage, msg)
+				msgCtx = context.WithValue(msgCtx, apiContext.KeyIsMessageDirection, "reception")
+				msgCtx = context.WithValue(msgCtx, apiContext.KeyIsCorrelationID, publishMsg.CorrelationID())
+
+				// Execute middlewares before returning
+				cc.executeMiddlewares(msgCtx, func(_ context.Context) {
+					/* Nothing to do more */
+				})
+
 				return msg, nil
-			} else if !open { // If message is invalid or not corresponding and the subscription is closed, then return error
+			} else if !open { // If message is invalid or not corresponding and the subscription is closed, then set corresponding error
 				cc.logger.Error(ctx, "Channel closed before getting message")
 				return QueueMessage{}, ErrSubscriptionCanceled
 			}
-		case <-ctx.Done(): // Return error if context is done
+		case <-ctx.Done(): // Set corrsponding error if context is done
 			cc.logger.Error(ctx, "Context done before getting message")
 			return QueueMessage{}, ErrContextCanceled
 		}
@@ -429,7 +571,7 @@ type UniversalMessage struct {
 // the broker to the application or the client
 type BrokerController interface {
 	// SetLogger set a logger that will log operations on broker controller
-	SetLogger(logger log.Logger)
+	SetLogger(logger log.Interface)
 
 	// Publish a message to the broker
 	Publish(ctx context.Context, channel string, mw UniversalMessage) error

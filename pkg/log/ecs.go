@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
+	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 )
 
 type ECS struct{}
@@ -59,22 +59,23 @@ func structureLogs(info []AdditionalInfo) map[string]any {
 
 func (logger ECS) formatLog(ctx context.Context, msg string, info ...AdditionalInfo) string {
 	// Add additional keys from context
-	aapiContext.IfSet(ctx, aapiContext.KeyIsModule, func(value any) {
-		info = append(info, AdditionalInfo{"event.module", value})
+	apiContext.IfSet(ctx, apiContext.KeyIsProvider, func(value any) {
+		info = append(info, AdditionalInfo{"asyncapi.provider", value})
 	})
-	aapiContext.IfSet(ctx, aapiContext.KeyIsProvider, func(value any) {
-		info = append(info, AdditionalInfo{"event.provider", value})
+	apiContext.IfSet(ctx, apiContext.KeyIsChannel, func(value any) {
+		info = append(info, AdditionalInfo{"asyncapi.channel", value})
 	})
-	aapiContext.IfSet(ctx, aapiContext.KeyIsAction, func(value any) {
-		info = append(info, AdditionalInfo{"event.action", value})
+	apiContext.IfSet(ctx, apiContext.KeyIsMessageDirection, func(value any) {
+		if value == "publication" {
+			info = append(info, AdditionalInfo{"event.action", "published-message"})
+		} else if value == "reception" {
+			info = append(info, AdditionalInfo{"event.action", "received-message"})
+		}
 	})
-	aapiContext.IfSet(ctx, aapiContext.KeyIsOperation, func(value any) {
-		info = append(info, AdditionalInfo{"event.reason", value})
-	})
-	aapiContext.IfSet(ctx, aapiContext.KeyIsMessage, func(value any) {
+	apiContext.IfSet(ctx, apiContext.KeyIsMessage, func(value any) {
 		info = append(info, AdditionalInfo{"event.original", value})
 	})
-	aapiContext.IfSet(ctx, aapiContext.KeyIsCorrelationID, func(value any) {
+	apiContext.IfSet(ctx, apiContext.KeyIsCorrelationID, func(value any) {
 		info = append(info, AdditionalInfo{"trace.id", value})
 	})
 

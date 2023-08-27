@@ -10,11 +10,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/examples/ping/client/generated"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
+	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
 	"github.com/nats-io/nats.go"
 )
 
@@ -34,6 +34,7 @@ func main() {
 	// Attach a logger (optional)
 	logger := log.NewECS()
 	ctrl.SetLogger(logger)
+	ctrl.AddMiddlewares(middleware.Logging(logger))
 
 	// Make a new ping message
 	req := generated.NewPingMessage()
@@ -42,7 +43,6 @@ func main() {
 	// Create the publication function to send the message
 	// Note: it will indefinitely wait to publish as context has no timeout
 	publicationFunc := func(ctx context.Context) error {
-		logger.Info(ctx, "New ping request")
 		return ctrl.PublishPing(ctx, req)
 	}
 
@@ -55,14 +55,10 @@ func main() {
 	// with the form WaitForXXX where XXX is the channel name.
 	//
 	// Note: it will indefinitely wait for messages as context has no timeout
-	resp, err := ctrl.WaitForPong(context.Background(), req, publicationFunc)
+	_, err = ctrl.WaitForPong(context.Background(), req, publicationFunc)
 	if err != nil {
 		panic(err)
 	}
-
-	// Log response
-	msg := fmt.Sprintf("Got response (%+v) sent at %s", resp.Payload.Message, resp.Payload.Time)
-	logger.Info(context.Background(), msg)
 
 	// Wait for the message to be received
 	time.Sleep(time.Second)
