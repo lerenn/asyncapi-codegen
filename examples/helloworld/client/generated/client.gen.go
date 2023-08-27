@@ -6,7 +6,7 @@ package generated
 import (
 	"context"
 
-	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
+	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
 )
@@ -17,7 +17,7 @@ type ClientController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
 	logger           log.Interface
-	middlewares      []middleware.Interface
+	middlewares      []middleware.Middleware
 }
 
 // NewClientController links the Client to the broker
@@ -30,7 +30,7 @@ func NewClientController(bs BrokerController) (*ClientController, error) {
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
-		middlewares:      make([]middleware.Interface, 0),
+		middlewares:      make([]middleware.Middleware, 0),
 	}, nil
 }
 
@@ -42,21 +42,53 @@ func (c *ClientController) SetLogger(logger log.Interface) {
 
 // AddMiddlewares attaches middlewares that will be executed when sending or
 // receiving messages
-func (c *ClientController) AddMiddlewares(middleware ...middleware.Interface) {
+func (c *ClientController) AddMiddlewares(middleware ...middleware.Middleware) {
 	c.middlewares = append(c.middlewares, middleware...)
 }
 
-func (c ClientController) executeMiddlewares(ctx context.Context, um UniversalMessage) {
-	for _, m := range c.middlewares {
-		ctx = m(ctx, um.Payload)
+func (c ClientController) wrapMiddlewares(middlewares []middleware.Middleware, last middleware.Next) func(ctx context.Context) {
+	var called bool
+
+	// If there is no more middleware
+	if len(middlewares) == 0 {
+		return func(ctx context.Context) {
+			if !called {
+				called = true
+				last(ctx)
+			}
+		}
+	}
+
+	// Wrap middleware into a check function that will call execute the middleware
+	// and call the next wrapped middleware if the returned function has not been
+	// called already
+	next := c.wrapMiddlewares(middlewares[1:], last)
+	return func(ctx context.Context) {
+		// Call the middleware and the following if it has not been done already
+		if !called {
+			called = true
+			ctx = middlewares[0](ctx, next)
+
+			// If next has already been called in middleware, it should not be
+			// executed again
+			next(ctx)
+		}
 	}
 }
 
+func (c ClientController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
+	// Wrap middleware to have 'next' function when calling them
+	wrapped := c.wrapMiddlewares(c.middlewares, callback)
+
+	// Execute wrapped middlewares
+	wrapped(ctx)
+}
+
 func addClientContextValues(ctx context.Context, path, operation string) context.Context {
-	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "client")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsChannel, path)
-	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
+	ctx = context.WithValue(ctx, apiContext.KeyIsModule, "asyncapi")
+	ctx = context.WithValue(ctx, apiContext.KeyIsProvider, "client")
+	ctx = context.WithValue(ctx, apiContext.KeyIsChannel, path)
+	return context.WithValue(ctx, apiContext.KeyIsOperation, operation)
 }
 
 // Close will clean up any existing resources on the controller
@@ -71,8 +103,8 @@ func (c *ClientController) PublishHello(ctx context.Context, msg HelloMessage) e
 
 	// Set context
 	ctx = addClientContextValues(ctx, path, "publish")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
-	ctx = context.WithValue(ctx, aapiContext.KeyIsDirection, "publication")
+	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
+	ctx = context.WithValue(ctx, apiContext.KeyIsDirection, "publication")
 
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
@@ -80,11 +112,13 @@ func (c *ClientController) PublishHello(ctx context.Context, msg HelloMessage) e
 		return err
 	}
 
-	// Execute middlewares
-	c.executeMiddlewares(ctx, um)
+	// Publish the message in middlewares
+	c.executeMiddlewares(ctx, func(ctx context.Context) {
+		// Publish on event broker
+		c.logger.Info(ctx, "Publishing to channel")
+		err = c.brokerController.Publish(ctx, path, um)
+	})
 
-	// Publish on event broker
-	c.logger.Info(ctx, "Publishing to channel")
-
-	return c.brokerController.Publish(ctx, path, um)
+	// Return error from publication on broker
+	return err
 }

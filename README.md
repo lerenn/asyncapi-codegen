@@ -344,7 +344,7 @@ You can also specify some specific implementation for the broker of your choice:
 ### Middlewares
 
 You can use middlewares that will be executing when receiving and publishing
-messages. You can add one or multiple middlewares using the following function 
+messages. You can add one or multiple middlewares using the following function
 on a controller:
 
 ```golang
@@ -352,25 +352,30 @@ on a controller:
 ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
 
 // Add middleware
-ctrl.AddMiddlewares(myMiddleware)
+ctrl.AddMiddlewares(myMiddleware1, myMiddleware2 /*, ... */)
 ```
 
 Here the function signature that should be satisfied:
 
 ```golang
-func(ctx context.Context, payload any)
+func(ctx context.Context, next middleware.Next) context.Context
 ```
+
+**Note:** the returned context will be the one that will be passed to following
+middlewares, and finally to the generated code (and subscription callback).
+
+#### Filtering messages
 
 If you want to target specific messages, you can use the context passed in argument:
 
 ```golang
 import(
-	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
+	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 )
 
-func myMiddleware(ctx context.Context, payload any) context.Context {
+func myMiddleware(ctx context.Context, _ middleware.Next) context.Context {
 	// Execute this middleware only if this is a received message
-	aapiContext.IfEquals(ctx, aapiContext.KeyIsDirection, "reception", func() {
+	apiContext.IfEquals(ctx, apiContext.KeyIsDirection, "reception", func() {
 		// Do specific stuff if message is received
 	})
 
@@ -380,8 +385,30 @@ func myMiddleware(ctx context.Context, payload any) context.Context {
 
 You can even discriminate on more specification. Please see the [Context section](#context).
 
-**Note:** the returned context will be the one that will be passed to following
-middlewares, and finally to the generated code (and subscription callback).
+#### Executing code after receiving/publishing the message
+
+By default, middlewares will be executed right before the operation. If there is
+a need to execute code before and/or after the operation, you can call the `next`
+argument that represents the next middleware that should be executed or the
+operation corresponding code if this was the last middleware.
+
+Here is an example:
+
+```golang
+func surroundingMiddleware(ctx context.Context, next middleware.Next) context.Context {
+	// Pre-operation
+	fmt.Println("This will be displayed BEFORE the reception/publication")
+
+	// Calling next middleware or reception/publication code
+	// The given context will be the one propagated to other middlewares and operation source code
+	next(ctx)
+
+	// Post-operation
+	fmt.Println("This will be displayed AFTER the reception/publication")
+
+	return ctx
+}
+```
 
 ### Context
 
@@ -393,7 +420,7 @@ To get these information, please use the functions from
 
 ```golang
 // Execute this middleware only if this is from "ping" channel
-aapiContext.IfEquals(ctx, aapiContext.KeyIsChannel, "ping", func() {
+apiContext.IfEquals(ctx, apiContext.KeyIsChannel, "ping", func() {
 	// Do specific stuff if the channel is ping
 })
 ```

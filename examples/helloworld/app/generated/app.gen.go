@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	aapiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
+	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
 )
@@ -24,7 +24,7 @@ type AppController struct {
 	brokerController BrokerController
 	stopSubscribers  map[string]chan interface{}
 	logger           log.Interface
-	middlewares      []middleware.Interface
+	middlewares      []middleware.Middleware
 }
 
 // NewAppController links the App to the broker
@@ -37,7 +37,7 @@ func NewAppController(bs BrokerController) (*AppController, error) {
 		brokerController: bs,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
-		middlewares:      make([]middleware.Interface, 0),
+		middlewares:      make([]middleware.Middleware, 0),
 	}, nil
 }
 
@@ -49,21 +49,53 @@ func (c *AppController) SetLogger(logger log.Interface) {
 
 // AddMiddlewares attaches middlewares that will be executed when sending or
 // receiving messages
-func (c *AppController) AddMiddlewares(middleware ...middleware.Interface) {
+func (c *AppController) AddMiddlewares(middleware ...middleware.Middleware) {
 	c.middlewares = append(c.middlewares, middleware...)
 }
 
-func (c AppController) executeMiddlewares(ctx context.Context, um UniversalMessage) {
-	for _, m := range c.middlewares {
-		ctx = m(ctx, um.Payload)
+func (c AppController) wrapMiddlewares(middlewares []middleware.Middleware, last middleware.Next) func(ctx context.Context) {
+	var called bool
+
+	// If there is no more middleware
+	if len(middlewares) == 0 {
+		return func(ctx context.Context) {
+			if !called {
+				called = true
+				last(ctx)
+			}
+		}
+	}
+
+	// Wrap middleware into a check function that will call execute the middleware
+	// and call the next wrapped middleware if the returned function has not been
+	// called already
+	next := c.wrapMiddlewares(middlewares[1:], last)
+	return func(ctx context.Context) {
+		// Call the middleware and the following if it has not been done already
+		if !called {
+			called = true
+			ctx = middlewares[0](ctx, next)
+
+			// If next has already been called in middleware, it should not be
+			// executed again
+			next(ctx)
+		}
 	}
 }
 
+func (c AppController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
+	// Wrap middleware to have 'next' function when calling them
+	wrapped := c.wrapMiddlewares(c.middlewares, callback)
+
+	// Execute wrapped middlewares
+	wrapped(ctx)
+}
+
 func addAppContextValues(ctx context.Context, path, operation string) context.Context {
-	ctx = context.WithValue(ctx, aapiContext.KeyIsModule, "asyncapi")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsProvider, "app")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsChannel, path)
-	return context.WithValue(ctx, aapiContext.KeyIsOperation, operation)
+	ctx = context.WithValue(ctx, apiContext.KeyIsModule, "asyncapi")
+	ctx = context.WithValue(ctx, apiContext.KeyIsProvider, "app")
+	ctx = context.WithValue(ctx, apiContext.KeyIsChannel, path)
+	return context.WithValue(ctx, apiContext.KeyIsOperation, operation)
 }
 
 // Close will clean up any existing resources on the controller
@@ -110,7 +142,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 
 	// Set context
 	ctx = addAppContextValues(ctx, path, "subscribe")
-	ctx = context.WithValue(ctx, aapiContext.KeyIsDirection, "reception")
+	ctx = context.WithValue(ctx, apiContext.KeyIsDirection, "reception")
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -134,21 +166,22 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 			// Wait for next message
 			um, open := <-msgs
 
-			// Execute middlewares
-			c.executeMiddlewares(ctx, um)
-
 			// Process message
 			msg, err := newHelloMessageFromUniversalMessage(um)
 			if err != nil {
-				ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, um)
+				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, um)
 				c.logger.Error(ctx, err.Error())
 			}
-			ctx = context.WithValue(ctx, aapiContext.KeyIsMessage, msg)
+			ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
 
 			// Send info if message is correct or susbcription is closed
 			if err == nil || !open {
 				c.logger.Info(ctx, "Received new message")
-				fn(ctx, msg, !open)
+
+				// Execute middlewares with the callback
+				c.executeMiddlewares(ctx, func(ctx context.Context) {
+					fn(ctx, msg, !open)
+				})
 			}
 
 			// If subscription is closed, then exit the function
