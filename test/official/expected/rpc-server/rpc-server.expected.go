@@ -485,9 +485,7 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 
 	// Set context
 	ctx = addClientContextValues(ctx, path, "wait-for")
-	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, publishMsg)
 	ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, publishMsg.CorrelationID())
-	ctx = context.WithValue(ctx, apiContext.KeyIsDirection, "reception")
 
 	// Subscribe to broker channel
 	cc.logger.Info(ctx, "Wait for response")
@@ -500,44 +498,43 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 	// Close subscriber on leave
 	defer func() { stop <- true }()
 
-	// Execute middlewares before publishing
-	var msg QueueMessage
-	cc.executeMiddlewares(ctx, func(ctx context.Context) {
-		// Execute publication
-		cc.logger.Info(ctx, "Publish request")
-		if err = pub(ctx); err != nil {
-			return
-		}
+	// Execute publication
+	cc.logger.Info(ctx, "Publish request")
+	if err = pub(ctx); err != nil {
+		return QueueMessage{}, err
+	}
 
-		// Wait for corresponding response
-		for {
-			select {
-			case um, open := <-msgs:
-
-				// Get new message
-				msg, err = newQueueMessageFromUniversalMessage(um)
-				if err != nil {
-					cc.logger.Error(ctx, err.Error())
-				}
-
-				// If valid message with corresponding correlation ID, return message
-				if err == nil && publishMsg.CorrelationID() == msg.CorrelationID() {
-					cc.logger.Info(ctx, "Received expected message")
-					return
-				} else if !open { // If message is invalid or not corresponding and the subscription is closed, then set corresponding error
-					cc.logger.Error(ctx, "Channel closed before getting message")
-					err = ErrSubscriptionCanceled
-					return
-				}
-			case <-ctx.Done(): // Set corrsponding error if context is done
-				cc.logger.Error(ctx, "Context done before getting message")
-				err = ErrContextCanceled
-				return
+	// Wait for corresponding response
+	for {
+		select {
+		case um, open := <-msgs:
+			// Get new message
+			msg, err := newQueueMessageFromUniversalMessage(um)
+			if err != nil {
+				cc.logger.Error(ctx, err.Error())
 			}
-		}
-	})
 
-	return msg, err
+			// If valid message with corresponding correlation ID, return message
+			if err == nil && publishMsg.CorrelationID() == msg.CorrelationID() {
+				// Set context with received values
+				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
+				ctx = context.WithValue(ctx, apiContext.KeyIsDirection, "reception")
+
+				// Execute middlewares before returning
+				cc.executeMiddlewares(ctx, func(ctx context.Context) {
+					cc.logger.Info(ctx, "Received expected message")
+				})
+
+				return msg, nil
+			} else if !open { // If message is invalid or not corresponding and the subscription is closed, then set corresponding error
+				cc.logger.Error(ctx, "Channel closed before getting message")
+				return QueueMessage{}, ErrSubscriptionCanceled
+			}
+		case <-ctx.Done(): // Set corrsponding error if context is done
+			cc.logger.Error(ctx, "Context done before getting message")
+			return QueueMessage{}, ErrContextCanceled
+		}
+	}
 }
 
 const (
