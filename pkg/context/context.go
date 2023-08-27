@@ -8,24 +8,18 @@ const Prefix = "aapi-"
 type Key string
 
 const (
-	// KeyIsModule is the name of the module this data is coming from.
-	// When coming from a generated client, it is `asyncapi`
-	KeyIsModule Key = Prefix + "module"
 	// KeyIsProvider is the name of the provider this data is coming from.
-	// When coming from generated code, it is `app`, `client` or `broker`
+	// When coming from a generated client, it is `asyncapi`
 	KeyIsProvider Key = Prefix + "provider"
 	// KeyIsChannel is the name of the channel this data is coming from.
 	KeyIsChannel Key = Prefix + "channel"
-	// KeyIsOperation is the name of the operation this data is coming from.
-	// When coming from generated code, it is `subscribe`, `publish`, `wait-for`, etc
-	KeyIsOperation Key = Prefix + "operation"
+	// KeyIsMessageDirection is the direction this data is coming from.
+	// It can be either "publication" or "reception"
+	KeyIsMessageDirection Key = Prefix + "operation"
 	// KeyIsMessage is the message that has been sent or received
 	KeyIsMessage Key = Prefix + "message"
 	// KeyIsCorrelationID is the correlation ID of the message
 	KeyIsCorrelationID Key = Prefix + "correlationID"
-	// KeyIsDirection is the direction of the message
-	// It can be either "publication" or "reception"
-	KeyIsDirection Key = Prefix + "direction"
 )
 
 // String returns the string representation of the key

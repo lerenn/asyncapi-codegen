@@ -91,18 +91,16 @@ func (c AppController) executeMiddlewares(ctx context.Context, callback func(ctx
 	wrapped(ctx)
 }
 
-func addAppContextValues(ctx context.Context, path, operation string) context.Context {
-	ctx = context.WithValue(ctx, apiContext.KeyIsModule, "asyncapi")
+func addAppContextValues(ctx context.Context, path string) context.Context {
 	ctx = context.WithValue(ctx, apiContext.KeyIsProvider, "app")
-	ctx = context.WithValue(ctx, apiContext.KeyIsChannel, path)
-	return context.WithValue(ctx, apiContext.KeyIsOperation, operation)
+	return context.WithValue(ctx, apiContext.KeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.logger.Info(ctx, "Closing App controller")
 	c.UnsubscribeAll(ctx)
+	c.logger.Info(ctx, "Closed app controller")
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
@@ -141,8 +139,7 @@ func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.C
 	path := "ping"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path, "subscribe")
-	ctx = context.WithValue(ctx, apiContext.KeyIsDirection, "reception")
+	ctx = addAppContextValues(ctx, path)
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -153,12 +150,12 @@ func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.C
 	}
 
 	// Subscribe to broker channel
-	c.logger.Info(ctx, "Subscribing to channel")
 	msgs, stop, err := c.brokerController.Subscribe(ctx, path)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
+	c.logger.Info(ctx, "Subscribed to channel")
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
@@ -166,20 +163,26 @@ func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.C
 			// Wait for next message
 			um, open := <-msgs
 
+			// Add correlation ID to context if it exists
+			if um.CorrelationID != nil {
+				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+			}
+
 			// Process message
 			msg, err := newPingMessageFromUniversalMessage(um)
 			if err != nil {
 				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, um)
 				c.logger.Error(ctx, err.Error())
 			}
-			ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
 
-			// Send info if message is correct or susbcription is closed
-			if err == nil || !open {
-				c.logger.Info(ctx, "Received new message")
+			// Add context
+			msgCtx := context.WithValue(ctx, apiContext.KeyIsMessage, msg)
+			msgCtx = context.WithValue(msgCtx, apiContext.KeyIsMessageDirection, "reception")
 
+			// Process message if no error and still open
+			if err == nil && open {
 				// Execute middlewares with the callback
-				c.executeMiddlewares(ctx, func(ctx context.Context) {
+				c.executeMiddlewares(msgCtx, func(ctx context.Context) {
 					fn(ctx, msg, !open)
 				})
 			}
@@ -203,7 +206,7 @@ func (c *AppController) UnsubscribePing(ctx context.Context) {
 	path := "ping"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path, "unsubscribe")
+	ctx = addAppContextValues(ctx, path)
 
 	// Get stop channel
 	stopChan, exists := c.stopSubscribers[path]
@@ -212,9 +215,10 @@ func (c *AppController) UnsubscribePing(ctx context.Context) {
 	}
 
 	// Stop the channel and remove the entry
-	c.logger.Info(ctx, "Unsubscribing from channel")
 	stopChan <- true
 	delete(c.stopSubscribers, path)
+
+	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
 // PublishPong will publish messages to 'pong' channel
@@ -223,9 +227,9 @@ func (c *AppController) PublishPong(ctx context.Context, msg PongMessage) error 
 	path := "pong"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path, "publish")
+	ctx = addAppContextValues(ctx, path)
 	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-	ctx = context.WithValue(ctx, apiContext.KeyIsDirection, "publication")
+	ctx = context.WithValue(ctx, apiContext.KeyIsMessageDirection, "publication")
 
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
@@ -233,10 +237,13 @@ func (c *AppController) PublishPong(ctx context.Context, msg PongMessage) error 
 		return err
 	}
 
-	// Publish the message in middlewares
+	// Add correlation ID to context if it exists
+	if um.CorrelationID != nil {
+		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+	}
+
+	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		// Publish on event broker
-		c.logger.Info(ctx, "Publishing to channel")
 		err = c.brokerController.Publish(ctx, path, um)
 	})
 

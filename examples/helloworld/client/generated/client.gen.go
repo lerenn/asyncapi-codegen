@@ -84,11 +84,9 @@ func (c ClientController) executeMiddlewares(ctx context.Context, callback func(
 	wrapped(ctx)
 }
 
-func addClientContextValues(ctx context.Context, path, operation string) context.Context {
-	ctx = context.WithValue(ctx, apiContext.KeyIsModule, "asyncapi")
+func addClientContextValues(ctx context.Context, path string) context.Context {
 	ctx = context.WithValue(ctx, apiContext.KeyIsProvider, "client")
-	ctx = context.WithValue(ctx, apiContext.KeyIsChannel, path)
-	return context.WithValue(ctx, apiContext.KeyIsOperation, operation)
+	return context.WithValue(ctx, apiContext.KeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
@@ -102,9 +100,9 @@ func (c *ClientController) PublishHello(ctx context.Context, msg HelloMessage) e
 	path := "hello"
 
 	// Set context
-	ctx = addClientContextValues(ctx, path, "publish")
+	ctx = addClientContextValues(ctx, path)
 	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-	ctx = context.WithValue(ctx, apiContext.KeyIsDirection, "publication")
+	ctx = context.WithValue(ctx, apiContext.KeyIsMessageDirection, "publication")
 
 	// Convert to UniversalMessage
 	um, err := msg.toUniversalMessage()
@@ -112,10 +110,13 @@ func (c *ClientController) PublishHello(ctx context.Context, msg HelloMessage) e
 		return err
 	}
 
-	// Publish the message in middlewares
+	// Add correlation ID to context if it exists
+	if um.CorrelationID != nil {
+		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+	}
+
+	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		// Publish on event broker
-		c.logger.Info(ctx, "Publishing to channel")
 		err = c.brokerController.Publish(ctx, path, um)
 	})
 

@@ -429,10 +429,14 @@ You can find other keys in the package `pkg/context`.
 
 ### Logging
 
-#### Enable logging
+You can have 2 types of logging:
+* **Controller logging**: logs the internal operations of the controller (subscription, malformed messages, etc);
+* **Publication/Reception logging**: logs every publication or reception of messages.
 
-To enable logging, the only thing you have to do is to set a logger to your
-controller with the function `SetLogger()`:
+#### Controller logging
+
+To log internal operation of the controller, the only thing you have to do is
+to set a logger to your controller with the function `SetLogger()`:
 
 ```golang
 // Create a new app controller with a NATS controller for example
@@ -445,6 +449,19 @@ ctrl.SetLogger(logger)
 ```
 
 You can find all loggers in the directory `pkg/log`.
+
+#### Publication/Reception logging
+
+To log published and received messages, you'll have to pass a logger as a middleware
+in order to execute it on every published and received messages:
+
+```golang
+// Create a new app controller with a NATS controller for example
+ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+
+// Add middleware
+ctrl.AddMiddlewares(middleware.Logging(log.NewECS()))
+```
 
 #### Custom logging
 
