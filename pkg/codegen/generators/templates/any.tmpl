@@ -1,6 +1,10 @@
 {{define "any" -}}
 
-{{- if .Type -}}
+{{- /* Custom Go type */ -}}
+{{- if .ExtGoType -}}
+{{ .ExtGoType }}
+
+{{- else if .Type -}}
 
 {{- /* Type Object */ -}}
 {{- if or (eq .Type "object") .Properties -}}struct {

@@ -8,6 +8,7 @@ type ImportsGenerator struct {
 	PackageName   string
 	ModuleVersion string
 	ModuleName    string
+	CustomImports []string
 }
 
 func (ig ImportsGenerator) Generate() (string, error) {

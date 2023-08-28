@@ -524,6 +524,92 @@ queues:
 broker.SetQueueName("my-custom-queue-name")
 ```
 
+### Extensions
+
+#### Schema Object extensions
+
+These extension properties apply to "Schema Objects" in AsyncAPI spec.
+
+* `x-go-type`: Overrides the default Go type with the specified Go type name.
+
+  For example,
+
+  ```yaml
+  schemas:
+    Object:
+      properties:
+        flag:
+          type: integer
+          x-go-type: uint8
+  ```
+
+  will be generated as
+
+  ```go
+  type Object struct {
+          Flag uint8 `json:"flag"`
+  }
+  ```
+
+* `x-go-type-import`: Specifies the import package for `x-go-type`.
+                      This has two properties `name` and `path`.
+        `path` is the package import path, e.g. `github.com/google/uuid`.
+        `name` is the package import name, which is optional.
+  For example,
+
+  ```yaml
+  schemas:
+    Object:
+      properties:
+        flag:
+          type: integer
+          x-go-type: mypackage.Flag
+          x-go-type-import: 
+            path: abc.xyz/repo/mypackage
+  ```
+
+  will be generated as
+
+  ```go
+  import (
+          "abc.xyz/repo/mypackage"
+  )
+
+  // ...
+
+  type Object struct {
+          Flag mypackage.Flag `json:"flag"`
+  }
+  ```
+
+  while
+
+  ```yaml
+  schemas:
+    Object:
+      properties:
+        flag:
+          type: integer
+          x-go-type: alias.Flag
+          x-go-type-import: 
+            path: abc.xyz/repo/mypackage
+            name: alias
+  ```
+
+  will be generated as
+
+  ```go
+  import (
+          alias "abc.xyz/repo/mypackage"
+  )
+
+  // ...
+
+  type Object struct {
+          Flag alias.Flag `json:"flag"`
+  }
+  ```
+
 ## Contributing and support
 
 If you find any bug or lacking a feature, please raise an issue on the Github repository!

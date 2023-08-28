@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/uuid v1.3.0
+	github.com/matryer/is v1.4.1
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/nats-io/nats.go v1.23.0
 	github.com/stoewer/go-strcase v1.2.1
