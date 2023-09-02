@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/broker"
+
 	"github.com/google/uuid"
 )
 
@@ -71,32 +73,32 @@ func NewPingMessage() PingMessage {
 	return msg
 }
 
-// newPingMessageFromUniversalMessage will fill a new PingMessage with data from UniversalMessage
-func newPingMessageFromUniversalMessage(um UniversalMessage) (PingMessage, error) {
+// newPingMessageFromBrokerMessage will fill a new PingMessage with data from generic broker message
+func newPingMessageFromBrokerMessage(bMsg broker.Message) (PingMessage, error) {
 	var msg PingMessage
 
 	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(um.Payload, &msg.Payload)
+	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
 	if err != nil {
 		return msg, err
 	}
 
 	// Get correlation ID
-	msg.Headers.CorrelationID = um.CorrelationID
+	msg.Headers.CorrelationID = bMsg.CorrelationID
 
 	// TODO: run checks on msg type
 
 	return msg, nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from PingMessage data
-func (msg PingMessage) toUniversalMessage() (UniversalMessage, error) {
+// toBrokerMessage will generate a generic broker message from PingMessage data
+func (msg PingMessage) toBrokerMessage() (broker.Message, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
-		return UniversalMessage{}, err
+		return broker.Message{}, err
 	}
 
 	// Set correlation ID if it does not exist
@@ -108,7 +110,7 @@ func (msg PingMessage) toUniversalMessage() (UniversalMessage, error) {
 		correlationID = &u
 	}
 
-	return UniversalMessage{
+	return broker.Message{
 		Payload:       payload,
 		CorrelationID: correlationID,
 	}, nil
@@ -159,32 +161,32 @@ func NewPongMessage() PongMessage {
 	return msg
 }
 
-// newPongMessageFromUniversalMessage will fill a new PongMessage with data from UniversalMessage
-func newPongMessageFromUniversalMessage(um UniversalMessage) (PongMessage, error) {
+// newPongMessageFromBrokerMessage will fill a new PongMessage with data from generic broker message
+func newPongMessageFromBrokerMessage(bMsg broker.Message) (PongMessage, error) {
 	var msg PongMessage
 
 	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(um.Payload, &msg.Payload)
+	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
 	if err != nil {
 		return msg, err
 	}
 
 	// Get correlation ID
-	msg.Headers.CorrelationID = um.CorrelationID
+	msg.Headers.CorrelationID = bMsg.CorrelationID
 
 	// TODO: run checks on msg type
 
 	return msg, nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from PongMessage data
-func (msg PongMessage) toUniversalMessage() (UniversalMessage, error) {
+// toBrokerMessage will generate a generic broker message from PongMessage data
+func (msg PongMessage) toBrokerMessage() (broker.Message, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
-		return UniversalMessage{}, err
+		return broker.Message{}, err
 	}
 
 	// Set correlation ID if it does not exist
@@ -196,7 +198,7 @@ func (msg PongMessage) toUniversalMessage() (UniversalMessage, error) {
 		correlationID = &u
 	}
 
-	return UniversalMessage{
+	return broker.Message{
 		Payload:       payload,
 		CorrelationID: correlationID,
 	}, nil

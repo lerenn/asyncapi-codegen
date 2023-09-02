@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/broker"
 	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
@@ -21,20 +22,20 @@ type AppSubscriber interface {
 // AppController is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the App
 type AppController struct {
-	brokerController BrokerController
+	brokerController broker.Controller
 	stopSubscribers  map[string]chan interface{}
 	logger           log.Interface
 	middlewares      []middleware.Middleware
 }
 
 // NewAppController links the App to the broker
-func NewAppController(bs BrokerController) (*AppController, error) {
-	if bs == nil {
+func NewAppController(bc broker.Controller) (*AppController, error) {
+	if bc == nil {
 		return nil, ErrNilBrokerController
 	}
 
 	return &AppController{
-		brokerController: bs,
+		brokerController: bc,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
 		middlewares:      make([]middleware.Middleware, 0),
@@ -161,17 +162,17 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 	go func() {
 		for {
 			// Wait for next message
-			um, open := <-msgs
+			bMsg, open := <-msgs
 
 			// Add correlation ID to context if it exists
-			if um.CorrelationID != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+			if bMsg.CorrelationID != nil {
+				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *bMsg.CorrelationID)
 			}
 
 			// Process message
-			msg, err := newHelloMessageFromUniversalMessage(um)
+			msg, err := newHelloMessageFromBrokerMessage(bMsg)
 			if err != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, um)
+				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, bMsg)
 				c.logger.Error(ctx, err.Error())
 			}
 
