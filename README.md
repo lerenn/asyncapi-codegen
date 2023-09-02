@@ -55,9 +55,9 @@ the client, the broker, and the application.
 * <span style="color:red">Red parts</span>: you will need to fill these parts
 between client, broker and application. These will allow message production and
 reception with the generated code.
-* <span style="color:orange">Orange parts</span>: these will be also generated
-automatically if you use an implemented message broker. You can also use the
-`none` type in order to implement it yourself.
+* <span style="color:orange">Orange parts</span>: these parts will be available
+in this repository if you use an already supported broker. However, you can also
+use the implement it yourself if the broker is not supported yet.
 
 ## Examples
 
@@ -141,11 +141,16 @@ And here is an example of the application that could be written to use this gene
 code with NATS (you can also find it [here](./examples/helloworld/app/main.go)):
 
 ```go
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	/* ... */
+)
+
 // Connect to NATS
 nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
-ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
 defer ctrl.Close(context.Background())
 
 // Subscribe to HelloWorld messages
@@ -188,11 +193,16 @@ And here is an example of the client that could be written to use this generated
 code with NATS (you can also find it [here](./examples/helloworld/app/main.go)):
 
 ```go
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	/* ... */
+)
+
 // Connect to NATS
 nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
-ctrl, _ := generated.NewClientController(generated.NewNATSController(nc))
+ctrl, _ := generated.NewClientController(controllers.NewNATS(nc))
 defer ctrl.Close(context.Background())
 
 // Send HelloWorld
@@ -213,26 +223,6 @@ type HelloMessage struct {
 	Payload string
 }
 ```
-
-#### Broker
-
-In order to connect your application and your client to your broker, we need to
-provide an adapter to it. Here is the interface that you need to satisfy:
-
-```go
-type BrokerController interface {
-  	// Publish will be called under the hood by any PublishXXX function
-	Publish(ctx context.Context, channel string, mw UniversalMessage) error
-  	// Subscribe will be called under the hood by any SubscribeXXX function
-	Subscribe(ctx context.Context, channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
-}
-```
-
-You can find that there is an `UniversalMessage` structure that is provided and
-that aims to abstract the event broker technology.
-
-You can either generate an already existing adapter, or write your own if it doesn't
-exists or if it doesn't suit your needs.
 
 ### Request/Response example
 
@@ -259,6 +249,11 @@ use `ping.gen.go`.
 #### Application (or server in this case)
 
 ```golang
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	/* ... */
+)
+
 type ServerSubscriber struct {
 	Controller *generated.AppController
 }
@@ -278,7 +273,7 @@ func main() {
 	/* ... */
 
 	// Create a new server controller
-	ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+	ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
 	defer ctrl.Close(context.Background())
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
@@ -319,8 +314,8 @@ resp, _ := ctrl.WaitForPong(context.Background(), req, publicationFunc)
 ## CLI options
 
 The default options for oapi-codegen will generate everything; client, application,
-broker, type definitions, and broker implementations but you can generate subsets
-of those via the -generate flag. It defaults to client,application,broker,types
+and type definitions but you can generate subsets of those via the -generate
+flag. It defaults to client,application,types
 but you can specify any combination of those.
 
 Here are the universal parts that you can generate:
@@ -329,15 +324,9 @@ Here are the universal parts that you can generate:
   the types in the same package to compile.
 * `client`: generate the client boilerplate. It, too, requires the types to be
   present in its package.
-* `broker`: generate the broker controller that you have to fill either with an
-  existing implementation (more below), or by implementing your own.
 * `types`: all type definitions for all types in the AsyncAPI spec.
   This will be everything under `#components`, as well as request parameter,
   request body, and response type objects.
-
-You can also specify some specific implementation for the broker of your choice:
-
-* `nats`: generate the NATS message broker boilerplate.
 
 ## Advanced topics
 
@@ -348,8 +337,13 @@ messages. You can add one or multiple middlewares using the following function
 on a controller:
 
 ```golang
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	/* ... */
+)
+
 // Create a new app controller with a NATS controller for example
-ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
 
 // Add middleware
 ctrl.AddMiddlewares(myMiddleware1, myMiddleware2 /*, ... */)
@@ -371,6 +365,7 @@ If you want to target specific messages, you can use the context passed in argum
 ```golang
 import(
 	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
+	/* ... */
 )
 
 func myMiddleware(ctx context.Context, _ middleware.Next) context.Context {
@@ -439,8 +434,13 @@ To log internal operation of the controller, the only thing you have to do is
 to set a logger to your controller with the function `SetLogger()`:
 
 ```golang
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	/* ... */
+)
+
 // Create a new app controller with a NATS controller for example
-ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
 	
 // Attach a logger (optional)
 // You can find loggers in `github.com/lerenn/asyncapi-codegen/pkg/log` or create your own
@@ -456,8 +456,13 @@ To log published and received messages, you'll have to pass a logger as a middle
 in order to execute it on every published and received messages:
 
 ```golang
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	/* ... */
+)
+
 // Create a new app controller with a NATS controller for example
-ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
 
 // Add middleware
 ctrl.AddMiddlewares(middleware.Logging(log.NewECS()))
@@ -503,8 +508,13 @@ func (logger SimpleLogger) Error(ctx log.Context, msg string, info ...log.Additi
 You can then create a controller with a logger using similar lines:
 
 ```golang
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	/* ... */
+)
+
 // Create a new app controller with a NATS controller for example
-ctrl, _ := generated.NewAppController(generated.NewNATSController(nc))
+ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
 
 // Set a logger
 ctrl.SetLogger(SimpleLogger{})
@@ -521,8 +531,49 @@ applications which uses code generated by `asyncapi-codegen` but on different
 queues:
 
 ```golang
-broker.SetQueueName("my-custom-queue-name")
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	/* ... */
+)
+
+// Generate a new NATS controller
+ctrl := controllers.NewNATS(nc)
+
+// Set queue name on the NATS controller
+ctrl.SetQueueName("my-custom-queue-name")
 ```
+
+### Implementing your own broker controller
+
+In order to connect your application and your client to your broker, we need to
+provide an adapter to it. Here is the interface that you need to satisfy:
+
+```go
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/broker"
+	"github.com/lerenn/asyncapi-codegen/pkg/log"
+)
+
+type BrokerController interface {	
+	// SetLogger set a logger that will log operations on broker controller
+	SetLogger(logger log.Interface)
+
+	// Publish a message to the broker
+	Publish(ctx context.Context, channel string, mw broker.Message) error
+
+	// Subscribe to messages from the broker
+	Subscribe(ctx context.Context, channel string) (msgs chan broker.Message, stop chan interface{}, err error)
+
+	// SetQueueName sets the name of the queue that will be used by the broker
+	SetQueueName(name string)
+}
+```
+
+You can find that there is an `broker.Message` structure that is provided and
+that aims to abstract the event broker technology.
+
+By writing your own by satisfying this interface, you will be able to connect
+your broker to the generated code.
 
 ## Contributing and support
 
