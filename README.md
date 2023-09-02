@@ -10,6 +10,7 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
 ## Contents
 
 * [Supported functionalities](#supported-functionalities)
+* [Usage](#usage)
 * [Concepts](#concepts)
 * [Examples](#examples):
   * [Basic example](#basic-example)
@@ -30,6 +31,31 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
   * JSON
 * Logging:
   * JSON (ECS compatible)
+
+## Usage
+
+In order to use this library in your code, please execute the following lines:
+
+```shell
+# Install the tool
+go install github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@latest
+
+# Generate the code from the asyncapi file
+asyncapi-codegen -i ./asyncapi.yaml -p <your-package> -o ./asyncapi.gen.go
+
+# Install dependencies needed by the generated code
+go get -u github.com/lerenn/asyncapi-codegen/pkg/broker
+go get -u github.com/lerenn/asyncapi-codegen/pkg/context
+go get -u github.com/lerenn/asyncapi-codegen/pkg/log
+go get -u github.com/lerenn/asyncapi-codegen/pkg/middleware
+```
+
+You can also specify the generation part by adding a `go generate` instruction
+at the beginning of your file:
+
+```golang
+//go:generate go run github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@<version> -i ./asyncapi.yaml -p <your-package> -o ./asyncapi.gen.go
+```
 
 ## Concepts
 
