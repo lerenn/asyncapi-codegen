@@ -87,7 +87,7 @@ func (c *NATS) Subscribe(ctx context.Context, channel string) (msgs chan broker.
 					CorrelationID: correlationID,
 				}
 			// Handle closure request from function caller
-			case _ = <-stop:
+			case <-stop:
 				if err := sub.Unsubscribe(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
 					c.logger.Error(ctx, err.Error())
 				}
