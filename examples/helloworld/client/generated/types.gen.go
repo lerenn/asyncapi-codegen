@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/lerenn/asyncapi-codegen/pkg/broker"
 )
 
 var (
@@ -58,12 +60,12 @@ func NewHelloMessage() HelloMessage {
 	return msg
 }
 
-// newHelloMessageFromUniversalMessage will fill a new HelloMessage with data from UniversalMessage
-func newHelloMessageFromUniversalMessage(um UniversalMessage) (HelloMessage, error) {
+// newHelloMessageFromBrokerMessage will fill a new HelloMessage with data from generic broker message
+func newHelloMessageFromBrokerMessage(bMsg broker.Message) (HelloMessage, error) {
 	var msg HelloMessage
 
 	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(um.Payload, &msg.Payload)
+	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
 	if err != nil {
 		return msg, err
 	}
@@ -73,17 +75,17 @@ func newHelloMessageFromUniversalMessage(um UniversalMessage) (HelloMessage, err
 	return msg, nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from HelloMessage data
-func (msg HelloMessage) toUniversalMessage() (UniversalMessage, error) {
+// toBrokerMessage will generate a generic broker message from HelloMessage data
+func (msg HelloMessage) toBrokerMessage() (broker.Message, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
-		return UniversalMessage{}, err
+		return broker.Message{}, err
 	}
 
-	return UniversalMessage{
+	return broker.Message{
 		Payload: payload,
 	}, nil
 }

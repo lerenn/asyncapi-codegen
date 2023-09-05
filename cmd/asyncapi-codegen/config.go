@@ -44,7 +44,7 @@ func ProcessFlags() Flags {
 	flag.StringVar(&f.InputPath, "i", "asyncapi.yaml", "AsyncAPI specification file to use")
 	flag.StringVar(&f.OutputPath, "o", "asyncapi.gen.go", "Destination file")
 	flag.StringVar(&f.PackageName, "p", "asyncapi", "Golang package name")
-	flag.StringVar(&f.Generate, "g", "client,application,broker,types", "Generation options")
+	flag.StringVar(&f.Generate, "g", "client,application,types", "Generation options")
 	flag.BoolVar(&f.DisableFormatting, "disable-formatting", false, "Disables the code generation formatting")
 
 	flag.Parse()
@@ -64,18 +64,12 @@ func (f Flags) ToCodegenOptions() (codegen.Options, error) {
 		gens := strings.Split(f.Generate, ",")
 		for _, v := range gens {
 			switch v {
-			// Generic code
 			case "application":
 				opt.Generate.Application = true
-			case "broker":
-				opt.Generate.Broker = true
 			case "client":
 				opt.Generate.Client = true
 			case "types":
 				opt.Generate.Types = true
-			// Broker implementations
-			case "nats":
-				opt.Generate.NATS = true
 			default:
 				return opt, fmt.Errorf("%w: %q", ErrInvalidGenerate, v)
 			}

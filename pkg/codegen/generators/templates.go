@@ -18,10 +18,6 @@ const (
 	subscriberTemplatePath = templatesDir + "/subscriber.tmpl"
 	controllerTemplatePath = templatesDir + "/controller.tmpl"
 	parameterTemplatePath  = templatesDir + "/parameter.tmpl"
-
-	brokerDir                    = templatesDir + "/broker"
-	brokerControllerTemplatePath = brokerDir + "/controller.tmpl"
-	brokerNATSTemplatePath       = brokerDir + "/nats.tmpl"
 )
 
 var (

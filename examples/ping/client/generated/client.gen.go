@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/broker"
 	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
@@ -21,20 +22,20 @@ type ClientSubscriber interface {
 // ClientController is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the Client
 type ClientController struct {
-	brokerController BrokerController
+	brokerController broker.Controller
 	stopSubscribers  map[string]chan interface{}
 	logger           log.Interface
 	middlewares      []middleware.Middleware
 }
 
 // NewClientController links the Client to the broker
-func NewClientController(bs BrokerController) (*ClientController, error) {
-	if bs == nil {
+func NewClientController(bc broker.Controller) (*ClientController, error) {
+	if bc == nil {
 		return nil, ErrNilBrokerController
 	}
 
 	return &ClientController{
-		brokerController: bs,
+		brokerController: bc,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
 		middlewares:      make([]middleware.Middleware, 0),
@@ -161,17 +162,17 @@ func (c *ClientController) SubscribePong(ctx context.Context, fn func(ctx contex
 	go func() {
 		for {
 			// Wait for next message
-			um, open := <-msgs
+			bMsg, open := <-msgs
 
 			// Add correlation ID to context if it exists
-			if um.CorrelationID != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+			if bMsg.CorrelationID != nil {
+				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *bMsg.CorrelationID)
 			}
 
 			// Process message
-			msg, err := newPongMessageFromUniversalMessage(um)
+			msg, err := newPongMessageFromBrokerMessage(bMsg)
 			if err != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, um)
+				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, bMsg)
 				c.logger.Error(ctx, err.Error())
 			}
 
@@ -231,20 +232,20 @@ func (c *ClientController) PublishPing(ctx context.Context, msg PingMessage) err
 	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
 	ctx = context.WithValue(ctx, apiContext.KeyIsMessageDirection, "publication")
 
-	// Convert to UniversalMessage
-	um, err := msg.toUniversalMessage()
+	// Convert to BrokerMessage
+	bMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
 	}
 
 	// Add correlation ID to context if it exists
-	if um.CorrelationID != nil {
-		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+	if bMsg.CorrelationID != nil {
+		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *bMsg.CorrelationID)
 	}
 
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		err = c.brokerController.Publish(ctx, path, um)
+		err = c.brokerController.Publish(ctx, path, bMsg)
 	})
 
 	// Return error from publication on broker
@@ -287,9 +288,9 @@ func (cc *ClientController) WaitForPong(ctx context.Context, publishMsg MessageW
 	// Wait for corresponding response
 	for {
 		select {
-		case um, open := <-msgs:
+		case bMsg, open := <-msgs:
 			// Get new message
-			msg, err := newPongMessageFromUniversalMessage(um)
+			msg, err := newPongMessageFromBrokerMessage(bMsg)
 			if err != nil {
 				cc.logger.Error(ctx, err.Error())
 			}

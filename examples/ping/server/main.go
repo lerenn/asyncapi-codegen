@@ -1,10 +1,6 @@
 // Universal parts generation
 //go:generate go run ../../../cmd/asyncapi-codegen -g application -p generated -i ../asyncapi.yaml -o ./generated/app.gen.go
-//go:generate go run ../../../cmd/asyncapi-codegen -g broker -p generated -i ../asyncapi.yaml -o ./generated/broker.gen.go
 //go:generate go run ../../../cmd/asyncapi-codegen -g types -p generated -i ../asyncapi.yaml -o ./generated/types.gen.go
-
-// Specific brokers implementations generation
-//go:generate go run ../../../cmd/asyncapi-codegen -g nats -p generated -i ../asyncapi.yaml -o ./generated/nats.gen.go
 
 package main
 
@@ -15,6 +11,7 @@ import (
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/examples/ping/server/generated"
+	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 	"github.com/nats-io/nats.go"
 )
@@ -45,7 +42,7 @@ func main() {
 	}
 
 	// Create a new server controller
-	ctrl, err := generated.NewAppController(generated.NewNATSController(nc))
+	ctrl, err := generated.NewAppController(controllers.NewNATS(nc))
 	if err != nil {
 		panic(err)
 	}

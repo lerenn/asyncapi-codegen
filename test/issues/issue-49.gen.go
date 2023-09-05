@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/broker"
 	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
 	"github.com/lerenn/asyncapi-codegen/pkg/log"
 	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
@@ -26,20 +27,20 @@ type ClientSubscriber interface {
 // ClientController is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the Client
 type ClientController struct {
-	brokerController BrokerController
+	brokerController broker.Controller
 	stopSubscribers  map[string]chan interface{}
 	logger           log.Interface
 	middlewares      []middleware.Middleware
 }
 
 // NewClientController links the Client to the broker
-func NewClientController(bs BrokerController) (*ClientController, error) {
-	if bs == nil {
+func NewClientController(bc broker.Controller) (*ClientController, error) {
+	if bc == nil {
 		return nil, ErrNilBrokerController
 	}
 
 	return &ClientController{
-		brokerController: bs,
+		brokerController: bc,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           log.Silent{},
 		middlewares:      make([]middleware.Middleware, 0),
@@ -166,17 +167,17 @@ func (c *ClientController) SubscribeStatus(ctx context.Context, fn func(ctx cont
 	go func() {
 		for {
 			// Wait for next message
-			um, open := <-msgs
+			bMsg, open := <-msgs
 
 			// Add correlation ID to context if it exists
-			if um.CorrelationID != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+			if bMsg.CorrelationID != nil {
+				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *bMsg.CorrelationID)
 			}
 
 			// Process message
-			msg, err := newStatusMessageFromUniversalMessage(um)
+			msg, err := newStatusMessageFromBrokerMessage(bMsg)
 			if err != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, um)
+				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, bMsg)
 				c.logger.Error(ctx, err.Error())
 			}
 
@@ -236,51 +237,24 @@ func (c *ClientController) PublishChat(ctx context.Context, msg ChatMessage) err
 	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
 	ctx = context.WithValue(ctx, apiContext.KeyIsMessageDirection, "publication")
 
-	// Convert to UniversalMessage
-	um, err := msg.toUniversalMessage()
+	// Convert to BrokerMessage
+	bMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
 	}
 
 	// Add correlation ID to context if it exists
-	if um.CorrelationID != nil {
-		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+	if bMsg.CorrelationID != nil {
+		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *bMsg.CorrelationID)
 	}
 
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		err = c.brokerController.Publish(ctx, path, um)
+		err = c.brokerController.Publish(ctx, path, bMsg)
 	})
 
 	// Return error from publication on broker
 	return err
-}
-
-const (
-	// CorrelationIDField is the name of the field that will contain the correlation ID
-	CorrelationIDField = "correlation_id"
-)
-
-// UniversalMessage is a wrapper that will contain all information regarding a message
-type UniversalMessage struct {
-	CorrelationID *string
-	Payload       []byte
-}
-
-// BrokerController represents the functions that should be implemented to connect
-// the broker to the application or the client
-type BrokerController interface {
-	// SetLogger set a logger that will log operations on broker controller
-	SetLogger(logger log.Interface)
-
-	// Publish a message to the broker
-	Publish(ctx context.Context, channel string, mw UniversalMessage) error
-
-	// Subscribe to messages from the broker
-	Subscribe(ctx context.Context, channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
-
-	// SetQueueName sets the name of the queue that will be used by the broker
-	SetQueueName(name string)
 }
 
 var (
@@ -332,12 +306,12 @@ func NewChatMessage() ChatMessage {
 	return msg
 }
 
-// newChatMessageFromUniversalMessage will fill a new ChatMessage with data from UniversalMessage
-func newChatMessageFromUniversalMessage(um UniversalMessage) (ChatMessage, error) {
+// newChatMessageFromBrokerMessage will fill a new ChatMessage with data from generic broker message
+func newChatMessageFromBrokerMessage(bMsg broker.Message) (ChatMessage, error) {
 	var msg ChatMessage
 
 	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(um.Payload, &msg.Payload)
+	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
 	if err != nil {
 		return msg, err
 	}
@@ -347,17 +321,17 @@ func newChatMessageFromUniversalMessage(um UniversalMessage) (ChatMessage, error
 	return msg, nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from ChatMessage data
-func (msg ChatMessage) toUniversalMessage() (UniversalMessage, error) {
+// toBrokerMessage will generate a generic broker message from ChatMessage data
+func (msg ChatMessage) toBrokerMessage() (broker.Message, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
-		return UniversalMessage{}, err
+		return broker.Message{}, err
 	}
 
-	return UniversalMessage{
+	return broker.Message{
 		Payload: payload,
 	}, nil
 }
@@ -374,12 +348,12 @@ func NewMessage() Message {
 	return msg
 }
 
-// newMessageFromUniversalMessage will fill a new Message with data from UniversalMessage
-func newMessageFromUniversalMessage(um UniversalMessage) (Message, error) {
+// newMessageFromBrokerMessage will fill a new Message with data from generic broker message
+func newMessageFromBrokerMessage(bMsg broker.Message) (Message, error) {
 	var msg Message
 
 	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(um.Payload, &msg.Payload)
+	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
 	if err != nil {
 		return msg, err
 	}
@@ -389,17 +363,17 @@ func newMessageFromUniversalMessage(um UniversalMessage) (Message, error) {
 	return msg, nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from Message data
-func (msg Message) toUniversalMessage() (UniversalMessage, error) {
+// toBrokerMessage will generate a generic broker message from Message data
+func (msg Message) toBrokerMessage() (broker.Message, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
-		return UniversalMessage{}, err
+		return broker.Message{}, err
 	}
 
-	return UniversalMessage{
+	return broker.Message{
 		Payload: payload,
 	}, nil
 }
@@ -416,12 +390,12 @@ func NewStatusMessage() StatusMessage {
 	return msg
 }
 
-// newStatusMessageFromUniversalMessage will fill a new StatusMessage with data from UniversalMessage
-func newStatusMessageFromUniversalMessage(um UniversalMessage) (StatusMessage, error) {
+// newStatusMessageFromBrokerMessage will fill a new StatusMessage with data from generic broker message
+func newStatusMessageFromBrokerMessage(bMsg broker.Message) (StatusMessage, error) {
 	var msg StatusMessage
 
 	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(um.Payload, &msg.Payload)
+	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
 	if err != nil {
 		return msg, err
 	}
@@ -431,17 +405,17 @@ func newStatusMessageFromUniversalMessage(um UniversalMessage) (StatusMessage, e
 	return msg, nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from StatusMessage data
-func (msg StatusMessage) toUniversalMessage() (UniversalMessage, error) {
+// toBrokerMessage will generate a generic broker message from StatusMessage data
+func (msg StatusMessage) toBrokerMessage() (broker.Message, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
-		return UniversalMessage{}, err
+		return broker.Message{}, err
 	}
 
-	return UniversalMessage{
+	return broker.Message{
 		Payload: payload,
 	}, nil
 }
