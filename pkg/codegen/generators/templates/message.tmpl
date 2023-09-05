@@ -31,7 +31,7 @@ func New{{namify .Name}}Message() {{namify .Name}}Message {
 }
 
 // new{{namify .Name}}MessageFromBrokerMessage will fill a new {{namify .Name}}Message with data from generic broker message
-func new{{namify .Name}}MessageFromBrokerMessage(bMsg broker.Message) ({{namify .Name}}Message, error) {
+func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) ({{namify .Name}}Message, error) {
     var msg {{namify .Name}}Message
    
     // Unmarshal payload to expected message payload format
@@ -51,13 +51,13 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg broker.Message) ({{namify 
 }
 
 // toBrokerMessage will generate a generic broker message from {{namify .Name}}Message data
-func (msg {{namify .Name}}Message) toBrokerMessage() (broker.Message, error) {
+func (msg {{namify .Name}}Message) toBrokerMessage() (extensions.BrokerMessage, error) {
     // TODO: implement checks on message
 
     // Marshal payload to JSON
     payload, err := json.Marshal(msg.Payload)
     if err != nil {
-        return broker.Message{}, err
+        return extensions.BrokerMessage{}, err
     }
 
     {{if ne $.CorrelationIDLocation "" -}}
@@ -71,7 +71,7 @@ func (msg {{namify .Name}}Message) toBrokerMessage() (broker.Message, error) {
     }
     {{- end}}
 
-    return broker.Message{
+    return extensions.BrokerMessage{
         Payload: payload,
         {{- if ne $.CorrelationIDLocation ""}}
         CorrelationID: correlationID,

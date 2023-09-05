@@ -44,10 +44,7 @@ go install github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@latest
 asyncapi-codegen -i ./asyncapi.yaml -p <your-package> -o ./asyncapi.gen.go
 
 # Install dependencies needed by the generated code
-go get -u github.com/lerenn/asyncapi-codegen/pkg/broker
-go get -u github.com/lerenn/asyncapi-codegen/pkg/context
-go get -u github.com/lerenn/asyncapi-codegen/pkg/log
-go get -u github.com/lerenn/asyncapi-codegen/pkg/middleware
+go get -u github.com/lerenn/asyncapi-codegen/pkg/extensions
 ```
 
 You can also specify the generation part by adding a `go generate` instruction
@@ -105,7 +102,7 @@ In order to recreate the code for client and application, you have to run this c
 go install github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@latest
 
 # Generate the code from the asyncapi file
-asyncapi-codegen -i examples/helloworld/asyncapi.yaml -o ./helloworld.gen.go
+asyncapi-codegen -i examples/helloworld/asyncapi.yaml -p main -o ./helloworld.gen.go
 ```
 
 We can then go through the `helloworld.gen.go` file to understand what will be used.
@@ -168,7 +165,7 @@ code with NATS (you can also find it [here](./examples/helloworld/app/main.go)):
 
 ```go
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	/* ... */
 )
 
@@ -176,13 +173,13 @@ import(
 nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
-ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATS(nc))
 defer ctrl.Close(context.Background())
 
 // Subscribe to HelloWorld messages
 // Note: it will indefinitely wait for messages as context has no timeout
 log.Println("Subscribe to hello world...")
-ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg generated.HelloMessage, _ bool) {
+ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage, _ bool) {
   log.Println("Received message:", msg.Payload)
 })
 
@@ -220,7 +217,7 @@ code with NATS (you can also find it [here](./examples/helloworld/app/main.go)):
 
 ```go
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	/* ... */
 )
 
@@ -228,18 +225,18 @@ import(
 nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
-ctrl, _ := generated.NewClientController(controllers.NewNATS(nc))
+ctrl, _ := NewClientController(brokers.NewNATS(nc))
 defer ctrl.Close(context.Background())
 
 // Send HelloWorld
 log.Println("Publishing 'hello world' message")
-ctrl.PublishHello(context.Background(), generated.HelloMessage{Payload: "HelloWorld!"})
+ctrl.PublishHello(context.Background(), HelloMessage{Payload: "HelloWorld!"})
 ```
 
 #### Types
 
 According to the specification that you pass in parameter, some types will also
-be generated. Here is the ones generated for the HelloWorld example:
+be  Here is the ones generated for the HelloWorld example:
 
 ```go
 // HelloMessage will contain all the information that will be sent on the 'hello'
@@ -266,7 +263,7 @@ In order to recreate the code for client and application, you have to run this c
 go install github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@latest
 
 # Generate the code from the asyncapi file
-asyncapi-codegen -i examples/ping/asyncapi.yaml -o ./ping.gen.go
+asyncapi-codegen -i examples/ping/asyncapi.yaml -p main -o ./ping.gen.go
 ```
 
 We can then go through the possible application and client implementations that
@@ -276,17 +273,17 @@ use `ping.gen.go`.
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	/* ... */
 )
 
 type ServerSubscriber struct {
-	Controller *generated.AppController
+	Controller *AppController
 }
 
-func (s ServerSubscriber) Ping(req generated.PingMessage, _ bool) {
+func (s ServerSubscriber) Ping(req PingMessage, _ bool) {
 	// Generate a pong message, set as a response of the request
-	resp := generated.NewPongMessage()
+	resp := NewPongMessage()
 	resp.SetAsResponseFrom(req)
 	resp.Payload.Message = "pong"
 	resp.Payload.Time = time.Now()
@@ -299,7 +296,7 @@ func main() {
 	/* ... */
 
 	// Create a new server controller
-	ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
+	ctrl, _ := NewAppController(brokers.NewNATS(nc))
 	defer ctrl.Close(context.Background())
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
@@ -315,11 +312,11 @@ func main() {
 
 ```golang
 // Create a new client controller
-ctrl, _ := generated.NewClientController(/* Add corresponding broker controller */)
+ctrl, _ := NewClientController(/* Add corresponding broker controller */)
 defer ctrl.Close(context.Background())
 
 // Make a new ping message
-req := generated.NewPingMessage()
+req := NewPingMessage()
 req.Payload = "ping"
 
 // Create the publication function to send the message
@@ -364,12 +361,12 @@ on a controller:
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	/* ... */
 )
 
 // Create a new app controller with a NATS controller for example
-ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATS(nc))
 
 // Add middleware
 ctrl.AddMiddlewares(myMiddleware1, myMiddleware2 /*, ... */)
@@ -390,13 +387,13 @@ If you want to target specific messages, you can use the context passed in argum
 
 ```golang
 import(
-	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	/* ... */
 )
 
 func myMiddleware(ctx context.Context, _ middleware.Next) context.Context {
 	// Execute this middleware only if this is a received message
-	apiContext.IfEquals(ctx, apiContext.KeyIsDirection, "reception", func() {
+	extensions.IfContextValueEquals(ctx, extensions.ContextKeyIsDirection, "reception", func() {
 		// Do specific stuff if message is received
 	})
 
@@ -416,7 +413,12 @@ operation corresponding code if this was the last middleware.
 Here is an example:
 
 ```golang
-func surroundingMiddleware(ctx context.Context, next middleware.Next) context.Context {
+import(
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	/* ... */
+)
+
+func surroundingMiddleware(ctx context.Context, next extensions.NextMiddleware) context.Context {
 	// Pre-operation
 	fmt.Println("This will be displayed BEFORE the reception/publication")
 
@@ -437,16 +439,16 @@ When receiving the context from generated code (either in subscription,
 middleware, logging, etc), you can get some information embedded in context.
 
 To get these information, please use the functions from
-`github.com/lerenn/asyncapi-codegen/pkg/context`:
+`github.com/lerenn/asyncapi-codegen/pkg/extensions`:
 
 ```golang
 // Execute this middleware only if this is from "ping" channel
-apiContext.IfEquals(ctx, apiContext.KeyIsChannel, "ping", func() {
+extensions.IfContextValueEquals(ctx, extensions.ContextKeyIsChannel, "ping", func() {
 	// Do specific stuff if the channel is ping
 })
 ```
 
-You can find other keys in the package `pkg/context`.
+You can find other keys in the package `pkg/extensions`.
 
 ### Logging
 
@@ -461,12 +463,12 @@ to set a logger to your controller with the function `SetLogger()`:
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	/* ... */
 )
 
 // Create a new app controller with a NATS controller for example
-ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATS(nc))
 	
 // Attach a logger (optional)
 // You can find loggers in `github.com/lerenn/asyncapi-codegen/pkg/log` or create your own
@@ -483,12 +485,12 @@ in order to execute it on every published and received messages:
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	/* ... */
 )
 
 // Create a new app controller with a NATS controller for example
-ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATS(nc))
 
 // Add middleware
 ctrl.AddMiddlewares(middleware.Logging(log.NewECS()))
@@ -535,12 +537,12 @@ You can then create a controller with a logger using similar lines:
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	/* ... */
 )
 
 // Create a new app controller with a NATS controller for example
-ctrl, _ := generated.NewAppController(controllers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATS(nc))
 
 // Set a logger
 ctrl.SetLogger(SimpleLogger{})
@@ -558,12 +560,12 @@ queues:
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	/* ... */
 )
 
 // Generate a new NATS controller
-ctrl := controllers.NewNATS(nc)
+ctrl := brokers.NewNATS(nc)
 
 // Set queue name on the NATS controller
 ctrl.SetQueueName("my-custom-queue-name")
@@ -576,26 +578,25 @@ provide an adapter to it. Here is the interface that you need to satisfy:
 
 ```go
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/broker"
-	"github.com/lerenn/asyncapi-codegen/pkg/log"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
 type BrokerController interface {	
 	// SetLogger set a logger that will log operations on broker controller
-	SetLogger(logger log.Interface)
+	SetLogger(logger extensions.Logger)
 
 	// Publish a message to the broker
-	Publish(ctx context.Context, channel string, mw broker.Message) error
+	Publish(ctx context.Context, channel string, mw extensions.BrokerMessage) error
 
 	// Subscribe to messages from the broker
-	Subscribe(ctx context.Context, channel string) (msgs chan broker.Message, stop chan interface{}, err error)
+	Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error)
 
 	// SetQueueName sets the name of the queue that will be used by the broker
 	SetQueueName(name string)
 }
 ```
 
-You can find that there is an `broker.Message` structure that is provided and
+You can find that there is an `extensions.BrokerMessage` structure that is provided and
 that aims to abstract the event broker technology.
 
 By writing your own by satisfying this interface, you will be able to connect

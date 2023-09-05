@@ -1,16 +1,16 @@
-package middleware
+package middlewares
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/log"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
 // Recovery is a middleware that recovers from panic in middlewares coming after
 // it and user code from subscription.
-func Recovery(logger log.Interface) Middleware {
-	return func(ctx context.Context, next Next) context.Context {
+func Recovery(logger extensions.Logger) extensions.Middleware {
+	return func(ctx context.Context, next extensions.NextMiddleware) context.Context {
 		// Recover in case of panic
 		defer func() {
 			if r := recover(); r != nil {

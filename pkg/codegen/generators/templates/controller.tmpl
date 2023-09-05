@@ -1,14 +1,14 @@
 // {{ .Prefix }}Controller is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the {{ .Prefix }}
 type {{ .Prefix }}Controller struct {
-    brokerController broker.Controller
+    brokerController extensions.BrokerController
     stopSubscribers  map[string]chan interface{}
-    logger           log.Interface
-    middlewares      []middleware.Middleware
+    logger           extensions.Logger
+    middlewares      []extensions.Middleware
 }
 
 // New{{ .Prefix }}Controller links the {{ .Prefix }} to the broker
-func New{{ .Prefix }}Controller(bc broker.Controller) (*{{ .Prefix }}Controller, error) {
+func New{{ .Prefix }}Controller(bc extensions.BrokerController) (*{{ .Prefix }}Controller, error) {
     if bc == nil {
         return nil, ErrNilBrokerController
     }
@@ -16,24 +16,24 @@ func New{{ .Prefix }}Controller(bc broker.Controller) (*{{ .Prefix }}Controller,
     return &{{ .Prefix }}Controller{
         brokerController: bc,
         stopSubscribers:  make(map[string]chan interface{}),
-        logger:           log.Silent{},
-        middlewares:      make([]middleware.Middleware, 0),
+        logger:           extensions.DummyLogger{},
+        middlewares:      make([]extensions.Middleware, 0),
     }, nil
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *{{ .Prefix }}Controller) SetLogger(logger log.Interface) {
+func (c *{{ .Prefix }}Controller) SetLogger(logger extensions.Logger) {
     c.logger = logger
     c.brokerController.SetLogger(logger)
 }
 
 // AddMiddlewares attaches middlewares that will be executed when sending or
 // receiving messages
-func (c *{{ .Prefix }}Controller) AddMiddlewares(middleware ...middleware.Middleware) {
+func (c *{{ .Prefix }}Controller) AddMiddlewares(middleware ...extensions.Middleware) {
     c.middlewares = append(c.middlewares, middleware...)
 }
 
-func (c {{ .Prefix }}Controller) wrapMiddlewares(middlewares []middleware.Middleware, last middleware.Next) func(ctx context.Context) {
+func (c {{ .Prefix }}Controller) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
     var called bool
    
     // If there is no more middleware
@@ -72,8 +72,8 @@ func (c {{ .Prefix }}Controller) executeMiddlewares(ctx context.Context, callbac
 }
 
 func add{{ .Prefix }}ContextValues(ctx context.Context, path string) context.Context {
-    ctx = context.WithValue(ctx, apiContext.KeyIsProvider, "{{ snakeCase .Prefix }}")
-    return context.WithValue(ctx, apiContext.KeyIsChannel, path)
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "{{ snakeCase .Prefix }}")
+    return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
@@ -164,19 +164,19 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
 
             // Add correlation ID to context if it exists
             if bMsg.CorrelationID != nil {
-                ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *bMsg.CorrelationID)
+                ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
             }
 
             // Process message
             msg, err := new{{channelToMessageTypeName $value}}FromBrokerMessage(bMsg)
             if err != nil {
-                ctx = context.WithValue(ctx, apiContext.KeyIsMessage, bMsg)
+                ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, bMsg)
                 c.logger.Error(ctx, err.Error())
             }
 
             // Add context
-            msgCtx := context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-            msgCtx = context.WithValue(msgCtx, apiContext.KeyIsMessageDirection, "reception")
+            msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
             
             // Process message if no error and still open
             if err == nil && open {
@@ -237,8 +237,8 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
 
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
-    ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-    ctx = context.WithValue(ctx, apiContext.KeyIsMessageDirection, "publication")
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
 
     // Convert to BrokerMessage
     bMsg, err := msg.toBrokerMessage()
@@ -248,7 +248,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
 
     // Add correlation ID to context if it exists
     if bMsg.CorrelationID != nil {
-        ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *bMsg.CorrelationID)
+        ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
     }
 
     // Publish the message on event-broker through middlewares
@@ -314,9 +314,9 @@ func (cc *ClientController) WaitFor{{namify $key}}(ctx context.Context, publishM
             // If valid message with corresponding correlation ID, return message
             if err == nil && publishMsg.CorrelationID() == msg.CorrelationID() {
                 // Set context with received values
-                msgCtx := context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-                msgCtx = context.WithValue(msgCtx, apiContext.KeyIsMessageDirection, "reception")
-                msgCtx = context.WithValue(msgCtx, apiContext.KeyIsCorrelationID, publishMsg.CorrelationID())
+                msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+                msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
+                msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
 
                 // Execute middlewares before returning
                 cc.executeMiddlewares(msgCtx, func(_ context.Context) {
