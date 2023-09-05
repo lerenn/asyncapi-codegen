@@ -1,6 +1,4 @@
-// Universal parts generation
-//go:generate go run ../../../cmd/asyncapi-codegen -g application -p generated -i ../asyncapi.yaml -o ./generated/app.gen.go
-//go:generate go run ../../../cmd/asyncapi-codegen -g types -p generated -i ../asyncapi.yaml -o ./generated/types.gen.go
+//go:generate go run ../../../cmd/asyncapi-codegen -g application,types -p main -i ../asyncapi.yaml -o ./app.gen.go
 
 package main
 
@@ -10,19 +8,18 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/lerenn/asyncapi-codegen/examples/ping/server/generated"
-	"github.com/lerenn/asyncapi-codegen/pkg/broker/controllers"
-	"github.com/lerenn/asyncapi-codegen/pkg/log"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/nats-io/nats.go"
 )
 
 type ServerSubscriber struct {
-	Controller *generated.AppController
+	Controller *AppController
 }
 
-func (s ServerSubscriber) Ping(ctx context.Context, req generated.PingMessage, _ bool) {
+func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage, _ bool) {
 	// Generate a pong message, set as a response of the request
-	resp := generated.NewPongMessage()
+	resp := NewPongMessage()
 	resp.SetAsResponseFrom(req)
 	resp.Payload.Message = "pong"
 	resp.Payload.Time = time.Now()
@@ -42,14 +39,14 @@ func main() {
 	}
 
 	// Create a new server controller
-	ctrl, err := generated.NewAppController(controllers.NewNATS(nc))
+	ctrl, err := NewAppController(brokers.NewNATS(nc))
 	if err != nil {
 		panic(err)
 	}
 	defer ctrl.Close(context.Background())
 
 	// Attach a logger (optional)
-	logger := log.NewECS()
+	logger := loggers.NewECS()
 	ctrl.SetLogger(logger)
 
 	// Subscribe to all (we could also have just listened on the ping request channel)

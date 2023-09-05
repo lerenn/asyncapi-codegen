@@ -1,18 +1,22 @@
-package controllers
+package brokers
 
 import (
 	"context"
 	"errors"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/broker"
-	"github.com/lerenn/asyncapi-codegen/pkg/log"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/nats-io/nats.go"
+)
+
+const (
+	// correlationIDField is the name of the field that will contain the correlation ID
+	correlationIDField = "correlation_id"
 )
 
 // NATS is the NATS implementation for asyncapi-codegen
 type NATS struct {
 	connection *nats.Conn
-	logger     log.Interface
+	logger     extensions.Logger
 	queueName  string
 }
 
@@ -33,18 +37,18 @@ func (c *NATS) SetQueueName(name string) {
 }
 
 // SetLogger set a custom logger that will log operations on broker controller
-func (c *NATS) SetLogger(logger log.Interface) {
+func (c *NATS) SetLogger(logger extensions.Logger) {
 	c.logger = logger
 }
 
 // Publish a message to the broker
-func (c *NATS) Publish(_ context.Context, channel string, um broker.Message) error {
+func (c *NATS) Publish(_ context.Context, channel string, um extensions.BrokerMessage) error {
 	msg := nats.NewMsg(channel)
 
 	// Set message content
 	msg.Data = um.Payload
 	if um.CorrelationID != nil {
-		msg.Header.Add(broker.CorrelationIDField.String(), *um.CorrelationID)
+		msg.Header.Add(correlationIDField, *um.CorrelationID)
 	}
 
 	// Publish message
@@ -57,7 +61,7 @@ func (c *NATS) Publish(_ context.Context, channel string, um broker.Message) err
 }
 
 // Subscribe to messages from the broker
-func (c *NATS) Subscribe(ctx context.Context, channel string) (msgs chan broker.Message, stop chan interface{}, err error) {
+func (c *NATS) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
 	// Subscribe to channel
 	natsMsgs := make(chan *nats.Msg, 64)
 	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueName, natsMsgs)
@@ -66,7 +70,7 @@ func (c *NATS) Subscribe(ctx context.Context, channel string) (msgs chan broker.
 	}
 
 	// Handle events
-	msgs = make(chan broker.Message, 64)
+	msgs = make(chan extensions.BrokerMessage, 64)
 	stop = make(chan interface{}, 1)
 	go func() {
 		for {
@@ -76,13 +80,13 @@ func (c *NATS) Subscribe(ctx context.Context, channel string) (msgs chan broker.
 				var correlationID *string
 
 				// Add correlation ID if not empty
-				str := msg.Header.Get(broker.CorrelationIDField.String())
+				str := msg.Header.Get(correlationIDField)
 				if str != "" {
 					correlationID = &str
 				}
 
 				// Create message
-				msgs <- broker.Message{
+				msgs <- extensions.BrokerMessage{
 					Payload:       msg.Data,
 					CorrelationID: correlationID,
 				}
