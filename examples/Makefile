@@ -1,7 +1,8 @@
 .PHONY: clean
 clean: ## Clean remains of run
-	@docker-compose -f helloworld/docker-compose.yml down 
-	@docker-compose -f ping/docker-compose.yml down 
+	@docker-compose -f helloworld/docker-compose.yml down
+	@docker-compose -f ping/docker-compose.yml down
+	@docker-compose -f pingkafka/docker-compose.yml down
 
 .PHONY: run
 run: ## Run the examples
@@ -9,6 +10,8 @@ run: ## Run the examples
 	@docker-compose -f helloworld/docker-compose.yml logs app
 	@docker-compose -f ping/docker-compose.yml run client
 	@docker-compose -f ping/docker-compose.yml logs server
+	@docker-compose -f pingkafka/docker-compose.yml run client
+	@docker-compose -f pingkafka/docker-compose.yml logs server
 
 .PHONY: help
 help: ## Display this help message
