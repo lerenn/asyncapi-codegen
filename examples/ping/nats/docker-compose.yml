@@ -4,9 +4,9 @@ services:
   nats:
     image: nats:alpine
     # ports:
-    #     - 4222:4222
+    #   - 4222:4222
     networks:
-      - nats-network
+      - example-network
   server:
     depends_on:
       - nats
@@ -14,11 +14,11 @@ services:
     volumes:
       - gocache:/go/pkg/mod
       - gobuild:/root/.cache/go-build
-      - ../../:/go/asyncapi-codegen
+      - ../../../:/go/asyncapi-codegen
     working_dir: /go/asyncapi-codegen
-    command: go run ./examples/ping/server
+    command: go run ./examples/ping/nats/server
     networks:
-      - nats-network
+      - example-network
   client:
     depends_on:
       - server
@@ -27,16 +27,15 @@ services:
     volumes:
       - gocache:/go/pkg/mod
       - gobuild:/root/.cache/go-build
-      - ../../:/go/asyncapi-codegen
+      - ../../../:/go/asyncapi-codegen
     working_dir: /go/asyncapi-codegen
-    command: go run ./examples/ping/client
+    command: go run ./examples/ping/nats/client
     networks:
-      - nats-network
-
+      - example-network
 
 volumes:
   gocache:
   gobuild:
 
 networks:
-  nats-network:
+  example-network:

@@ -92,8 +92,8 @@ This example will use the AsyncAPI official example of the
 [HelloWorld](https://www.asyncapi.com/docs/tutorials/getting-started/hello-world).
 
 > The code for this example have already been generated and can be
-[read here](./examples/helloworld/), in the subdirectories `app/generated/`
-and `client/generated/`. You can execute the example with `docker-compose up`.
+[read here](./examples/helloworld/nats), in the subdirectories `app/`
+and `client/`. You can execute the example with `make run`.
 
 In order to recreate the code for client and application, you have to run this command:
 
@@ -161,7 +161,7 @@ func (ac *AppController) UnsubscribeHello(ctx context.Context)
 ```
 
 And here is an example of the application that could be written to use this generated
-code with NATS (you can also find it [here](./examples/helloworld/app/main.go)):
+code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.go)):
 
 ```go
 import(
@@ -213,7 +213,7 @@ func (cc *ClientController) PublishHello(ctx context.Context, msg HelloMessage) 
 ```
 
 And here is an example of the client that could be written to use this generated
-code with NATS (you can also find it [here](./examples/helloworld/app/main.go)):
+code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.go)):
 
 ```go
 import(
@@ -253,8 +253,8 @@ This example will use a `ping` example that you can find
 [here](./examples/ping/asyncapi.yaml).
 
 > The code for this example have already been generated and can be
-[read here](./examples/ping/), in the subdirectories `server/generated/`
-and `client/generated/`. You can execute the example with `docker-compose up`.
+[read here](./examples/ping/nats), in the subdirectories `server/`
+and `client/`. You can execute the example with `make run`.
 
 In order to recreate the code for client and application, you have to run this command:
 

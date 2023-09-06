@@ -1,14 +1,14 @@
+EXAMPLE_NAME := ping-kafka
+DOCKER_COMPOSE := docker-compose -p $(EXAMPLE_NAME)
+
 .PHONY: clean
 clean: ## Clean remains of run
-	@$(MAKE) -C helloworld/nats clean
-	@$(MAKE) -C ping/nats clean
-	@$(MAKE) -C ping/kafka clean
+	@$(DOCKER_COMPOSE) down
 
 .PHONY: run
-run: ## Run the examples
-	@$(MAKE) -C helloworld/nats run
-	@$(MAKE) -C ping/nats run
-	@$(MAKE) -C ping/kafka run
+run: ## Run the example
+	@$(DOCKER_COMPOSE) run client
+	@$(DOCKER_COMPOSE) logs server
 
 .PHONY: help
 help: ## Display this help message
