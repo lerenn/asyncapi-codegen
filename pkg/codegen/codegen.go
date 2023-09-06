@@ -1,6 +1,7 @@
 package codegen
 
 import (
+	"fmt"
 	"os"
 	"runtime/debug"
 
@@ -85,10 +86,16 @@ func (cg CodeGen) Generate(opt Options) error {
 }
 
 func (cg CodeGen) generateImports(opts Options) (string, error) {
+	imps, err := cg.Specification.CustomImports()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate custom imports: %w", err)
+	}
+
 	return generators.ImportsGenerator{
 		PackageName:   opts.PackageName,
 		ModuleVersion: cg.ModuleVersion,
 		ModuleName:    cg.ModulePath,
+		CustomImports: imps,
 	}.Generate()
 }
 

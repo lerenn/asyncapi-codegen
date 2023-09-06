@@ -14,4 +14,7 @@ import (
 
     "github.com/google/uuid"
     "github.com/nats-io/nats.go"
+
+    {{ range .CustomImports }}{{.}}
+    {{end}}
 )

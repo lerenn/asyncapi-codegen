@@ -19,6 +19,7 @@ type Any struct {
 	// Non AsyncAPI fields
 	Name        string `json:"-"`
 	ReferenceTo *Any   `json:"-"`
+	Extensions
 }
 
 func NewAny() Any {
