@@ -139,16 +139,13 @@ func (c *KafkaController) Subscribe(ctx context.Context, channel string) (msgs c
 	}()
 
 	go func() {
-		for { // nolint
-			select {
-			// Handle closure request from function caller
-			case _ = <-stop: // nolint
-				fmt.Print("Stopping subscriber")
-				if err := r.Close(); err != nil && c.logger != nil {
-					c.logger.Error(ctx, err.Error())
-				}
-				close(msgs)
+		// Handle closure request from function caller
+		for range stop {
+			fmt.Print("Stopping subscriber")
+			if err := r.Close(); err != nil && c.logger != nil {
+				c.logger.Error(ctx, err.Error())
 			}
+			close(msgs)
 		}
 	}()
 

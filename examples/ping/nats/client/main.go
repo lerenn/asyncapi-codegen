@@ -1,4 +1,4 @@
-//go:generate go run ../../../cmd/asyncapi-codegen -g client,types -p main -i ../asyncapi.yaml -o ./client.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -g client,types -p main -i ../../asyncapi.yaml -o ./client.gen.go
 
 package main
 
@@ -9,14 +9,18 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
+
+	"github.com/nats-io/nats.go"
 )
 
 func main() {
-	time.Sleep(6 * time.Second)
+	nc, err := nats.Connect("nats://nats:4222")
+	if err != nil {
+		panic(err)
+	}
 
 	// Create a new client controller
-	host := "kafka:9092"
-	ctrl, err := NewClientController(brokers.NewKafkaController([]string{host}))
+	ctrl, err := NewClientController(brokers.NewNATS(nc))
 	if err != nil {
 		panic(err)
 	}

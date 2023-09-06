@@ -1,16 +1,12 @@
 version: '3.5'
 
-networks:
-  app-tier:
-    driver: bridge
-
 services:
   kafka:
     image: 'bitnami/kafka:latest'
-    ports:
-      - "9092:9092"
+    # ports:
+    #   - 9092:9092
     networks:
-      - app-tier
+      - example-network
     environment:
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -27,11 +23,11 @@ services:
     volumes:
       - gocache:/go/pkg/mod
       - gobuild:/root/.cache/go-build
-      - ../../:/go/asyncapi-codegen
+      - ../../../:/go/asyncapi-codegen
     working_dir: /go/asyncapi-codegen
-    command: go run ./examples/pingkafka/server
+    command: go run ./examples/ping/kafka/server
     networks:
-      - app-tier
+      - example-network
   client:
     depends_on:
       - server
@@ -40,13 +36,16 @@ services:
     volumes:
       - gocache:/go/pkg/mod
       - gobuild:/root/.cache/go-build
-      - ../../:/go/asyncapi-codegen
+      - ../../../:/go/asyncapi-codegen
     working_dir: /go/asyncapi-codegen
-    command: go run ./examples/pingkafka/client
+    command: go run ./examples/ping/kafka/client
     networks:
-      - app-tier
-
+      - example-network
 
 volumes:
   gocache:
   gobuild:
+
+networks:
+  example-network:
+    driver: bridge

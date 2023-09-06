@@ -1,4 +1,4 @@
-//go:generate go run ../../../cmd/asyncapi-codegen -g client,types -p main -i ../asyncapi.yaml -o ./client.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -g client,types -p main -i ../../asyncapi.yaml -o ./client.gen.go
 
 package main
 
