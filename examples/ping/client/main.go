@@ -1,10 +1,4 @@
-// Universal parts generation
-//go:generate go run ../../../cmd/asyncapi-codegen -g client -p generated -i ../asyncapi.yaml -o ./generated/client.gen.go
-//go:generate go run ../../../cmd/asyncapi-codegen -g broker -p generated -i ../asyncapi.yaml -o ./generated/broker.gen.go
-//go:generate go run ../../../cmd/asyncapi-codegen -g types -p generated -i ../asyncapi.yaml -o ./generated/types.gen.go
-
-// Specific brokers implementations generation
-//go:generate go run ../../../cmd/asyncapi-codegen -g nats -p generated -i ../asyncapi.yaml -o ./generated/nats.gen.go
+//go:generate go run ../../../cmd/asyncapi-codegen -g client,types -p main -i ../asyncapi.yaml -o ./client.gen.go
 
 package main
 
@@ -12,9 +6,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/lerenn/asyncapi-codegen/examples/ping/client/generated"
-	"github.com/lerenn/asyncapi-codegen/pkg/log"
-	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
+
 	"github.com/nats-io/nats.go"
 )
 
@@ -25,19 +20,19 @@ func main() {
 	}
 
 	// Create a new client controller
-	ctrl, err := generated.NewClientController(generated.NewNATSController(nc))
+	ctrl, err := NewClientController(brokers.NewNATS(nc))
 	if err != nil {
 		panic(err)
 	}
 	defer ctrl.Close(context.Background())
 
 	// Attach a logger (optional)
-	logger := log.NewECS()
+	logger := loggers.NewECS()
 	ctrl.SetLogger(logger)
-	ctrl.AddMiddlewares(middleware.Logging(logger))
+	ctrl.AddMiddlewares(middlewares.Logging(logger))
 
 	// Make a new ping message
-	req := generated.NewPingMessage()
+	req := NewPingMessage()
 	req.Payload = "ping"
 
 	// Create the publication function to send the message

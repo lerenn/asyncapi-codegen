@@ -30,19 +30,19 @@ func New{{namify .Name}}Message() {{namify .Name}}Message {
     return msg
 }
 
-// new{{namify .Name}}MessageFromUniversalMessage will fill a new {{namify .Name}}Message with data from UniversalMessage
-func new{{namify .Name}}MessageFromUniversalMessage(um UniversalMessage) ({{namify .Name}}Message, error) {
+// new{{namify .Name}}MessageFromBrokerMessage will fill a new {{namify .Name}}Message with data from generic broker message
+func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) ({{namify .Name}}Message, error) {
     var msg {{namify .Name}}Message
    
     // Unmarshal payload to expected message payload format
-    err := json.Unmarshal(um.Payload, &msg.Payload)
+    err := json.Unmarshal(bMsg.Payload, &msg.Payload)
     if err != nil {
         return msg, err
     }
 
     {{if ne $.CorrelationIDLocation "" -}}
     // Get correlation ID
-    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = um.CorrelationID
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = bMsg.CorrelationID
     {{- end}}
     
     // TODO: run checks on msg type
@@ -50,14 +50,14 @@ func new{{namify .Name}}MessageFromUniversalMessage(um UniversalMessage) ({{nami
     return msg, nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from {{namify .Name}}Message data
-func (msg {{namify .Name}}Message) toUniversalMessage() (UniversalMessage, error) {
+// toBrokerMessage will generate a generic broker message from {{namify .Name}}Message data
+func (msg {{namify .Name}}Message) toBrokerMessage() (extensions.BrokerMessage, error) {
     // TODO: implement checks on message
 
     // Marshal payload to JSON
     payload, err := json.Marshal(msg.Payload)
     if err != nil {
-        return UniversalMessage{}, err
+        return extensions.BrokerMessage{}, err
     }
 
     {{if ne $.CorrelationIDLocation "" -}}
@@ -71,7 +71,7 @@ func (msg {{namify .Name}}Message) toUniversalMessage() (UniversalMessage, error
     }
     {{- end}}
 
-    return UniversalMessage{
+    return extensions.BrokerMessage{
         Payload: payload,
         {{- if ne $.CorrelationIDLocation ""}}
         CorrelationID: correlationID,

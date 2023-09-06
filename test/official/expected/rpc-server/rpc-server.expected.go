@@ -9,9 +9,7 @@ import (
 	"errors"
 	"fmt"
 
-	apiContext "github.com/lerenn/asyncapi-codegen/pkg/context"
-	"github.com/lerenn/asyncapi-codegen/pkg/log"
-	"github.com/lerenn/asyncapi-codegen/pkg/middleware"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 
 	"github.com/google/uuid"
 )
@@ -25,39 +23,39 @@ type AppSubscriber interface {
 // AppController is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the App
 type AppController struct {
-	brokerController BrokerController
+	brokerController extensions.BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           log.Interface
-	middlewares      []middleware.Middleware
+	logger           extensions.Logger
+	middlewares      []extensions.Middleware
 }
 
 // NewAppController links the App to the broker
-func NewAppController(bs BrokerController) (*AppController, error) {
-	if bs == nil {
+func NewAppController(bc extensions.BrokerController) (*AppController, error) {
+	if bc == nil {
 		return nil, ErrNilBrokerController
 	}
 
 	return &AppController{
-		brokerController: bs,
+		brokerController: bc,
 		stopSubscribers:  make(map[string]chan interface{}),
-		logger:           log.Silent{},
-		middlewares:      make([]middleware.Middleware, 0),
+		logger:           extensions.DummyLogger{},
+		middlewares:      make([]extensions.Middleware, 0),
 	}, nil
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *AppController) SetLogger(logger log.Interface) {
+func (c *AppController) SetLogger(logger extensions.Logger) {
 	c.logger = logger
 	c.brokerController.SetLogger(logger)
 }
 
 // AddMiddlewares attaches middlewares that will be executed when sending or
 // receiving messages
-func (c *AppController) AddMiddlewares(middleware ...middleware.Middleware) {
+func (c *AppController) AddMiddlewares(middleware ...extensions.Middleware) {
 	c.middlewares = append(c.middlewares, middleware...)
 }
 
-func (c AppController) wrapMiddlewares(middlewares []middleware.Middleware, last middleware.Next) func(ctx context.Context) {
+func (c AppController) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
 	var called bool
 
 	// If there is no more middleware
@@ -96,8 +94,8 @@ func (c AppController) executeMiddlewares(ctx context.Context, callback func(ctx
 }
 
 func addAppContextValues(ctx context.Context, path string) context.Context {
-	ctx = context.WithValue(ctx, apiContext.KeyIsProvider, "app")
-	return context.WithValue(ctx, apiContext.KeyIsChannel, path)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "app")
+	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
@@ -165,23 +163,23 @@ func (c *AppController) SubscribeRpcQueue(ctx context.Context, fn func(ctx conte
 	go func() {
 		for {
 			// Wait for next message
-			um, open := <-msgs
+			bMsg, open := <-msgs
 
 			// Add correlation ID to context if it exists
-			if um.CorrelationID != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+			if bMsg.CorrelationID != nil {
+				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
 			}
 
 			// Process message
-			msg, err := newRpcQueueMessageFromUniversalMessage(um)
+			msg, err := newRpcQueueMessageFromBrokerMessage(bMsg)
 			if err != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, um)
+				ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, bMsg)
 				c.logger.Error(ctx, err.Error())
 			}
 
 			// Add context
-			msgCtx := context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-			msgCtx = context.WithValue(msgCtx, apiContext.KeyIsMessageDirection, "reception")
+			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
 
 			// Process message if no error and still open
 			if err == nil && open {
@@ -232,23 +230,23 @@ func (c *AppController) PublishQueue(ctx context.Context, params QueueParameters
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
-	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-	ctx = context.WithValue(ctx, apiContext.KeyIsMessageDirection, "publication")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
 
-	// Convert to UniversalMessage
-	um, err := msg.toUniversalMessage()
+	// Convert to BrokerMessage
+	bMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
 	}
 
 	// Add correlation ID to context if it exists
-	if um.CorrelationID != nil {
-		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+	if bMsg.CorrelationID != nil {
+		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
 	}
 
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		err = c.brokerController.Publish(ctx, path, um)
+		err = c.brokerController.Publish(ctx, path, bMsg)
 	})
 
 	// Return error from publication on broker
@@ -264,39 +262,39 @@ type ClientSubscriber interface {
 // ClientController is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the Client
 type ClientController struct {
-	brokerController BrokerController
+	brokerController extensions.BrokerController
 	stopSubscribers  map[string]chan interface{}
-	logger           log.Interface
-	middlewares      []middleware.Middleware
+	logger           extensions.Logger
+	middlewares      []extensions.Middleware
 }
 
 // NewClientController links the Client to the broker
-func NewClientController(bs BrokerController) (*ClientController, error) {
-	if bs == nil {
+func NewClientController(bc extensions.BrokerController) (*ClientController, error) {
+	if bc == nil {
 		return nil, ErrNilBrokerController
 	}
 
 	return &ClientController{
-		brokerController: bs,
+		brokerController: bc,
 		stopSubscribers:  make(map[string]chan interface{}),
-		logger:           log.Silent{},
-		middlewares:      make([]middleware.Middleware, 0),
+		logger:           extensions.DummyLogger{},
+		middlewares:      make([]extensions.Middleware, 0),
 	}, nil
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *ClientController) SetLogger(logger log.Interface) {
+func (c *ClientController) SetLogger(logger extensions.Logger) {
 	c.logger = logger
 	c.brokerController.SetLogger(logger)
 }
 
 // AddMiddlewares attaches middlewares that will be executed when sending or
 // receiving messages
-func (c *ClientController) AddMiddlewares(middleware ...middleware.Middleware) {
+func (c *ClientController) AddMiddlewares(middleware ...extensions.Middleware) {
 	c.middlewares = append(c.middlewares, middleware...)
 }
 
-func (c ClientController) wrapMiddlewares(middlewares []middleware.Middleware, last middleware.Next) func(ctx context.Context) {
+func (c ClientController) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
 	var called bool
 
 	// If there is no more middleware
@@ -335,8 +333,8 @@ func (c ClientController) executeMiddlewares(ctx context.Context, callback func(
 }
 
 func addClientContextValues(ctx context.Context, path string) context.Context {
-	ctx = context.WithValue(ctx, apiContext.KeyIsProvider, "client")
-	return context.WithValue(ctx, apiContext.KeyIsChannel, path)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "client")
+	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
@@ -399,23 +397,23 @@ func (c *ClientController) SubscribeQueue(ctx context.Context, params QueueParam
 	go func() {
 		for {
 			// Wait for next message
-			um, open := <-msgs
+			bMsg, open := <-msgs
 
 			// Add correlation ID to context if it exists
-			if um.CorrelationID != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+			if bMsg.CorrelationID != nil {
+				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
 			}
 
 			// Process message
-			msg, err := newQueueMessageFromUniversalMessage(um)
+			msg, err := newQueueMessageFromBrokerMessage(bMsg)
 			if err != nil {
-				ctx = context.WithValue(ctx, apiContext.KeyIsMessage, um)
+				ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, bMsg)
 				c.logger.Error(ctx, err.Error())
 			}
 
 			// Add context
-			msgCtx := context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-			msgCtx = context.WithValue(msgCtx, apiContext.KeyIsMessageDirection, "reception")
+			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
 
 			// Process message if no error and still open
 			if err == nil && open {
@@ -466,23 +464,23 @@ func (c *ClientController) PublishRpcQueue(ctx context.Context, msg RpcQueueMess
 
 	// Set context
 	ctx = addClientContextValues(ctx, path)
-	ctx = context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-	ctx = context.WithValue(ctx, apiContext.KeyIsMessageDirection, "publication")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
 
-	// Convert to UniversalMessage
-	um, err := msg.toUniversalMessage()
+	// Convert to BrokerMessage
+	bMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
 	}
 
 	// Add correlation ID to context if it exists
-	if um.CorrelationID != nil {
-		ctx = context.WithValue(ctx, apiContext.KeyIsCorrelationID, *um.CorrelationID)
+	if bMsg.CorrelationID != nil {
+		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
 	}
 
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		err = c.brokerController.Publish(ctx, path, um)
+		err = c.brokerController.Publish(ctx, path, bMsg)
 	})
 
 	// Return error from publication on broker
@@ -525,9 +523,9 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 	// Wait for corresponding response
 	for {
 		select {
-		case um, open := <-msgs:
+		case bMsg, open := <-msgs:
 			// Get new message
-			msg, err := newQueueMessageFromUniversalMessage(um)
+			msg, err := newQueueMessageFromBrokerMessage(bMsg)
 			if err != nil {
 				cc.logger.Error(ctx, err.Error())
 			}
@@ -535,9 +533,9 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 			// If valid message with corresponding correlation ID, return message
 			if err == nil && publishMsg.CorrelationID() == msg.CorrelationID() {
 				// Set context with received values
-				msgCtx := context.WithValue(ctx, apiContext.KeyIsMessage, msg)
-				msgCtx = context.WithValue(msgCtx, apiContext.KeyIsMessageDirection, "reception")
-				msgCtx = context.WithValue(msgCtx, apiContext.KeyIsCorrelationID, publishMsg.CorrelationID())
+				msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+				msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
+				msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
 
 				// Execute middlewares before returning
 				cc.executeMiddlewares(msgCtx, func(_ context.Context) {
@@ -554,33 +552,6 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 			return QueueMessage{}, ErrContextCanceled
 		}
 	}
-}
-
-const (
-	// CorrelationIDField is the name of the field that will contain the correlation ID
-	CorrelationIDField = "correlation_id"
-)
-
-// UniversalMessage is a wrapper that will contain all information regarding a message
-type UniversalMessage struct {
-	CorrelationID *string
-	Payload       []byte
-}
-
-// BrokerController represents the functions that should be implemented to connect
-// the broker to the application or the client
-type BrokerController interface {
-	// SetLogger set a logger that will log operations on broker controller
-	SetLogger(logger log.Interface)
-
-	// Publish a message to the broker
-	Publish(ctx context.Context, channel string, mw UniversalMessage) error
-
-	// Subscribe to messages from the broker
-	Subscribe(ctx context.Context, channel string) (msgs chan UniversalMessage, stop chan interface{}, err error)
-
-	// SetQueueName sets the name of the queue that will be used by the broker
-	SetQueueName(name string)
 }
 
 var (
@@ -643,32 +614,32 @@ func NewRpcQueueMessage() RpcQueueMessage {
 	return msg
 }
 
-// newRpcQueueMessageFromUniversalMessage will fill a new RpcQueueMessage with data from UniversalMessage
-func newRpcQueueMessageFromUniversalMessage(um UniversalMessage) (RpcQueueMessage, error) {
+// newRpcQueueMessageFromBrokerMessage will fill a new RpcQueueMessage with data from generic broker message
+func newRpcQueueMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (RpcQueueMessage, error) {
 	var msg RpcQueueMessage
 
 	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(um.Payload, &msg.Payload)
+	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
 	if err != nil {
 		return msg, err
 	}
 
 	// Get correlation ID
-	msg.Headers.CorrelationID = um.CorrelationID
+	msg.Headers.CorrelationID = bMsg.CorrelationID
 
 	// TODO: run checks on msg type
 
 	return msg, nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from RpcQueueMessage data
-func (msg RpcQueueMessage) toUniversalMessage() (UniversalMessage, error) {
+// toBrokerMessage will generate a generic broker message from RpcQueueMessage data
+func (msg RpcQueueMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
-		return UniversalMessage{}, err
+		return extensions.BrokerMessage{}, err
 	}
 
 	// Set correlation ID if it does not exist
@@ -680,7 +651,7 @@ func (msg RpcQueueMessage) toUniversalMessage() (UniversalMessage, error) {
 		correlationID = &u
 	}
 
-	return UniversalMessage{
+	return extensions.BrokerMessage{
 		Payload:       payload,
 		CorrelationID: correlationID,
 	}, nil
@@ -731,32 +702,32 @@ func NewQueueMessage() QueueMessage {
 	return msg
 }
 
-// newQueueMessageFromUniversalMessage will fill a new QueueMessage with data from UniversalMessage
-func newQueueMessageFromUniversalMessage(um UniversalMessage) (QueueMessage, error) {
+// newQueueMessageFromBrokerMessage will fill a new QueueMessage with data from generic broker message
+func newQueueMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (QueueMessage, error) {
 	var msg QueueMessage
 
 	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(um.Payload, &msg.Payload)
+	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
 	if err != nil {
 		return msg, err
 	}
 
 	// Get correlation ID
-	msg.Headers.CorrelationID = um.CorrelationID
+	msg.Headers.CorrelationID = bMsg.CorrelationID
 
 	// TODO: run checks on msg type
 
 	return msg, nil
 }
 
-// toUniversalMessage will generate an UniversalMessage from QueueMessage data
-func (msg QueueMessage) toUniversalMessage() (UniversalMessage, error) {
+// toBrokerMessage will generate a generic broker message from QueueMessage data
+func (msg QueueMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
 	payload, err := json.Marshal(msg.Payload)
 	if err != nil {
-		return UniversalMessage{}, err
+		return extensions.BrokerMessage{}, err
 	}
 
 	// Set correlation ID if it does not exist
@@ -768,7 +739,7 @@ func (msg QueueMessage) toUniversalMessage() (UniversalMessage, error) {
 		correlationID = &u
 	}
 
-	return UniversalMessage{
+	return extensions.BrokerMessage{
 		Payload:       payload,
 		CorrelationID: correlationID,
 	}, nil

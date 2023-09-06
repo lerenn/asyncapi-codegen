@@ -1,10 +1,4 @@
-// Universal parts generation
-//go:generate go run ../../../cmd/asyncapi-codegen -g application -p generated -i ../asyncapi.yaml -o ./generated/app.gen.go
-//go:generate go run ../../../cmd/asyncapi-codegen -g broker -p generated -i ../asyncapi.yaml -o ./generated/broker.gen.go
-//go:generate go run ../../../cmd/asyncapi-codegen -g types -p generated -i ../asyncapi.yaml -o ./generated/types.gen.go
-
-// Specific brokers implementations generation
-//go:generate go run ../../../cmd/asyncapi-codegen -g nats -p generated -i ../asyncapi.yaml -o ./generated/nats.gen.go
+//go:generate go run ../../../cmd/asyncapi-codegen -g application,types -p main -i ../asyncapi.yaml -o ./app.gen.go
 
 package main
 
@@ -14,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/lerenn/asyncapi-codegen/examples/helloworld/app/generated"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/nats-io/nats.go"
 )
 
@@ -26,7 +20,7 @@ func main() {
 	}
 
 	// Create a new application controller
-	ctrl, err := generated.NewAppController(generated.NewNATSController(nc))
+	ctrl, err := NewAppController(brokers.NewNATS(nc))
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +29,7 @@ func main() {
 	// Subscribe to HelloWorld messages
 	// Note: it will indefinitely wait for messages as context has no timeout
 	log.Println("Subscribe to hello world...")
-	ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg generated.HelloMessage, _ bool) {
+	ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage, _ bool) {
 		log.Println("Received message:", msg.Payload)
 	})
 

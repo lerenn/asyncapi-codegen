@@ -53,15 +53,9 @@ func (cg CodeGen) Generate(opt Options) error {
 		case opt.Generate.Client:
 			part, err = cg.generateClient(opt)
 			opt.Generate.Client = false
-		case opt.Generate.Broker:
-			part, err = generators.BrokerControllerGenerator{}.Generate()
-			opt.Generate.Broker = false
 		case opt.Generate.Types:
 			part, err = cg.generateTypes()
 			opt.Generate.Types = false
-		case opt.Generate.NATS:
-			part, err = generators.BrokerNATSGenerator{}.Generate()
-			opt.Generate.NATS = false
 		default:
 			remainingParts = false
 		}

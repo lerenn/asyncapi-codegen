@@ -1,10 +1,4 @@
-// Universal parts generation
-//go:generate go run ../../../cmd/asyncapi-codegen -g client -p generated -i ../asyncapi.yaml -o ./generated/client.gen.go
-//go:generate go run ../../../cmd/asyncapi-codegen -g broker -p generated -i ../asyncapi.yaml -o ./generated/broker.gen.go
-//go:generate go run ../../../cmd/asyncapi-codegen -g types -p generated -i ../asyncapi.yaml -o ./generated/types.gen.go
-
-// Specific brokers implementations generation
-//go:generate go run ../../../cmd/asyncapi-codegen -g nats -p generated -i ../asyncapi.yaml -o ./generated/nats.gen.go
+//go:generate go run ../../../cmd/asyncapi-codegen -g client,types -p main -i ../asyncapi.yaml -o ./client.gen.go
 
 package main
 
@@ -12,7 +6,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/lerenn/asyncapi-codegen/examples/helloworld/client/generated"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/nats-io/nats.go"
 )
 
@@ -24,7 +18,7 @@ func main() {
 	}
 
 	// Create a new client controller
-	ctrl, err := generated.NewClientController(generated.NewNATSController(nc))
+	ctrl, err := NewClientController(brokers.NewNATS(nc))
 	if err != nil {
 		panic(err)
 	}
@@ -33,7 +27,7 @@ func main() {
 	// Send HelloWorld
 	// Note: it will indefinitely wait to publish as context has no timeout
 	log.Println("Publishing 'hello world' message")
-	if err := ctrl.PublishHello(context.Background(), generated.HelloMessage{
+	if err := ctrl.PublishHello(context.Background(), HelloMessage{
 		Payload: "HelloWorld!",
 	}); err != nil {
 		panic(err)
