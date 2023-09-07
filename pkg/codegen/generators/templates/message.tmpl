@@ -44,7 +44,11 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) 
     // Get each headers from broker message
     for k, v := range bMsg.Headers {
         switch {
-            {{- range  $key, $value := .Headers.Properties}}
+            {{- $headerProperties := .Headers.Properties}}
+            {{- if .Headers.Reference }}
+            {{- $headerProperties = .Headers.ReferenceTo.Properties}}
+            {{- end}}
+            {{- range  $key, $value := $headerProperties}}
             case k == "{{$key}}": // Retrieving {{namify $key}} header
                 {{- if eq $value.Type "object" }}
                     {{- if $value.IsRequired }}
@@ -57,10 +61,20 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) 
                     }
                 {{- else }}
                     {{- if $value.IsRequired }}
+                    {{- if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                    t, _ := time.Parse(time.RFC3339, string(v))
+                    msg.Headers.{{ namify $key}} = t
+                    {{- else}}
                     msg.Headers.{{ namify $key}} = {{$value.Type}}(v)
+                    {{- end}}
+                    {{- else}}
+                    {{- if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                    t, _ := time.Parse(time.RFC3339, string(v))
+                    msg.Headers.{{ namify $key}} = &t
                     {{- else}}
                     h := {{$value.Type}}(v)
                     msg.Headers.{{ namify $key}} = &h
+                    {{- end}}
                     {{- end}}
                 {{- end}}
             {{- end}}
