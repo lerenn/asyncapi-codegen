@@ -44,5 +44,6 @@ func templateFunctions() template.FuncMap {
 		"generateChannelPath":            templates.GenerateChannelPath,
 		"describeStruct":                 templates.DescribeStruct,
 		"multiLineComment":               templates.MultiLineComment,
+		"args":                           templates.Args,
 	}
 }

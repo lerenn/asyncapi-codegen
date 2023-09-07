@@ -46,7 +46,7 @@ func main() {
 	// with the form WaitForXXX where XXX is the channel name.
 	//
 	// Note: it will indefinitely wait for messages as context has no timeout
-	_, err = ctrl.WaitForPong(context.Background(), req, publicationFunc)
+	_, err = ctrl.WaitForPong(context.Background(), &req, publicationFunc)
 	if err != nil {
 		panic(err)
 	}

@@ -8,11 +8,6 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-const (
-	// correlationIDField is the name of the field that will contain the correlation ID
-	correlationIDField = "correlation_id"
-)
-
 // NATS is the NATS implementation for asyncapi-codegen
 type NATS struct {
 	connection *nats.Conn
@@ -42,14 +37,14 @@ func (c *NATS) SetLogger(logger extensions.Logger) {
 }
 
 // Publish a message to the broker
-func (c *NATS) Publish(_ context.Context, channel string, um extensions.BrokerMessage) error {
+func (c *NATS) Publish(_ context.Context, channel string, bm extensions.BrokerMessage) error {
 	msg := nats.NewMsg(channel)
 
-	// Set message content
-	msg.Data = um.Payload
-	if um.CorrelationID != nil {
-		msg.Header.Add(correlationIDField, *um.CorrelationID)
+	// Set message headers and content
+	for k, v := range bm.Headers {
+		msg.Header.Set(k, string(v))
 	}
+	msg.Data = bm.Payload
 
 	// Publish message
 	if err := c.connection.PublishMsg(msg); err != nil {
@@ -77,18 +72,18 @@ func (c *NATS) Subscribe(ctx context.Context, channel string) (msgs chan extensi
 			select {
 			// Handle new message
 			case msg := <-natsMsgs:
-				var correlationID *string
-
-				// Add correlation ID if not empty
-				str := msg.Header.Get(correlationIDField)
-				if str != "" {
-					correlationID = &str
+				// Get headers
+				headers := make(map[string][]byte, len(msg.Header))
+				for k, v := range msg.Header {
+					if len(v) > 0 {
+						headers[k] = []byte(v[0])
+					}
 				}
 
 				// Create message
 				msgs <- extensions.BrokerMessage{
-					Payload:       msg.Data,
-					CorrelationID: correlationID,
+					Headers: headers,
+					Payload: msg.Data,
 				}
 			// Handle closure request from function caller
 			case <-stop:

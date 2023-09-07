@@ -284,7 +284,7 @@ type ServerSubscriber struct {
 func (s ServerSubscriber) Ping(req PingMessage, _ bool) {
 	// Generate a pong message, set as a response of the request
 	resp := NewPongMessage()
-	resp.SetAsResponseFrom(req)
+	resp.SetAsResponseFrom(&req)
 	resp.Payload.Message = "pong"
 	resp.Payload.Time = time.Now()
 
@@ -331,7 +331,7 @@ publicationFunc := func(ctx context.Context) error {
 // This function is available only if the 'correlationId' field has been filled
 // for any channel in the AsyncAPI specification. You will then be able to use it
 // with the form WaitForXXX where XXX is the channel name.
-resp, _ := ctrl.WaitForPong(context.Background(), req, publicationFunc)
+resp, _ := ctrl.WaitForPong(context.Background(), &req, publicationFunc)
 ```
 
 ## CLI options

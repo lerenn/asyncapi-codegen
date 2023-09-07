@@ -161,11 +161,6 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newLightMeasuredMessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -176,6 +171,11 @@ func (c *AppController) SubscribeSmartylightingStreetlights10EventStreetlightIDL
 			// Add context
 			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
 			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
+
+			// Add correlation ID to context if it exists
+			if id := msg.CorrelationID(); id != "" {
+				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
+			}
 
 			// Process message if no error and still open
 			if err == nil && open {
@@ -233,11 +233,6 @@ func (c *AppController) PublishSmartylightingStreetlights10ActionStreetlightIDDi
 	bMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
-	}
-
-	// Add correlation ID to context if it exists
-	if bMsg.CorrelationID != nil {
-		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
 	}
 
 	// Publish the message on event-broker through middlewares
@@ -395,11 +390,6 @@ func (c *ClientController) SubscribeSmartylightingStreetlights10ActionStreetligh
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newDimLightMessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -458,20 +448,21 @@ func (c *ClientController) PublishSmartylightingStreetlights10EventStreetlightID
 	// Get channel path
 	path := fmt.Sprintf("smartylighting/streetlights/1/0/event/%v/lighting/measured", params.StreetlightID)
 
+	// Set correlation ID if it does not exist
+	if id := msg.CorrelationID(); id == "" {
+		msg.SetCorrelationID(uuid.New().String())
+	}
+
 	// Set context
 	ctx = addClientContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
 
 	// Convert to BrokerMessage
 	bMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
-	}
-
-	// Add correlation ID to context if it exists
-	if bMsg.CorrelationID != nil {
-		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
 	}
 
 	// Publish the message on event-broker through middlewares
@@ -509,6 +500,7 @@ var (
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string
+	SetCorrelationID(id string)
 }
 
 type Error struct {
@@ -569,7 +561,11 @@ func (msg DimLightMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }
@@ -607,8 +603,18 @@ func newLightMeasuredMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Li
 		return msg, err
 	}
 
-	// Get correlation ID
-	msg.Headers.Mqmd.CorrelID = bMsg.CorrelationID
+	// Get each headers from broker message
+	for k, v := range bMsg.Headers {
+		switch {
+		case k == "MQMD": // Retrieving Mqmd header
+			err := json.Unmarshal(v, msg.Headers.Mqmd)
+			if err != nil {
+				return msg, err
+			}
+		default:
+			// TODO: log unknown error
+		}
+	}
 
 	// TODO: run checks on msg type
 
@@ -625,18 +631,21 @@ func (msg LightMeasuredMessage) toBrokerMessage() (extensions.BrokerMessage, err
 		return extensions.BrokerMessage{}, err
 	}
 
-	// Set correlation ID if it does not exist
-	var correlationID *string
-	if msg.Headers.Mqmd.CorrelID != nil {
-		correlationID = msg.Headers.Mqmd.CorrelID
-	} else {
-		u := uuid.New().String()
-		correlationID = &u
+	// Add each headers to broker message
+	headers := make(map[string][]byte, 1)
+
+	// Adding Mqmd header
+	if msg.Headers.Mqmd != nil {
+		h, err := json.Marshal(*msg.Headers.Mqmd)
+		if err != nil {
+			return extensions.BrokerMessage{}, err
+		}
+		headers["MQMD"] = h
 	}
 
 	return extensions.BrokerMessage{
-		Payload:       payload,
-		CorrelationID: correlationID,
+		Headers: headers,
+		Payload: payload,
 	}, nil
 }
 
@@ -647,6 +656,11 @@ func (msg LightMeasuredMessage) CorrelationID() string {
 	}
 
 	return ""
+}
+
+// SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
+func (msg *LightMeasuredMessage) SetCorrelationID(id string) {
+	msg.Headers.Mqmd.CorrelID = &id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.

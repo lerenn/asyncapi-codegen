@@ -78,13 +78,10 @@ func (c *KafkaController) Publish(ctx context.Context, channel string, um extens
 		Headers: make([]kafka.Header, 0),
 	}
 
-	// Set message content
+	// Set message content and headers
 	msg.Value = um.Payload
-	if um.CorrelationID != nil {
-		msg.Headers = append(msg.Headers, kafka.Header{
-			Key:   correlationIDField,
-			Value: []byte(*um.CorrelationID),
-		})
+	for k, v := range um.Headers {
+		msg.Headers = append(msg.Headers, kafka.Header{Key: k, Value: v})
 	}
 
 	// Publish message
@@ -104,15 +101,6 @@ func (c *KafkaController) Subscribe(ctx context.Context, channel string) (msgs c
 		MaxBytes:  c.maxBytes,
 	})
 
-	getHeaders := func(msg kafka.Message, key string) string {
-		for _, header := range msg.Headers {
-			if header.Key == key {
-				return string(header.Value)
-			}
-		}
-		return ""
-	}
-
 	// Handle events
 	msgs = make(chan extensions.BrokerMessage, 64)
 	stop = make(chan interface{}, 1)
@@ -122,18 +110,17 @@ func (c *KafkaController) Subscribe(ctx context.Context, channel string) (msgs c
 			if err != nil {
 				break
 			}
-			var correlationID *string
 
-			// Add correlation ID if not empty
-			str := getHeaders(msg, correlationIDField)
-			if str != "" {
-				correlationID = &str
+			// Get headers
+			headers := make(map[string][]byte, len(msg.Headers))
+			for _, header := range msg.Headers {
+				headers[header.Key] = header.Value
 			}
 
 			// Create message
 			msgs <- extensions.BrokerMessage{
-				Payload:       msg.Value,
-				CorrelationID: correlationID,
+				Headers: headers,
+				Payload: msg.Value,
 			}
 		}
 	}()

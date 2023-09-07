@@ -111,11 +111,6 @@ func (c *AppController) PublishUserSignedup(ctx context.Context, msg UserSignedU
 		return err
 	}
 
-	// Add correlation ID to context if it exists
-	if bMsg.CorrelationID != nil {
-		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-	}
-
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
 		err = c.brokerController.Publish(ctx, path, bMsg)
@@ -276,11 +271,6 @@ func (c *ClientController) SubscribeUserSignedup(ctx context.Context, fn func(ct
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newUserSignedUpMessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -360,6 +350,7 @@ var (
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string
+	SetCorrelationID(id string)
 }
 
 type Error struct {
@@ -414,7 +405,11 @@ func (msg UserSignedUpMessage) toBrokerMessage() (extensions.BrokerMessage, erro
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }

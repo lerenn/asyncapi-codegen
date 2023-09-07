@@ -163,11 +163,6 @@ func (c *AppController) SubscribeTest(ctx context.Context, fn func(ctx context.C
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newTestMessagesMessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -320,11 +315,6 @@ func (c *ClientController) PublishTest(ctx context.Context, msg TestMessagesMess
 		return err
 	}
 
-	// Add correlation ID to context if it exists
-	if bMsg.CorrelationID != nil {
-		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-	}
-
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
 		err = c.brokerController.Publish(ctx, path, bMsg)
@@ -360,6 +350,7 @@ var (
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string
+	SetCorrelationID(id string)
 }
 
 type Error struct {
@@ -411,7 +402,11 @@ func (msg TestMessagesMessage) toBrokerMessage() (extensions.BrokerMessage, erro
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }

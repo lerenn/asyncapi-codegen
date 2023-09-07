@@ -6,8 +6,8 @@ import (
 
 // BrokerMessage is a wrapper that will contain all information regarding a message
 type BrokerMessage struct {
-	CorrelationID *string
-	Payload       []byte
+	Headers map[string][]byte
+	Payload []byte
 }
 
 // BrokerController represents the functions that should be implemented to connect

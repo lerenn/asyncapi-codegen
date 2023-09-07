@@ -165,11 +165,6 @@ func (c *AppController) SubscribeRpcQueue(ctx context.Context, fn func(ctx conte
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newRpcQueueMessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -180,6 +175,11 @@ func (c *AppController) SubscribeRpcQueue(ctx context.Context, fn func(ctx conte
 			// Add context
 			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
 			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
+
+			// Add correlation ID to context if it exists
+			if id := msg.CorrelationID(); id != "" {
+				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
+			}
 
 			// Process message if no error and still open
 			if err == nil && open {
@@ -228,20 +228,21 @@ func (c *AppController) PublishQueue(ctx context.Context, params QueueParameters
 	// Get channel path
 	path := fmt.Sprintf("%v", params.Queue)
 
+	// Set correlation ID if it does not exist
+	if id := msg.CorrelationID(); id == "" {
+		msg.SetCorrelationID(uuid.New().String())
+	}
+
 	// Set context
 	ctx = addAppContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
 
 	// Convert to BrokerMessage
 	bMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
-	}
-
-	// Add correlation ID to context if it exists
-	if bMsg.CorrelationID != nil {
-		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
 	}
 
 	// Publish the message on event-broker through middlewares
@@ -399,11 +400,6 @@ func (c *ClientController) SubscribeQueue(ctx context.Context, params QueueParam
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newQueueMessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -414,6 +410,11 @@ func (c *ClientController) SubscribeQueue(ctx context.Context, params QueueParam
 			// Add context
 			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
 			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
+
+			// Add correlation ID to context if it exists
+			if id := msg.CorrelationID(); id != "" {
+				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
+			}
 
 			// Process message if no error and still open
 			if err == nil && open {
@@ -462,20 +463,21 @@ func (c *ClientController) PublishRpcQueue(ctx context.Context, msg RpcQueueMess
 	// Get channel path
 	path := "rpc_queue"
 
+	// Set correlation ID if it does not exist
+	if id := msg.CorrelationID(); id == "" {
+		msg.SetCorrelationID(uuid.New().String())
+	}
+
 	// Set context
 	ctx = addClientContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
 
 	// Convert to BrokerMessage
 	bMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
-	}
-
-	// Add correlation ID to context if it exists
-	if bMsg.CorrelationID != nil {
-		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
 	}
 
 	// Publish the message on event-broker through middlewares
@@ -580,6 +582,7 @@ var (
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string
+	SetCorrelationID(id string)
 }
 
 type Error struct {
@@ -624,8 +627,16 @@ func newRpcQueueMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (RpcQueu
 		return msg, err
 	}
 
-	// Get correlation ID
-	msg.Headers.CorrelationID = bMsg.CorrelationID
+	// Get each headers from broker message
+	for k, v := range bMsg.Headers {
+		switch {
+		case k == "correlation_id": // Retrieving CorrelationID header
+			h := string(v)
+			msg.Headers.CorrelationID = &h
+		default:
+			// TODO: log unknown error
+		}
+	}
 
 	// TODO: run checks on msg type
 
@@ -642,18 +653,17 @@ func (msg RpcQueueMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 		return extensions.BrokerMessage{}, err
 	}
 
-	// Set correlation ID if it does not exist
-	var correlationID *string
+	// Add each headers to broker message
+	headers := make(map[string][]byte, 1)
+
+	// Adding CorrelationID header
 	if msg.Headers.CorrelationID != nil {
-		correlationID = msg.Headers.CorrelationID
-	} else {
-		u := uuid.New().String()
-		correlationID = &u
+		headers["correlation_id"] = []byte(*msg.Headers.CorrelationID)
 	}
 
 	return extensions.BrokerMessage{
-		Payload:       payload,
-		CorrelationID: correlationID,
+		Headers: headers,
+		Payload: payload,
 	}, nil
 }
 
@@ -664,6 +674,11 @@ func (msg RpcQueueMessage) CorrelationID() string {
 	}
 
 	return ""
+}
+
+// SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
+func (msg *RpcQueueMessage) SetCorrelationID(id string) {
+	msg.Headers.CorrelationID = &id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.
@@ -712,8 +727,16 @@ func newQueueMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (QueueMessa
 		return msg, err
 	}
 
-	// Get correlation ID
-	msg.Headers.CorrelationID = bMsg.CorrelationID
+	// Get each headers from broker message
+	for k, v := range bMsg.Headers {
+		switch {
+		case k == "correlation_id": // Retrieving CorrelationID header
+			h := string(v)
+			msg.Headers.CorrelationID = &h
+		default:
+			// TODO: log unknown error
+		}
+	}
 
 	// TODO: run checks on msg type
 
@@ -730,18 +753,17 @@ func (msg QueueMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 		return extensions.BrokerMessage{}, err
 	}
 
-	// Set correlation ID if it does not exist
-	var correlationID *string
+	// Add each headers to broker message
+	headers := make(map[string][]byte, 1)
+
+	// Adding CorrelationID header
 	if msg.Headers.CorrelationID != nil {
-		correlationID = msg.Headers.CorrelationID
-	} else {
-		u := uuid.New().String()
-		correlationID = &u
+		headers["correlation_id"] = []byte(*msg.Headers.CorrelationID)
 	}
 
 	return extensions.BrokerMessage{
-		Payload:       payload,
-		CorrelationID: correlationID,
+		Headers: headers,
+		Payload: payload,
 	}, nil
 }
 
@@ -752,6 +774,11 @@ func (msg QueueMessage) CorrelationID() string {
 	}
 
 	return ""
+}
+
+// SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
+func (msg *QueueMessage) SetCorrelationID(id string) {
+	msg.Headers.CorrelationID = &id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.
