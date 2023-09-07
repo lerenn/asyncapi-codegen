@@ -19,6 +19,9 @@ type Any struct {
 	// Non AsyncAPI fields
 	Name        string `json:"-"`
 	ReferenceTo *Any   `json:"-"`
+	IsRequired  bool   `json:"-"`
+
+	// Embedded extended fields
 	Extensions
 }
 
@@ -29,7 +32,7 @@ func NewAny() Any {
 	}
 }
 
-func (a *Any) Process(name string, spec Specification) {
+func (a *Any) Process(name string, spec Specification, isRequired bool) {
 	a.Name = utils.UpperFirstLetter(name)
 
 	// Add pointer to reference if there is one
@@ -39,17 +42,17 @@ func (a *Any) Process(name string, spec Specification) {
 
 	// Process Properties
 	for n, p := range a.Properties {
-		p.Process(n, spec)
+		p.Process(n, spec, utils.IsInSlice(a.Required, n))
 	}
 
 	// Process Items
 	if a.Items != nil {
-		a.Items.Process(name+"Items", spec)
+		a.Items.Process(name+"Items", spec, false)
 	}
 
 	// Process AnyOf
 	for _, v := range a.AnyOf {
-		v.Process(name+"AnyOf", spec)
+		v.Process(name+"AnyOf", spec, false)
 
 		// Merge with other fields as one struct (invalidate references)
 		a.MergeWith(spec, *v)
@@ -57,7 +60,7 @@ func (a *Any) Process(name string, spec Specification) {
 
 	// Process OneOf
 	for _, v := range a.OneOf {
-		v.Process(name+"OneOf", spec)
+		v.Process(name+"OneOf", spec, false)
 
 		// Merge with other fields as one struct (invalidate references)
 		a.MergeWith(spec, *v)
@@ -65,11 +68,14 @@ func (a *Any) Process(name string, spec Specification) {
 
 	// Process AllOf
 	for _, v := range a.AllOf {
-		v.Process(name+"AllOf", spec)
+		v.Process(name+"AllOf", spec, false)
 
 		// Merge with other fields as one struct (invalidate references)
 		a.MergeWith(spec, *v)
 	}
+
+	// Set IsRequired
+	a.IsRequired = isRequired
 }
 
 func (a Any) IsFieldRequired(field string) bool {
@@ -127,5 +133,5 @@ func (a *Any) MergeWith(spec Specification, a2 Any) {
 
 	// Merge requirements
 	a.Required = append(a.Required, a2.Required...)
-	a.Required = utils.RemoveDuplicate(a.Required)
+	a.Required = utils.RemoveDuplicateFromSlice(a.Required)
 }

@@ -166,11 +166,6 @@ func (c *ClientController) SubscribeStatus(ctx context.Context, fn func(ctx cont
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newStatusMessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -240,11 +235,6 @@ func (c *ClientController) PublishChat(ctx context.Context, msg ChatMessage) err
 		return err
 	}
 
-	// Add correlation ID to context if it exists
-	if bMsg.CorrelationID != nil {
-		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-	}
-
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
 		err = c.brokerController.Publish(ctx, path, bMsg)
@@ -280,6 +270,7 @@ var (
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string
+	SetCorrelationID(id string)
 }
 
 type Error struct {
@@ -328,7 +319,11 @@ func (msg ChatMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }
@@ -370,7 +365,11 @@ func (msg Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }
@@ -412,7 +411,11 @@ func (msg StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }

@@ -163,11 +163,6 @@ func (c *AppController) SubscribeTest(ctx context.Context, fn func(ctx context.C
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newTestMessagesMessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -235,11 +230,6 @@ func (c *AppController) PublishTest2(ctx context.Context, msg Test2Message) erro
 	bMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
-	}
-
-	// Add correlation ID to context if it exists
-	if bMsg.CorrelationID != nil {
-		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
 	}
 
 	// Publish the message on event-broker through middlewares
@@ -402,11 +392,6 @@ func (c *ClientController) SubscribeTest2(ctx context.Context, fn func(ctx conte
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newTest2MessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -476,11 +461,6 @@ func (c *ClientController) PublishTest(ctx context.Context, msg TestMessagesMess
 		return err
 	}
 
-	// Add correlation ID to context if it exists
-	if bMsg.CorrelationID != nil {
-		ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-	}
-
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
 		err = c.brokerController.Publish(ctx, path, bMsg)
@@ -516,6 +496,7 @@ var (
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string
+	SetCorrelationID(id string)
 }
 
 type Error struct {
@@ -566,7 +547,11 @@ func (msg Test2Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }
@@ -608,7 +593,11 @@ func (msg TestMessage1Message) toBrokerMessage() (extensions.BrokerMessage, erro
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }
@@ -650,7 +639,11 @@ func (msg TestMessage2Message) toBrokerMessage() (extensions.BrokerMessage, erro
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }
@@ -695,7 +688,11 @@ func (msg TestMessagesMessage) toBrokerMessage() (extensions.BrokerMessage, erro
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }

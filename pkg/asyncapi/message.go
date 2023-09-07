@@ -36,10 +36,10 @@ func (msg *Message) Process(name string, spec Specification) {
 
 	// Process Headers and Payload
 	if msg.Headers != nil {
-		msg.Headers.Process(name+"Headers", spec)
+		msg.Headers.Process(name+"Headers", spec, false)
 	}
 	if msg.Payload != nil {
-		msg.Payload.Process(name+"Payload", spec)
+		msg.Payload.Process(name+"Payload", spec, false)
 	}
 
 	// Process OneOf
@@ -91,7 +91,7 @@ func (msg *Message) createCorrelationIDFieldIfMissing() {
 func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 	// Check that correlationID exists
 	if msg.CorrelationID == nil || msg.CorrelationID.Location == "" {
-		return utils.ToReference(NewAny())
+		return utils.ToPointer(NewAny())
 	}
 
 	// Get root from header or payload
@@ -99,14 +99,14 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 	path := strings.Split(msg.CorrelationID.Location, "/")
 	if strings.HasPrefix(msg.CorrelationID.Location, "$message.header#") {
 		if msg.Headers == nil {
-			msg.Headers = utils.ToReference(NewAny())
+			msg.Headers = utils.ToPointer(NewAny())
 			msg.Headers.Name = "headers"
 			msg.Headers.Type = "object"
 		}
 		child = msg.Headers
 	} else if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") && msg.Payload != nil {
 		if msg.Payload == nil {
-			msg.Payload = utils.ToReference(NewAny())
+			msg.Payload = utils.ToPointer(NewAny())
 			msg.Payload.Name = "headers"
 			msg.Payload.Type = "object"
 		}
@@ -120,7 +120,7 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 		child, exists = correlationIDParent.Properties[v]
 		if !exists {
 			// Create child
-			child = utils.ToReference(NewAny())
+			child = utils.ToPointer(NewAny())
 			child.Name = v
 			if i == len(path)-2 { // As there is -1 in the loop slice
 				child.Type = "string"

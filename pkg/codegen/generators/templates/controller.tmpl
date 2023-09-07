@@ -162,11 +162,6 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
 
             {{- /* TODO: check context deadline/canceled */}}
 
-            // Add correlation ID to context if it exists
-            if bMsg.CorrelationID != nil {
-                ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-            }
-
             // Process message
             msg, err := new{{channelToMessageTypeName $value}}FromBrokerMessage(bMsg)
             if err != nil {
@@ -177,6 +172,13 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
             // Add context
             msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
             msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
+            
+            {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
+                // Add correlation ID to context if it exists
+                if id := msg.CorrelationID(); id != "" {
+                    ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
+                }
+            {{- end}}
             
             // Process message if no error and still open
             if err == nil && open {
@@ -235,20 +237,25 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
     // Get channel path
     path := {{ generateChannelPath $value }}
 
+    {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
+    // Set correlation ID if it does not exist
+    if id := msg.CorrelationID(); id == "" {
+        msg.SetCorrelationID(uuid.New().String())
+    }
+    {{- end}}
+
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
     ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
     ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+    {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
+    {{- end}}
 
     // Convert to BrokerMessage
     bMsg, err := msg.toBrokerMessage()
     if err != nil  {
         return err
-    }
-
-    // Add correlation ID to context if it exists
-    if bMsg.CorrelationID != nil {
-        ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
     }
 
     // Publish the message on event-broker through middlewares

@@ -39,10 +39,35 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) 
     if err != nil {
         return msg, err
     }
-
-    {{if ne $.CorrelationIDLocation "" -}}
-    // Get correlation ID
-    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = bMsg.CorrelationID
+    
+    {{ if .Headers -}}
+    // Get each headers from broker message
+    for k, v := range bMsg.Headers {
+        switch {
+            {{- range  $key, $value := .Headers.Properties}}
+            case k == "{{$key}}": // Retrieving {{namify $key}} header
+                {{- if eq $value.Type "object" }}
+                    {{- if $value.IsRequired }}
+                        err := json.Unmarshal(v, &msg.Headers.{{ namify $key}})
+                    {{- else }}
+                        err := json.Unmarshal(v, msg.Headers.{{ namify $key}})
+                    {{- end }}
+                    if err != nil {
+                        return msg, err
+                    }
+                {{- else }}
+                    {{- if $value.IsRequired }}
+                    msg.Headers.{{ namify $key}} = {{$value.Type}}(v)
+                    {{- else}}
+                    h := {{$value.Type}}(v)
+                    msg.Headers.{{ namify $key}} = &h
+                    {{- end}}
+                {{- end}}
+            {{- end}}
+        default:
+            // TODO: log unknown error
+        }
+    }
     {{- end}}
     
     // TODO: run checks on msg type
@@ -60,22 +85,46 @@ func (msg {{namify .Name}}Message) toBrokerMessage() (extensions.BrokerMessage, 
         return extensions.BrokerMessage{}, err
     }
 
-    {{if ne $.CorrelationIDLocation "" -}}
-    // Set correlation ID if it does not exist
-    var correlationID {{if not $.CorrelationIDRequired}}*{{end}}string
-    if msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} != {{if $.CorrelationIDRequired}}""{{else}}nil{{end}} {
-        correlationID = msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
-    } else {
-        u := uuid.New().String()
-        correlationID = {{if not $.CorrelationIDRequired}}&{{end}}u
-    }
+    {{ if .Headers -}}
+    // Add each headers to broker message
+    headers := make(map[string][]byte, {{ len .Headers.Properties }})
+
+    {{range  $key, $value := .Headers.Properties -}}
+        // Adding {{ namify $key}} header
+        {{- if eq $value.Type "object" }}
+            {{- if $value.IsRequired }}
+                h, err := json.Marshal(msg.Headers.{{ namify $key}})
+                if err != nil {
+                    return extensions.BrokerMessage{}, err
+                }
+                headers["{{$key}}"] = h
+            {{- else }}
+            if msg.Headers.{{namify $key}} != nil {
+                h, err := json.Marshal(*msg.Headers.{{ namify $key}})
+                if err != nil {
+                    return extensions.BrokerMessage{}, err
+                }
+                headers["{{$key}}"] = h
+            }
+            {{- end }}
+        {{- else }}
+            {{- if $value.IsRequired }}
+                headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}})
+            {{- else}}
+                if msg.Headers.{{namify $key}} != nil {
+                    headers["{{$key}}"] = []byte(*msg.Headers.{{namify $key}})
+                }
+            {{- end }}
+        {{- end }}
+    {{- end}}
+    {{ else -}}
+    // There is no headers here
+    headers := make(map[string][]byte, 0)
     {{- end}}
 
     return extensions.BrokerMessage{
+        Headers: headers,
         Payload: payload,
-        {{- if ne $.CorrelationIDLocation ""}}
-        CorrelationID: correlationID,
-        {{- end}}
     }, nil
 }
 
@@ -91,6 +140,11 @@ func (msg {{namify .Name}}Message) CorrelationID() string {
 
     return ""
     {{- end}}
+}
+
+// SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
+func (msg *{{namify .Name}}Message) SetCorrelationID(id string) {
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.

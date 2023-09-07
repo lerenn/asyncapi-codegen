@@ -46,12 +46,15 @@ var (
 	matchAllCap   = regexp.MustCompile("([a-z0-9])([A-Z])")
 )
 
+// SnakeCase will convert a sentence to snake case.
 func SnakeCase(sentence string) string {
 	snake := matchFirstCap.ReplaceAllString(sentence, "${1}_${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
 }
 
+// ReferenceToTypeName will convert a reference to a type name in the form of
+// golang conventional type names.
 func ReferenceToTypeName(ref string) string {
 	parts := strings.Split(ref, "/")
 
@@ -63,23 +66,33 @@ func ReferenceToTypeName(ref string) string {
 	return Namify(name)
 }
 
-func ReferenceToStructAttributePath(ref string) string {
+// referenceToSlicePath will convert a reference to a slice where each element is a
+// step of the path.
+func referenceToSlicePath(ref string) []string {
 	ref = strings.Replace(ref, ".", "/", -1)
 	ref = strings.Replace(ref, "#", "", -1)
+	return strings.Split(ref, "/")[1:]
+}
 
-	elems := strings.Split(ref, "/")[1:]
-	for k, v := range elems {
+// ReferenceToStructAttributePath will convert a reference to a struct attribute
+// path in the form of "a.b.c" where a, b and c are struct attributes in the
+// form of golang conventional type names.
+func ReferenceToStructAttributePath(ref string) string {
+	path := referenceToSlicePath(ref)
+
+	for k, v := range path {
 		// If this is concerning the header, then it will be named "headers"
 		if v == "header" {
 			v = "headers"
 		}
 
-		elems[k] = Namify(v)
+		path[k] = Namify(v)
 	}
 
-	return strings.Join(elems, ".")
+	return strings.Join(path, ".")
 }
 
+// HasField will check if a struct has a field with the given name.
 func HasField(v interface{}, name string) bool {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() == reflect.Ptr {
@@ -91,6 +104,8 @@ func HasField(v interface{}, name string) bool {
 	return rv.FieldByName(name).IsValid()
 }
 
+// ChannelToMessageTypeName will convert a channel to a message type name in the
+// form of golang conventional type names.
 func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 	msg := ch.GetChannelMessage()
 
@@ -101,6 +116,7 @@ func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 	return ReferenceToTypeName(msg.Reference)
 }
 
+// IsRequired will check if a field is required in a asyncapi struct.
 func IsRequired(any asyncapi.Any, field string) bool {
 	return any.IsFieldRequired(field)
 }
@@ -124,11 +140,16 @@ func GenerateChannelPath(ch asyncapi.Channel) string {
 	return sprint[:len(sprint)-1] + ")"
 }
 
-func DescribeStruct(st interface{}) string {
+func DescribeStruct(st any) string {
 	return fmt.Sprintf("%+v", st)
 }
 
 func MultiLineComment(comment string) string {
 	comment = strings.TrimSuffix(comment, "\n")
 	return strings.Replace(comment, "\n", "\n// ", -1)
+}
+
+// Args is a function used to pass arguments to templates.
+func Args(vs ...any) []any {
+	return vs
 }

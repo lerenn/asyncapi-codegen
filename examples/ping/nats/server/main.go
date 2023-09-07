@@ -20,7 +20,7 @@ type ServerSubscriber struct {
 func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage, _ bool) {
 	// Generate a pong message, set as a response of the request
 	resp := NewPongMessage()
-	resp.SetAsResponseFrom(req)
+	resp.SetAsResponseFrom(&req)
 	resp.Payload.Message = "pong"
 	resp.Payload.Time = time.Now()
 

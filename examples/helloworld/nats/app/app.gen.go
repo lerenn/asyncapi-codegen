@@ -163,11 +163,6 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 			// Wait for next message
 			bMsg, open := <-msgs
 
-			// Add correlation ID to context if it exists
-			if bMsg.CorrelationID != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, *bMsg.CorrelationID)
-			}
-
 			// Process message
 			msg, err := newHelloMessageFromBrokerMessage(bMsg)
 			if err != nil {
@@ -247,6 +242,7 @@ var (
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string
+	SetCorrelationID(id string)
 }
 
 type Error struct {
@@ -295,7 +291,11 @@ func (msg HelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 		return extensions.BrokerMessage{}, err
 	}
 
+	// There is no headers here
+	headers := make(map[string][]byte, 0)
+
 	return extensions.BrokerMessage{
+		Headers: headers,
 		Payload: payload,
 	}, nil
 }

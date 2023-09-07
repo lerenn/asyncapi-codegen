@@ -14,7 +14,7 @@ func (c *Components) Process(spec Specification) {
 
 	// For all schemas, process schema
 	for name, schema := range c.Schemas {
-		schema.Process(name, spec)
+		schema.Process(name, spec, false)
 	}
 
 	// For all parameters, process param
