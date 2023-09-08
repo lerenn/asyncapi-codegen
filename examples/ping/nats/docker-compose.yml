@@ -1,15 +1,7 @@
 version: "3.5"
 
 services:
-  nats:
-    image: nats:alpine
-    # ports:
-    #   - 4222:4222
-    networks:
-      - example-network
   server:
-    depends_on:
-      - nats
     image: golang:1.19.4
     volumes:
       - gocache:/go/pkg/mod
@@ -18,11 +10,10 @@ services:
     working_dir: /go/asyncapi-codegen
     command: go run ./examples/ping/nats/server
     networks:
-      - example-network
+      - brokers
   client:
     depends_on:
       - server
-      - nats
     image: golang:1.19.4
     volumes:
       - gocache:/go/pkg/mod
@@ -31,11 +22,13 @@ services:
     working_dir: /go/asyncapi-codegen
     command: go run ./examples/ping/nats/client
     networks:
-      - example-network
+      - brokers
 
 volumes:
   gocache:
   gobuild:
 
 networks:
-  example-network:
+  brokers:
+    name: asyncapi-codegen_brokers
+    external: true

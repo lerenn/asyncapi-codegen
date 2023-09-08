@@ -18,7 +18,7 @@ func main() {
 	}
 
 	// Create a new client controller
-	ctrl, err := NewClientController(brokers.NewNATS(nc))
+	ctrl, err := NewClientController(brokers.NewNATSController(nc))
 	if err != nil {
 		panic(err)
 	}

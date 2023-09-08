@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// Create a new server controller
-	ctrl, err := NewAppController(brokers.NewNATS(nc))
+	ctrl, err := NewAppController(brokers.NewNATSController(nc))
 	if err != nil {
 		panic(err)
 	}

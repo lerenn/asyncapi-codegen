@@ -24,6 +24,7 @@ Generate Go client and server boilerplate from AsyncAPI specifications.
 * AsyncAPI versions:
   * 2.6.0
 * Brokers:
+  * Kafka
   * NATS
   * Custom (implementation specified by the developer)
   * *Open a ticket for any missing one that you would want to have here!*
@@ -173,7 +174,7 @@ import(
 nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
-ctrl, _ := NewAppController(brokers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATSController(nc))
 defer ctrl.Close(context.Background())
 
 // Subscribe to HelloWorld messages
@@ -225,7 +226,7 @@ import(
 nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
-ctrl, _ := NewClientController(brokers.NewNATS(nc))
+ctrl, _ := NewClientController(brokers.NewNATSController(nc))
 defer ctrl.Close(context.Background())
 
 // Send HelloWorld
@@ -296,7 +297,7 @@ func main() {
 	/* ... */
 
 	// Create a new server controller
-	ctrl, _ := NewAppController(brokers.NewNATS(nc))
+	ctrl, _ := NewAppController(brokers.NewNATSController(nc))
 	defer ctrl.Close(context.Background())
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
@@ -366,7 +367,7 @@ import(
 )
 
 // Create a new app controller with a NATS controller for example
-ctrl, _ := NewAppController(brokers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATSController(nc))
 
 // Add middleware
 ctrl.AddMiddlewares(myMiddleware1, myMiddleware2 /*, ... */)
@@ -468,7 +469,7 @@ import(
 )
 
 // Create a new app controller with a NATS controller for example
-ctrl, _ := NewAppController(brokers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATSController(nc))
 	
 // Attach a logger (optional)
 // You can find loggers in `github.com/lerenn/asyncapi-codegen/pkg/log` or create your own
@@ -490,7 +491,7 @@ import(
 )
 
 // Create a new app controller with a NATS controller for example
-ctrl, _ := NewAppController(brokers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATSController(nc))
 
 // Add middleware
 ctrl.AddMiddlewares(middleware.Logging(log.NewECS()))
@@ -542,7 +543,7 @@ import(
 )
 
 // Create a new app controller with a NATS controller for example
-ctrl, _ := NewAppController(brokers.NewNATS(nc))
+ctrl, _ := NewAppController(brokers.NewNATSController(nc))
 
 // Set a logger
 ctrl.SetLogger(SimpleLogger{})
@@ -565,7 +566,7 @@ import(
 )
 
 // Generate a new NATS controller
-ctrl := brokers.NewNATS(nc)
+ctrl := brokers.NewNATSController(nc)
 
 // Set queue name on the NATS controller
 ctrl.SetQueueName("my-custom-queue-name")

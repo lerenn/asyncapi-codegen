@@ -50,31 +50,36 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) 
             {{- end}}
             {{- range  $key, $value := $headerProperties}}
             case k == "{{$key}}": // Retrieving {{namify $key}} header
-                {{- if eq $value.Type "object" }}
-                    {{- if $value.IsRequired }}
+                {{- if $value.IsRequired }}
+                    {{- if eq $value.Type "object" }}
                         err := json.Unmarshal(v, &msg.Headers.{{ namify $key}})
-                    {{- else }}
+                        if err != nil {
+                            return msg, err
+                        }
+                    {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                        t, err := time.Parse(time.RFC3339, string(v))
+                        if err != nil {
+                            return msg, err
+                        }
+                        msg.Headers.{{ namify $key}} = t
+                    {{- else}}
+                        msg.Headers.{{ namify $key}} = {{$value.Type}}(v)
+                    {{- end}}
+                {{- else}}
+                    {{- if eq $value.Type "object" }}
                         err := json.Unmarshal(v, msg.Headers.{{ namify $key}})
-                    {{- end }}
-                    if err != nil {
-                        return msg, err
-                    }
-                {{- else }}
-                    {{- if $value.IsRequired }}
-                    {{- if or (eq $value.Format "date") (eq $value.Format "date-time")}}
-                    t, _ := time.Parse(time.RFC3339, string(v))
-                    msg.Headers.{{ namify $key}} = t
+                        if err != nil {
+                            return msg, err
+                        }
+                    {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                        t, err := time.Parse(time.RFC3339, string(v))
+                        if err != nil {
+                            return msg, err
+                        }
+                        msg.Headers.{{ namify $key}} = &t
                     {{- else}}
-                    msg.Headers.{{ namify $key}} = {{$value.Type}}(v)
-                    {{- end}}
-                    {{- else}}
-                    {{- if or (eq $value.Format "date") (eq $value.Format "date-time")}}
-                    t, _ := time.Parse(time.RFC3339, string(v))
-                    msg.Headers.{{ namify $key}} = &t
-                    {{- else}}
-                    h := {{$value.Type}}(v)
-                    msg.Headers.{{ namify $key}} = &h
-                    {{- end}}
+                        h := {{$value.Type}}(v)
+                        msg.Headers.{{ namify $key}} = &h
                     {{- end}}
                 {{- end}}
             {{- end}}
@@ -101,34 +106,40 @@ func (msg {{namify .Name}}Message) toBrokerMessage() (extensions.BrokerMessage, 
 
     {{ if .Headers -}}
     // Add each headers to broker message
-    headers := make(map[string][]byte, {{ len .Headers.Properties }})
+    {{- $headerProperties := .Headers.Properties}}
+    headers := make(map[string][]byte, {{ len $headerProperties }})
 
-    {{range  $key, $value := .Headers.Properties -}}
+    {{if .Headers.Reference }}
+    {{- $headerProperties = .Headers.ReferenceTo.Properties}}
+    {{- end}}
+    {{- range  $key, $value := $headerProperties -}}
         // Adding {{ namify $key}} header
-        {{- if eq $value.Type "object" }}
-            {{- if $value.IsRequired }}
+        {{- if $value.IsRequired }}
+            {{- if eq $value.Type "object" }}
                 h, err := json.Marshal(msg.Headers.{{ namify $key}})
                 if err != nil {
                     return extensions.BrokerMessage{}, err
                 }
                 headers["{{$key}}"] = h
+            {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}}.Format(time.RFC3339))
             {{- else }}
-            if msg.Headers.{{namify $key}} != nil {
-                h, err := json.Marshal(*msg.Headers.{{ namify $key}})
-                if err != nil {
-                    return extensions.BrokerMessage{}, err
-                }
-                headers["{{$key}}"] = h
-            }
-            {{- end }}
-        {{- else }}
-            {{- if $value.IsRequired }}
                 headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}})
-            {{- else}}
-                if msg.Headers.{{namify $key}} != nil {
-                    headers["{{$key}}"] = []byte(*msg.Headers.{{namify $key}})
-                }
             {{- end }}
+        {{- else}}
+            if msg.Headers.{{namify $key}} != nil {
+                {{- if eq $value.Type "object" }}
+                    h, err := json.Marshal(*msg.Headers.{{ namify $key}})
+                    if err != nil {
+                        return extensions.BrokerMessage{}, err
+                    }
+                    headers["{{$key}}"] = h
+                {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                    headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}}.Format(time.RFC3339))
+                {{- else }}
+                    headers["{{$key}}"] = []byte(*msg.Headers.{{namify $key}})
+                {{- end }}
+            }
         {{- end }}
     {{- end}}
     {{ else -}}

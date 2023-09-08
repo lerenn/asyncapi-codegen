@@ -8,16 +8,16 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// NATS is the NATS implementation for asyncapi-codegen
-type NATS struct {
+// NATSController is the NATSController implementation for asyncapi-codegen
+type NATSController struct {
 	connection *nats.Conn
 	logger     extensions.Logger
 	queueName  string
 }
 
-// NewNATS creates a new NATS that fulfill the BrokerLinker interface
-func NewNATS(connection *nats.Conn) *NATS {
-	return &NATS{
+// NewNATSController creates a new NATS that fulfill the BrokerLinker interface
+func NewNATSController(connection *nats.Conn) *NATSController {
+	return &NATSController{
 		connection: connection,
 		queueName:  "asyncapi",
 	}
@@ -27,17 +27,17 @@ func NewNATS(connection *nats.Conn) *NATS {
 //
 // It can be used for multiple applications listening one the same channel but
 // wants to listen on different queues.
-func (c *NATS) SetQueueName(name string) {
+func (c *NATSController) SetQueueName(name string) {
 	c.queueName = name
 }
 
 // SetLogger set a custom logger that will log operations on broker controller
-func (c *NATS) SetLogger(logger extensions.Logger) {
+func (c *NATSController) SetLogger(logger extensions.Logger) {
 	c.logger = logger
 }
 
 // Publish a message to the broker
-func (c *NATS) Publish(_ context.Context, channel string, bm extensions.BrokerMessage) error {
+func (c *NATSController) Publish(_ context.Context, channel string, bm extensions.BrokerMessage) error {
 	msg := nats.NewMsg(channel)
 
 	// Set message headers and content
@@ -56,7 +56,7 @@ func (c *NATS) Publish(_ context.Context, channel string, bm extensions.BrokerMe
 }
 
 // Subscribe to messages from the broker
-func (c *NATS) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
+func (c *NATSController) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
 	// Subscribe to channel
 	natsMsgs := make(chan *nats.Msg, 64)
 	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueName, natsMsgs)

@@ -23,10 +23,15 @@ type AppSubscriber interface {
 // AppController is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the App
 type AppController struct {
+	// brokerController is the broker controller that will be used to communicate
 	brokerController extensions.BrokerController
-	stopSubscribers  map[string]chan interface{}
-	logger           extensions.Logger
-	middlewares      []extensions.Middleware
+	// stopSubscribers is a map of stop channels for each subscribed channel
+	stopSubscribers map[string]chan interface{}
+	// logger is the logger that will be used to log operations on controller
+	logger extensions.Logger
+	// middlewares are the middlewares that will be executed when sending or
+	// receiving messages
+	middlewares []extensions.Middleware
 }
 
 // NewAppController links the App to the broker
@@ -165,10 +170,12 @@ func (c *AppController) SubscribeRpcQueue(ctx context.Context, fn func(ctx conte
 			// Wait for next message
 			bMsg, open := <-msgs
 
+			// Set broker message to context
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+
 			// Process message
 			msg, err := newRpcQueueMessageFromBrokerMessage(bMsg)
 			if err != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, bMsg)
 				c.logger.Error(ctx, err.Error())
 			}
 
@@ -245,6 +252,9 @@ func (c *AppController) PublishQueue(ctx context.Context, params QueueParameters
 		return err
 	}
 
+	// Set broker message to context
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
 		err = c.brokerController.Publish(ctx, path, bMsg)
@@ -263,10 +273,15 @@ type ClientSubscriber interface {
 // ClientController is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the Client
 type ClientController struct {
+	// brokerController is the broker controller that will be used to communicate
 	brokerController extensions.BrokerController
-	stopSubscribers  map[string]chan interface{}
-	logger           extensions.Logger
-	middlewares      []extensions.Middleware
+	// stopSubscribers is a map of stop channels for each subscribed channel
+	stopSubscribers map[string]chan interface{}
+	// logger is the logger that will be used to log operations on controller
+	logger extensions.Logger
+	// middlewares are the middlewares that will be executed when sending or
+	// receiving messages
+	middlewares []extensions.Middleware
 }
 
 // NewClientController links the Client to the broker
@@ -400,10 +415,12 @@ func (c *ClientController) SubscribeQueue(ctx context.Context, params QueueParam
 			// Wait for next message
 			bMsg, open := <-msgs
 
+			// Set broker message to context
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+
 			// Process message
 			msg, err := newQueueMessageFromBrokerMessage(bMsg)
 			if err != nil {
-				ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, bMsg)
 				c.logger.Error(ctx, err.Error())
 			}
 
@@ -480,6 +497,9 @@ func (c *ClientController) PublishRpcQueue(ctx context.Context, msg RpcQueueMess
 		return err
 	}
 
+	// Set broker message to context
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
 		err = c.brokerController.Publish(ctx, path, bMsg)
@@ -536,6 +556,7 @@ func (cc *ClientController) WaitForQueue(ctx context.Context, params QueueParame
 			if err == nil && publishMsg.CorrelationID() == msg.CorrelationID() {
 				// Set context with received values
 				msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+				msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, bMsg)
 				msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
 				msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
 
