@@ -11,7 +11,6 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
-	"github.com/nats-io/nats.go"
 )
 
 type ServerSubscriber struct {
@@ -34,13 +33,12 @@ func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage, _ bool) {
 }
 
 func main() {
-	nc, err := nats.Connect("nats://nats:4222")
-	if err != nil {
-		panic(err)
-	}
+	time.Sleep(5 * time.Second)
 
-	// Create a new server controller
-	ctrl, err := NewAppController(brokers.NewNATSController(nc))
+	// Create a new user controller
+	host := "kafka:9092"
+	// Create a new app controller
+	ctrl, err := NewAppController(brokers.NewKafkaController([]string{host}))
 	if err != nil {
 		panic(err)
 	}

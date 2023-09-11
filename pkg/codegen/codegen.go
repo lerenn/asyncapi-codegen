@@ -50,9 +50,9 @@ func (cg CodeGen) Generate(opt Options) error {
 		case opt.Generate.Application:
 			part, err = cg.generateApp(opt)
 			opt.Generate.Application = false
-		case opt.Generate.Client:
-			part, err = cg.generateClient(opt)
-			opt.Generate.Client = false
+		case opt.Generate.User:
+			part, err = cg.generateUser(opt)
+			opt.Generate.User = false
 		case opt.Generate.Types:
 			part, err = cg.generateTypes()
 			opt.Generate.Types = false
@@ -129,21 +129,21 @@ func (cg CodeGen) generateApp(opts Options) (string, error) {
 	return content, nil
 }
 
-func (cg CodeGen) generateClient(opts Options) (string, error) {
+func (cg CodeGen) generateUser(opts Options) (string, error) {
 	var content string
 
-	// Generate client subscriber
+	// Generate user subscriber
 	subscriber, err := generators.NewSubscriberGenerator(
-		generators.SideIsClient,
+		generators.SideIsUser,
 		cg.Specification,
 	).Generate()
 	if err != nil {
 		return "", err
 	}
 	content += subscriber
-	// Generate client controller
+	// Generate user controller
 	controller, err := generators.NewControllerGenerator(
-		generators.SideIsClient,
+		generators.SideIsUser,
 		cg.Specification,
 	).Generate()
 	if err != nil {

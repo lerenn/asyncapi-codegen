@@ -1,6 +1,6 @@
 # AsyncAPI Codegen
 
-Generate Go client and server boilerplate from AsyncAPI specifications.
+Generate Go application and user boilerplate from AsyncAPI specifications.
 
 **⚠️ Do not hesitate raise an issue on any bug or missing feature.**
 **Contributions are welcomed!**
@@ -60,11 +60,11 @@ at the beginning of your file:
 ![basic schema](assets/basic-schema.svg)
 
 Let's imagine a message broker centric architecture: you have the application
-that you are developing on the right and the potential client(s) on the left.
+that you are developing on the right and the potential user(s) on the left.
 
 Being a two directional communication, both of them can communicate to each
 other through the broker. They can even communicate with themselves, in case
-of multiple clients or application replication.
+of multiple users or application replication.
 
 For more information about this, please refere to the [official AsyncAPI
 concepts](https://www.asyncapi.com/docs/concepts).
@@ -75,9 +75,9 @@ concepts](https://www.asyncapi.com/docs/concepts).
 
 * <span style="color:yellow">Yellow parts</span>: when using the codegen tool,
 you will generate the code that will act as an adapter (or controller) between
-the client, the broker, and the application.
+the user, the broker, and the application.
 * <span style="color:red">Red parts</span>: you will need to fill these parts
-between client, broker and application. These will allow message production and
+between user, broker and application. These will allow message production and
 reception with the generated code.
 * <span style="color:orange">Orange parts</span>: these parts will be available
 in this repository if you use an already supported broker. However, you can also
@@ -94,9 +94,9 @@ This example will use the AsyncAPI official example of the
 
 > The code for this example have already been generated and can be
 [read here](./examples/helloworld/nats), in the subdirectories `app/`
-and `client/`. You can execute the example with `make run`.
+and `user/`. You can execute the example with `make run`.
 
-In order to recreate the code for client and application, you have to run this command:
+In order to recreate the code for user and application, you have to run this command:
 
 ```shell
 # Install the tool
@@ -188,32 +188,32 @@ ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessa
 /* ... */
 ```
 
-#### Client
+#### User
 
-Here is the code that is generated for the client side, with corresponding
+Here is the code that is generated for the user side, with corresponding
 comments:
 
 ```go
-// ClientController is the struct that you will need in order to interact with the
-// event broker from the client side. You will generate this with the 
-// NewClientController function below.
-type ClientController struct
+// UserController is the struct that you will need in order to interact with the
+// event broker from the user side. You will generate this with the 
+// NewUserController function below.
+type UserController struct
 
-// NewClientController will create a new Client Controller and will connect the
+// NewUserController will create a new User Controller and will connect the
 // BrokerController that you pass in argument to subscription and publication method.
-func NewClientController(bs BrokerController) *ClientController
+func NewUserController(bs BrokerController) *UserController
 
 // Close function will clean up all resources and subscriptions left in the
 // application controller. This should be call right after NewAppController
 // with a `defer`
-func (cc *ClientController) Close(ctx context.Context)
+func (cc *UserController) Close(ctx context.Context)
 
 // PublishHello will publish a hello world message on the "hello" channel as
 // specified in the AsyncAPI specification.
-func (cc *ClientController) PublishHello(ctx context.Context, msg HelloMessage) error
+func (cc *UserController) PublishHello(ctx context.Context, msg HelloMessage) error
 ```
 
-And here is an example of the client that could be written to use this generated
+And here is an example of the user that could be written to use this generated
 code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.go)):
 
 ```go
@@ -226,7 +226,7 @@ import(
 nc, _ := nats.Connect("nats://nats:4222")
 
 // Create a new application controller
-ctrl, _ := NewClientController(brokers.NewNATSController(nc))
+ctrl, _ := NewUserController(brokers.NewNATSController(nc))
 defer ctrl.Close(context.Background())
 
 // Send HelloWorld
@@ -254,10 +254,10 @@ This example will use a `ping` example that you can find
 [here](./examples/ping/asyncapi.yaml).
 
 > The code for this example have already been generated and can be
-[read here](./examples/ping/nats), in the subdirectories `server/`
-and `client/`. You can execute the example with `make run`.
+[read here](./examples/ping/nats), in the subdirectories `app/`
+and `user/`. You can execute the example with `make run`.
 
-In order to recreate the code for client and application, you have to run this command:
+In order to recreate the code for user and application, you have to run this command:
 
 ```shell
 # Install the tool
@@ -267,10 +267,10 @@ go install github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@latest
 asyncapi-codegen -i examples/ping/asyncapi.yaml -p main -o ./ping.gen.go
 ```
 
-We can then go through the possible application and client implementations that
+We can then go through the possible application and user implementations that
 use `ping.gen.go`. 
 
-#### Application (or server in this case)
+#### Application
 
 ```golang
 import(
@@ -296,7 +296,7 @@ func (s ServerSubscriber) Ping(req PingMessage, _ bool) {
 func main() {
 	/* ... */
 
-	// Create a new server controller
+	// Create a new application controller
 	ctrl, _ := NewAppController(brokers.NewNATSController(nc))
 	defer ctrl.Close(context.Background())
 
@@ -309,11 +309,11 @@ func main() {
 }
 ```
 
-#### Client
+#### User
 
 ```golang
-// Create a new client controller
-ctrl, _ := NewClientController(/* Add corresponding broker controller */)
+// Create a new user controller
+ctrl, _ := NewUserController(/* Add corresponding broker controller */)
 defer ctrl.Close(context.Background())
 
 // Make a new ping message
@@ -337,16 +337,16 @@ resp, _ := ctrl.WaitForPong(context.Background(), &req, publicationFunc)
 
 ## CLI options
 
-The default options for oapi-codegen will generate everything; client, application,
+The default options for oapi-codegen will generate everything; user, application,
 and type definitions but you can generate subsets of those via the -generate
-flag. It defaults to client,application,types
+flag. It defaults to user,application,types
 but you can specify any combination of those.
 
 Here are the universal parts that you can generate:
 
 * `application`: generate the application boilerplate. `application` requires
   the types in the same package to compile.
-* `client`: generate the client boilerplate. It, too, requires the types to be
+* `user`: generate the user boilerplate. It, too, requires the types to be
   present in its package.
 * `types`: all type definitions for all types in the AsyncAPI spec.
   This will be everything under `#components`, as well as request parameter,
@@ -551,7 +551,7 @@ ctrl.SetLogger(SimpleLogger{})
 
 ### Implementing your own broker controller
 
-In order to connect your application and your client to your broker, we need to
+In order to connect your application and your user to your broker, we need to
 provide an adapter to it. Here is the interface that you need to satisfy:
 
 ```go

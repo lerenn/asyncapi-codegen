@@ -48,7 +48,7 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	if side == SideIsApplication {
 		gen.Prefix = "App"
 	} else {
-		gen.Prefix = "Client"
+		gen.Prefix = "User"
 	}
 
 	return gen

@@ -11,7 +11,7 @@ type BrokerMessage struct {
 }
 
 // BrokerController represents the functions that should be implemented to connect
-// the broker to the application or the client
+// the broker to the application or the user
 type BrokerController interface {
 	// SetLogger set a logger that will log operations on broker controller
 	SetLogger(logger Logger)

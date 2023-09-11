@@ -278,7 +278,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
 }
 {{end}}
 
-{{if eq .Prefix "Client" -}}
+{{if eq .Prefix "User" -}}
 {{- range  $key, $value := .SubscribeChannels -}}
 {{- if ne $value.Subscribe.Message.CorrelationIDLocation ""}}
 // WaitFor{{namify $key}} will wait for a specific message by its correlation ID
@@ -286,9 +286,9 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
 // The pub function is the publication function that should be used to send the message
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
 {{- if .Parameters}}
-func (cc *ClientController) WaitFor{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
+func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
 {{- else}}
-func (cc *ClientController) WaitFor{{namify $key}}(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
+func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
 {{- end}}
     // Get channel path
     path := {{ generateChannelPath $value }}

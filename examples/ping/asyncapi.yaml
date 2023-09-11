@@ -27,7 +27,7 @@ components:
         type: object
         properties:
           correlationId:
-            description: Correlation ID set by client
+            description: Correlation ID set by user
             type: string
       payload:
         description: Ping message
@@ -40,7 +40,7 @@ components:
         type: object
         properties:
           correlationId:
-            description: Correlation ID set by client on corresponding request
+            description: Correlation ID set by user on corresponding request
             type: string
       payload:
         type: object

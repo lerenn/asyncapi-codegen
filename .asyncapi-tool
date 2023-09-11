@@ -1,7 +1,7 @@
 ---
 title: Golang AsyncAPI Code Generator
 description: >
-  Generate Go client and server boilerplate from AsyncAPI specifications.
+  Generate Go user and application boilerplate from AsyncAPI specifications.
   Can be called from `go generate` without requirements.
 links:
   repoUrl: https://github.com/lerenn/asyncapi-codegen

@@ -278,8 +278,8 @@ var (
 	// ErrNilAppSubscriber is raised when a nil app subscriber is user
 	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
 
-	// ErrNilClientSubscriber is raised when a nil client subscriber is user
-	ErrNilClientSubscriber = fmt.Errorf("%w: nil client subscriber has been used", ErrAsyncAPI)
+	// ErrNilUserSubscriber is raised when a nil user subscriber is user
+	ErrNilUserSubscriber = fmt.Errorf("%w: nil user subscriber has been used", ErrAsyncAPI)
 
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
 	// or more without unsubscribing
@@ -307,7 +307,7 @@ func (e *Error) Error() string {
 type PingMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
-		// Description: Correlation ID set by client
+		// Description: Correlation ID set by user
 		CorrelationID *string `json:"correlation_id"`
 	}
 
@@ -401,7 +401,7 @@ func (msg *PingMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 type PongMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
-		// Description: Correlation ID set by client on corresponding request
+		// Description: Correlation ID set by user on corresponding request
 		CorrelationID *string `json:"correlation_id"`
 	}
 
