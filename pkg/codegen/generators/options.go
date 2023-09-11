@@ -2,6 +2,6 @@ package generators
 
 type Options struct {
 	Application bool
-	Client      bool
+	User        bool
 	Types       bool
 }

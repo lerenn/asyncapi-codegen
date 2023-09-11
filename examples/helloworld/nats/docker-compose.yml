@@ -11,7 +11,7 @@ services:
     command: go run ./examples/helloworld/nats/app
     networks:
       - brokers
-  client:
+  user:
     depends_on:
       - app
     image: golang:1.19.4
@@ -20,7 +20,7 @@ services:
       - gobuild:/root/.cache/go-build
       - ../../../:/go/asyncapi-codegen
     working_dir: /go/asyncapi-codegen
-    command: go run ./examples/helloworld/nats/client
+    command: go run ./examples/helloworld/nats/user
     networks:
       - brokers
 

@@ -1,4 +1,4 @@
-//go:generate go run ../../../../cmd/asyncapi-codegen -g client,types -p main -i ../../asyncapi.yaml -o ./client.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -g user,types -p main -i ../../asyncapi.yaml -o ./user.gen.go
 
 package main
 
@@ -14,9 +14,9 @@ import (
 func main() {
 	time.Sleep(6 * time.Second)
 
-	// Create a new client controller
+	// Create a new user controller
 	host := "kafka:9092"
-	ctrl, err := NewClientController(brokers.NewKafkaController([]string{host}))
+	ctrl, err := NewUserController(brokers.NewKafkaController([]string{host}))
 	if err != nil {
 		panic(err)
 	}

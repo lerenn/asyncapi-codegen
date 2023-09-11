@@ -9,7 +9,7 @@ type ContextKey string
 
 const (
 	// ContextKeyIsProvider is the name of the provider this data is coming from.
-	// When coming from a generated client, it is `asyncapi`
+	// When coming from a generated user, it is `asyncapi`
 	ContextKeyIsProvider ContextKey = Prefix + "provider"
 	// ContextKeyIsChannel is the name of the channel this data is coming from.
 	ContextKeyIsChannel ContextKey = Prefix + "channel"

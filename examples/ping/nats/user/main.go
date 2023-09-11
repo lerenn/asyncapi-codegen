@@ -1,4 +1,4 @@
-//go:generate go run ../../../../cmd/asyncapi-codegen -g client,types -p main -i ../../asyncapi.yaml -o ./client.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -g user,types -p main -i ../../asyncapi.yaml -o ./user.gen.go
 
 package main
 
@@ -19,8 +19,8 @@ func main() {
 		panic(err)
 	}
 
-	// Create a new client controller
-	ctrl, err := NewClientController(brokers.NewNATSController(nc))
+	// Create a new user controller
+	ctrl, err := NewUserController(brokers.NewNATSController(nc))
 	if err != nil {
 		panic(err)
 	}

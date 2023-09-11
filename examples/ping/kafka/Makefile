@@ -8,8 +8,8 @@ clean: ## Clean remains of run
 .PHONY: run
 run: ## Run the example
 	@$(MAKE) -C ../../.. brokers/up
-	@$(DOCKER_COMPOSE) run client
-	@$(DOCKER_COMPOSE) logs server
+	@$(DOCKER_COMPOSE) run user
+	@$(DOCKER_COMPOSE) logs app
 
 .PHONY: help
 help: ## Display this help message

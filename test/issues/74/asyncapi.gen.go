@@ -224,9 +224,9 @@ func (c *AppController) UnsubscribeTestChannel(ctx context.Context) {
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// ClientController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the Client
-type ClientController struct {
+// UserController is the structure that provides publishing capabilities to the
+// developer and and connect the broker with the User
+type UserController struct {
 	// brokerController is the broker controller that will be used to communicate
 	brokerController extensions.BrokerController
 	// stopSubscribers is a map of stop channels for each subscribed channel
@@ -238,13 +238,13 @@ type ClientController struct {
 	middlewares []extensions.Middleware
 }
 
-// NewClientController links the Client to the broker
-func NewClientController(bc extensions.BrokerController) (*ClientController, error) {
+// NewUserController links the User to the broker
+func NewUserController(bc extensions.BrokerController) (*UserController, error) {
 	if bc == nil {
 		return nil, ErrNilBrokerController
 	}
 
-	return &ClientController{
+	return &UserController{
 		brokerController: bc,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           extensions.DummyLogger{},
@@ -253,18 +253,18 @@ func NewClientController(bc extensions.BrokerController) (*ClientController, err
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *ClientController) SetLogger(logger extensions.Logger) {
+func (c *UserController) SetLogger(logger extensions.Logger) {
 	c.logger = logger
 	c.brokerController.SetLogger(logger)
 }
 
 // AddMiddlewares attaches middlewares that will be executed when sending or
 // receiving messages
-func (c *ClientController) AddMiddlewares(middleware ...extensions.Middleware) {
+func (c *UserController) AddMiddlewares(middleware ...extensions.Middleware) {
 	c.middlewares = append(c.middlewares, middleware...)
 }
 
-func (c ClientController) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
+func (c UserController) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
 	var called bool
 
 	// If there is no more middleware
@@ -294,7 +294,7 @@ func (c ClientController) wrapMiddlewares(middlewares []extensions.Middleware, l
 	}
 }
 
-func (c ClientController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
+func (c UserController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -302,23 +302,23 @@ func (c ClientController) executeMiddlewares(ctx context.Context, callback func(
 	wrapped(ctx)
 }
 
-func addClientContextValues(ctx context.Context, path string) context.Context {
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "client")
+func addUserContextValues(ctx context.Context, path string) context.Context {
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *ClientController) Close(ctx context.Context) {
+func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
 // PublishTestChannel will publish messages to 'testChannel' channel
-func (c *ClientController) PublishTestChannel(ctx context.Context, msg TestMessage) error {
+func (c *UserController) PublishTestChannel(ctx context.Context, msg TestMessage) error {
 	// Get channel path
 	path := "testChannel"
 
 	// Set context
-	ctx = addClientContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
 
@@ -353,8 +353,8 @@ var (
 	// ErrNilAppSubscriber is raised when a nil app subscriber is user
 	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
 
-	// ErrNilClientSubscriber is raised when a nil client subscriber is user
-	ErrNilClientSubscriber = fmt.Errorf("%w: nil client subscriber has been used", ErrAsyncAPI)
+	// ErrNilUserSubscriber is raised when a nil user subscriber is user
+	ErrNilUserSubscriber = fmt.Errorf("%w: nil user subscriber has been used", ErrAsyncAPI)
 
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
 	// or more without unsubscribing

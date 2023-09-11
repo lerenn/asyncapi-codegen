@@ -15,15 +15,15 @@ import (
 	"github.com/google/uuid"
 )
 
-// ClientSubscriber represents all handlers that are expecting messages for Client
-type ClientSubscriber interface {
+// UserSubscriber represents all handlers that are expecting messages for User
+type UserSubscriber interface {
 	// Pong
 	Pong(ctx context.Context, msg PongMessage, done bool)
 }
 
-// ClientController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the Client
-type ClientController struct {
+// UserController is the structure that provides publishing capabilities to the
+// developer and and connect the broker with the User
+type UserController struct {
 	// brokerController is the broker controller that will be used to communicate
 	brokerController extensions.BrokerController
 	// stopSubscribers is a map of stop channels for each subscribed channel
@@ -35,13 +35,13 @@ type ClientController struct {
 	middlewares []extensions.Middleware
 }
 
-// NewClientController links the Client to the broker
-func NewClientController(bc extensions.BrokerController) (*ClientController, error) {
+// NewUserController links the User to the broker
+func NewUserController(bc extensions.BrokerController) (*UserController, error) {
 	if bc == nil {
 		return nil, ErrNilBrokerController
 	}
 
-	return &ClientController{
+	return &UserController{
 		brokerController: bc,
 		stopSubscribers:  make(map[string]chan interface{}),
 		logger:           extensions.DummyLogger{},
@@ -50,18 +50,18 @@ func NewClientController(bc extensions.BrokerController) (*ClientController, err
 }
 
 // SetLogger attaches a logger that will log operations on controller
-func (c *ClientController) SetLogger(logger extensions.Logger) {
+func (c *UserController) SetLogger(logger extensions.Logger) {
 	c.logger = logger
 	c.brokerController.SetLogger(logger)
 }
 
 // AddMiddlewares attaches middlewares that will be executed when sending or
 // receiving messages
-func (c *ClientController) AddMiddlewares(middleware ...extensions.Middleware) {
+func (c *UserController) AddMiddlewares(middleware ...extensions.Middleware) {
 	c.middlewares = append(c.middlewares, middleware...)
 }
 
-func (c ClientController) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
+func (c UserController) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
 	var called bool
 
 	// If there is no more middleware
@@ -91,7 +91,7 @@ func (c ClientController) wrapMiddlewares(middlewares []extensions.Middleware, l
 	}
 }
 
-func (c ClientController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
+func (c UserController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -99,23 +99,23 @@ func (c ClientController) executeMiddlewares(ctx context.Context, callback func(
 	wrapped(ctx)
 }
 
-func addClientContextValues(ctx context.Context, path string) context.Context {
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "client")
+func addUserContextValues(ctx context.Context, path string) context.Context {
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *ClientController) Close(ctx context.Context) {
+func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeAll(ctx)
-	c.logger.Info(ctx, "Closed client controller")
+	c.logger.Info(ctx, "Closed user controller")
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
 // For channels with parameters, they should be subscribed independently.
-func (c *ClientController) SubscribeAll(ctx context.Context, as ClientSubscriber) error {
+func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) error {
 	if as == nil {
-		return ErrNilClientSubscriber
+		return ErrNilUserSubscriber
 	}
 
 	if err := c.SubscribePong(ctx, as.Pong); err != nil {
@@ -126,7 +126,7 @@ func (c *ClientController) SubscribeAll(ctx context.Context, as ClientSubscriber
 }
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
-func (c *ClientController) UnsubscribeAll(ctx context.Context) {
+func (c *UserController) UnsubscribeAll(ctx context.Context) {
 	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribePong(ctx)
 
@@ -142,12 +142,12 @@ func (c *ClientController) UnsubscribeAll(ctx context.Context) {
 // Callback function 'fn' will be called each time a new message is received.
 // The 'done' argument indicates when the subscription is canceled and can be
 // used to clean up resources.
-func (c *ClientController) SubscribePong(ctx context.Context, fn func(ctx context.Context, msg PongMessage, done bool)) error {
+func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.Context, msg PongMessage, done bool)) error {
 	// Get channel path
 	path := "pong"
 
 	// Set context
-	ctx = addClientContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, path)
 
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
@@ -211,12 +211,12 @@ func (c *ClientController) SubscribePong(ctx context.Context, fn func(ctx contex
 }
 
 // UnsubscribePong will unsubscribe messages from 'pong' channel
-func (c *ClientController) UnsubscribePong(ctx context.Context) {
+func (c *UserController) UnsubscribePong(ctx context.Context) {
 	// Get channel path
 	path := "pong"
 
 	// Set context
-	ctx = addClientContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, path)
 
 	// Get stop channel
 	stopChan, exists := c.stopSubscribers[path]
@@ -232,7 +232,7 @@ func (c *ClientController) UnsubscribePong(ctx context.Context) {
 }
 
 // PublishPing will publish messages to 'ping' channel
-func (c *ClientController) PublishPing(ctx context.Context, msg PingMessage) error {
+func (c *UserController) PublishPing(ctx context.Context, msg PingMessage) error {
 	// Get channel path
 	path := "ping"
 
@@ -242,7 +242,7 @@ func (c *ClientController) PublishPing(ctx context.Context, msg PingMessage) err
 	}
 
 	// Set context
-	ctx = addClientContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
@@ -269,12 +269,12 @@ func (c *ClientController) PublishPing(ctx context.Context, msg PingMessage) err
 //
 // The pub function is the publication function that should be used to send the message
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
-func (cc *ClientController) WaitForPong(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) (PongMessage, error) {
+func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) (PongMessage, error) {
 	// Get channel path
 	path := "pong"
 
 	// Set context
-	ctx = addClientContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, path)
 
 	// Subscribe to broker channel
 	msgs, stop, err := cc.brokerController.Subscribe(ctx, path)
@@ -346,8 +346,8 @@ var (
 	// ErrNilAppSubscriber is raised when a nil app subscriber is user
 	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
 
-	// ErrNilClientSubscriber is raised when a nil client subscriber is user
-	ErrNilClientSubscriber = fmt.Errorf("%w: nil client subscriber has been used", ErrAsyncAPI)
+	// ErrNilUserSubscriber is raised when a nil user subscriber is user
+	ErrNilUserSubscriber = fmt.Errorf("%w: nil user subscriber has been used", ErrAsyncAPI)
 
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
 	// or more without unsubscribing
@@ -375,7 +375,7 @@ func (e *Error) Error() string {
 type PingMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
-		// Description: Correlation ID set by client
+		// Description: Correlation ID set by user
 		CorrelationID *string `json:"correlation_id"`
 	}
 
@@ -469,7 +469,7 @@ func (msg *PingMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 type PongMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
-		// Description: Correlation ID set by client on corresponding request
+		// Description: Correlation ID set by user on corresponding request
 		CorrelationID *string `json:"correlation_id"`
 	}
 

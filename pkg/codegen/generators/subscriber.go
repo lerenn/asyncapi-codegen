@@ -29,7 +29,7 @@ func NewSubscriberGenerator(side Side, spec asyncapi.Specification) SubscriberGe
 		// Channels are reverse on application side
 		if v.Publish != nil && side == SideIsApplication {
 			gen.Channels[k] = v
-		} else if v.Subscribe != nil && side == SideIsClient {
+		} else if v.Subscribe != nil && side == SideIsUser {
 			gen.Channels[k] = v
 		}
 	}
@@ -38,7 +38,7 @@ func NewSubscriberGenerator(side Side, spec asyncapi.Specification) SubscriberGe
 	if side == SideIsApplication {
 		gen.Prefix = "App"
 	} else {
-		gen.Prefix = "Client"
+		gen.Prefix = "User"
 	}
 
 	return gen

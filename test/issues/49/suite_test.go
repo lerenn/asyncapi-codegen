@@ -16,7 +16,7 @@ type Suite struct {
 	suite.Suite
 }
 
-func (suite *Suite) TestClientSubscriberGenerated() {
+func (suite *Suite) TestUserSubscriberGenerated() {
 	// Check that the Subscriber is indeed generated
-	var _ ClientSubscriber
+	var _ UserSubscriber
 }

@@ -26,7 +26,7 @@ func TestSuite(t *testing.T) {
 type Suite struct {
 	broker      extensions.BrokerController
 	app         *AppController
-	client      *ClientController
+	user        *UserController
 	interceptor chan extensions.BrokerMessage
 	suite.Suite
 }
@@ -43,15 +43,15 @@ func (suite *Suite) SetupSuite() {
 	suite.Require().NoError(err)
 	suite.app = app
 
-	// Create client
-	client, err := NewClientController(suite.broker)
+	// Create user
+	user, err := NewUserController(suite.broker)
 	suite.Require().NoError(err)
-	suite.client = client
+	suite.user = user
 
 	// Add interceptor
 	suite.interceptor = make(chan extensions.BrokerMessage, 8)
 	app.AddMiddlewares(middlewares.Intercepter(suite.interceptor))
-	client.AddMiddlewares(middlewares.Intercepter(suite.interceptor))
+	user.AddMiddlewares(middlewares.Intercepter(suite.interceptor))
 }
 
 func (suite *Suite) TestHeaders() {
@@ -75,7 +75,7 @@ func (suite *Suite) TestHeaders() {
 	wg.Add(1)
 
 	// Publish the message
-	err = suite.client.PublishTestChannel(context.Background(), sent)
+	err = suite.user.PublishTestChannel(context.Background(), sent)
 	suite.Require().NoError(err)
 
 	// Wait for the message to be received by the app
