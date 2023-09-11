@@ -18,7 +18,7 @@ lint: ## Lint the code
 clean: __examples/clean brokers/down ## Clean up the project
 
 .PHONY: check
-check: generate lint examples test ## Check that everything is ready for commit
+check: clean generate lint examples test ## Check that everything is ready for commit
 
 .PHONY: __examples/clean
 __examples/clean:

@@ -67,14 +67,15 @@ func (suite *Suite) TestHeaders() {
 
 	// Check what the app receive and translate
 	var recvMsg TestMessage
-	suite.app.SubscribeTestChannel(context.Background(), func(_ context.Context, msg TestMessage, _ bool) {
+	err := suite.app.SubscribeTestChannel(context.Background(), func(_ context.Context, msg TestMessage, _ bool) {
 		recvMsg = msg
 		wg.Done()
 	})
+	suite.Require().NoError(err)
 	wg.Add(1)
 
 	// Publish the message
-	err := suite.client.PublishTestChannel(context.Background(), sent)
+	err = suite.client.PublishTestChannel(context.Background(), sent)
 	suite.Require().NoError(err)
 
 	// Wait for the message to be received by the app
@@ -82,4 +83,17 @@ func (suite *Suite) TestHeaders() {
 
 	// Check received message
 	suite.Require().Equal(sent, recvMsg)
+
+	// Check sent message to broker
+	bMsg := <-suite.interceptor
+
+	// Check that version is in the header
+	version, exists := bMsg.Headers["version"]
+	suite.Require().True(exists)
+	suite.Require().Equal([]byte("1.0.0"), version)
+
+	// Check that datetime is in the header
+	datetime, exists := bMsg.Headers["dateTime"]
+	suite.Require().True(exists)
+	suite.Require().Equal([]byte("2020-01-01T00:00:00Z"), datetime)
 }

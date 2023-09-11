@@ -12,23 +12,24 @@ import (
 type NATSController struct {
 	connection *nats.Conn
 	logger     extensions.Logger
-	queueName  string
+	queueGroup string
 }
 
 // NewNATSController creates a new NATS that fulfill the BrokerLinker interface
 func NewNATSController(connection *nats.Conn) *NATSController {
 	return &NATSController{
 		connection: connection,
-		queueName:  "asyncapi",
+		queueGroup: DefaultQueueGroupID,
+		logger:     extensions.DummyLogger{},
 	}
 }
 
-// SetQueueName sets a custom queue name for channel subscription
+// SetQueueGroup sets a custom queue group name for channel subscription
 //
 // It can be used for multiple applications listening one the same channel but
 // wants to listen on different queues.
-func (c *NATSController) SetQueueName(name string) {
-	c.queueName = name
+func (c *NATSController) SetQueueGroup(name string) {
+	c.queueGroup = name
 }
 
 // SetLogger set a custom logger that will log operations on broker controller
@@ -59,7 +60,7 @@ func (c *NATSController) Publish(_ context.Context, channel string, bm extension
 func (c *NATSController) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
 	// Subscribe to channel
 	natsMsgs := make(chan *nats.Msg, 64)
-	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueName, natsMsgs)
+	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueGroup, natsMsgs)
 	if err != nil {
 		return nil, nil, err
 	}

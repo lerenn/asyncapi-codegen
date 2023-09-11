@@ -19,7 +19,7 @@ func BrokerControllers(t *testing.T) []extensions.BrokerController {
 	natsController := brokers.NewNATSController(nc)
 
 	// Kafka
-	kafkaController := brokers.NewKafkaController([]string{"127.0.0.1:9092"})
+	kafkaController := brokers.NewKafkaController([]string{"localhost:9094"})
 
 	return []extensions.BrokerController{
 		natsController,

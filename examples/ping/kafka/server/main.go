@@ -10,6 +10,7 @@ import (
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
 )
 
 type ServerSubscriber struct {
@@ -46,6 +47,7 @@ func main() {
 	// Attach a logger (optional)
 	logger := loggers.NewECS()
 	ctrl.SetLogger(logger)
+	ctrl.AddMiddlewares(middlewares.Logging(logger))
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
 	sub := ServerSubscriber{Controller: ctrl}

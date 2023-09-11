@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -96,18 +95,22 @@ func (logger ECS) formatLog(ctx context.Context, msg string, info ...extensions.
 	return string(b)
 }
 
-func (logger ECS) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
+func (logger ECS) logWithLevel(ctx context.Context, level string, msg string, info ...extensions.LogInfo) {
 	// Add additional keys
 	info = append(info, extensions.LogInfo{Key: "log.level", Value: "info"})
 
 	// Print log
-	log.Print(logger.formatLog(ctx, msg, info...))
+	fmt.Println(logger.formatLog(ctx, msg, info...))
+}
+
+func (logger ECS) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	logger.logWithLevel(ctx, "info", msg, info...)
+}
+
+func (logger ECS) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	logger.logWithLevel(ctx, "warning", msg, info...)
 }
 
 func (logger ECS) Error(ctx context.Context, msg string, info ...extensions.LogInfo) {
-	// Add additional keys
-	info = append(info, extensions.LogInfo{Key: "log.level", Value: "error"})
-
-	// Print log
-	log.Print(logger.formatLog(ctx, msg, info...))
+	logger.logWithLevel(ctx, "error", msg, info...)
 }
