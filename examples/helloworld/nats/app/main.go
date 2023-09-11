@@ -20,7 +20,7 @@ func main() {
 	}
 
 	// Create a new application controller
-	ctrl, err := NewAppController(brokers.NewNATS(nc))
+	ctrl, err := NewAppController(brokers.NewNATSController(nc))
 	if err != nil {
 		panic(err)
 	}

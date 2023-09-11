@@ -21,7 +21,4 @@ type BrokerController interface {
 
 	// Subscribe to messages from the broker
 	Subscribe(ctx context.Context, channel string) (msgs chan BrokerMessage, stop chan interface{}, err error)
-
-	// SetQueueName sets the name of the queue that will be used by the broker
-	SetQueueName(name string)
 }

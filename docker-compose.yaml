@@ -1,0 +1,29 @@
+version: '3.5'
+
+services:
+  kafka:
+    image: 'bitnami/kafka:latest'
+    ports:
+      # Listening on a different port to avoid collision with 9092 internal listener
+      # Prefering to keep 9092 for internal listener as it is the port for examples
+      - 9094:9094
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+    networks:
+      - brokers
+  nats:
+    image: nats:alpine
+    ports:
+      - 4222:4222
+    networks:
+      - brokers
+
+networks:
+  brokers:

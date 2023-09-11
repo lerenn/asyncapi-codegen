@@ -10,6 +10,7 @@ import (
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
 	"github.com/nats-io/nats.go"
 )
 
@@ -39,7 +40,7 @@ func main() {
 	}
 
 	// Create a new server controller
-	ctrl, err := NewAppController(brokers.NewNATS(nc))
+	ctrl, err := NewAppController(brokers.NewNATSController(nc))
 	if err != nil {
 		panic(err)
 	}
@@ -48,6 +49,7 @@ func main() {
 	// Attach a logger (optional)
 	logger := loggers.NewECS()
 	ctrl.SetLogger(logger)
+	ctrl.AddMiddlewares(middlewares.Logging(logger))
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
 	sub := ServerSubscriber{Controller: ctrl}

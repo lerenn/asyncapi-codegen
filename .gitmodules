@@ -1,3 +1,0 @@
-[submodule "test/official/spec"]
-	path = test/official/spec
-	url = https://github.com/asyncapi/spec.git

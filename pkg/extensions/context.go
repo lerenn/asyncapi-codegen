@@ -16,6 +16,8 @@ const (
 	// ContextKeyIsMessageDirection is the direction this data is coming from.
 	// It can be either "publication" or "reception"
 	ContextKeyIsMessageDirection ContextKey = Prefix + "operation"
+	// ContextKeyIsBrokerMessage is the message that has been sent or received from/to the broker
+	ContextKeyIsBrokerMessage ContextKey = Prefix + "broker-message"
 	// ContextKeyIsMessage is the message that has been sent or received
 	ContextKeyIsMessage ContextKey = Prefix + "message"
 	// ContextKeyIsCorrelationID is the correlation ID of the message

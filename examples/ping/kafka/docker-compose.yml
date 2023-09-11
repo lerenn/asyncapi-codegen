@@ -1,24 +1,7 @@
 version: '3.5'
 
 services:
-  kafka:
-    image: 'bitnami/kafka:latest'
-    # ports:
-    #   - 9092:9092
-    networks:
-      - example-network
-    environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=INTERNAL://kafka:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
   server:
-    depends_on:
-      - kafka
     image: golang:1.20.5
     volumes:
       - gocache:/go/pkg/mod
@@ -27,11 +10,10 @@ services:
     working_dir: /go/asyncapi-codegen
     command: go run ./examples/ping/kafka/server
     networks:
-      - example-network
+      - brokers
   client:
     depends_on:
       - server
-      - kafka
     image: golang:1.20.5
     volumes:
       - gocache:/go/pkg/mod
@@ -40,12 +22,13 @@ services:
     working_dir: /go/asyncapi-codegen
     command: go run ./examples/ping/kafka/client
     networks:
-      - example-network
+      - brokers
 
 volumes:
   gocache:
   gobuild:
 
 networks:
-  example-network:
-    driver: bridge
+  brokers:
+    name: asyncapi-codegen_brokers
+    external: true

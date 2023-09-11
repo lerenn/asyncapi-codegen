@@ -1,29 +1,38 @@
+.PHONY: brokers/up
+brokers/up: ## Start the brokers
+	@docker-compose up -d
+
+.PHONY: brokers/logs
+brokers/logs: ## Get the brokers logs
+	@docker-compose logs
+
+.PHONY: brokers/down
+brokers/down: ## Stop the brokers
+	@docker-compose down
+
 .PHONY: lint
 lint: ## Lint the code
 	@LOG_LEVEL=error go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51 run
 
 .PHONY: clean
-clean: test/clean ## Clean up the project
+clean: __examples/clean brokers/down ## Clean up the project
 
 .PHONY: check
-check: generate lint test ## Check that everything is ready for commit
+check: clean generate lint examples test ## Check that everything is ready for commit
 
-.PHONY: test/clean
-test/clean:
+.PHONY: __examples/clean
+__examples/clean:
 	@$(MAKE) -C examples clean
 
-.PHONY: test/integration
-test/integration: ## Perform integration tests
+.PHONY: examples
+examples: brokers/up ## Perform examples
 	@$(MAKE) -C examples run
 
-.PHONY: test/unit
-test/unit: ## Perform unit tests
-	@go test ./... -coverprofile cover.out -v
+.PHONY: test
+test: brokers/up ## Perform tests
+	@go test ./... -coverprofile cover.out -v -timeout=30s
 	@go tool cover -func cover.out
 	@rm cover.out
-
-.PHONY: test
-test: test/unit test/integration ## Perform all tests
 
 .PHONY: generate
 generate: ## Generate files
