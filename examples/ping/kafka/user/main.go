@@ -6,26 +6,29 @@ import (
 	"context"
 	"time"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
 )
 
 func main() {
-	time.Sleep(6 * time.Second)
+	// Instanciate a Kafka controller with a logger
+	logger := loggers.NewECS()
+	broker := kafka.NewController(
+		[]string{"kafka:9092"},          // List of hosts
+		kafka.WithLogger(logger),        // Attach an internal logger
+		kafka.WithGroupID("ping-users"), // Change group id
+	)
 
 	// Create a new user controller
-	host := "kafka:9092"
-	ctrl, err := NewUserController(brokers.NewKafkaController([]string{host}))
+	ctrl, err := NewUserController(
+		broker,             // Attach the kafka controller
+		WithLogger(logger), // Attach an internal logger
+		WithMiddlewares(middlewares.Logging(logger))) // Attach a middleware to log messages
 	if err != nil {
 		panic(err)
 	}
 	defer ctrl.Close(context.Background())
-
-	// Attach a logger (optional)
-	logger := loggers.NewECS()
-	ctrl.SetLogger(logger)
-	ctrl.AddMiddlewares(middlewares.Logging(logger))
 
 	// Make a new ping message
 	req := NewPingMessage()

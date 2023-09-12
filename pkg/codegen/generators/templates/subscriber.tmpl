@@ -2,7 +2,7 @@
 // {{ .Prefix }}Subscriber represents all handlers that are expecting messages for {{ .Prefix }}
 type {{ .Prefix }}Subscriber interface {
 {{- range  $key, $value := .Channels}}
-    // {{namify $key}}
+    // {{namify $key}} subscribes to messages placed on the '{{ $key }}' channel
     {{namify $key}}(ctx context.Context, msg {{channelToMessageTypeName $value}}, done bool)
 {{end}}
 }
