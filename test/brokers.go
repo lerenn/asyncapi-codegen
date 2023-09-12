@@ -4,25 +4,15 @@ import (
 	"testing"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	"github.com/nats-io/nats.go"
-
-	"github.com/stretchr/testify/assert"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 )
 
 // BrokerControllers returns a list of BrokerController to test based on the
 // docker-compose file of the project.
 func BrokerControllers(t *testing.T) []extensions.BrokerController {
-	// NATS
-	nc, err := nats.Connect("nats://localhost:4222")
-	assert.NoError(t, err)
-	natsController := brokers.NewNATSController(nc)
-
-	// Kafka
-	kafkaController := brokers.NewKafkaController([]string{"localhost:9094"})
-
 	return []extensions.BrokerController{
-		natsController,
-		kafkaController,
+		nats.NewController("nats://localhost:4222"),
+		kafka.NewController([]string{"localhost:9094"}),
 	}
 }

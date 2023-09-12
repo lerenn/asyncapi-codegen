@@ -17,48 +17,37 @@ import (
 
 // UserSubscriber represents all handlers that are expecting messages for User
 type UserSubscriber interface {
-	// Pong
+	// Pong subscribes to messages placed on the 'pong' channel
 	Pong(ctx context.Context, msg PongMessage, done bool)
 }
 
 // UserController is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the User
 type UserController struct {
-	// brokerController is the broker controller that will be used to communicate
-	brokerController extensions.BrokerController
-	// stopSubscribers is a map of stop channels for each subscribed channel
-	stopSubscribers map[string]chan interface{}
-	// logger is the logger that will be used to log operations on controller
-	logger extensions.Logger
-	// middlewares are the middlewares that will be executed when sending or
-	// receiving messages
-	middlewares []extensions.Middleware
+	controller
 }
 
 // NewUserController links the User to the broker
-func NewUserController(bc extensions.BrokerController) (*UserController, error) {
+func NewUserController(bc extensions.BrokerController, options ...ControllerOption) (*UserController, error) {
+	// Check if broker controller has been provided
 	if bc == nil {
 		return nil, ErrNilBrokerController
 	}
 
-	return &UserController{
-		brokerController: bc,
-		stopSubscribers:  make(map[string]chan interface{}),
-		logger:           extensions.DummyLogger{},
-		middlewares:      make([]extensions.Middleware, 0),
-	}, nil
-}
+	// Create default controller
+	controller := controller{
+		broker:          bc,
+		stopSubscribers: make(map[string]chan interface{}),
+		logger:          extensions.DummyLogger{},
+		middlewares:     make([]extensions.Middleware, 0),
+	}
 
-// SetLogger attaches a logger that will log operations on controller
-func (c *UserController) SetLogger(logger extensions.Logger) {
-	c.logger = logger
-	c.brokerController.SetLogger(logger)
-}
+	// Apply options
+	for _, option := range options {
+		option(&controller)
+	}
 
-// AddMiddlewares attaches middlewares that will be executed when sending or
-// receiving messages
-func (c *UserController) AddMiddlewares(middleware ...extensions.Middleware) {
-	c.middlewares = append(c.middlewares, middleware...)
+	return &UserController{controller: controller}, nil
 }
 
 func (c UserController) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
@@ -158,7 +147,7 @@ func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.brokerController.Subscribe(ctx, path)
+	msgs, stop, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
@@ -258,7 +247,7 @@ func (c *UserController) PublishPing(ctx context.Context, msg PingMessage) error
 
 	// Publish the message on event-broker through middlewares
 	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		err = c.brokerController.Publish(ctx, path, bMsg)
+		err = c.broker.Publish(ctx, path, bMsg)
 	})
 
 	// Return error from publication on broker
@@ -277,7 +266,7 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 	ctx = addUserContextValues(ctx, path)
 
 	// Subscribe to broker channel
-	msgs, stop, err := cc.brokerController.Subscribe(ctx, path)
+	msgs, stop, err := cc.broker.Subscribe(ctx, path)
 	if err != nil {
 		cc.logger.Error(ctx, err.Error())
 		return PongMessage{}, err
@@ -356,6 +345,38 @@ var (
 	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens
 	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
 )
+
+// controller is the controller that will be used to communicate with the broker
+// It will be used internally by AppController and UserController
+type controller struct {
+	// broker is the broker controller that will be used to communicate
+	broker extensions.BrokerController
+	// stopSubscribers is a map of stop channels for each subscribed channel
+	stopSubscribers map[string]chan interface{}
+	// logger is the logger that will be used to log operations on controller
+	logger extensions.Logger
+	// middlewares are the middlewares that will be executed when sending or
+	// receiving messages
+	middlewares []extensions.Middleware
+}
+
+// ControllerOption is the type of the options that can be passed
+// when creating a new Controller
+type ControllerOption func(controller *controller)
+
+// WithLogger attaches a logger to the controller
+func WithLogger(logger extensions.Logger) ControllerOption {
+	return func(controller *controller) {
+		controller.logger = logger
+	}
+}
+
+// WithMiddlewares attaches middlewares that will be executed when sending or receiving messages
+func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
+	return func(controller *controller) {
+		controller.middlewares = middlewares
+	}
+}
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string

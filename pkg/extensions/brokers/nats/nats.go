@@ -1,44 +1,62 @@
-package brokers
+package nats
 
 import (
 	"context"
 	"errors"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/nats-io/nats.go"
 )
 
-// NATSController is the NATSController implementation for asyncapi-codegen
-type NATSController struct {
+// Controller is the Controller implementation for asyncapi-codegen
+type Controller struct {
 	connection *nats.Conn
 	logger     extensions.Logger
 	queueGroup string
 }
 
-// NewNATSController creates a new NATS that fulfill the BrokerLinker interface
-func NewNATSController(connection *nats.Conn) *NATSController {
-	return &NATSController{
-		connection: connection,
-		queueGroup: DefaultQueueGroupID,
+type ControllerOption func(controller *Controller)
+
+// NewController creates a new NATS controller
+func NewController(url string, options ...ControllerOption) *Controller {
+	// Connect to NATS
+	nc, err := nats.Connect(url)
+	if err != nil {
+		panic(err)
+	}
+
+	// Creates default controller
+	controller := &Controller{
+		connection: nc,
+		queueGroup: brokers.DefaultQueueGroupID,
 		logger:     extensions.DummyLogger{},
+	}
+
+	// Execute options
+	for _, option := range options {
+		option(controller)
+	}
+
+	return controller
+}
+
+// WithQueueGroup set a custom queue group for channel subscription
+func WithQueueGroup(name string) ControllerOption {
+	return func(controller *Controller) {
+		controller.queueGroup = name
 	}
 }
 
-// SetQueueGroup sets a custom queue group name for channel subscription
-//
-// It can be used for multiple applications listening one the same channel but
-// wants to listen on different queues.
-func (c *NATSController) SetQueueGroup(name string) {
-	c.queueGroup = name
-}
-
-// SetLogger set a custom logger that will log operations on broker controller
-func (c *NATSController) SetLogger(logger extensions.Logger) {
-	c.logger = logger
+// WithLogger set a custom logger that will log operations on broker controller
+func WithLogger(logger extensions.Logger) ControllerOption {
+	return func(controller *Controller) {
+		controller.logger = logger
+	}
 }
 
 // Publish a message to the broker
-func (c *NATSController) Publish(_ context.Context, channel string, bm extensions.BrokerMessage) error {
+func (c *Controller) Publish(_ context.Context, channel string, bm extensions.BrokerMessage) error {
 	msg := nats.NewMsg(channel)
 
 	// Set message headers and content
@@ -57,7 +75,7 @@ func (c *NATSController) Publish(_ context.Context, channel string, bm extension
 }
 
 // Subscribe to messages from the broker
-func (c *NATSController) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
+func (c *Controller) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
 	// Subscribe to channel
 	natsMsgs := make(chan *nats.Msg, 64)
 	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueGroup, natsMsgs)

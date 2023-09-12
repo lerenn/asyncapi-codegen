@@ -1,41 +1,30 @@
 // {{ .Prefix }}Controller is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the {{ .Prefix }}
 type {{ .Prefix }}Controller struct {
-    // brokerController is the broker controller that will be used to communicate
-    brokerController extensions.BrokerController
-    // stopSubscribers is a map of stop channels for each subscribed channel
-    stopSubscribers  map[string]chan interface{}
-    // logger is the logger that will be used to log operations on controller
-    logger           extensions.Logger
-    // middlewares are the middlewares that will be executed when sending or
-    // receiving messages
-    middlewares      []extensions.Middleware
+    controller
 }
 
 // New{{ .Prefix }}Controller links the {{ .Prefix }} to the broker
-func New{{ .Prefix }}Controller(bc extensions.BrokerController) (*{{ .Prefix }}Controller, error) {
+func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...ControllerOption) (*{{ .Prefix }}Controller, error) {
+    // Check if broker controller has been provided
     if bc == nil {
         return nil, ErrNilBrokerController
     }
 
-    return &{{ .Prefix }}Controller{
-        brokerController: bc,
+    // Create default controller
+    controller := controller{
+        broker: bc,
         stopSubscribers:  make(map[string]chan interface{}),
         logger:           extensions.DummyLogger{},
         middlewares:      make([]extensions.Middleware, 0),
-    }, nil
-}
+    }
+    
+    // Apply options
+    for _, option := range options {
+        option(&controller)
+    }
 
-// SetLogger attaches a logger that will log operations on controller
-func (c *{{ .Prefix }}Controller) SetLogger(logger extensions.Logger) {
-    c.logger = logger
-    c.brokerController.SetLogger(logger)
-}
-
-// AddMiddlewares attaches middlewares that will be executed when sending or
-// receiving messages
-func (c *{{ .Prefix }}Controller) AddMiddlewares(middleware ...extensions.Middleware) {
-    c.middlewares = append(c.middlewares, middleware...)
+    return &{{ .Prefix }}Controller{controller: controller}, nil
 }
 
 func (c {{ .Prefix }}Controller) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
@@ -152,7 +141,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
     }
 
     // Subscribe to broker channel
-    msgs, stop, err := c.brokerController.Subscribe(ctx, path)
+    msgs, stop, err := c.broker.Subscribe(ctx, path)
     if err != nil {
         c.logger.Error(ctx, err.Error())
         return err
@@ -270,7 +259,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
 
     // Publish the message on event-broker through middlewares
     c.executeMiddlewares(ctx, func(ctx context.Context) {
-        err = c.brokerController.Publish(ctx, path, bMsg)
+        err = c.broker.Publish(ctx, path, bMsg)
     })
 
     // Return error from publication on broker
@@ -297,7 +286,7 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
 
     // Subscribe to broker channel
-    msgs, stop, err := cc.brokerController.Subscribe(ctx, path)
+    msgs, stop, err := cc.broker.Subscribe(ctx, path)
     if err != nil {
         cc.logger.Error(ctx, err.Error())
         return {{channelToMessageTypeName $value}}{}, err

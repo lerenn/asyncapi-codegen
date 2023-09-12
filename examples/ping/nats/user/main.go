@@ -6,30 +6,25 @@ import (
 	"context"
 	"time"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
-
-	"github.com/nats-io/nats.go"
 )
 
 func main() {
-	nc, err := nats.Connect("nats://nats:4222")
-	if err != nil {
-		panic(err)
-	}
+	// Instanciate a NATS controller with a logger
+	logger := loggers.NewECS()
+	broker := nats.NewController("nats://nats:4222", nats.WithLogger(logger))
 
 	// Create a new user controller
-	ctrl, err := NewUserController(brokers.NewNATSController(nc))
+	ctrl, err := NewUserController(
+		broker,             // Attach the NATS controller
+		WithLogger(logger), // Attach an internal logger
+		WithMiddlewares(middlewares.Logging(logger))) // Attach a middleware to log messages
 	if err != nil {
 		panic(err)
 	}
 	defer ctrl.Close(context.Background())
-
-	// Attach a logger (optional)
-	logger := loggers.NewECS()
-	ctrl.SetLogger(logger)
-	ctrl.AddMiddlewares(middlewares.Logging(logger))
 
 	// Make a new ping message
 	req := NewPingMessage()

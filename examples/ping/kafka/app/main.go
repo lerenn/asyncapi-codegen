@@ -8,16 +8,16 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
 )
 
-type ServerSubscriber struct {
+type Subscriber struct {
 	Controller *AppController
 }
 
-func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage, _ bool) {
+func (s Subscriber) Ping(ctx context.Context, req PingMessage, _ bool) {
 	// Generate a pong message, set as a response of the request
 	resp := NewPongMessage()
 	resp.SetAsResponseFrom(&req)
@@ -33,24 +33,26 @@ func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage, _ bool) {
 }
 
 func main() {
-	time.Sleep(5 * time.Second)
+	// Instanciate a Kafka controller with a logger
+	logger := loggers.NewECS()
+	broker := kafka.NewController(
+		[]string{"kafka:9092"},         // List of hosts
+		kafka.WithLogger(logger),       // Attach an internal logger
+		kafka.WithGroupID("ping-apps"), // Change group id
+	)
 
-	// Create a new user controller
-	host := "kafka:9092"
 	// Create a new app controller
-	ctrl, err := NewAppController(brokers.NewKafkaController([]string{host}))
+	ctrl, err := NewAppController(
+		broker,             // Attach the kafka controller
+		WithLogger(logger), // Attach an internal logger
+		WithMiddlewares(middlewares.Logging(logger))) // Attach a middleware to log messages
 	if err != nil {
 		panic(err)
 	}
 	defer ctrl.Close(context.Background())
 
-	// Attach a logger (optional)
-	logger := loggers.NewECS()
-	ctrl.SetLogger(logger)
-	ctrl.AddMiddlewares(middlewares.Logging(logger))
-
 	// Subscribe to all (we could also have just listened on the ping request channel)
-	sub := ServerSubscriber{Controller: ctrl}
+	sub := Subscriber{Controller: ctrl}
 	if err := ctrl.SubscribeAll(context.Background(), sub); err != nil {
 		panic(err)
 	}

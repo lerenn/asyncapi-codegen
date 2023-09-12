@@ -121,7 +121,7 @@ type AppController struct
 
 // NewAppController will create a new App Controller and will connect the
 // BrokerController that you pass in argument to subscription and publication method.
-func NewAppController(bs BrokerController) *AppController
+func NewAppController(bs BrokerController, options ...ControllerOption) *AppController
 
 // Close function will clean up all resources and subscriptions left in the
 // application controller. This should be call right after NewAppController
@@ -166,15 +166,12 @@ code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.
 
 ```go
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 	/* ... */
 )
 
-// Connect to NATS
-nc, _ := nats.Connect("nats://nats:4222")
-
 // Create a new application controller
-ctrl, _ := NewAppController(brokers.NewNATSController(nc))
+ctrl, _ := NewAppController(nats.NewController("nats://nats:4222"))
 defer ctrl.Close(context.Background())
 
 // Subscribe to HelloWorld messages
@@ -201,7 +198,7 @@ type UserController struct
 
 // NewUserController will create a new User Controller and will connect the
 // BrokerController that you pass in argument to subscription and publication method.
-func NewUserController(bs BrokerController) *UserController
+func NewUserController(bs BrokerController, options ...ControllerOption) *UserController
 
 // Close function will clean up all resources and subscriptions left in the
 // application controller. This should be call right after NewAppController
@@ -218,15 +215,12 @@ code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.
 
 ```go
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 	/* ... */
 )
 
-// Connect to NATS
-nc, _ := nats.Connect("nats://nats:4222")
-
-// Create a new application controller
-ctrl, _ := NewUserController(brokers.NewNATSController(nc))
+// Create a new user controller
+ctrl, _ := NewUserController(nats.NewController("nats://nats:4222"))
 defer ctrl.Close(context.Background())
 
 // Send HelloWorld
@@ -273,16 +267,11 @@ use `ping.gen.go`.
 #### Application
 
 ```golang
-import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	/* ... */
-)
-
-type ServerSubscriber struct {
+type Subscriber struct {
 	Controller *AppController
 }
 
-func (s ServerSubscriber) Ping(req PingMessage, _ bool) {
+func (s Subscriber) Ping(req PingMessage, _ bool) {
 	// Generate a pong message, set as a response of the request
 	resp := NewPongMessage()
 	resp.SetAsResponseFrom(&req)
@@ -297,11 +286,11 @@ func main() {
 	/* ... */
 
 	// Create a new application controller
-	ctrl, _ := NewAppController(brokers.NewNATSController(nc))
+	ctrl, _ := NewAppController(/* Add corresponding broker controller */)
 	defer ctrl.Close(context.Background())
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
-	sub := ServerSubscriber{Controller: ctrl}
+	sub := AppSubscriber{Controller: ctrl}
 	ctrl.SubscribeAll(context.Background(), sub)
 
 	// Process messages until interruption signal
@@ -357,20 +346,12 @@ Here are the universal parts that you can generate:
 ### Middlewares
 
 You can use middlewares that will be executing when receiving and publishing
-messages. You can add one or multiple middlewares using the following function
-on a controller:
+messages. You can add one or multiple middlewares using the  `WithMiddlewares`
+function in the initialization of the App or User controller:
 
 ```golang
-import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	/* ... */
-)
-
-// Create a new app controller with a NATS controller for example
-ctrl, _ := NewAppController(brokers.NewNATSController(nc))
-
-// Add middleware
-ctrl.AddMiddlewares(myMiddleware1, myMiddleware2 /*, ... */)
+// Create a new app controller with  middlewares
+ctrl, _ := NewAppController(/* Broker of your choice */, WithMiddlewares(myMiddleware1, myMiddleware2 /*, ... */))
 ```
 
 Here the function signature that should be satisfied:
@@ -460,7 +441,7 @@ You can have 2 types of logging:
 #### Controller logging
 
 To log internal operation of the controller, the only thing you have to do is
-to set a logger to your controller with the function `SetLogger()`:
+to initialize the controller with a logger, with the function `WithLogger()`:
 
 ```golang
 import(
@@ -468,13 +449,8 @@ import(
 	/* ... */
 )
 
-// Create a new app controller with a NATS controller for example
-ctrl, _ := NewAppController(brokers.NewNATSController(nc))
-	
-// Attach a logger (optional)
-// You can find loggers in `github.com/lerenn/asyncapi-codegen/pkg/log` or create your own
-logger := log.NewECS()
-ctrl.SetLogger(logger)
+// Create a new app controller with an Elastic Common Schema compatible logger
+ctrl, _ := NewAppController(/* Broker of your choice */, WithLogger(log.NewECS()))
 ```
 
 You can find all loggers in the directory `pkg/log`.
@@ -490,11 +466,9 @@ import(
 	/* ... */
 )
 
-// Create a new app controller with a NATS controller for example
-ctrl, _ := NewAppController(brokers.NewNATSController(nc))
-
-// Add middleware
-ctrl.AddMiddlewares(middleware.Logging(log.NewECS()))
+// Create a new app controller with a middleware for logging incoming/outgoing messages
+loggingMiddleware := middleware.Logging(log.NewECS())
+ctrl, _ := NewAppController(/* Broker of your choice */, WithMiddlewares(loggingMiddleware))
 ```
 
 #### Custom logging
@@ -537,16 +511,12 @@ func (logger SimpleLogger) Error(ctx log.Context, msg string, info ...log.Additi
 You can then create a controller with a logger using similar lines:
 
 ```golang
-import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	/* ... */
+// Create a new app controller with the custom logger
+ctrl, _ := NewAppController(
+  /* Broker of your choice */,
+  WithLogger(SimpleLogger{}),                         /* Use on as internal logger */
+  WithMiddleware(middleware.Logging(SimpleLogger{})), /* Use to log incoming/outgoing messages */
 )
-
-// Create a new app controller with a NATS controller for example
-ctrl, _ := NewAppController(brokers.NewNATSController(nc))
-
-// Set a logger
-ctrl.SetLogger(SimpleLogger{})
 ```
 
 ### Implementing your own broker controller
@@ -559,10 +529,7 @@ import(
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
-type BrokerController interface {	
-	// SetLogger set a logger that will log operations on broker controller
-	SetLogger(logger extensions.Logger)
-
+type BrokerController interface {
 	// Publish a message to the broker
 	Publish(ctx context.Context, channel string, mw extensions.BrokerMessage) error
 

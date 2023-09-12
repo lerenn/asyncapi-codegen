@@ -1,4 +1,4 @@
-package brokers
+package kafka
 
 import (
 	"context"
@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/segmentio/kafka-go"
 )
 
-// KafkaController is the Kafka implementation for asyncapi-codegen
-type KafkaController struct {
+// Controller is the Kafka implementation for asyncapi-codegen
+type Controller struct {
 	logger    extensions.Logger
 	groupID   string
 	hosts     []string
@@ -19,48 +20,57 @@ type KafkaController struct {
 	maxBytes  int
 }
 
-type KafkaControllerOption func(controller *KafkaController)
+type ControllerOption func(controller *Controller)
 
-// NewKafkaController creates a new KafkaController that fulfill the BrokerLinker interface
-func NewKafkaController(hosts []string, options ...KafkaControllerOption) *KafkaController {
-	controller := &KafkaController{
+// NewController creates a new KafkaController that fulfill the BrokerLinker interface
+func NewController(hosts []string, options ...ControllerOption) *Controller {
+	// Create default controller
+	controller := &Controller{
 		logger:    extensions.DummyLogger{},
-		groupID:   DefaultQueueGroupID,
+		groupID:   brokers.DefaultQueueGroupID,
 		hosts:     hosts,
 		partition: 0,
 		maxBytes:  10e6, // 10MB
 	}
+
+	// Execute options
 	for _, option := range options {
 		option(controller)
 	}
+
 	return controller
 }
 
-func WithGroupID(groupID string) KafkaControllerOption {
-	return func(controller *KafkaController) {
+// WithGroupID set a custom group ID for channel subscription
+func WithGroupID(groupID string) ControllerOption {
+	return func(controller *Controller) {
 		controller.groupID = groupID
 	}
 }
 
-func WithPartition(partition int) KafkaControllerOption {
-	return func(controller *KafkaController) {
+// WithPartition set the partition to use for the topic
+func WithPartition(partition int) ControllerOption {
+	return func(controller *Controller) {
 		controller.partition = partition
 	}
 }
 
-func WithMaxBytes(maxBytes int) KafkaControllerOption {
-	return func(controller *KafkaController) {
+// WithMaxBytes set the maximum size of a message
+func WithMaxBytes(maxBytes int) ControllerOption {
+	return func(controller *Controller) {
 		controller.maxBytes = maxBytes
 	}
 }
 
-// SetLogger set a custom logger that will log operations on broker controller
-func (c *KafkaController) SetLogger(logger extensions.Logger) {
-	c.logger = logger
+// WithLogger set a custom logger that will log operations on broker controller
+func WithLogger(logger extensions.Logger) ControllerOption {
+	return func(controller *Controller) {
+		controller.logger = logger
+	}
 }
 
 // Publish a message to the broker
-func (c *KafkaController) Publish(ctx context.Context, channel string, um extensions.BrokerMessage) error {
+func (c *Controller) Publish(ctx context.Context, channel string, um extensions.BrokerMessage) error {
 	w := &kafka.Writer{
 		Addr:                   kafka.TCP(c.hosts...),
 		Topic:                  channel,
@@ -101,7 +111,7 @@ func (c *KafkaController) Publish(ctx context.Context, channel string, um extens
 }
 
 // Subscribe to messages from the broker
-func (c *KafkaController) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
+func (c *Controller) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   c.hosts,
 		Topic:     channel,

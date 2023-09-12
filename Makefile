@@ -30,9 +30,7 @@ examples: brokers/up ## Perform examples
 
 .PHONY: test
 test: brokers/up ## Perform tests
-	@go test ./... -coverprofile cover.out -v -timeout=30s
-	@go tool cover -func cover.out
-	@rm cover.out
+	@go test ./... -timeout=30s
 
 .PHONY: generate
 generate: ## Generate files

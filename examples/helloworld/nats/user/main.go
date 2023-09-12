@@ -6,19 +6,12 @@ import (
 	"context"
 	"log"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	"github.com/nats-io/nats.go"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 )
 
 func main() {
-	// Connect to NATS
-	nc, err := nats.Connect("nats://nats:4222")
-	if err != nil {
-		panic(err)
-	}
-
 	// Create a new user controller
-	ctrl, err := NewUserController(brokers.NewNATSController(nc))
+	ctrl, err := NewUserController(nats.NewController("nats://nats:4222"))
 	if err != nil {
 		panic(err)
 	}

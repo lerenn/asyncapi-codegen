@@ -8,19 +8,12 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	"github.com/nats-io/nats.go"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 )
 
 func main() {
-	// Connect to NATS
-	nc, err := nats.Connect("nats://nats:4222")
-	if err != nil {
-		panic(err)
-	}
-
 	// Create a new application controller
-	ctrl, err := NewAppController(brokers.NewNATSController(nc))
+	ctrl, err := NewAppController(nats.NewController("nats://nats:4222"))
 	if err != nil {
 		panic(err)
 	}
