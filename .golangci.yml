@@ -23,6 +23,7 @@ linters:
     - godot
     - gofmt
     - goimports
+    - goprintffuncname
     - gosmopolitan
     - importas
     - ireturn
