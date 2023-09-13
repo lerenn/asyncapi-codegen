@@ -33,6 +33,7 @@ linters:
     - nestif
     - nilerr
     - nolintlint
+    - reassign
     - revive
     - stylecheck
     - thelper
