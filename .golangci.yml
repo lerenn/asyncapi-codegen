@@ -15,6 +15,7 @@ linters:
     - nilerr
     - revive
     - stylecheck
+    - thelper
     - whitespace
 
 linters-settings:
