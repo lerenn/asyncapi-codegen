@@ -15,6 +15,7 @@ linters:
     - goimports
     - ireturn
     - lll
+    - maintidx
     - misspell
     - nakedret
     - nilerr
