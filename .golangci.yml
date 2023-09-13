@@ -26,6 +26,7 @@ linters:
     - ireturn
     - lll
     - maintidx
+    - makezero
     - mirror
     - misspell
     - nakedret
