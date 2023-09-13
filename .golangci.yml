@@ -2,6 +2,7 @@ linters:
   enable:
     - dupword
     - errorlint
+    - exhaustive
     - godot
     - misspell
     - revive
