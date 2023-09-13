@@ -19,6 +19,7 @@ linters:
     - mirror
     - misspell
     - nakedret
+    - nestif
     - nilerr
     - nolintlint
     - revive
