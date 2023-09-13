@@ -18,6 +18,7 @@ linters:
     - thelper
     - unconvert
     - unparam
+    - wastedassign
     - whitespace
 
 linters-settings:
