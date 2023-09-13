@@ -6,7 +6,7 @@ func ToPointer[T any](t T) *T {
 }
 
 // ToValue returns the value pointed by the given pointer.
-func ToValue[T any](t *T) T {
+func ToValue[T any](t *T) T { //nolint:ireturn
 	if t == nil {
 		t = new(T)
 	}
