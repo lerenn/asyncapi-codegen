@@ -7,6 +7,7 @@ linters:
     - goconst
     - gocyclo
     - godot
+    - gofmt
     - misspell
     - revive
     - whitespace
