@@ -3,6 +3,7 @@ linters:
   enable:
     - asasalint
     - asciicheck
+    - bidichk
     - cyclop
     - decorder
     - dupword
