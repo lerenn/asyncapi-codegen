@@ -16,6 +16,7 @@ linters:
     - exportloopref
     - funlen
     - gci
+    - gochecknoinits
     - gocognit
     - goconst
     - gocritic
