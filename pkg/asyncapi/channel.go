@@ -6,6 +6,9 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
 
+// Channel is a representation of the corresponding asyncapi object filled
+// from an asyncapi specification that will be used to generate code.
+// Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#channelItemObject
 type Channel struct {
 	Parameters map[string]*Parameter `json:"parameters"`
 
@@ -17,6 +20,7 @@ type Channel struct {
 	Path string `json:"-"`
 }
 
+// Process processes the Channel to make it ready for code generation
 func (c *Channel) Process(path string, spec Specification) {
 	// Set channel name and path
 	c.Name = utils.UpperFirstLetter(path)

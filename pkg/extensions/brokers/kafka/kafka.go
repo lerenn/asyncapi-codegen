@@ -20,6 +20,8 @@ type Controller struct {
 	maxBytes  int
 }
 
+// ControllerOption is a function that can be used to configure a Kafka controller
+// Examples: WithGroupID(), WithPartition(), WithMaxBytes(), WithLogger()
 type ControllerOption func(controller *Controller)
 
 // NewController creates a new KafkaController that fulfill the BrokerLinker interface

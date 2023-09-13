@@ -4,6 +4,9 @@ import (
 	"strings"
 )
 
+// Specification is the asyncapi specification struct that will be used to generate
+// code. It should contains every information given in the asyncapi specification.
+// Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#schema
 type Specification struct {
 	Version    string              `json:"asyncapi"`
 	Info       Info                `json:"info"`
@@ -11,6 +14,7 @@ type Specification struct {
 	Components Components          `json:"components"`
 }
 
+// Process processes the Specification to make it ready for code generation
 func (s *Specification) Process() {
 	for path, ch := range s.Channels {
 		ch.Process(path, *s)
@@ -36,16 +40,19 @@ func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount 
 	return publishCount, subscribeCount
 }
 
+// ReferenceParameter returns the Parameter struct corresponding to the given reference
 func (s Specification) ReferenceParameter(ref string) *Parameter {
 	param, _ := s.reference(ref).(*Parameter)
 	return param
 }
 
+// ReferenceMessage returns the Message struct corresponding to the given reference
 func (s Specification) ReferenceMessage(ref string) *Message {
 	msg, _ := s.reference(ref).(*Message)
 	return msg
 }
 
+// ReferenceAny returns the Any struct corresponding to the given reference
 func (s Specification) ReferenceAny(ref string) *Any {
 	msg, _ := s.reference(ref).(*Any)
 	return msg
