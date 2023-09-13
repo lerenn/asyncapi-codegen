@@ -31,9 +31,13 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	gen.SubscribeChannels = make(map[string]*asyncapi.Channel)
 	gen.PublishChannels = make(map[string]*asyncapi.Channel)
 	for name, channel := range spec.Channels {
+		// Add channel to subscribe channels based on channel content and side
 		if isSubscribeChannel(side, channel) {
 			gen.SubscribeChannels[name] = channel
-		} else {
+		}
+
+		// Add channel to publish channels based on channel content and side
+		if isPublishChannel(side, channel) {
 			gen.PublishChannels[name] = channel
 		}
 	}
@@ -54,12 +58,19 @@ func isSubscribeChannel(side Side, channel *asyncapi.Channel) bool {
 		return true
 	case side == SideIsUser && channel.Subscribe != nil:
 		return true
-	case side == SideIsApplication && channel.Subscribe != nil:
-		return false
-	case side == SideIsUser && channel.Publish != nil:
-		return false
 	default:
-		panic("this should never happen")
+		return false
+	}
+}
+
+func isPublishChannel(side Side, channel *asyncapi.Channel) bool {
+	switch {
+	case side == SideIsApplication && channel.Subscribe != nil:
+		return true
+	case side == SideIsUser && channel.Publish != nil:
+		return true
+	default:
+		return false
 	}
 }
 

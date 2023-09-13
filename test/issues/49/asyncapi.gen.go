@@ -212,6 +212,34 @@ func (c *AppController) UnsubscribeChat(ctx context.Context) {
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
+// PublishChat will publish messages to '/chat' channel
+func (c *AppController) PublishChat(ctx context.Context, msg ChatMessage) error {
+	// Get channel path
+	path := "/chat"
+
+	// Set context
+	ctx = addAppContextValues(ctx, path)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+
+	// Convert to BrokerMessage
+	bMsg, err := msg.toBrokerMessage()
+	if err != nil {
+		return err
+	}
+
+	// Set broker message to context
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+
+	// Publish the message on event-broker through middlewares
+	c.executeMiddlewares(ctx, func(ctx context.Context) {
+		err = c.broker.Publish(ctx, path, bMsg)
+	})
+
+	// Return error from publication on broker
+	return err
+}
+
 // PublishStatus will publish messages to '/status' channel
 func (c *AppController) PublishStatus(ctx context.Context, msg StatusMessage) error {
 	// Get channel path
@@ -531,6 +559,34 @@ func (c *UserController) UnsubscribeStatus(ctx context.Context) {
 	delete(c.stopSubscribers, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
+}
+
+// PublishChat will publish messages to '/chat' channel
+func (c *UserController) PublishChat(ctx context.Context, msg ChatMessage) error {
+	// Get channel path
+	path := "/chat"
+
+	// Set context
+	ctx = addUserContextValues(ctx, path)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+
+	// Convert to BrokerMessage
+	bMsg, err := msg.toBrokerMessage()
+	if err != nil {
+		return err
+	}
+
+	// Set broker message to context
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+
+	// Publish the message on event-broker through middlewares
+	c.executeMiddlewares(ctx, func(ctx context.Context) {
+		err = c.broker.Publish(ctx, path, bMsg)
+	})
+
+	// Return error from publication on broker
+	return err
 }
 
 var (
