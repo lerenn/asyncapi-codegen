@@ -3,6 +3,7 @@ linters:
   enable:
     - cyclop
     - dupword
+    - errchkjson
     - errname
     - errorlint
     - exhaustive
