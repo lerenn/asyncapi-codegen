@@ -28,7 +28,15 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	}
 
 	// Get channels based on publish/subscribe
-	gen.SubscribeChannels, gen.PublishChannels = getChannelsBasedOnSide(side, spec)
+	gen.SubscribeChannels = make(map[string]*asyncapi.Channel)
+	gen.PublishChannels = make(map[string]*asyncapi.Channel)
+	for name, channel := range spec.Channels {
+		if isSubscribeChannel(side, channel) {
+			gen.SubscribeChannels[name] = channel
+		} else {
+			gen.PublishChannels[name] = channel
+		}
+	}
 
 	// Set generation name
 	if side == SideIsApplication {
@@ -40,23 +48,19 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	return gen
 }
 
-func getChannelsBasedOnSide(side Side, spec asyncapi.Specification) (
-	subscribeChannels map[string]*asyncapi.Channel,
-	publishChannels map[string]*asyncapi.Channel,
-) {
-	subscribeChannels = make(map[string]*asyncapi.Channel)
-	publishChannels = make(map[string]*asyncapi.Channel)
-	for k, v := range spec.Channels {
-		// Channels are reverse on application side
-		if (side == SideIsApplication && v.Publish != nil) || (side == SideIsUser && v.Subscribe != nil) {
-			subscribeChannels[k] = v
-		} else if (side == SideIsApplication && v.Subscribe != nil) || (side == SideIsUser && v.Publish != nil) {
-			publishChannels[k] = v
-		} else {
-			panic("this should never happen")
-		}
+func isSubscribeChannel(side Side, channel *asyncapi.Channel) bool {
+	switch {
+	case side == SideIsApplication && channel.Publish != nil:
+		return true
+	case side == SideIsUser && channel.Subscribe != nil:
+		return true
+	case side == SideIsApplication && channel.Subscribe != nil:
+		return false
+	case side == SideIsUser && channel.Publish != nil:
+		return false
+	default:
+		panic("this should never happen")
 	}
-	return subscribeChannels, publishChannels
 }
 
 // Generate will generate the controller code.

@@ -70,8 +70,8 @@ func ReferenceToTypeName(ref string) string {
 // referenceToSlicePath will convert a reference to a slice where each element is a
 // step of the path.
 func referenceToSlicePath(ref string) []string {
-	ref = strings.Replace(ref, ".", "/", -1)
-	ref = strings.Replace(ref, "#", "", -1)
+	ref = strings.ReplaceAll(ref, ".", "/")
+	ref = strings.ReplaceAll(ref, "#", "")
 	return strings.Split(ref, "/")[1:]
 }
 
@@ -152,7 +152,7 @@ func DescribeStruct(st any) string {
 // make it a valid multiline golang comment.
 func MultiLineComment(comment string) string {
 	comment = strings.TrimSuffix(comment, "\n")
-	return strings.Replace(comment, "\n", "\n// ", -1)
+	return strings.ReplaceAll(comment, "\n", "\n// ")
 }
 
 // Args is a function used to pass arguments to templates.
