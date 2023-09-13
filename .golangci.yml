@@ -15,6 +15,7 @@ linters:
     - exhaustive
     - exportloopref
     - funlen
+    - gci
     - gocognit
     - goconst
     - gocyclo
