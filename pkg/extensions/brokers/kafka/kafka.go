@@ -117,7 +117,11 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 }
 
 // Subscribe to messages from the broker.
-func (c *Controller) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
+func (c *Controller) Subscribe(ctx context.Context, channel string) (
+	msgs chan extensions.BrokerMessage,
+	stop chan interface{},
+	err error,
+) {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   c.hosts,
 		Topic:     channel,

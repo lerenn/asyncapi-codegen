@@ -77,7 +77,11 @@ func (c *Controller) Publish(_ context.Context, channel string, bm extensions.Br
 }
 
 // Subscribe to messages from the broker.
-func (c *Controller) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
+func (c *Controller) Subscribe(ctx context.Context, channel string) (
+	msgs chan extensions.BrokerMessage,
+	stop chan interface{},
+	err error,
+) {
 	// Subscribe to channel
 	natsMsgs := make(chan *nats.Msg, 64)
 	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueGroup, natsMsgs)

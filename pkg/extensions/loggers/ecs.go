@@ -80,9 +80,18 @@ func (logger ECS) formatLog(ctx context.Context, msg string, info ...extensions.
 	})
 
 	// Add additional keys
-	info = append(info, extensions.LogInfo{Key: "message", Value: msg})
-	info = append(info, extensions.LogInfo{Key: "@timestamp", Value: time.Now().UTC().Format(time.RFC3339Nano)})
-	info = append(info, extensions.LogInfo{Key: "log.logger", Value: "github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers/ecs.go"})
+	info = append(info, extensions.LogInfo{
+		Key:   "message",
+		Value: msg,
+	})
+	info = append(info, extensions.LogInfo{
+		Key:   "@timestamp",
+		Value: time.Now().UTC().Format(time.RFC3339Nano),
+	})
+	info = append(info, extensions.LogInfo{
+		Key:   "log.logger",
+		Value: "github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers/ecs.go",
+	})
 
 	// Structure log
 	sl := structureLogs(info)

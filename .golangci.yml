@@ -10,6 +10,7 @@ linters:
     - godot
     - gofmt
     - goimports
+    - lll
     - misspell
     - nakedret
     - nilerr
