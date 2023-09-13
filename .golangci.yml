@@ -8,6 +8,7 @@ linters:
     - gocyclo
     - godot
     - gofmt
+    - goimports
     - misspell
     - revive
     - whitespace
