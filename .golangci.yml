@@ -13,6 +13,7 @@ linters:
     - misspell
     - nakedret
     - nilerr
+    - nolintlint
     - revive
     - stylecheck
     - thelper
