@@ -14,7 +14,7 @@ type Parameter struct {
 	ReferenceTo *Parameter `json:"-"`
 }
 
-// Process processes the Parameter structure to make it ready for code generation
+// Process processes the Parameter structure to make it ready for code generation.
 func (p *Parameter) Process(name string, spec Specification) {
 	// Add parameter name
 	p.Name = name

@@ -28,7 +28,7 @@ type Any struct {
 	Extensions
 }
 
-// NewAny creates a new Any structure with initialized fields
+// NewAny creates a new Any structure with initialized fields.
 func NewAny() Any {
 	return Any{
 		Properties: make(map[string]*Any),
@@ -36,7 +36,7 @@ func NewAny() Any {
 	}
 }
 
-// Process processes the Any structure to make it ready for code generation
+// Process processes the Any structure to make it ready for code generation.
 func (a *Any) Process(name string, spec Specification, isRequired bool) {
 	a.Name = utils.UpperFirstLetter(name)
 
@@ -97,9 +97,9 @@ func (a *Any) referenceFrom(ref []string) *Any {
 }
 
 // MergeWith merges the given Any structure with another one
-// (basically for AllOf, AnyOf, OneOf, etc)
+// (basically for AllOf, AnyOf, OneOf, etc).
 func (a *Any) MergeWith(spec Specification, a2 Any) {
-	a.Type = "object"
+	a.Type = TypeIsObject.String()
 
 	// Getting merged with reference
 	if a2.Reference != "" {

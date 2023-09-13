@@ -16,7 +16,20 @@ type Suite struct {
 	suite.Suite
 }
 
-func (suite *Suite) TestUserSubscriberGenerated() {
-	// Check that the Subscriber is indeed generated
-	var _ UserSubscriber
+func (suite *Suite) TestCorrectPublicationsSubscriptionsAreGenerated() {
+	// Check that the User subscriber is generated with correct subscriptions
+	_ = UserSubscriber.Chat
+	_ = UserSubscriber.Status
+
+	// Check that the User publisher is generated with correct publications
+	userController := UserController{}
+	_ = userController.PublishChat
+
+	// Check that the User subscriber is generated with correct subscriptions
+	_ = AppSubscriber.Chat
+
+	// Check that the App publisher is generated with correct publications
+	appController := AppController{}
+	_ = appController.PublishStatus
+	_ = appController.PublishChat
 }

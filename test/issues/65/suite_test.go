@@ -17,77 +17,93 @@ type Suite struct {
 	suite.Suite
 }
 
-func (suite *Suite) TestExtensions() {
-	tests := []struct {
-		name     string
-		schema   *asyncapi.Any
-		expected *regexp.Regexp
-	}{
-		// Schema
-		{
-			name: "flag",
-			schema: &asyncapi.Any{
-				Type:       "integer",
-				Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
-			},
-			expected: regexp.MustCompile("FlagSchema +uint8"),
-		},
-
-		// Object property
-		{
-			name: "object",
-			schema: &asyncapi.Any{
-				Type: "object",
-				Properties: map[string]*asyncapi.Any{
-					"flag": {
-						Type:       "integer",
-						Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
-					},
-				},
-				Required: []string{"flag"},
-			},
-			expected: regexp.MustCompile("Flag +uint8"),
-		},
-
-		// Array item
-		{
-			name: "flags",
-			schema: &asyncapi.Any{
-				Type: "array",
-				Items: &asyncapi.Any{
-					Type:       "integer",
+func (suite *Suite) TestExtensionsWithSchema() {
+	// Set specification
+	spec := asyncapi.Specification{
+		Components: asyncapi.Components{
+			Schemas: map[string]*asyncapi.Any{
+				"flag": {
+					Type:       asyncapi.TypeIsInteger.String(),
 					Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 				},
 			},
-			expected: regexp.MustCompile(`FlagsSchema +\[\]uint8`),
 		},
+	}
 
-		// Object property, type from package
-		{
-			name: "object",
-			schema: &asyncapi.Any{
-				Type: "object",
-				Properties: map[string]*asyncapi.Any{
-					"flag": {
-						Type:       "integer",
-						Extensions: asyncapi.Extensions{ExtGoType: "mypackage.Flag"},
+	// Generate code and test result
+	res, err := generators.TypesGenerator{Specification: spec}.Generate()
+	suite.Require().NoError(err)
+	suite.Require().True(regexp.MustCompile("FlagSchema +uint8").Match([]byte(res)))
+}
+
+func (suite *Suite) TestExtensionsWithObjectProperty() {
+	// Set specification
+	spec := asyncapi.Specification{
+		Components: asyncapi.Components{
+			Schemas: map[string]*asyncapi.Any{
+				asyncapi.TypeIsObject.String(): {
+					Type: asyncapi.TypeIsObject.String(),
+					Properties: map[string]*asyncapi.Any{
+						"flag": {
+							Type:       asyncapi.TypeIsInteger.String(),
+							Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
+						},
+					},
+					Required: []string{"flag"},
+				},
+			},
+		},
+	}
+
+	// Generate code and test result
+	res, err := generators.TypesGenerator{Specification: spec}.Generate()
+	suite.Require().NoError(err)
+	suite.Require().True(regexp.MustCompile("Flag +uint8").Match([]byte(res)))
+}
+
+func (suite *Suite) TestExtensionsWithArrayItem() {
+	// Set specification
+	spec := asyncapi.Specification{
+		Components: asyncapi.Components{
+			Schemas: map[string]*asyncapi.Any{
+				"flags": {
+					Type: asyncapi.TypeIsArray.String(),
+					Items: &asyncapi.Any{
+						Type:       asyncapi.TypeIsInteger.String(),
+						Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 					},
 				},
-				Required: []string{"flag"},
 			},
-			expected: regexp.MustCompile(`Flag +mypackage.Flag`),
 		},
 	}
 
-	for _, test := range tests {
-		spec := asyncapi.Specification{
-			Components: asyncapi.Components{
-				Schemas: map[string]*asyncapi.Any{test.name: test.schema},
-			},
-		}
-		res, err := generators.TypesGenerator{Specification: spec}.Generate()
+	// Generate code and test result
+	res, err := generators.TypesGenerator{Specification: spec}.Generate()
+	suite.Require().NoError(err)
+	suite.Require().True(regexp.MustCompile(`FlagsSchema +\[\]uint8`).Match([]byte(res)))
+}
 
-		suite.Require().NoError(err)
-		suite.Require().True(test.expected.Match([]byte(res)))
+func (suite *Suite) TestExtensionsWithObjectPropertyAndTypeFromPackage() {
+	// Set specification
+	spec := asyncapi.Specification{
+		Components: asyncapi.Components{
+			Schemas: map[string]*asyncapi.Any{
+				asyncapi.TypeIsObject.String(): {
+					Type: asyncapi.TypeIsObject.String(),
+					Properties: map[string]*asyncapi.Any{
+						"flag": {
+							Type:       asyncapi.TypeIsInteger.String(),
+							Extensions: asyncapi.Extensions{ExtGoType: "mypackage.Flag"},
+						},
+					},
+					Required: []string{"flag"},
+				},
+			},
+		},
 	}
+
+	// Generate code and test result
+	res, err := generators.TypesGenerator{Specification: spec}.Generate()
+	suite.Require().NoError(err)
+	suite.Require().True(regexp.MustCompile(`Flag +mypackage.Flag`).Match([]byte(res)))
 }

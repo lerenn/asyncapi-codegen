@@ -14,7 +14,7 @@ type Specification struct {
 	Components Components          `json:"components"`
 }
 
-// Process processes the Specification to make it ready for code generation
+// Process processes the Specification to make it ready for code generation.
 func (s *Specification) Process() {
 	for path, ch := range s.Channels {
 		ch.Process(path, *s)
@@ -23,7 +23,7 @@ func (s *Specification) Process() {
 }
 
 // GetPublishSubscribeCount gets the count of 'publish' channels and the count
-// of 'subscribe' channels inside the Specification
+// of 'subscribe' channels inside the Specification.
 func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount uint) {
 	for _, c := range s.Channels {
 		// Check that the publish channel is present
@@ -40,19 +40,19 @@ func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount 
 	return publishCount, subscribeCount
 }
 
-// ReferenceParameter returns the Parameter struct corresponding to the given reference
+// ReferenceParameter returns the Parameter struct corresponding to the given reference.
 func (s Specification) ReferenceParameter(ref string) *Parameter {
 	param, _ := s.reference(ref).(*Parameter)
 	return param
 }
 
-// ReferenceMessage returns the Message struct corresponding to the given reference
+// ReferenceMessage returns the Message struct corresponding to the given reference.
 func (s Specification) ReferenceMessage(ref string) *Message {
 	msg, _ := s.reference(ref).(*Message)
 	return msg
 }
 
-// ReferenceAny returns the Any struct corresponding to the given reference
+// ReferenceAny returns the Any struct corresponding to the given reference.
 func (s Specification) ReferenceAny(ref string) *Any {
 	msg, _ := s.reference(ref).(*Any)
 	return msg

@@ -18,16 +18,16 @@ type Extensions struct {
 // GoTypeImportExtension specifies the required import statement
 // for the x-go-type extension.
 // For example, GoTypeImportExtension{Name: "myuuid", Path: "github.com/google/uuid"}
-// will generate `import myuuid github.com/google/uuid`
+// will generate `import myuuid github.com/google/uuid`.
 type GoTypeImportExtension struct {
 	Name GoTypeImportName `json:"name"` // Package name for import, optional
 	Path GoTypeImportPath `json:"path"` // Path to package to import
 }
 
-// GoTypeImportPath is the import path type for x-go-type-import
+// GoTypeImportPath is the import path type for x-go-type-import.
 type GoTypeImportPath string
 
-// GoTypeImportName is the import name type for x-go-type-import
+// GoTypeImportName is the import name type for x-go-type-import.
 type GoTypeImportName string
 
 // goTypeImports collects custom imports in this Schema Object set by x-go-type-import key
@@ -68,7 +68,7 @@ func (a *Any) goTypeImports(imports map[GoTypeImportPath]GoTypeImportName) error
 // in all Schema Objects in the Specification.
 // Returns import strings like `alias "abc.xyz/repo/package"` for code generation.
 // Returns error when import name conflicts.
-func (s Specification) CustomImports() ([]string, error) {
+func (s Specification) CustomImports() ([]string, error) { //nolint:cyclop
 	importsSet := make(map[GoTypeImportPath]GoTypeImportName)
 
 	for _, v := range s.Components.Schemas {
@@ -99,6 +99,10 @@ func (s Specification) CustomImports() ([]string, error) {
 		}
 	}
 
+	return importsMapToList(importsSet), nil
+}
+
+func importsMapToList(importsSet map[GoTypeImportPath]GoTypeImportName) []string {
 	imports := make([]string, 0, len(importsSet))
 	for path, name := range importsSet {
 		if path == "" {
@@ -106,6 +110,5 @@ func (s Specification) CustomImports() ([]string, error) {
 		}
 		imports = append(imports, strings.TrimSpace(fmt.Sprintf(`%s "%s"`, name, path)))
 	}
-
-	return imports, nil
+	return imports
 }

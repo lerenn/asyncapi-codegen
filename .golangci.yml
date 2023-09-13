@@ -1,6 +1,52 @@
+# More infos: https://golangci-lint.run/usage/linters/
 linters:
   enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - containedctx
+    - contextcheck
+    - cyclop
+    - decorder
+    - dupword
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - exportloopref
+    - funlen
+    - gci
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - gofmt
+    - goimports
+    - goprintffuncname
+    - gosmopolitan
+    - importas
+    - ireturn
+    - lll
+    - maintidx
+    - makezero
+    - mirror
+    - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nolintlint
+    - reassign
     - revive
+    - stylecheck
+    - tenv
+    - thelper
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+    - whitespace
 
 linters-settings:
   revive:

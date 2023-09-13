@@ -4,7 +4,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
 )
 
-// Options is the struct that gather configuration of codegen
+// Options is the struct that gather configuration of codegen.
 type Options struct {
 	// OutputPath is the path to the generated code file
 	OutputPath string

@@ -12,7 +12,11 @@ brokers/down: ## Stop the brokers
 
 .PHONY: lint
 lint: ## Lint the code
-	@LOG_LEVEL=error go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51 run
+	@LOG_LEVEL=error go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2 run
+
+.PHONY: lint/fix
+lint/fix: ## Fix what can be fixed regarding the linter
+	@LOG_LEVEL=error go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2 run --fix
 
 .PHONY: clean
 clean: __examples/clean brokers/down ## Clean up the project

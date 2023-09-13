@@ -212,6 +212,34 @@ func (c *AppController) UnsubscribeChat(ctx context.Context) {
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
+// PublishChat will publish messages to '/chat' channel
+func (c *AppController) PublishChat(ctx context.Context, msg ChatMessage) error {
+	// Get channel path
+	path := "/chat"
+
+	// Set context
+	ctx = addAppContextValues(ctx, path)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+
+	// Convert to BrokerMessage
+	bMsg, err := msg.toBrokerMessage()
+	if err != nil {
+		return err
+	}
+
+	// Set broker message to context
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+
+	// Publish the message on event-broker through middlewares
+	c.executeMiddlewares(ctx, func(ctx context.Context) {
+		err = c.broker.Publish(ctx, path, bMsg)
+	})
+
+	// Return error from publication on broker
+	return err
+}
+
 // PublishStatus will publish messages to '/status' channel
 func (c *AppController) PublishStatus(ctx context.Context, msg StatusMessage) error {
 	// Get channel path
@@ -335,6 +363,9 @@ func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) er
 		return ErrNilUserSubscriber
 	}
 
+	if err := c.SubscribeChat(ctx, as.Chat); err != nil {
+		return err
+	}
 	if err := c.SubscribeStatus(ctx, as.Status); err != nil {
 		return err
 	}
@@ -345,6 +376,7 @@ func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) er
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *UserController) UnsubscribeAll(ctx context.Context) {
 	// Unsubscribe channels with no parameters (if any)
+	c.UnsubscribeChat(ctx)
 	c.UnsubscribeStatus(ctx)
 
 	// Unsubscribe remaining channels
@@ -354,8 +386,94 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 	}
 }
 
-// SubscribeStatus will subscribe to new messages from '/status' channel.
+// SubscribeChat will subscribe to new messages from '/chat' channel.
 //
+// Callback function 'fn' will be called each time a new message is received.
+// The 'done' argument indicates when the subscription is canceled and can be
+// used to clean up resources.
+func (c *UserController) SubscribeChat(ctx context.Context, fn func(ctx context.Context, msg ChatMessage, done bool)) error {
+	// Get channel path
+	path := "/chat"
+
+	// Set context
+	ctx = addUserContextValues(ctx, path)
+
+	// Check if there is already a subscription
+	_, exists := c.stopSubscribers[path]
+	if exists {
+		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
+		c.logger.Error(ctx, err.Error())
+		return err
+	}
+
+	// Subscribe to broker channel
+	msgs, stop, err := c.broker.Subscribe(ctx, path)
+	if err != nil {
+		c.logger.Error(ctx, err.Error())
+		return err
+	}
+	c.logger.Info(ctx, "Subscribed to channel")
+
+	// Asynchronously listen to new messages and pass them to app subscriber
+	go func() {
+		for {
+			// Wait for next message
+			bMsg, open := <-msgs
+
+			// Set broker message to context
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+
+			// Process message
+			msg, err := newChatMessageFromBrokerMessage(bMsg)
+			if err != nil {
+				c.logger.Error(ctx, err.Error())
+			}
+
+			// Add context
+			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
+
+			// Process message if no error and still open
+			if err == nil && open {
+				// Execute middlewares with the callback
+				c.executeMiddlewares(msgCtx, func(ctx context.Context) {
+					fn(ctx, msg, !open)
+				})
+			}
+
+			// If subscription is closed, then exit the function
+			if !open {
+				return
+			}
+		}
+	}()
+
+	// Add the stop channel to the inside map
+	c.stopSubscribers[path] = stop
+
+	return nil
+}
+
+// UnsubscribeChat will unsubscribe messages from '/chat' channel
+func (c *UserController) UnsubscribeChat(ctx context.Context) {
+	// Get channel path
+	path := "/chat"
+
+	// Set context
+	ctx = addUserContextValues(ctx, path)
+
+	// Get stop channel
+	stopChan, exists := c.stopSubscribers[path]
+	if !exists {
+		return
+	}
+
+	// Stop the channel and remove the entry
+	stopChan <- true
+	delete(c.stopSubscribers, path)
+
+	c.logger.Info(ctx, "Unsubscribed from channel")
+} // SubscribeStatus will subscribe to new messages from '/status' channel.
 // Callback function 'fn' will be called each time a new message is received.
 // The 'done' argument indicates when the subscription is canceled and can be
 // used to clean up resources.

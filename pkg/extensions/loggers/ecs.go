@@ -10,10 +10,10 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
-// ECS is a logger that will print logs in Elastic Common Schema format
+// ECS is a logger that will print logs in Elastic Common Schema format.
 type ECS struct{}
 
-// NewECS creates a new ECS logger
+// NewECS creates a new ECS logger.
 func NewECS() ECS {
 	return ECS{}
 }
@@ -35,7 +35,7 @@ func insertLogIntoStruct(key, value string, m map[string]any) map[string]any {
 	} else {
 		subm, ok = v.(map[string]any)
 		if !ok {
-			// Explicitely drop the old value
+			// Explicitly drop the old value
 			subm = make(map[string]any)
 		}
 	}
@@ -80,9 +80,18 @@ func (logger ECS) formatLog(ctx context.Context, msg string, info ...extensions.
 	})
 
 	// Add additional keys
-	info = append(info, extensions.LogInfo{Key: "message", Value: msg})
-	info = append(info, extensions.LogInfo{Key: "@timestamp", Value: time.Now().UTC().Format(time.RFC3339Nano)})
-	info = append(info, extensions.LogInfo{Key: "log.logger", Value: "github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers/ecs.go"})
+	info = append(info, extensions.LogInfo{
+		Key:   "message",
+		Value: msg,
+	})
+	info = append(info, extensions.LogInfo{
+		Key:   "@timestamp",
+		Value: time.Now().UTC().Format(time.RFC3339Nano),
+	})
+	info = append(info, extensions.LogInfo{
+		Key:   "log.logger",
+		Value: "github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers/ecs.go",
+	})
 
 	// Structure log
 	sl := structureLogs(info)
@@ -98,23 +107,23 @@ func (logger ECS) formatLog(ctx context.Context, msg string, info ...extensions.
 
 func (logger ECS) logWithLevel(ctx context.Context, level string, msg string, info ...extensions.LogInfo) {
 	// Add additional keys
-	info = append(info, extensions.LogInfo{Key: "log.level", Value: "info"})
+	info = append(info, extensions.LogInfo{Key: "log.level", Value: level})
 
 	// Print log
 	fmt.Println(logger.formatLog(ctx, msg, info...))
 }
 
-// Info logs a message at info level with context and additional info
+// Info logs a message at info level with context and additional info.
 func (logger ECS) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
 	logger.logWithLevel(ctx, "info", msg, info...)
 }
 
-// Warning logs a message at warning level with context and additional info
+// Warning logs a message at warning level with context and additional info.
 func (logger ECS) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
 	logger.logWithLevel(ctx, "warning", msg, info...)
 }
 
-// Error logs a message at error level with context and additional info
+// Error logs a message at error level with context and additional info.
 func (logger ECS) Error(ctx context.Context, msg string, info ...extensions.LogInfo) {
 	logger.logWithLevel(ctx, "error", msg, info...)
 }

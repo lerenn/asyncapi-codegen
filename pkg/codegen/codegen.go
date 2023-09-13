@@ -10,14 +10,14 @@ import (
 	"golang.org/x/tools/imports"
 )
 
-// CodeGen is the main structure for the code generation
+// CodeGen is the main structure for the code generation.
 type CodeGen struct {
 	Specification asyncapi.Specification
 	ModulePath    string
 	ModuleVersion string
 }
 
-// New creates a new code generation structure that can be used to generate code
+// New creates a new code generation structure that can be used to generate code.
 func New(spec asyncapi.Specification) CodeGen {
 	modulePath := "unknown module path"
 	moduleVersion := "unknown version"
@@ -38,7 +38,7 @@ func New(spec asyncapi.Specification) CodeGen {
 }
 
 // Generate generates code from the code generation structure, that have already
-// processed the AsyncAPI file when creating it
+// processed the AsyncAPI file when creating it.
 func (cg CodeGen) Generate(opt Options) error {
 	content, err := cg.generateImports(opt)
 	if err != nil {
@@ -48,10 +48,10 @@ func (cg CodeGen) Generate(opt Options) error {
 	for remainingParts, part := true, ""; remainingParts; part = "" {
 		switch {
 		case opt.Generate.Application:
-			part, err = cg.generateApp(opt)
+			part, err = cg.generateApp()
 			opt.Generate.Application = false
 		case opt.Generate.User:
-			part, err = cg.generateUser(opt)
+			part, err = cg.generateUser()
 			opt.Generate.User = false
 		case opt.Generate.Types:
 			part, err = cg.generateTypes()
@@ -103,7 +103,7 @@ func (cg CodeGen) generateTypes() (string, error) {
 	return generators.TypesGenerator{Specification: cg.Specification}.Generate()
 }
 
-func (cg CodeGen) generateApp(opts Options) (string, error) {
+func (cg CodeGen) generateApp() (string, error) {
 	var content string
 
 	// Generate application subscriber
@@ -129,7 +129,7 @@ func (cg CodeGen) generateApp(opts Options) (string, error) {
 	return content, nil
 }
 
-func (cg CodeGen) generateUser(opts Options) (string, error) {
+func (cg CodeGen) generateUser() (string, error) {
 	var content string
 
 	// Generate user subscriber

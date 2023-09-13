@@ -7,7 +7,7 @@ import (
 )
 
 // ControllerGenerator is a code generator for controllers that will turn an
-// asyncapi specification into controller golang code
+// asyncapi specification into controller golang code.
 type ControllerGenerator struct {
 	MethodCount       uint
 	SubscribeChannels map[string]*asyncapi.Channel
@@ -15,7 +15,7 @@ type ControllerGenerator struct {
 	Prefix            string
 }
 
-// NewControllerGenerator will create a new controller code generator
+// NewControllerGenerator will create a new controller code generator.
 func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGenerator {
 	var gen ControllerGenerator
 
@@ -30,20 +30,15 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	// Get channels based on publish/subscribe
 	gen.SubscribeChannels = make(map[string]*asyncapi.Channel)
 	gen.PublishChannels = make(map[string]*asyncapi.Channel)
-	for k, v := range spec.Channels {
-		// Channels are reverse on application side
-		if side == SideIsApplication {
-			if v.Publish != nil {
-				gen.SubscribeChannels[k] = v
-			} else if v.Subscribe != nil {
-				gen.PublishChannels[k] = v
-			}
-		} else {
-			if v.Publish != nil {
-				gen.PublishChannels[k] = v
-			} else if v.Subscribe != nil {
-				gen.SubscribeChannels[k] = v
-			}
+	for name, channel := range spec.Channels {
+		// Add channel to subscribe channels based on channel content and side
+		if isSubscribeChannel(side, channel) {
+			gen.SubscribeChannels[name] = channel
+		}
+
+		// Add channel to publish channels based on channel content and side
+		if isPublishChannel(side, channel) {
+			gen.PublishChannels[name] = channel
 		}
 	}
 
@@ -57,7 +52,29 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	return gen
 }
 
-// Generate will generate the controller code
+func isSubscribeChannel(side Side, channel *asyncapi.Channel) bool {
+	switch {
+	case side == SideIsApplication && channel.Publish != nil:
+		return true
+	case side == SideIsUser && channel.Subscribe != nil:
+		return true
+	default:
+		return false
+	}
+}
+
+func isPublishChannel(side Side, channel *asyncapi.Channel) bool {
+	switch {
+	case side == SideIsApplication && channel.Subscribe != nil:
+		return true
+	case side == SideIsUser && channel.Publish != nil:
+		return true
+	default:
+		return false
+	}
+}
+
+// Generate will generate the controller code.
 func (asg ControllerGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		controllerTemplatePath,

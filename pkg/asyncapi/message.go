@@ -29,7 +29,7 @@ type Message struct {
 	CorrelationIDRequired bool   `json:"-"`
 }
 
-// Process processes the Message to make it ready for code generation
+// Process processes the Message to make it ready for code generation.
 func (msg *Message) Process(name string, spec Specification) {
 	msg.Name = utils.UpperFirstLetter(name)
 
@@ -104,20 +104,24 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 	if strings.HasPrefix(msg.CorrelationID.Location, "$message.header#") {
 		if msg.Headers == nil {
 			msg.Headers = utils.ToPointer(NewAny())
-			msg.Headers.Name = "headers"
-			msg.Headers.Type = "object"
+			msg.Headers.Name = TypeIsHeader.String()
+			msg.Headers.Type = TypeIsObject.String()
 		}
 		child = msg.Headers
 	} else if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") && msg.Payload != nil {
 		if msg.Payload == nil {
 			msg.Payload = utils.ToPointer(NewAny())
-			msg.Payload.Name = "headers"
-			msg.Payload.Type = "object"
+			msg.Payload.Name = TypeIsHeader.String()
+			msg.Payload.Type = TypeIsObject.String()
 		}
 		child = msg.Payload
 	}
 
 	// Go down the path to correlation ID
+	return downToCorrelationID(path, child)
+}
+
+func downToCorrelationID(path []string, child *Any) (correlationIDParent *Any) {
 	var exists bool
 	for i, v := range path[1:] {
 		correlationIDParent = child
@@ -127,9 +131,9 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 			child = utils.ToPointer(NewAny())
 			child.Name = v
 			if i == len(path)-2 { // As there is -1 in the loop slice
-				child.Type = "string"
+				child.Type = TypeIsString.String()
 			} else {
-				child.Type = "object"
+				child.Type = TypeIsHeader.String()
 			}
 
 			// Add it to parent
@@ -151,14 +155,14 @@ func (msg *Message) referenceFrom(ref []string) interface{} {
 	var next *Any
 	if ref[0] == "payload" {
 		next = msg.Payload
-	} else if ref[0] == "header" {
+	} else if ref[0] == TypeIsHeader.String() {
 		next = msg.Headers
 	}
 
 	return next.referenceFrom(ref[1:])
 }
 
-// MergeWith merges the Message with another one
+// MergeWith merges the Message with another one.
 func (msg *Message) MergeWith(spec Specification, msg2 Message) {
 	// Remove reference if merging
 	if msg.Reference != "" {

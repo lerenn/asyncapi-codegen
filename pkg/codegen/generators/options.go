@@ -1,6 +1,6 @@
 package generators
 
-// Options are the options to activate some parts of code generation
+// Options are the options to activate some parts of code generation.
 type Options struct {
 	// Application should be true for application code generation to be generated
 	Application bool

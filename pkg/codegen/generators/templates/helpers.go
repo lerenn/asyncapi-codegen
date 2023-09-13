@@ -33,7 +33,7 @@ func correctAcronyms(sentence string) string {
 		wronglyFormatedAcronym := strcase.UpperCamelCase(a)
 		re := regexp.MustCompile(fmt.Sprintf("%s[A-Z]*", wronglyFormatedAcronym))
 
-		positions := re.FindAllIndex([]byte(sentence), -1)
+		positions := re.FindAllStringIndex(sentence, -1)
 		for _, p := range positions {
 			sentence = sentence[:p[0]] + a + sentence[p[0]+len(a):]
 		}
@@ -70,8 +70,8 @@ func ReferenceToTypeName(ref string) string {
 // referenceToSlicePath will convert a reference to a slice where each element is a
 // step of the path.
 func referenceToSlicePath(ref string) []string {
-	ref = strings.Replace(ref, ".", "/", -1)
-	ref = strings.Replace(ref, "#", "", -1)
+	ref = strings.ReplaceAll(ref, ".", "/")
+	ref = strings.ReplaceAll(ref, "#", "")
 	return strings.Split(ref, "/")[1:]
 }
 
@@ -83,7 +83,7 @@ func ReferenceToStructAttributePath(ref string) string {
 
 	for k, v := range path {
 		// If this is concerning the header, then it will be named "headers"
-		if v == "header" {
+		if v == asyncapi.TypeIsHeader.String() {
 			v = "headers"
 		}
 
@@ -122,7 +122,7 @@ func IsRequired(any asyncapi.Any, field string) bool {
 	return any.IsFieldRequired(field)
 }
 
-// GenerateChannelPath will generate a channel path with the given channel
+// GenerateChannelPath will generate a channel path with the given channel.
 func GenerateChannelPath(ch asyncapi.Channel) string {
 	// If there is no parameter, then just return the path
 	if ch.Parameters == nil {
@@ -143,7 +143,7 @@ func GenerateChannelPath(ch asyncapi.Channel) string {
 }
 
 // DescribeStruct will describe a struct in a human readable way using `%+v`
-// format from the standard library
+// format from the standard library.
 func DescribeStruct(st any) string {
 	return fmt.Sprintf("%+v", st)
 }
@@ -152,7 +152,7 @@ func DescribeStruct(st any) string {
 // make it a valid multiline golang comment.
 func MultiLineComment(comment string) string {
 	comment = strings.TrimSuffix(comment, "\n")
-	return strings.Replace(comment, "\n", "\n// ", -1)
+	return strings.ReplaceAll(comment, "\n", "\n// ")
 }
 
 // Args is a function used to pass arguments to templates.
