@@ -1,6 +1,7 @@
 # More infos: https://golangci-lint.run/usage/linters/
 linters:
   enable:
+    - cyclop
     - dupword
     - errorlint
     - exhaustive

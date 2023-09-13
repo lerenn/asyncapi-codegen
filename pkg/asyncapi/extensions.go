@@ -68,7 +68,7 @@ func (a *Any) goTypeImports(imports map[GoTypeImportPath]GoTypeImportName) error
 // in all Schema Objects in the Specification.
 // Returns import strings like `alias "abc.xyz/repo/package"` for code generation.
 // Returns error when import name conflicts.
-func (s Specification) CustomImports() ([]string, error) {
+func (s Specification) CustomImports() ([]string, error) { //nolint:cyclop
 	importsSet := make(map[GoTypeImportPath]GoTypeImportName)
 
 	for _, v := range s.Components.Schemas {
@@ -99,6 +99,10 @@ func (s Specification) CustomImports() ([]string, error) {
 		}
 	}
 
+	return importsMapToList(importsSet), nil
+}
+
+func importsMapToList(importsSet map[GoTypeImportPath]GoTypeImportName) []string {
 	imports := make([]string, 0, len(importsSet))
 	for path, name := range importsSet {
 		if path == "" {
@@ -106,6 +110,5 @@ func (s Specification) CustomImports() ([]string, error) {
 		}
 		imports = append(imports, strings.TrimSpace(fmt.Sprintf(`%s "%s"`, name, path)))
 	}
-
-	return imports, nil
+	return imports
 }

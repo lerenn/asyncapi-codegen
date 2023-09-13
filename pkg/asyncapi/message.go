@@ -118,6 +118,10 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 	}
 
 	// Go down the path to correlation ID
+	return downToCorrelationID(path, child)
+}
+
+func downToCorrelationID(path []string, child *Any) (correlationIDParent *Any) {
 	var exists bool
 	for i, v := range path[1:] {
 		correlationIDParent = child

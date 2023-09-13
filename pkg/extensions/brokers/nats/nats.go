@@ -78,52 +78,55 @@ func (c *Controller) Publish(_ context.Context, channel string, bm extensions.Br
 
 // Subscribe to messages from the broker.
 func (c *Controller) Subscribe(ctx context.Context, channel string) (
-	msgs chan extensions.BrokerMessage,
-	stop chan interface{},
+	receivedBrokerMessages chan extensions.BrokerMessage,
+	cancelSubscription chan interface{},
 	err error,
 ) {
 	// Subscribe to channel
-	natsMsgs := make(chan *nats.Msg, 64)
-	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueGroup, natsMsgs)
+	natsChan := make(chan *nats.Msg, 64)
+	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueGroup, natsChan)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Handle events
-	msgs = make(chan extensions.BrokerMessage, 64)
-	stop = make(chan interface{}, 1)
+	receivedBrokerMessages = make(chan extensions.BrokerMessage, 64)
+	cancelSubscription = make(chan interface{}, 1)
 	go func() {
-		for {
+		for stop := false; !stop; {
 			select {
-			// Handle new message
-			case msg := <-natsMsgs:
-				// Get headers
-				headers := make(map[string][]byte, len(msg.Header))
-				for k, v := range msg.Header {
-					if len(v) > 0 {
-						headers[k] = []byte(v[0])
-					}
-				}
-
-				// Create message
-				msgs <- extensions.BrokerMessage{
-					Headers: headers,
-					Payload: msg.Data,
-				}
-			// Handle closure request from function caller
-			case <-stop:
-				if err := sub.Unsubscribe(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
-					c.logger.Error(ctx, err.Error())
-				}
-
-				if err := sub.Drain(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
-					c.logger.Error(ctx, err.Error())
-				}
-
-				close(msgs)
+			// If its a new message, then handle it
+			case msg := <-natsChan:
+				transferMessageToBroker(receivedBrokerMessages, msg)
+			// If its a closure request from function caller, then stop everything
+			case <-cancelSubscription:
+				stop = true
 			}
 		}
+
+		// Unsubscribe from channel
+		if err := sub.Unsubscribe(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
+			c.logger.Error(ctx, err.Error())
+		}
+
+		close(receivedBrokerMessages)
 	}()
 
-	return msgs, stop, nil
+	return receivedBrokerMessages, cancelSubscription, nil
+}
+
+func transferMessageToBroker(receivedBrokerMessages chan extensions.BrokerMessage, msg *nats.Msg) {
+	// Get headers
+	headers := make(map[string][]byte, len(msg.Header))
+	for k, v := range msg.Header {
+		if len(v) > 0 {
+			headers[k] = []byte(v[0])
+		}
+	}
+
+	// Create and transmit message to user
+	receivedBrokerMessages <- extensions.BrokerMessage{
+		Headers: headers,
+		Payload: msg.Data,
+	}
 }
