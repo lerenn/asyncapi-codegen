@@ -3,6 +3,7 @@ linters:
     - revive
     - godot
     - dupword
+    - misspell
 
 linters-settings:
   revive:

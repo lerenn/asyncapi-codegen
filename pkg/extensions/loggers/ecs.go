@@ -35,7 +35,7 @@ func insertLogIntoStruct(key, value string, m map[string]any) map[string]any {
 	} else {
 		subm, ok = v.(map[string]any)
 		if !ok {
-			// Explicitely drop the old value
+			// Explicitly drop the old value
 			subm = make(map[string]any)
 		}
 	}
