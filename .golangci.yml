@@ -5,6 +5,7 @@ linters:
     - exhaustive
     - exportloopref
     - goconst
+    - gocyclo
     - godot
     - misspell
     - revive
