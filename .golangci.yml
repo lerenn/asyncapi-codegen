@@ -1,9 +1,10 @@
 linters:
   enable:
-    - revive
-    - godot
     - dupword
+    - errorlint
+    - godot
     - misspell
+    - revive
     - whitespace
 
 linters-settings:
