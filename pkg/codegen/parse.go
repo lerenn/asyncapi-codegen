@@ -10,7 +10,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 )
 
-// FromFile parses the AsyncAPI specification either from a YAML file or a JSON file
+// FromFile parses the AsyncAPI specification either from a YAML file or a JSON file.
 func FromFile(path string) (CodeGen, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -27,7 +27,7 @@ func FromFile(path string) (CodeGen, error) {
 	}
 }
 
-// FromYAML parses the AsyncAPI specification from a YAML file
+// FromYAML parses the AsyncAPI specification from a YAML file.
 func FromYAML(data []byte) (CodeGen, error) {
 	data, err := yaml.YAMLToJSON(data)
 	if err != nil {
@@ -37,7 +37,7 @@ func FromYAML(data []byte) (CodeGen, error) {
 	return FromJSON(data)
 }
 
-// FromJSON parses the AsyncAPI specification from a JSON file
+// FromJSON parses the AsyncAPI specification from a JSON file.
 func FromJSON(data []byte) (CodeGen, error) {
 	var spec asyncapi.Specification
 

@@ -7,7 +7,7 @@ import (
 )
 
 // ControllerGenerator is a code generator for controllers that will turn an
-// asyncapi specification into controller golang code
+// asyncapi specification into controller golang code.
 type ControllerGenerator struct {
 	MethodCount       uint
 	SubscribeChannels map[string]*asyncapi.Channel
@@ -15,7 +15,7 @@ type ControllerGenerator struct {
 	Prefix            string
 }
 
-// NewControllerGenerator will create a new controller code generator
+// NewControllerGenerator will create a new controller code generator.
 func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGenerator {
 	var gen ControllerGenerator
 
@@ -57,7 +57,7 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	return gen
 }
 
-// Generate will generate the controller code
+// Generate will generate the controller code.
 func (asg ControllerGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		controllerTemplatePath,

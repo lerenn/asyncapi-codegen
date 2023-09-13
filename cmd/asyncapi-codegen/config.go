@@ -10,11 +10,11 @@ import (
 )
 
 var (
-	// ErrInvalidGenerate happens when using an invalid generation argument
+	// ErrInvalidGenerate happens when using an invalid generation argument.
 	ErrInvalidGenerate = errors.New("invalid generate argument")
 )
 
-// Flags contains all command line flags
+// Flags contains all command line flags.
 type Flags struct {
 	// InputPath is the path of the AsyncAPI specification file
 	InputPath string
@@ -37,7 +37,7 @@ type Flags struct {
 	DisableFormatting bool
 }
 
-// ProcessFlags processes command line flags and fill the Flags structure with them
+// ProcessFlags processes command line flags and fill the Flags structure with them.
 func ProcessFlags() Flags {
 	var f Flags
 
@@ -52,7 +52,7 @@ func ProcessFlags() Flags {
 	return f
 }
 
-// ToCodegenOptions processes command line flags structure to code generation tool options
+// ToCodegenOptions processes command line flags structure to code generation tool options.
 func (f Flags) ToCodegenOptions() (codegen.Options, error) {
 	opt := codegen.Options{
 		OutputPath:        f.OutputPath,

@@ -14,7 +14,7 @@ type ImportsGenerator struct {
 	CustomImports []string
 }
 
-// Generate will generate the imports code
+// Generate will generate the imports code.
 func (ig ImportsGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(importsTemplatePath)
 	if err != nil {

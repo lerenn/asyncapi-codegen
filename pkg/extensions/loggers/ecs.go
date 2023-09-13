@@ -10,10 +10,10 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
-// ECS is a logger that will print logs in Elastic Common Schema format
+// ECS is a logger that will print logs in Elastic Common Schema format.
 type ECS struct{}
 
-// NewECS creates a new ECS logger
+// NewECS creates a new ECS logger.
 func NewECS() ECS {
 	return ECS{}
 }
@@ -104,17 +104,17 @@ func (logger ECS) logWithLevel(ctx context.Context, level string, msg string, in
 	fmt.Println(logger.formatLog(ctx, msg, info...))
 }
 
-// Info logs a message at info level with context and additional info
+// Info logs a message at info level with context and additional info.
 func (logger ECS) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
 	logger.logWithLevel(ctx, "info", msg, info...)
 }
 
-// Warning logs a message at warning level with context and additional info
+// Warning logs a message at warning level with context and additional info.
 func (logger ECS) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
 	logger.logWithLevel(ctx, "warning", msg, info...)
 }
 
-// Error logs a message at error level with context and additional info
+// Error logs a message at error level with context and additional info.
 func (logger ECS) Error(ctx context.Context, msg string, info ...extensions.LogInfo) {
 	logger.logWithLevel(ctx, "error", msg, info...)
 }

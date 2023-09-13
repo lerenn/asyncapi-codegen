@@ -12,7 +12,7 @@ type TypesGenerator struct {
 	asyncapi.Specification
 }
 
-// Generate will create a new types code generator
+// Generate will create a new types code generator.
 func (tg TypesGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		typesTemplatePath,

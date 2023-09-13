@@ -29,7 +29,7 @@ type Message struct {
 	CorrelationIDRequired bool   `json:"-"`
 }
 
-// Process processes the Message to make it ready for code generation
+// Process processes the Message to make it ready for code generation.
 func (msg *Message) Process(name string, spec Specification) {
 	msg.Name = utils.UpperFirstLetter(name)
 
@@ -158,7 +158,7 @@ func (msg *Message) referenceFrom(ref []string) interface{} {
 	return next.referenceFrom(ref[1:])
 }
 
-// MergeWith merges the Message with another one
+// MergeWith merges the Message with another one.
 func (msg *Message) MergeWith(spec Specification, msg2 Message) {
 	// Remove reference if merging
 	if msg.Reference != "" {

@@ -18,16 +18,16 @@ type Extensions struct {
 // GoTypeImportExtension specifies the required import statement
 // for the x-go-type extension.
 // For example, GoTypeImportExtension{Name: "myuuid", Path: "github.com/google/uuid"}
-// will generate `import myuuid github.com/google/uuid`
+// will generate `import myuuid github.com/google/uuid`.
 type GoTypeImportExtension struct {
 	Name GoTypeImportName `json:"name"` // Package name for import, optional
 	Path GoTypeImportPath `json:"path"` // Path to package to import
 }
 
-// GoTypeImportPath is the import path type for x-go-type-import
+// GoTypeImportPath is the import path type for x-go-type-import.
 type GoTypeImportPath string
 
-// GoTypeImportName is the import name type for x-go-type-import
+// GoTypeImportName is the import name type for x-go-type-import.
 type GoTypeImportName string
 
 // goTypeImports collects custom imports in this Schema Object set by x-go-type-import key

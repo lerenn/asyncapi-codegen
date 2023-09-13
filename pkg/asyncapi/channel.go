@@ -20,7 +20,7 @@ type Channel struct {
 	Path string `json:"-"`
 }
 
-// Process processes the Channel to make it ready for code generation
+// Process processes the Channel to make it ready for code generation.
 func (c *Channel) Process(path string, spec Specification) {
 	// Set channel name and path
 	c.Name = utils.UpperFirstLetter(path)

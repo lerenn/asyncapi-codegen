@@ -1,6 +1,7 @@
 linters:
   enable:
     - revive
+    - godot
 
 linters-settings:
   revive:

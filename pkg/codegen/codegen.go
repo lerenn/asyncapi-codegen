@@ -10,14 +10,14 @@ import (
 	"golang.org/x/tools/imports"
 )
 
-// CodeGen is the main structure for the code generation
+// CodeGen is the main structure for the code generation.
 type CodeGen struct {
 	Specification asyncapi.Specification
 	ModulePath    string
 	ModuleVersion string
 }
 
-// New creates a new code generation structure that can be used to generate code
+// New creates a new code generation structure that can be used to generate code.
 func New(spec asyncapi.Specification) CodeGen {
 	modulePath := "unknown module path"
 	moduleVersion := "unknown version"
@@ -38,7 +38,7 @@ func New(spec asyncapi.Specification) CodeGen {
 }
 
 // Generate generates code from the code generation structure, that have already
-// processed the AsyncAPI file when creating it
+// processed the AsyncAPI file when creating it.
 func (cg CodeGen) Generate(opt Options) error {
 	content, err := cg.generateImports(opt)
 	if err != nil {

@@ -9,7 +9,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Controller is the Controller implementation for asyncapi-codegen
+// Controller is the Controller implementation for asyncapi-codegen.
 type Controller struct {
 	connection *nats.Conn
 	logger     extensions.Logger
@@ -17,10 +17,10 @@ type Controller struct {
 }
 
 // ControllerOption is a function that can be used to configure a NATS controller
-// Examples: WithQueueGroup(), WithLogger()
+// Examples: WithQueueGroup(), WithLogger().
 type ControllerOption func(controller *Controller)
 
-// NewController creates a new NATS controller
+// NewController creates a new NATS controller.
 func NewController(url string, options ...ControllerOption) *Controller {
 	// Connect to NATS
 	nc, err := nats.Connect(url)
@@ -43,21 +43,21 @@ func NewController(url string, options ...ControllerOption) *Controller {
 	return controller
 }
 
-// WithQueueGroup set a custom queue group for channel subscription
+// WithQueueGroup set a custom queue group for channel subscription.
 func WithQueueGroup(name string) ControllerOption {
 	return func(controller *Controller) {
 		controller.queueGroup = name
 	}
 }
 
-// WithLogger set a custom logger that will log operations on broker controller
+// WithLogger set a custom logger that will log operations on broker controller.
 func WithLogger(logger extensions.Logger) ControllerOption {
 	return func(controller *Controller) {
 		controller.logger = logger
 	}
 }
 
-// Publish a message to the broker
+// Publish a message to the broker.
 func (c *Controller) Publish(_ context.Context, channel string, bm extensions.BrokerMessage) error {
 	msg := nats.NewMsg(channel)
 
@@ -76,7 +76,7 @@ func (c *Controller) Publish(_ context.Context, channel string, bm extensions.Br
 	return c.connection.Flush()
 }
 
-// Subscribe to messages from the broker
+// Subscribe to messages from the broker.
 func (c *Controller) Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error) {
 	// Subscribe to channel
 	natsMsgs := make(chan *nats.Msg, 64)

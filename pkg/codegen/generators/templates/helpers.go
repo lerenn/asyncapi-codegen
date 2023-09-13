@@ -122,7 +122,7 @@ func IsRequired(any asyncapi.Any, field string) bool {
 	return any.IsFieldRequired(field)
 }
 
-// GenerateChannelPath will generate a channel path with the given channel
+// GenerateChannelPath will generate a channel path with the given channel.
 func GenerateChannelPath(ch asyncapi.Channel) string {
 	// If there is no parameter, then just return the path
 	if ch.Parameters == nil {
@@ -143,7 +143,7 @@ func GenerateChannelPath(ch asyncapi.Channel) string {
 }
 
 // DescribeStruct will describe a struct in a human readable way using `%+v`
-// format from the standard library
+// format from the standard library.
 func DescribeStruct(st any) string {
 	return fmt.Sprintf("%+v", st)
 }
