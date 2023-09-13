@@ -16,6 +16,7 @@ linters:
     - revive
     - stylecheck
     - thelper
+    - unconvert
     - whitespace
 
 linters-settings:
