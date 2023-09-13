@@ -4,6 +4,9 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
 
+// Any is a representation of the corresponding asyncapi object filled
+// from an asyncapi specification that will be used to generate code.
+// Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#schemaObject
 type Any struct {
 	AllOf       []*Any          `json:"allOf"`
 	AnyOf       []*Any          `json:"anyOf"`
@@ -25,6 +28,7 @@ type Any struct {
 	Extensions
 }
 
+// NewAny creates a new Any structure with initialized fields
 func NewAny() Any {
 	return Any{
 		Properties: make(map[string]*Any),
@@ -32,6 +36,7 @@ func NewAny() Any {
 	}
 }
 
+// Process processes the Any structure to make it ready for code generation
 func (a *Any) Process(name string, spec Specification, isRequired bool) {
 	a.Name = utils.UpperFirstLetter(name)
 
@@ -78,6 +83,7 @@ func (a *Any) Process(name string, spec Specification, isRequired bool) {
 	a.IsRequired = isRequired
 }
 
+// IsFieldRequired checks if a field is required in the asyncapi struct.
 func (a Any) IsFieldRequired(field string) bool {
 	return utils.IsInSlice(a.Required, field)
 }
@@ -90,6 +96,8 @@ func (a *Any) referenceFrom(ref []string) *Any {
 	return a.Properties[ref[0]].referenceFrom(ref[1:])
 }
 
+// MergeWith merges the given Any structure with another one
+// (basically for AllOf, AnyOf, OneOf, etc)
 func (a *Any) MergeWith(spec Specification, a2 Any) {
 	a.Type = "object"
 

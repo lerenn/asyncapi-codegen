@@ -10,6 +10,7 @@ import (
 	"github.com/stoewer/go-strcase"
 )
 
+// Namify will convert a sentence to a golang conventional type name.
 func Namify(sentence string) string {
 	// Remove everything except alphanumerics and '_'
 	re := regexp.MustCompile("[^a-zA-Z0-9_]")
@@ -121,6 +122,7 @@ func IsRequired(any asyncapi.Any, field string) bool {
 	return any.IsFieldRequired(field)
 }
 
+// GenerateChannelPath will generate a channel path with the given channel
 func GenerateChannelPath(ch asyncapi.Channel) string {
 	// If there is no parameter, then just return the path
 	if ch.Parameters == nil {
@@ -140,10 +142,14 @@ func GenerateChannelPath(ch asyncapi.Channel) string {
 	return sprint[:len(sprint)-1] + ")"
 }
 
+// DescribeStruct will describe a struct in a human readable way using `%+v`
+// format from the standard library
 func DescribeStruct(st any) string {
 	return fmt.Sprintf("%+v", st)
 }
 
+// MultiLineComment will prefix each line of a comment with "// " in order to
+// make it a valid multiline golang comment.
 func MultiLineComment(comment string) string {
 	comment = strings.TrimSuffix(comment, "\n")
 	return strings.Replace(comment, "\n", "\n// ", -1)

@@ -24,8 +24,11 @@ type GoTypeImportExtension struct {
 	Path GoTypeImportPath `json:"path"` // Path to package to import
 }
 
-type GoTypeImportPath string // Import path type for x-go-type-import
-type GoTypeImportName string // Import name type for x-go-type-import
+// GoTypeImportPath is the import path type for x-go-type-import
+type GoTypeImportPath string
+
+// GoTypeImportName is the import name type for x-go-type-import
+type GoTypeImportName string
 
 // goTypeImports collects custom imports in this Schema Object set by x-go-type-import key
 // into the imports map.

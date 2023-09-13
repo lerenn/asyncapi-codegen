@@ -2,6 +2,8 @@ package extensions
 
 import "context"
 
+// Prefix is the prefix used for all context keys in order to avoid collision
+// with other keys that can be present in context
 const Prefix = "asyncapi-"
 
 // ContextKey is the type of the keys used in the context

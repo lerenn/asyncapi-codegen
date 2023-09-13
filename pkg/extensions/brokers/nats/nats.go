@@ -16,6 +16,8 @@ type Controller struct {
 	queueGroup string
 }
 
+// ControllerOption is a function that can be used to configure a NATS controller
+// Examples: WithQueueGroup(), WithLogger()
 type ControllerOption func(controller *Controller)
 
 // NewController creates a new NATS controller
