@@ -4,6 +4,7 @@ linters:
     - godot
     - dupword
     - misspell
+    - whitespace
 
 linters-settings:
   revive:
