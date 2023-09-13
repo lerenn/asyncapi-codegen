@@ -4,6 +4,8 @@ linters:
     - asasalint
     - asciicheck
     - bidichk
+    - containedctx
+    - contextcheck
     - cyclop
     - decorder
     - dupword
