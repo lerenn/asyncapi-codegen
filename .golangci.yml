@@ -23,6 +23,7 @@ linters:
     - godot
     - gofmt
     - goimports
+    - importas
     - ireturn
     - lll
     - maintidx
