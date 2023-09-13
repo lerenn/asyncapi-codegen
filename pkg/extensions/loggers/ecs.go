@@ -98,7 +98,7 @@ func (logger ECS) formatLog(ctx context.Context, msg string, info ...extensions.
 
 func (logger ECS) logWithLevel(ctx context.Context, level string, msg string, info ...extensions.LogInfo) {
 	// Add additional keys
-	info = append(info, extensions.LogInfo{Key: "log.level", Value: "info"})
+	info = append(info, extensions.LogInfo{Key: "log.level", Value: level})
 
 	// Print log
 	fmt.Println(logger.formatLog(ctx, msg, info...))
