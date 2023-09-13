@@ -5,6 +5,7 @@ linters:
     - errorlint
     - exhaustive
     - exportloopref
+    - gocognit
     - goconst
     - gocyclo
     - godot
