@@ -33,7 +33,7 @@ func correctAcronyms(sentence string) string {
 		wronglyFormatedAcronym := strcase.UpperCamelCase(a)
 		re := regexp.MustCompile(fmt.Sprintf("%s[A-Z]*", wronglyFormatedAcronym))
 
-		positions := re.FindAllIndex([]byte(sentence), -1)
+		positions := re.FindAllStringIndex(sentence, -1)
 		for _, p := range positions {
 			sentence = sentence[:p[0]] + a + sentence[p[0]+len(a):]
 		}
