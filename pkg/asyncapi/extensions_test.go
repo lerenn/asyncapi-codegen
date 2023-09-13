@@ -26,7 +26,7 @@ func (suite *ExtensionsSuite) TestExtGoTypeImport() {
 		{
 			name: "flag",
 			schema: &Any{
-				Type: "integer",
+				Type: TypeIsInteger.String(),
 				Extensions: Extensions{
 					ExtGoType: "mypackage.Flag",
 					ExtGoTypeImport: &GoTypeImportExtension{
@@ -41,12 +41,12 @@ func (suite *ExtensionsSuite) TestExtGoTypeImport() {
 
 		// Object property, default name
 		{
-			name: "object",
+			name: TypeIsObject.String(),
 			schema: &Any{
-				Type: "object",
+				Type: TypeIsObject.String(),
 				Properties: map[string]*Any{
 					"flag": {
-						Type: "integer",
+						Type: TypeIsInteger.String(),
 						Extensions: Extensions{
 							ExtGoType: "mypackage.Flag",
 							ExtGoTypeImport: &GoTypeImportExtension{
@@ -66,9 +66,9 @@ func (suite *ExtensionsSuite) TestExtGoTypeImport() {
 		{
 			name: "flags",
 			schema: &Any{
-				Type: "array",
+				Type: TypeIsArray.String(),
 				Items: &Any{
-					Type: "integer",
+					Type: TypeIsInteger.String(),
 					Extensions: Extensions{
 						ExtGoType: "mypackage.Flag",
 						ExtGoTypeImport: &GoTypeImportExtension{
@@ -84,12 +84,12 @@ func (suite *ExtensionsSuite) TestExtGoTypeImport() {
 
 		// Object property, change package name
 		{
-			name: "object",
+			name: TypeIsObject.String(),
 			schema: &Any{
-				Type: "object",
+				Type: TypeIsObject.String(),
 				Properties: map[string]*Any{
 					"flag": {
-						Type: "integer",
+						Type: TypeIsInteger.String(),
 						Extensions: Extensions{
 							ExtGoType: "alias.Flag",
 							ExtGoTypeImport: &GoTypeImportExtension{
@@ -108,12 +108,12 @@ func (suite *ExtensionsSuite) TestExtGoTypeImport() {
 
 		// Object property, multiple imports
 		{
-			name: "object",
+			name: TypeIsObject.String(),
 			schema: &Any{
-				Type: "object",
+				Type: TypeIsObject.String(),
 				Properties: map[string]*Any{
 					"flag": {
-						Type: "integer",
+						Type: TypeIsInteger.String(),
 						Extensions: Extensions{
 							ExtGoType: "alias.Flag",
 							ExtGoTypeImport: &GoTypeImportExtension{
@@ -123,7 +123,7 @@ func (suite *ExtensionsSuite) TestExtGoTypeImport() {
 						},
 					},
 					"id": {
-						Type: "string",
+						Type: TypeIsString.String(),
 						Extensions: Extensions{
 							ExtGoType: "xid.ID",
 							ExtGoTypeImport: &GoTypeImportExtension{
@@ -142,12 +142,12 @@ func (suite *ExtensionsSuite) TestExtGoTypeImport() {
 
 		// Conflicting import package name will error
 		{
-			name: "object",
+			name: TypeIsObject.String(),
 			schema: &Any{
-				Type: "object",
+				Type: TypeIsObject.String(),
 				Properties: map[string]*Any{
 					"start_flag": {
-						Type: "integer",
+						Type: TypeIsInteger.String(),
 						Extensions: Extensions{
 							ExtGoType: "alias2.Flag",
 							ExtGoTypeImport: &GoTypeImportExtension{
@@ -157,7 +157,7 @@ func (suite *ExtensionsSuite) TestExtGoTypeImport() {
 						},
 					},
 					"end_flag": {
-						Type: "integer",
+						Type: TypeIsInteger.String(),
 						Extensions: Extensions{
 							ExtGoType: "alias2.Flag",
 							ExtGoTypeImport: &GoTypeImportExtension{

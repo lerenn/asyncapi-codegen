@@ -27,7 +27,7 @@ func (suite *Suite) TestExtensions() {
 		{
 			name: "flag",
 			schema: &asyncapi.Any{
-				Type:       "integer",
+				Type:       asyncapi.TypeIsInteger.String(),
 				Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 			},
 			expected: regexp.MustCompile("FlagSchema +uint8"),
@@ -35,12 +35,12 @@ func (suite *Suite) TestExtensions() {
 
 		// Object property
 		{
-			name: "object",
+			name: asyncapi.TypeIsObject.String(),
 			schema: &asyncapi.Any{
-				Type: "object",
+				Type: asyncapi.TypeIsObject.String(),
 				Properties: map[string]*asyncapi.Any{
 					"flag": {
-						Type:       "integer",
+						Type:       asyncapi.TypeIsInteger.String(),
 						Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 					},
 				},
@@ -53,9 +53,9 @@ func (suite *Suite) TestExtensions() {
 		{
 			name: "flags",
 			schema: &asyncapi.Any{
-				Type: "array",
+				Type: asyncapi.TypeIsArray.String(),
 				Items: &asyncapi.Any{
-					Type:       "integer",
+					Type:       asyncapi.TypeIsInteger.String(),
 					Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 				},
 			},
@@ -64,12 +64,12 @@ func (suite *Suite) TestExtensions() {
 
 		// Object property, type from package
 		{
-			name: "object",
+			name: asyncapi.TypeIsObject.String(),
 			schema: &asyncapi.Any{
-				Type: "object",
+				Type: asyncapi.TypeIsObject.String(),
 				Properties: map[string]*asyncapi.Any{
 					"flag": {
-						Type:       "integer",
+						Type:       asyncapi.TypeIsInteger.String(),
 						Extensions: asyncapi.Extensions{ExtGoType: "mypackage.Flag"},
 					},
 				},

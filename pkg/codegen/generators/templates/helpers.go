@@ -83,7 +83,7 @@ func ReferenceToStructAttributePath(ref string) string {
 
 	for k, v := range path {
 		// If this is concerning the header, then it will be named "headers"
-		if v == "header" {
+		if v == asyncapi.TypeIsHeader.String() {
 			v = "headers"
 		}
 

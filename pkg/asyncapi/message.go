@@ -104,15 +104,15 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 	if strings.HasPrefix(msg.CorrelationID.Location, "$message.header#") {
 		if msg.Headers == nil {
 			msg.Headers = utils.ToPointer(NewAny())
-			msg.Headers.Name = "headers"
-			msg.Headers.Type = "object"
+			msg.Headers.Name = TypeIsHeader.String()
+			msg.Headers.Type = TypeIsObject.String()
 		}
 		child = msg.Headers
 	} else if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") && msg.Payload != nil {
 		if msg.Payload == nil {
 			msg.Payload = utils.ToPointer(NewAny())
-			msg.Payload.Name = "headers"
-			msg.Payload.Type = "object"
+			msg.Payload.Name = TypeIsHeader.String()
+			msg.Payload.Type = TypeIsObject.String()
 		}
 		child = msg.Payload
 	}
@@ -127,9 +127,9 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Any) {
 			child = utils.ToPointer(NewAny())
 			child.Name = v
 			if i == len(path)-2 { // As there is -1 in the loop slice
-				child.Type = "string"
+				child.Type = TypeIsString.String()
 			} else {
-				child.Type = "object"
+				child.Type = TypeIsHeader.String()
 			}
 
 			// Add it to parent
@@ -151,7 +151,7 @@ func (msg *Message) referenceFrom(ref []string) interface{} {
 	var next *Any
 	if ref[0] == "payload" {
 		next = msg.Payload
-	} else if ref[0] == "header" {
+	} else if ref[0] == TypeIsHeader.String() {
 		next = msg.Headers
 	}
 

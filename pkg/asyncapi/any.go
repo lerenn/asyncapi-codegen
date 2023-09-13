@@ -99,7 +99,7 @@ func (a *Any) referenceFrom(ref []string) *Any {
 // MergeWith merges the given Any structure with another one
 // (basically for AllOf, AnyOf, OneOf, etc).
 func (a *Any) MergeWith(spec Specification, a2 Any) {
-	a.Type = "object"
+	a.Type = TypeIsObject.String()
 
 	// Getting merged with reference
 	if a2.Reference != "" {

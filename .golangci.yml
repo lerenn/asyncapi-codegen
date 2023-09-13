@@ -4,6 +4,7 @@ linters:
     - errorlint
     - exhaustive
     - exportloopref
+    - goconst
     - godot
     - misspell
     - revive
