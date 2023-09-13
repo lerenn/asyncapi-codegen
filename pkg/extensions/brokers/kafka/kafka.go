@@ -73,13 +73,17 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 
 // Publish a message to the broker.
 func (c *Controller) Publish(ctx context.Context, channel string, um extensions.BrokerMessage) error {
-	w := &kafka.Writer{
-		Addr:                   kafka.TCP(c.hosts...),
-		Topic:                  channel,
-		Balancer:               &kafka.LeastBytes{},
-		AllowAutoTopicCreation: true,
-	}
+	// Create new writer
+	w := kafka.NewWriter(kafka.WriterConfig{
+		Brokers:  c.hosts,
+		Topic:    channel,
+		Balancer: &kafka.LeastBytes{},
+	})
 
+	// Allow topic creation
+	w.AllowAutoTopicCreation = true
+
+	// Create the message
 	msg := kafka.Message{
 		Headers: make([]kafka.Header, 0),
 	}
