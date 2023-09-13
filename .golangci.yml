@@ -3,6 +3,7 @@ linters:
     - dupword
     - errorlint
     - exhaustive
+    - exportloopref
     - godot
     - misspell
     - revive
