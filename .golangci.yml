@@ -18,6 +18,7 @@ linters:
     - thelper
     - unconvert
     - unparam
+    - usestdlibvars
     - wastedassign
     - whitespace
 
