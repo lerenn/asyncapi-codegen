@@ -23,6 +23,7 @@ linters:
     - godot
     - gofmt
     - goimports
+    - gosmopolitan
     - importas
     - ireturn
     - lll
