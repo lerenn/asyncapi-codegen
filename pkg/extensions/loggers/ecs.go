@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
@@ -18,46 +17,7 @@ func NewECS() ECS {
 	return ECS{}
 }
 
-func insertLogIntoStruct(key, value string, m map[string]any) map[string]any {
-	// Split key
-	l := strings.Split(key, ".")
-
-	// Check if there is no depth, just add it to the map
-	if len(l) == 1 {
-		m[key] = value
-		return m
-	}
-
-	// Check if the submap exists, otherwise create it
-	var subm map[string]any
-	if v, ok := m[l[0]]; !ok {
-		subm = make(map[string]any)
-	} else {
-		subm, ok = v.(map[string]any)
-		if !ok {
-			// Explicitly drop the old value
-			subm = make(map[string]any)
-		}
-	}
-
-	// Insert the log into the submap
-	subm = insertLogIntoStruct(strings.Join(l[1:], "."), value, subm)
-
-	// Insert the submap into the map
-	m[l[0]] = subm
-
-	return m
-}
-
-func structureLogs(info []extensions.LogInfo) map[string]any {
-	structuredLog := make(map[string]any)
-	for _, logInfo := range info {
-		structuredLog = insertLogIntoStruct(logInfo.Key, fmt.Sprintf("%+v", logInfo.Value), structuredLog)
-	}
-	return structuredLog
-}
-
-func (logger ECS) formatLog(ctx context.Context, msg string, info ...extensions.LogInfo) string {
+func (ecs ECS) setInfoFromContext(ctx context.Context, msg string, info ...extensions.LogInfo) []extensions.LogInfo {
 	// Add additional keys from context
 	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsProvider, func(value any) {
 		info = append(info, extensions.LogInfo{Key: "asyncapi.provider", Value: value})
@@ -93,6 +53,14 @@ func (logger ECS) formatLog(ctx context.Context, msg string, info ...extensions.
 		Value: "github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers/ecs.go",
 	})
 
+	// Return info
+	return info
+}
+
+func (ecs ECS) formatLog(ctx context.Context, msg string, info ...extensions.LogInfo) string {
+	// Set additional fields
+	info = ecs.setInfoFromContext(ctx, msg, info...)
+
 	// Structure log
 	sl := structureLogs(info)
 
@@ -105,25 +73,25 @@ func (logger ECS) formatLog(ctx context.Context, msg string, info ...extensions.
 	return string(b)
 }
 
-func (logger ECS) logWithLevel(ctx context.Context, level string, msg string, info ...extensions.LogInfo) {
+func (ecs ECS) logWithLevel(ctx context.Context, level string, msg string, info ...extensions.LogInfo) {
 	// Add additional keys
 	info = append(info, extensions.LogInfo{Key: "log.level", Value: level})
 
 	// Print log
-	fmt.Println(logger.formatLog(ctx, msg, info...))
+	fmt.Println(ecs.formatLog(ctx, msg, info...))
 }
 
 // Info logs a message at info level with context and additional info.
-func (logger ECS) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
-	logger.logWithLevel(ctx, "info", msg, info...)
+func (ecs ECS) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	ecs.logWithLevel(ctx, "info", msg, info...)
 }
 
 // Warning logs a message at warning level with context and additional info.
-func (logger ECS) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
-	logger.logWithLevel(ctx, "warning", msg, info...)
+func (ecs ECS) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	ecs.logWithLevel(ctx, "warning", msg, info...)
 }
 
 // Error logs a message at error level with context and additional info.
-func (logger ECS) Error(ctx context.Context, msg string, info ...extensions.LogInfo) {
-	logger.logWithLevel(ctx, "error", msg, info...)
+func (ecs ECS) Error(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	ecs.logWithLevel(ctx, "error", msg, info...)
 }

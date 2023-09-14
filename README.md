@@ -35,6 +35,8 @@ Generate Go application and user boilerplate from AsyncAPI specifications.
   * JSON
 * Logging:
   * JSON (ECS compatible)
+  * Human
+  * Custom
 
 ## Usage
 

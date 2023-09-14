@@ -34,7 +34,7 @@ func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage, _ bool) {
 
 func main() {
 	// Instanciate a NATS controller with a logger
-	logger := loggers.NewECS()
+	logger := loggers.NewHuman()
 	broker := nats.NewController("nats://nats:4222", nats.WithLogger(logger))
 
 	// Create a new app controller
