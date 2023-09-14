@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// Instanciate a NATS controller with a logger
-	logger := loggers.NewECS()
+	logger := loggers.NewText()
 	broker := nats.NewController("nats://nats:4222", nats.WithLogger(logger))
 
 	// Create a new user controller

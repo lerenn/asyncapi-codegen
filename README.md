@@ -34,7 +34,9 @@ Generate Go application and user boilerplate from AsyncAPI specifications.
 * Formats:
   * JSON
 * Logging:
-  * JSON (ECS compatible)
+  * Elastic Common Schema (JSON)
+  * Text (Humand readable)
+  * Custom
 
 ## Usage
 
@@ -512,7 +514,7 @@ import(
 	/* ... */
 )
 
-// Create a new app controller with an Elastic Common Schema compatible logger
+// Create a new app controller with an Elastic Common Schema JSON compatible logger
 ctrl, _ := NewAppController(/* Broker of your choice */, WithLogger(log.NewECS()))
 ```
 

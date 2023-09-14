@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// Instanciate a Kafka controller with a logger
-	logger := loggers.NewECS()
+	logger := loggers.NewText()
 	broker := kafka.NewController(
 		[]string{"kafka:9092"},          // List of hosts
 		kafka.WithLogger(logger),        // Attach an internal logger
