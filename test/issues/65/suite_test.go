@@ -21,7 +21,7 @@ func (suite *Suite) TestExtensionsWithSchema() {
 	// Set specification
 	spec := asyncapi.Specification{
 		Components: asyncapi.Components{
-			Schemas: map[string]*asyncapi.Any{
+			Schemas: map[string]*asyncapi.Schema{
 				"flag": {
 					Type:       asyncapi.TypeIsInteger.String(),
 					Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
@@ -40,10 +40,10 @@ func (suite *Suite) TestExtensionsWithObjectProperty() {
 	// Set specification
 	spec := asyncapi.Specification{
 		Components: asyncapi.Components{
-			Schemas: map[string]*asyncapi.Any{
+			Schemas: map[string]*asyncapi.Schema{
 				asyncapi.TypeIsObject.String(): {
 					Type: asyncapi.TypeIsObject.String(),
-					Properties: map[string]*asyncapi.Any{
+					Properties: map[string]*asyncapi.Schema{
 						"flag": {
 							Type:       asyncapi.TypeIsInteger.String(),
 							Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
@@ -65,10 +65,10 @@ func (suite *Suite) TestExtensionsWithArrayItem() {
 	// Set specification
 	spec := asyncapi.Specification{
 		Components: asyncapi.Components{
-			Schemas: map[string]*asyncapi.Any{
+			Schemas: map[string]*asyncapi.Schema{
 				"flags": {
 					Type: asyncapi.TypeIsArray.String(),
-					Items: &asyncapi.Any{
+					Items: &asyncapi.Schema{
 						Type:       asyncapi.TypeIsInteger.String(),
 						Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 					},
@@ -87,10 +87,10 @@ func (suite *Suite) TestExtensionsWithObjectPropertyAndTypeFromPackage() {
 	// Set specification
 	spec := asyncapi.Specification{
 		Components: asyncapi.Components{
-			Schemas: map[string]*asyncapi.Any{
+			Schemas: map[string]*asyncapi.Schema{
 				asyncapi.TypeIsObject.String(): {
 					Type: asyncapi.TypeIsObject.String(),
-					Properties: map[string]*asyncapi.Any{
+					Properties: map[string]*asyncapi.Schema{
 						"flag": {
 							Type:       asyncapi.TypeIsInteger.String(),
 							Extensions: asyncapi.Extensions{ExtGoType: "mypackage.Flag"},

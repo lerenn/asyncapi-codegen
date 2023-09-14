@@ -33,7 +33,7 @@ type GoTypeImportName string
 // goTypeImports collects custom imports in this Schema Object set by x-go-type-import key
 // into the imports map.
 // Reports error when the same import path is assigned multiple import names.
-func (a *Any) goTypeImports(imports map[GoTypeImportPath]GoTypeImportName) error {
+func (a *Schema) goTypeImports(imports map[GoTypeImportPath]GoTypeImportName) error {
 	// Process Properties
 	for _, p := range a.Properties {
 		if err := p.goTypeImports(imports); err != nil {

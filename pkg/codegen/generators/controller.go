@@ -78,7 +78,7 @@ func isPublishChannel(side Side, channel *asyncapi.Channel) bool {
 func (asg ControllerGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		controllerTemplatePath,
-		anyTemplatePath,
+		schemaTemplatePath,
 		messageTemplatePath,
 	)
 	if err != nil {

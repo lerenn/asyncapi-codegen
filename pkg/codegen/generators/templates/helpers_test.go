@@ -40,17 +40,17 @@ func (suite *HelpersSuite) TestNamify() {
 
 func (suite *HelpersSuite) TestIsRequired() {
 	cases := []struct {
-		Any    asyncapi.Any
+		Schema asyncapi.Schema
 		Field  string
 		Result bool
 	}{
 		// Is required
-		{Any: asyncapi.Any{Required: []string{"field"}}, Field: "field", Result: true},
+		{Schema: asyncapi.Schema{Required: []string{"field"}}, Field: "field", Result: true},
 		// Is not required
-		{Any: asyncapi.Any{Required: []string{"another_field"}}, Field: "field", Result: false},
+		{Schema: asyncapi.Schema{Required: []string{"another_field"}}, Field: "field", Result: false},
 	}
 
 	for i, c := range cases {
-		suite.Require().Equal(c.Result, IsRequired(c.Any, c.Field), i)
+		suite.Require().Equal(c.Result, IsRequired(c.Schema, c.Field), i)
 	}
 }

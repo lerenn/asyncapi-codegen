@@ -118,8 +118,8 @@ func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 }
 
 // IsRequired will check if a field is required in a asyncapi struct.
-func IsRequired(any asyncapi.Any, field string) bool {
-	return any.IsFieldRequired(field)
+func IsRequired(schema asyncapi.Schema, field string) bool {
+	return schema.IsFieldRequired(field)
 }
 
 // GenerateChannelPath will generate a channel path with the given channel.

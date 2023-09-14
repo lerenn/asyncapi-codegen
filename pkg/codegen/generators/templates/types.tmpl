@@ -97,7 +97,7 @@ type {{ namify .Name }}Parameters struct {
 {{if $value.Description -}}
 // Description: {{multiLineComment $value.Description}}
 {{end -}}
-type {{namify $key}}Schema {{template "any" $value}}
+type {{namify $key}}Schema {{template "schema" $value}}
 
 {{/* Create specific marshaling for time */ -}}
 {{- if or (eq $value.Format "date") (eq $value.Format "date-time") -}}

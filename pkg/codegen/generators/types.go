@@ -16,7 +16,7 @@ type TypesGenerator struct {
 func (tg TypesGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		typesTemplatePath,
-		anyTemplatePath,
+		schemaTemplatePath,
 		messageTemplatePath,
 		parameterTemplatePath,
 	)
