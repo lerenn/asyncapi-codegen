@@ -34,7 +34,7 @@ func (s Subscriber) Ping(ctx context.Context, req PingMessage, _ bool) {
 
 func main() {
 	// Instanciate a Kafka controller with a logger
-	logger := loggers.NewHuman()
+	logger := loggers.NewText()
 	broker := kafka.NewController(
 		[]string{"kafka:9092"},         // List of hosts
 		kafka.WithLogger(logger),       // Attach an internal logger

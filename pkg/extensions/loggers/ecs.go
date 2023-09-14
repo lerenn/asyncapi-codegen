@@ -9,7 +9,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
-// ECS is a logger that will print logs in Elastic Common Schema format.
+// ECS is a logger that will print logs in Elastic Common Schema ECS format.
 type ECS struct{}
 
 // NewECS creates a new ECS logger.

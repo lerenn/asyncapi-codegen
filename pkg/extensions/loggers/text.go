@@ -10,16 +10,16 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
-// Human is a logger that will print logs in Elastic Common Schema format.
-type Human struct {
+// Text is a logger that will print logs in Elastic Common Schema format.
+type Text struct {
 	boldRedPrinter    *color.Color
 	boldOrangePrinter *color.Color
 	boldWhitePrinter  *color.Color
 	greyPrinter       *color.Color
 }
 
-// NewHuman creates a new Human logger.
-func NewHuman() Human {
+// NewText creates a new Human logger.
+func NewText() Text {
 	// Create red color
 	red := color.New(color.FgHiRed)
 	boldRed := red.Add(color.Bold)
@@ -32,7 +32,7 @@ func NewHuman() Human {
 	white := color.New(color.FgWhite)
 	boldWhite := white.Add(color.Bold)
 
-	return Human{
+	return Text{
 		boldRedPrinter:    boldRed,
 		boldOrangePrinter: boldOrange,
 		boldWhitePrinter:  boldWhite,
@@ -40,7 +40,7 @@ func NewHuman() Human {
 	}
 }
 
-func (lh Human) humanizeStructuredLogs(sl map[string]any, msgFmt *color.Color, prefixes ...string) string {
+func (tl Text) humanizeStructuredLogs(sl map[string]any, msgFmt *color.Color, prefixes ...string) string {
 	var s string
 	joinedPrefixes := strings.Join(prefixes, "")
 
@@ -51,23 +51,23 @@ func (lh Human) humanizeStructuredLogs(sl map[string]any, msgFmt *color.Color, p
 		s += msgFmt.Sprintf("> %s%s: %s\n", joinedPrefixes, ts, msg)
 		delete(sl, "@Timestamp")
 		delete(sl, "Message")
-		return s + lh.humanizeStructuredLogs(sl, msgFmt, append(prefixes, "  ")...)
+		return s + tl.humanizeStructuredLogs(sl, msgFmt, append(prefixes, "  ")...)
 	}
 
 	// Generate other keys
 	for k, v := range sl {
 		switch tv := v.(type) {
 		case map[string]any:
-			children := lh.humanizeStructuredLogs(tv, msgFmt, append(prefixes, "  ")...)
-			s += lh.greyPrinter.Sprintf("%s%s:\n%s", joinedPrefixes, k, children)
+			children := tl.humanizeStructuredLogs(tv, msgFmt, append(prefixes, "  ")...)
+			s += tl.greyPrinter.Sprintf("%s%s:\n%s", joinedPrefixes, k, children)
 		default:
-			s += lh.greyPrinter.Sprintf("%s%s: %v\n", joinedPrefixes, k, tv)
+			s += tl.greyPrinter.Sprintf("%s%s: %v\n", joinedPrefixes, k, tv)
 		}
 	}
 	return s
 }
 
-func (lh Human) setInfoFromContext(ctx context.Context, msg string, info ...extensions.LogInfo) []extensions.LogInfo {
+func (tl Text) setInfoFromContext(ctx context.Context, msg string, info ...extensions.LogInfo) []extensions.LogInfo {
 	// Add additional keys from context
 	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsChannel, func(value any) {
 		info = append(info, extensions.LogInfo{Key: "Channel", Value: value})
@@ -93,28 +93,28 @@ func (lh Human) setInfoFromContext(ctx context.Context, msg string, info ...exte
 	return info
 }
 
-func (lh Human) formatLog(ctx context.Context, msgFmt *color.Color, msg string, info ...extensions.LogInfo) string {
+func (tl Text) formatLog(ctx context.Context, msgFmt *color.Color, msg string, info ...extensions.LogInfo) string {
 	// Set additional fields
-	info = lh.setInfoFromContext(ctx, msg, info...)
+	info = tl.setInfoFromContext(ctx, msg, info...)
 
 	// Structure log
 	sl := structureLogs(info)
 
 	// Humanize structured logs
-	return lh.humanizeStructuredLogs(sl, msgFmt)
+	return tl.humanizeStructuredLogs(sl, msgFmt)
 }
 
 // Info logs a message at info level with context and additional info.
-func (lh Human) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
-	fmt.Println(lh.formatLog(ctx, lh.boldWhitePrinter, msg, info...))
+func (tl Text) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	fmt.Println(tl.formatLog(ctx, tl.boldWhitePrinter, msg, info...))
 }
 
 // Warning logs a message at warning level with context and additional info.
-func (lh Human) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
-	fmt.Println(lh.formatLog(ctx, lh.boldOrangePrinter, msg, info...))
+func (tl Text) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	fmt.Println(tl.formatLog(ctx, tl.boldOrangePrinter, msg, info...))
 }
 
 // Error logs a message at error level with context and additional info.
-func (lh Human) Error(ctx context.Context, msg string, info ...extensions.LogInfo) {
-	fmt.Println(lh.formatLog(ctx, lh.boldRedPrinter, msg, info...))
+func (tl Text) Error(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	fmt.Println(tl.formatLog(ctx, tl.boldRedPrinter, msg, info...))
 }
