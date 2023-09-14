@@ -1,4 +1,4 @@
-{{define "any" -}}
+{{define "schema" -}}
 
 {{- /* Custom Go type */ -}}
 {{- if .ExtGoType -}}
@@ -14,7 +14,7 @@
     {{else if and $value.ReferenceTo $value.ReferenceTo.Description}}
     // Description: {{$value.ReferenceTo.Description}}
     {{end -}}
-    {{namify $key}} {{if and (not (isRequired $ $key)) (ne $value.Type "array")}}*{{end}}{{template "any" $value}} `json:"{{snakeCase $key}}"`
+    {{namify $key}} {{if and (not (isRequired $ $key)) (ne $value.Type "array")}}*{{end}}{{template "schema" $value}} `json:"{{snakeCase $key}}"`
     {{end -}}
 }
 
@@ -40,7 +40,7 @@ int64
 
 {{- /* Type Array */ -}}
 {{- else if eq .Type "array" -}}
-[]{{- template "any" .Items -}}
+[]{{- template "schema" .Items -}}
 
 {{- /* Type Number */ -}}
 {{- else if eq .Type "number" -}}
@@ -69,7 +69,7 @@ struct {
 {{- if $value.Description}}
     // Description: {{multiLineComment $value.Description}}
 {{- end}}
-    {{ if $value.Reference}}{{ referenceToTypeName .Reference }}{{else}}AnyOf{{$key}}{{end}} *{{template "any" $value}}
+    {{ if $value.Reference}}{{ referenceToTypeName .Reference }}{{else}}AnyOf{{$key}}{{end}} *{{template "schema" $value}}
 {{end -}}
 }
 

@@ -5,7 +5,7 @@ package asyncapi
 // Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#componentsObject
 type Components struct {
 	Messages   map[string]*Message   `json:"messages"`
-	Schemas    map[string]*Any       `json:"schemas"`
+	Schemas    map[string]*Schema    `json:"schemas"`
 	Parameters map[string]*Parameter `json:"parameters"`
 }
 

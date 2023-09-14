@@ -52,9 +52,9 @@ func (s Specification) ReferenceMessage(ref string) *Message {
 	return msg
 }
 
-// ReferenceAny returns the Any struct corresponding to the given reference.
-func (s Specification) ReferenceAny(ref string) *Any {
-	msg, _ := s.reference(ref).(*Any)
+// ReferenceSchema returns the Any struct corresponding to the given reference.
+func (s Specification) ReferenceSchema(ref string) *Schema {
+	msg, _ := s.reference(ref).(*Schema)
 	return msg
 }
 

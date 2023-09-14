@@ -22,7 +22,7 @@ func (suite *MessageSuite) TestIsCorrelationIDRequired() {
 	}{
 		{
 			Message: Message{
-				Headers: &Any{
+				Headers: &Schema{
 					Required: []string{"correlationId"},
 				},
 				CorrelationID: &CorrelationID{
@@ -33,7 +33,7 @@ func (suite *MessageSuite) TestIsCorrelationIDRequired() {
 		},
 		{
 			Message: Message{
-				Payload: &Any{
+				Payload: &Schema{
 					Required: []string{"correlationId"},
 				},
 				CorrelationID: &CorrelationID{
@@ -44,9 +44,9 @@ func (suite *MessageSuite) TestIsCorrelationIDRequired() {
 		},
 		{
 			Message: Message{
-				Headers: &Any{
-					Properties: map[string]*Any{
-						"toto": utils.ToPointer(Any{
+				Headers: &Schema{
+					Properties: map[string]*Schema{
+						"toto": utils.ToPointer(Schema{
 							Required: []string{"correlationId"},
 						}),
 					},
@@ -59,7 +59,7 @@ func (suite *MessageSuite) TestIsCorrelationIDRequired() {
 		},
 		{
 			Message: Message{
-				Headers: &Any{},
+				Headers: &Schema{},
 				CorrelationID: &CorrelationID{
 					Location: "$message.header#/correlationId",
 				},

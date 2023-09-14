@@ -13,7 +13,7 @@ const (
 
 	importsTemplatePath    = templatesDir + "/imports.tmpl"
 	typesTemplatePath      = templatesDir + "/types.tmpl"
-	anyTemplatePath        = templatesDir + "/any.tmpl"
+	schemaTemplatePath     = templatesDir + "/schema.tmpl"
 	messageTemplatePath    = templatesDir + "/message.tmpl"
 	subscriberTemplatePath = templatesDir + "/subscriber.tmpl"
 	controllerTemplatePath = templatesDir + "/controller.tmpl"

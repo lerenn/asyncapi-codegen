@@ -4,45 +4,45 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
 
-// Any is a representation of the corresponding asyncapi object filled
+// Schema is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#schemaObject
-type Any struct {
-	AllOf       []*Any          `json:"allOf"`
-	AnyOf       []*Any          `json:"anyOf"`
-	OneOf       []*Any          `json:"oneOf"`
-	Type        string          `json:"type"`
-	Description string          `json:"description"`
-	Format      string          `json:"format"`
-	Properties  map[string]*Any `json:"properties"`
-	Items       *Any            `json:"items"`
-	Reference   string          `json:"$ref"`
-	Required    []string        `json:"required"`
+type Schema struct {
+	AllOf       []*Schema          `json:"allOf"`
+	AnyOf       []*Schema          `json:"anyOf"`
+	OneOf       []*Schema          `json:"oneOf"`
+	Type        string             `json:"type"`
+	Description string             `json:"description"`
+	Format      string             `json:"format"`
+	Properties  map[string]*Schema `json:"properties"`
+	Items       *Schema            `json:"items"`
+	Reference   string             `json:"$ref"`
+	Required    []string           `json:"required"`
 
 	// Non AsyncAPI fields
-	Name        string `json:"-"`
-	ReferenceTo *Any   `json:"-"`
-	IsRequired  bool   `json:"-"`
+	Name        string  `json:"-"`
+	ReferenceTo *Schema `json:"-"`
+	IsRequired  bool    `json:"-"`
 
 	// Embedded extended fields
 	Extensions
 }
 
-// NewAny creates a new Any structure with initialized fields.
-func NewAny() Any {
-	return Any{
-		Properties: make(map[string]*Any),
+// NewSchema creates a new Schema structure with initialized fields.
+func NewSchema() Schema {
+	return Schema{
+		Properties: make(map[string]*Schema),
 		Required:   make([]string, 0),
 	}
 }
 
-// Process processes the Any structure to make it ready for code generation.
-func (a *Any) Process(name string, spec Specification, isRequired bool) {
+// Process processes the Schema structure to make it ready for code generation.
+func (a *Schema) Process(name string, spec Specification, isRequired bool) {
 	a.Name = utils.UpperFirstLetter(name)
 
 	// Add pointer to reference if there is one
 	if a.Reference != "" {
-		a.ReferenceTo = spec.ReferenceAny(a.Reference)
+		a.ReferenceTo = spec.ReferenceSchema(a.Reference)
 	}
 
 	// Process Properties
@@ -84,11 +84,11 @@ func (a *Any) Process(name string, spec Specification, isRequired bool) {
 }
 
 // IsFieldRequired checks if a field is required in the asyncapi struct.
-func (a Any) IsFieldRequired(field string) bool {
+func (a Schema) IsFieldRequired(field string) bool {
 	return utils.IsInSlice(a.Required, field)
 }
 
-func (a *Any) referenceFrom(ref []string) *Any {
+func (a *Schema) referenceFrom(ref []string) *Schema {
 	if len(ref) == 0 {
 		return a
 	}
@@ -96,14 +96,14 @@ func (a *Any) referenceFrom(ref []string) *Any {
 	return a.Properties[ref[0]].referenceFrom(ref[1:])
 }
 
-// MergeWith merges the given Any structure with another one
+// MergeWith merges the given Schema structure with another one
 // (basically for AllOf, AnyOf, OneOf, etc).
-func (a *Any) MergeWith(spec Specification, a2 Any) {
+func (a *Schema) MergeWith(spec Specification, a2 Schema) {
 	a.Type = TypeIsObject.String()
 
 	// Getting merged with reference
 	if a2.Reference != "" {
-		refAny2 := spec.ReferenceAny(a2.Reference)
+		refAny2 := spec.ReferenceSchema(a2.Reference)
 		a2.MergeWith(spec, *refAny2)
 	}
 
@@ -128,7 +128,7 @@ func (a *Any) MergeWith(spec Specification, a2 Any) {
 	// Merge properties
 	if a2.Properties != nil {
 		if a.Properties == nil {
-			a.Properties = make(map[string]*Any)
+			a.Properties = make(map[string]*Schema)
 		}
 
 		for k, v := range a2.Properties {

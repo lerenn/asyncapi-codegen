@@ -10,12 +10,12 @@ type {{namify .Name}}Message struct {
 {{- /* Display headers if they exists */}}
 {{- if .Headers}}
 // Headers will be used to fill the message headers
-Headers {{template "any" .Headers}}
+Headers {{template "schema" .Headers}}
 {{end -}}
 
 {{- /* Display payload */}}
 // Payload will be inserted in the message payload
-Payload {{template "any" .Payload}}
+Payload {{template "schema" .Payload}}
 }
 
 func New{{namify .Name}}Message() {{namify .Name}}Message {

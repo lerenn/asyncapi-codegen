@@ -19,7 +19,7 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithSchema() {
 	// Set specification
 	spec := Specification{
 		Components: Components{
-			Schemas: map[string]*Any{
+			Schemas: map[string]*Schema{
 				"flag": {
 					Type: TypeIsInteger.String(),
 					Extensions: Extensions{
@@ -46,10 +46,10 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectProperty() {
 	// Set specification
 	spec := Specification{
 		Components: Components{
-			Schemas: map[string]*Any{
+			Schemas: map[string]*Schema{
 				TypeIsObject.String(): {
 					Type: TypeIsObject.String(),
-					Properties: map[string]*Any{
+					Properties: map[string]*Schema{
 						"flag": {
 							Type: TypeIsInteger.String(),
 							Extensions: Extensions{
@@ -79,10 +79,10 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithArrayItem() {
 	// Set specification
 	spec := Specification{
 		Components: Components{
-			Schemas: map[string]*Any{
+			Schemas: map[string]*Schema{
 				"flag": {
 					Type: TypeIsArray.String(),
-					Items: &Any{
+					Items: &Schema{
 						Type: TypeIsInteger.String(),
 						Extensions: Extensions{
 							ExtGoType: "mypackage.Flag",
@@ -109,10 +109,10 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectPropertyAndDifferentP
 	// Set specification
 	spec := Specification{
 		Components: Components{
-			Schemas: map[string]*Any{
+			Schemas: map[string]*Schema{
 				TypeIsObject.String(): {
 					Type: TypeIsObject.String(),
-					Properties: map[string]*Any{
+					Properties: map[string]*Schema{
 						"flag": {
 							Type: TypeIsInteger.String(),
 							Extensions: Extensions{
@@ -143,10 +143,10 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectPropertyAndMultipleIm
 	// Set specification
 	spec := Specification{
 		Components: Components{
-			Schemas: map[string]*Any{
+			Schemas: map[string]*Schema{
 				TypeIsObject.String(): {
 					Type: TypeIsObject.String(),
-					Properties: map[string]*Any{
+					Properties: map[string]*Schema{
 						"flag": {
 							Type: TypeIsInteger.String(),
 							Extensions: Extensions{
@@ -186,10 +186,10 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithConflictingPackageNames() {
 	// Set specification
 	spec := Specification{
 		Components: Components{
-			Schemas: map[string]*Any{
+			Schemas: map[string]*Schema{
 				TypeIsObject.String(): {
 					Type: TypeIsObject.String(),
-					Properties: map[string]*Any{
+					Properties: map[string]*Schema{
 						"start_flag": {
 							Type: TypeIsInteger.String(),
 							Extensions: Extensions{

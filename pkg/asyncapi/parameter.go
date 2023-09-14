@@ -4,10 +4,10 @@ package asyncapi
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#parameterObject
 type Parameter struct {
-	Description string `json:"description"`
-	Schema      *Any   `json:"schema"`
-	Location    string `json:"location"`
-	Reference   string `json:"$ref"`
+	Description string  `json:"description"`
+	Schema      *Schema `json:"schema"`
+	Location    string  `json:"location"`
+	Reference   string  `json:"$ref"`
 
 	// Non AsyncAPI fields
 	Name        string     `json:"-"`
