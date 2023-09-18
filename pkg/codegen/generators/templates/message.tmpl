@@ -26,20 +26,47 @@ func New{{namify .Name}}Message() {{namify .Name}}Message {
     u := uuid.New().String()
     msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired}}&{{end}}u
     {{- end}}
-    
+
     return msg
 }
 
 // new{{namify .Name}}MessageFromBrokerMessage will fill a new {{namify .Name}}Message with data from generic broker message
 func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) ({{namify .Name}}Message, error) {
     var msg {{namify .Name}}Message
-   
-    // Unmarshal payload to expected message payload format
-    err := json.Unmarshal(bMsg.Payload, &msg.Payload)
-    if err != nil {
-        return msg, err
-    }
-    
+
+    {{if eq .Payload.Type "string" -}}
+        // Convert to string
+        {{- if and .Payload.Format (or (eq .Payload.Format "date") (eq .Payload.Format "date-time"))}}
+            t, err := time.Parse(time.RFC3339, string(bMsg.Payload))
+            if err != nil {
+                return {{namify .Name}}Message{}, err
+            }
+            msg.Payload = t
+        {{- else}}
+            msg.Payload = string(bMsg.Payload)
+        {{- end}}
+    {{else if eq .Payload.Type "integer" -}}
+        // Convert to integer
+        {{- if and .Payload.Format (eq .Payload.Format "int32")}}
+            msg.Payload = int32(binary.LittleEndian.Uint32(bMsg.Payload))
+        {{- else}}
+            msg.Payload = int64(binary.LittleEndian.Uint64(bMsg.Payload))
+        {{- end}}
+    {{else if eq .Payload.Type "number" -}}
+        // Convert to float
+        {{- if and .Payload.Format (eq .Payload.Format "float") -}}
+            msg.Payload = math.Float32frombits(binary.LittleEndian.Uint32(bMsg.Payload))
+        {{- else}}
+            msg.Payload = math.Float64frombits(binary.LittleEndian.Uint64(bMsg.Payload))
+        {{- end}}
+    {{else -}}
+        // Unmarshal payload to expected message payload format
+        err := json.Unmarshal(bMsg.Payload, &msg.Payload)
+        if err != nil {
+            return msg, err
+        }
+    {{- end}}
+
     {{ if .Headers -}}
     // Get each headers from broker message
     for k, v := range bMsg.Headers {
@@ -88,7 +115,7 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) 
         }
     }
     {{- end}}
-    
+
     // TODO: run checks on msg type
 
     return msg, nil
@@ -98,11 +125,37 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) 
 func (msg {{namify .Name}}Message) toBrokerMessage() (extensions.BrokerMessage, error) {
     // TODO: implement checks on message
 
-    // Marshal payload to JSON
-    payload, err := json.Marshal(msg.Payload)
-    if err != nil {
-        return extensions.BrokerMessage{}, err
-    }
+    {{if eq .Payload.Type "object" -}}
+        // Marshal payload to JSON
+        payload, err := json.Marshal(msg.Payload)
+        if err != nil {
+            return extensions.BrokerMessage{}, err
+        }
+    {{else if eq .Payload.Type "integer" -}}
+        // Convert to []byte{}
+        {{- if and .Payload.Format (eq .Payload.Format "int32")}}
+            payload := make([]byte, 4)
+            binary.BigEndian.PutUint32(payload, uint32(msg.Payload))
+        {{- else}}
+            payload := make([]byte, 8)
+            binary.BigEndian.PutUint64(payload, uint64(msg.Payload))
+        {{- end}}
+    {{else if eq .Payload.Type "number" -}}
+        // Convert to []byte{}
+        {{- if and .Payload.Format (eq .Payload.Format "float")}}
+            payload := make([]byte, 4)
+            binary.BigEndian.PutUint32(payload, math.Float32bits(msg.Payload))
+        {{- else}}
+            payload := make([]byte, 8)
+            binary.BigEndian.PutUint64(payload, math.Float64bits(msg.Payload))
+        {{- end}}
+    {{else if and (eq .Payload.Type "string") (and .Payload.Format (or (eq .Payload.Format "date") (eq .Payload.Format "date-time"))) -}}
+        // Convert to RFC3339 and to []byte
+        payload := []byte(msg.Payload.Format(time.RFC3339))
+    {{else -}}
+        // Convert to []byte
+        payload := []byte(msg.Payload)
+    {{- end}}
 
     {{ if .Headers -}}
     // Add each headers to broker message

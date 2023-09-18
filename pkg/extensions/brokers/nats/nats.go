@@ -83,14 +83,14 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (
 	err error,
 ) {
 	// Subscribe to channel
-	natsChan := make(chan *nats.Msg, 64)
+	natsChan := make(chan *nats.Msg, brokers.BrokerMessagesQueueSize)
 	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueGroup, natsChan)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Handle events
-	receivedBrokerMessages = make(chan extensions.BrokerMessage, 64)
+	receivedBrokerMessages = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
 	cancelSubscription = make(chan interface{}, 1)
 	go func() {
 		for stop := false; !stop; {

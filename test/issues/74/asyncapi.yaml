@@ -19,8 +19,8 @@ components:
     Test:
       description: test message
       headers:
-        $ref: '#/components/schemas/Header'      
-      payload:        
+        $ref: '#/components/schemas/Header'
+      payload:
         oneOf:
           - $ref: '#/components/schemas/TestSchema'
   schemas:

@@ -37,7 +37,7 @@ func NewSuite(broker extensions.BrokerController) *Suite {
 	}
 }
 
-func (suite *Suite) SetupSuite() {
+func (suite *Suite) SetupTest() {
 	// Create a channel to intercept message before sending to broker and after
 	// reception from broker
 	suite.interceptor = make(chan extensions.BrokerMessage, 8)
@@ -51,6 +51,12 @@ func (suite *Suite) SetupSuite() {
 	user, err := NewUserController(suite.broker, WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
 	suite.Require().NoError(err)
 	suite.user = user
+}
+
+func (suite *Suite) TearDownTest() {
+	suite.app.Close(context.Background())
+	suite.user.Close(context.Background())
+	close(suite.interceptor)
 }
 
 func (suite *Suite) TestHeaders() {

@@ -5,8 +5,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
@@ -22,7 +20,7 @@ type UserController struct {
 func NewUserController(bc extensions.BrokerController, options ...ControllerOption) (*UserController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
-		return nil, ErrNilBrokerController
+		return nil, extensions.ErrNilBrokerController
 	}
 
 	// Create default controller
@@ -80,6 +78,7 @@ func (c UserController) executeMiddlewares(ctx context.Context, callback func(ct
 }
 
 func addUserContextValues(ctx context.Context, path string) context.Context {
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "0.1.0")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
@@ -116,30 +115,6 @@ func (c *UserController) PublishHello(ctx context.Context, msg HelloMessage) err
 	// Return error from publication on broker
 	return err
 }
-
-var (
-	// Generic error for AsyncAPI generated code
-	ErrAsyncAPI = errors.New("error when using AsyncAPI")
-
-	// ErrContextCanceled is given when a given context is canceled
-	ErrContextCanceled = fmt.Errorf("%w: context canceled", ErrAsyncAPI)
-
-	// ErrNilBrokerController is raised when a nil broker controller is user
-	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
-
-	// ErrNilAppSubscriber is raised when a nil app subscriber is user
-	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
-
-	// ErrNilUserSubscriber is raised when a nil user subscriber is user
-	ErrNilUserSubscriber = fmt.Errorf("%w: nil user subscriber has been used", ErrAsyncAPI)
-
-	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
-	// or more without unsubscribing
-	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
-
-	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens
-	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
-)
 
 // controller is the controller that will be used to communicate with the broker
 // It will be used internally by AppController and UserController
@@ -203,11 +178,8 @@ func NewHelloMessage() HelloMessage {
 func newHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (HelloMessage, error) {
 	var msg HelloMessage
 
-	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
-	if err != nil {
-		return msg, err
-	}
+	// Convert to string
+	msg.Payload = string(bMsg.Payload)
 
 	// TODO: run checks on msg type
 
@@ -218,11 +190,8 @@ func newHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (HelloMessa
 func (msg HelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
-	// Marshal payload to JSON
-	payload, err := json.Marshal(msg.Payload)
-	if err != nil {
-		return extensions.BrokerMessage{}, err
-	}
+	// Convert to []byte
+	payload := []byte(msg.Payload)
 
 	// There is no headers here
 	headers := make(map[string][]byte, 0)

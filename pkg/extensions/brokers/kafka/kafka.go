@@ -131,7 +131,7 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (
 	})
 
 	// Handle events
-	msgs = make(chan extensions.BrokerMessage, 64)
+	msgs = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
 	stop = make(chan interface{}, 1)
 	go func() {
 		for {

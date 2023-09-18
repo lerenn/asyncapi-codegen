@@ -6,7 +6,6 @@ package issue74
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -29,7 +28,7 @@ type AppController struct {
 func NewAppController(bc extensions.BrokerController, options ...ControllerOption) (*AppController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
-		return nil, ErrNilBrokerController
+		return nil, extensions.ErrNilBrokerController
 	}
 
 	// Create default controller
@@ -87,6 +86,7 @@ func (c AppController) executeMiddlewares(ctx context.Context, callback func(ctx
 }
 
 func addAppContextValues(ctx context.Context, path string) context.Context {
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "app")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
@@ -102,7 +102,7 @@ func (c *AppController) Close(ctx context.Context) {
 // For channels with parameters, they should be subscribed independently.
 func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) error {
 	if as == nil {
-		return ErrNilAppSubscriber
+		return extensions.ErrNilAppSubscriber
 	}
 
 	if err := c.SubscribeTestChannel(ctx, as.TestChannel); err != nil {
@@ -139,7 +139,7 @@ func (c *AppController) SubscribeTestChannel(ctx context.Context, fn func(ctx co
 	// Check if there is already a subscription
 	_, exists := c.stopSubscribers[path]
 	if exists {
-		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
+		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
@@ -223,7 +223,7 @@ type UserController struct {
 func NewUserController(bc extensions.BrokerController, options ...ControllerOption) (*UserController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
-		return nil, ErrNilBrokerController
+		return nil, extensions.ErrNilBrokerController
 	}
 
 	// Create default controller
@@ -281,6 +281,7 @@ func (c UserController) executeMiddlewares(ctx context.Context, callback func(ct
 }
 
 func addUserContextValues(ctx context.Context, path string) context.Context {
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
@@ -317,30 +318,6 @@ func (c *UserController) PublishTestChannel(ctx context.Context, msg TestMessage
 	// Return error from publication on broker
 	return err
 }
-
-var (
-	// Generic error for AsyncAPI generated code
-	ErrAsyncAPI = errors.New("error when using AsyncAPI")
-
-	// ErrContextCanceled is given when a given context is canceled
-	ErrContextCanceled = fmt.Errorf("%w: context canceled", ErrAsyncAPI)
-
-	// ErrNilBrokerController is raised when a nil broker controller is user
-	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
-
-	// ErrNilAppSubscriber is raised when a nil app subscriber is user
-	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
-
-	// ErrNilUserSubscriber is raised when a nil user subscriber is user
-	ErrNilUserSubscriber = fmt.Errorf("%w: nil user subscriber has been used", ErrAsyncAPI)
-
-	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
-	// or more without unsubscribing
-	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
-
-	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens
-	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
-)
 
 // controller is the controller that will be used to communicate with the broker
 // It will be used internally by AppController and UserController

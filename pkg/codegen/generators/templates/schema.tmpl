@@ -24,7 +24,7 @@ bool
 
 {{- /* Type String */ -}}
 {{- else if eq .Type "string" -}}
-{{- if or (eq .Format "date") (eq .Format "date-time") -}}
+{{- if and .Format (or (eq .Format "date") (eq .Format "date-time")) -}}
 time.Time
 {{- else -}}
 string
