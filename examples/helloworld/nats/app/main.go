@@ -25,7 +25,7 @@ func main() {
 	// Subscribe to HelloWorld messages
 	// Note: it will indefinitely wait for messages as context has no timeout
 	log.Println("Subscribe to hello world...")
-	ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage, _ bool) {
+	ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage) {
 		log.Println("Received message:", msg.Payload)
 	})
 

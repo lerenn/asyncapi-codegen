@@ -10,6 +10,12 @@ type BrokerMessage struct {
 	Payload []byte
 }
 
+// IsUninitialized check if the BrokerMessage is at zero value, i.e. the
+// uninitialized structure. It can be used to check that a channel is closed.
+func (bm BrokerMessage) IsUninitialized() bool {
+	return bm.Headers == nil && bm.Payload == nil
+}
+
 // BrokerController represents the functions that should be implemented to connect
 // the broker to the application or the user.
 type BrokerController interface {

@@ -117,15 +117,16 @@ func (c *{{ .Prefix }}Controller) UnsubscribeAll(ctx context.Context) {
 // The 'done' argument indicates when the subscription is canceled and can be
 // used to clean up resources.
 {{- if .Parameters}}
-func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}}, done bool)) error {
+func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}}, done bool)) error {
+func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
 {{- end }}
     // Get channel path
     path := {{ generateChannelPath $value }}
 
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
 
     // Check if there is already a subscription
     _, exists := c.cancelChannels[path]
@@ -149,6 +150,12 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
             // Wait for next message
             bMsg, open := <-msgs
 
+            // If subscription is closed and there is no more message
+            // (i.e. uninitialized message), then exit the function
+            if !open && bMsg.IsUninitialized() {
+                return
+            }
+
             // Set broker message to context
             ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
 
@@ -159,10 +166,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
             if err != nil {
                 c.logger.Error(ctx, err.Error())
             }
-
-            // Add context
             msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
 
             {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
                 // Add correlation ID to context if it exists
@@ -171,18 +175,10 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
                 }
             {{- end}}
 
-            // Process message if no error and still open
-            if err == nil && open {
-                // Execute middlewares with the callback
-                c.executeMiddlewares(msgCtx, func(ctx context.Context) {
-                    fn(ctx, msg, !open)
-                })
-            }
-
-            // If subscription is closed, then exit the function
-            if !open {
-                return
-            }
+            // Execute middlewares with the callback
+            c.executeMiddlewares(msgCtx, func(ctx context.Context) {
+                fn(ctx, msg)
+            })
         }
     } ()
 
@@ -310,30 +306,38 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
     for {
         select {
         case bMsg, open := <-messages:
+            // If subscription is closed and there is no more message
+            // (i.e. uninitialized message), then the subscription ended before
+            // receiving the expected message
+            if !open && bMsg.IsUninitialized() {
+                cc.logger.Error(ctx, "Channel closed before getting message")
+                return {{channelToMessageTypeName $value}}{}, extensions.ErrSubscriptionCanceled
+            }
+
             // Get new message
             msg, err := new{{channelToMessageTypeName $value}}FromBrokerMessage(bMsg)
             if err != nil {
                 cc.logger.Error(ctx, err.Error())
             }
 
-            // If valid message with corresponding correlation ID, return message
-            if err == nil && publishMsg.CorrelationID() == msg.CorrelationID() {
-                // Set context with received values
-                msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-                msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, bMsg)
-                msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
-                msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
-
-                // Execute middlewares before returning
-                cc.executeMiddlewares(msgCtx, func(_ context.Context) {
-                    /* Nothing to do more */
-                })
-
-                return msg, nil
-            } else if !open { // If message is invalid or not corresponding and the subscription is closed, then set corresponding error
-                cc.logger.Error(ctx, "Channel closed before getting message")
-                return {{channelToMessageTypeName $value}}{}, extensions.ErrSubscriptionCanceled
+            // If message doesn't have corresponding correlation ID, then continue
+            if publishMsg.CorrelationID() != msg.CorrelationID() {
+                continue
             }
+
+            // Set context with received values as it is the expected message
+            msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, bMsg)
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
+
+            // Execute middlewares before returning
+            cc.executeMiddlewares(msgCtx, func(_ context.Context) {
+                /* Nothing to do more */
+            })
+
+            // return the message to the caller
+            return msg, nil
         case <-ctx.Done(): // Set corrsponding error if context is done
             cc.logger.Error(ctx, "Context done before getting message")
             return {{channelToMessageTypeName $value}}{}, extensions.ErrContextCanceled

@@ -17,7 +17,7 @@ type ServerSubscriber struct {
 	Controller *AppController
 }
 
-func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage, _ bool) {
+func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage) {
 	// Generate a pong message, set as a response of the request
 	resp := NewPongMessage()
 	resp.SetAsResponseFrom(&req)

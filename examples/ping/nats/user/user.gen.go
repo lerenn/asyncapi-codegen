@@ -17,7 +17,7 @@ import (
 // UserSubscriber represents all handlers that are expecting messages for User
 type UserSubscriber interface {
 	// Pong subscribes to messages placed on the 'pong' channel
-	Pong(ctx context.Context, msg PongMessage, done bool)
+	Pong(ctx context.Context, msg PongMessage)
 }
 
 // UserController is the structure that provides publishing capabilities to the
@@ -125,12 +125,13 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 // Callback function 'fn' will be called each time a new message is received.
 // The 'done' argument indicates when the subscription is canceled and can be
 // used to clean up resources.
-func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.Context, msg PongMessage, done bool)) error {
+func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.Context, msg PongMessage)) error {
 	// Get channel path
 	path := "pong"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
 
 	// Check if there is already a subscription
 	_, exists := c.cancelChannels[path]
@@ -154,6 +155,12 @@ func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.
 			// Wait for next message
 			bMsg, open := <-msgs
 
+			// If subscription is closed and there is no more message
+			// (i.e. uninitialized message), then exit the function
+			if !open && bMsg.IsUninitialized() {
+				return
+			}
+
 			// Set broker message to context
 			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
 
@@ -162,28 +169,17 @@ func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.
 			if err != nil {
 				c.logger.Error(ctx, err.Error())
 			}
-
-			// Add context
 			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
 
 			// Add correlation ID to context if it exists
 			if id := msg.CorrelationID(); id != "" {
 				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
 			}
 
-			// Process message if no error and still open
-			if err == nil && open {
-				// Execute middlewares with the callback
-				c.executeMiddlewares(msgCtx, func(ctx context.Context) {
-					fn(ctx, msg, !open)
-				})
-			}
-
-			// If subscription is closed, then exit the function
-			if !open {
-				return
-			}
+			// Execute middlewares with the callback
+			c.executeMiddlewares(msgCtx, func(ctx context.Context) {
+				fn(ctx, msg)
+			})
 		}
 	}()
 
@@ -289,30 +285,38 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 	for {
 		select {
 		case bMsg, open := <-messages:
+			// If subscription is closed and there is no more message
+			// (i.e. uninitialized message), then the subscription ended before
+			// receiving the expected message
+			if !open && bMsg.IsUninitialized() {
+				cc.logger.Error(ctx, "Channel closed before getting message")
+				return PongMessage{}, extensions.ErrSubscriptionCanceled
+			}
+
 			// Get new message
 			msg, err := newPongMessageFromBrokerMessage(bMsg)
 			if err != nil {
 				cc.logger.Error(ctx, err.Error())
 			}
 
-			// If valid message with corresponding correlation ID, return message
-			if err == nil && publishMsg.CorrelationID() == msg.CorrelationID() {
-				// Set context with received values
-				msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-				msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, bMsg)
-				msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
-				msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
-
-				// Execute middlewares before returning
-				cc.executeMiddlewares(msgCtx, func(_ context.Context) {
-					/* Nothing to do more */
-				})
-
-				return msg, nil
-			} else if !open { // If message is invalid or not corresponding and the subscription is closed, then set corresponding error
-				cc.logger.Error(ctx, "Channel closed before getting message")
-				return PongMessage{}, extensions.ErrSubscriptionCanceled
+			// If message doesn't have corresponding correlation ID, then continue
+			if publishMsg.CorrelationID() != msg.CorrelationID() {
+				continue
 			}
+
+			// Set context with received values as it is the expected message
+			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
+			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, bMsg)
+			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
+			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
+
+			// Execute middlewares before returning
+			cc.executeMiddlewares(msgCtx, func(_ context.Context) {
+				/* Nothing to do more */
+			})
+
+			// return the message to the caller
+			return msg, nil
 		case <-ctx.Done(): // Set corrsponding error if context is done
 			cc.logger.Error(ctx, "Context done before getting message")
 			return PongMessage{}, extensions.ErrContextCanceled
