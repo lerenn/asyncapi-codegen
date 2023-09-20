@@ -178,8 +178,8 @@ code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.
 
 ```go
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
-	// ...
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+  // ...
 )
 
 func main() {
@@ -229,8 +229,8 @@ code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.
 
 ```go
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
-	// ...
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+  // ...
 )
 
 func main() {
@@ -256,7 +256,7 @@ be  Here is the ones generated for the HelloWorld example:
 // channel. There is only a payload here, but you could find also headers,
 // correlation id, and more.
 type HelloMessage struct {
-	Payload string
+  Payload string
 }
 ```
 
@@ -286,33 +286,33 @@ use `ping.gen.go`.
 
 ```golang
 type Subscriber struct {
-	Controller *AppController
+  Controller *AppController
 }
 
 func (s Subscriber) Ping(req PingMessage) {
-	// Generate a pong message, set as a response of the request
-	resp := NewPongMessage()
-	resp.SetAsResponseFrom(&req)
-	resp.Payload.Message = "pong"
-	resp.Payload.Time = time.Now()
+  // Generate a pong message, set as a response of the request
+  resp := NewPongMessage()
+  resp.SetAsResponseFrom(&req)
+  resp.Payload.Message = "pong"
+  resp.Payload.Time = time.Now()
 
-	// Publish the pong message
-	s.Controller.PublishPong(cresp)
+  // Publish the pong message
+  s.Controller.PublishPong(cresp)
 }
 
 func main() {
-	// ...
+  // ...
 
-	// Create a new application controller
-	ctrl, _ := NewAppController(/* Add corresponding broker controller */)
-	defer ctrl.Close(context.Background())
+  // Create a new application controller
+  ctrl, _ := NewAppController(/* Add corresponding broker controller */)
+  defer ctrl.Close(context.Background())
 
-	// Subscribe to all (we could also have just listened on the ping request channel)
-	sub := AppSubscriber{Controller: ctrl}
-	ctrl.SubscribeAll(context.Background(), sub)
+  // Subscribe to all (we could also have just listened on the ping request channel)
+  sub := AppSubscriber{Controller: ctrl}
+  ctrl.SubscribeAll(context.Background(), sub)
 
-	// Process messages until interruption signal
-	// ...
+  // Process messages until interruption signal
+  // ...
 }
 ```
 
@@ -329,7 +329,7 @@ req.Payload = "ping"
 
 // Create the publication function to send the message
 publicationFunc := func(ctx context.Context) error {
-	return ctrl.PublishPing(ctx, req)
+  return ctrl.PublishPing(ctx, req)
 }
 
 // The following function will subscribe to the 'pong' channel, execute the publication
@@ -384,15 +384,15 @@ provide an adapter to it. Here is the interface that you need to satisfy:
 
 ```go
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
 type BrokerController interface {
-	// Publish a message to the broker
-	Publish(ctx context.Context, channel string, mw extensions.BrokerMessage) error
+  // Publish a message to the broker
+  Publish(ctx context.Context, channel string, mw extensions.BrokerMessage) error
 
-	// Subscribe to messages from the broker
-	Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan any, err error)
+  // Subscribe to messages from the broker
+  Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan any, err error)
 }
 ```
 
@@ -428,7 +428,7 @@ messages. You can add one or multiple middlewares using the  `WithMiddlewares`
 function in the initialization of the App or User controller:
 
 ```golang
-// Create a new app controller with  middlewares
+// Create a new app controller with middlewares
 ctrl, _ := NewAppController(/* Broker of your choice */, WithMiddlewares(myMiddleware1, myMiddleware2 /*, ... */))
 ```
 
@@ -447,17 +447,17 @@ If you want to target specific messages, you can use the context passed in argum
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	// ...
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions"
+  // ...
 )
 
 func myMiddleware(ctx context.Context, _ middleware.Next) context.Context {
-	// Execute this middleware only if this is a received message
-	extensions.IfContextValueEquals(ctx, extensions.ContextKeyIsDirection, "reception", func() {
-		// Do specific stuff if message is received
-	})
+  // Execute this middleware only if this is a received message
+  extensions.IfContextValueEquals(ctx, extensions.ContextKeyIsDirection, "reception", func() {
+    // Do specific stuff if message is received
+  })
 
-	return ctx
+  return ctx
 }
 ```
 
@@ -474,22 +474,22 @@ Here is an example:
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	// ...
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions"
+  // ...
 )
 
 func surroundingMiddleware(ctx context.Context, next extensions.NextMiddleware) context.Context {
-	// Pre-operation
-	fmt.Println("This will be displayed BEFORE the reception/publication")
+  // Pre-operation
+  fmt.Println("This will be displayed BEFORE the reception/publication")
 
-	// Calling next middleware or reception/publication code
-	// The given context will be the one propagated to other middlewares and operation source code
-	next(ctx)
+  // Calling next middleware or reception/publication code
+  // The given context will be the one propagated to other middlewares and operation source code
+  next(ctx)
 
-	// Post-operation
-	fmt.Println("This will be displayed AFTER the reception/publication")
+  // Post-operation
+  fmt.Println("This will be displayed AFTER the reception/publication")
 
-	return ctx
+  return ctx
 }
 ```
 
@@ -504,7 +504,7 @@ To get these information, please use the functions from
 ```golang
 // Execute this middleware only if this is from "ping" channel
 extensions.IfContextValueEquals(ctx, extensions.ContextKeyIsChannel, "ping", func() {
-	// Do specific stuff if the channel is ping
+  // Do specific stuff if the channel is ping
 })
 ```
 
@@ -523,8 +523,8 @@ to initialize the controller with a logger, with the function `WithLogger()`:
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	// ...
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+  // ...
 )
 
 func main() {
@@ -544,8 +544,8 @@ in order to execute it on every published and received messages:
 
 ```golang
 import(
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	// ...
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+  // ...
 )
 
 func main() {
@@ -578,19 +578,19 @@ Here is a basic implementation example:
 type SimpleLogger struct{}
 
 func (logger SimpleLogger) formatLog(ctx log.Context, info ...log.AdditionalInfo) string {
-	var formattedLogInfo string
-	for i := 0; i < len(keyvals)-1; i += 2 {
-		formattedLogInfo = fmt.Sprintf("%s, %s: %+v", formattedLogInfo, info.Key, info.Value)
-	}
-	return fmt.Sprintf("%s, context: %+v", formattedLogInfo, ctx)
+  var formattedLogInfo string
+  for i := 0; i < len(keyvals)-1; i += 2 {
+    formattedLogInfo = fmt.Sprintf("%s, %s: %+v", formattedLogInfo, info.Key, info.Value)
+  }
+  return fmt.Sprintf("%s, context: %+v", formattedLogInfo, ctx)
 }
 
 func (logger SimpleLogger) Info(ctx log.Context, msg string, info ...log.AdditionalInfo) {
-	log.Printf("INFO: %s%s", msg, logger.formatLog(ctx, info...))
+  log.Printf("INFO: %s%s", msg, logger.formatLog(ctx, info...))
 }
 
 func (logger SimpleLogger) Error(ctx log.Context, msg string, info ...log.AdditionalInfo) {
-	log.Printf("ERROR: %s%s", msg, logger.formatLog(ctx, info...))
+  log.Printf("ERROR: %s%s", msg, logger.formatLog(ctx, info...))
 }
 ```
 
