@@ -638,7 +638,7 @@ func main() {
 }
 ```
 
-Then you can use each applicatin independently:
+Then you can use each application independently:
 
 ```golang
 err := appV1.SubscribeHello(context.Background(), func(_ context.Context, msg v1.HelloMessage, _ bool) {
@@ -651,6 +651,10 @@ err := appV2.SubscribeHello(context.Background(), func(_ context.Context, msg v2
 ```
 
 That way, you can support multiple different versions with the same broker.
+
+**Important**: this feature will add an `application-version` header to each
+message in order to have the correction version of the application on each of
+them.
 
 ### AsyncAPI Extensions
 
