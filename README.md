@@ -21,6 +21,11 @@ Generate Go application and user boilerplate from AsyncAPI specifications.
   * [Custom broker](#custom-broker)
 * [CLI options](#cli-options)
 * [Advanced topics](#advanced-topics)
+  * [Middlewares](#middlewares)
+  * [Context](#context)
+  * [Logging](#logging)
+  * [Versioning](#versioning)
+  * [AsyncAPI Extensions](#asyncapi-extensions)
 * [Contributing and support](#contributing-and-support)
 
 ## Supported functionalities
@@ -38,7 +43,7 @@ Generate Go application and user boilerplate from AsyncAPI specifications.
   * Text (Humand readable)
   * Custom
 * Others:
-  * Multiple specification versions support
+  * Versioning support
 
 ## Usage
 
@@ -174,22 +179,24 @@ code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.
 ```go
 import(
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
-	/* ... */
+	// ...
 )
 
-// Create a new application controller
-ctrl, _ := NewAppController(nats.NewController("nats://nats:4222"))
-defer ctrl.Close(context.Background())
+func main() {
+  // Create a new application controller
+  ctrl, _ := NewAppController(nats.NewController("nats://nats:4222"))
+  defer ctrl.Close(context.Background())
 
-// Subscribe to HelloWorld messages
-// Note: it will indefinitely wait for messages as context has no timeout
-log.Println("Subscribe to hello world...")
-ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage, _ bool) {
-  log.Println("Received message:", msg.Payload)
-})
+  // Subscribe to HelloWorld messages
+  // Note: it will indefinitely wait for messages as context has no timeout
+  log.Println("Subscribe to hello world...")
+  ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage, _ bool) {
+    log.Println("Received message:", msg.Payload)
+  })
 
-// Process messages until interruption signal
-/* ... */
+  // Process messages until interruption signal
+  // ...
+}
 ```
 
 #### User
@@ -223,16 +230,20 @@ code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.
 ```go
 import(
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
-	/* ... */
+	// ...
 )
 
-// Create a new user controller
-ctrl, _ := NewUserController(nats.NewController("nats://nats:4222"))
-defer ctrl.Close(context.Background())
+func main() {
+  // Create a new user controller
+  ctrl, _ := NewUserController(nats.NewController("nats://nats:4222"))
+  defer ctrl.Close(context.Background())
 
-// Send HelloWorld
-log.Println("Publishing 'hello world' message")
-ctrl.PublishHello(context.Background(), HelloMessage{Payload: "HelloWorld!"})
+  // Send HelloWorld
+  log.Println("Publishing 'hello world' message")
+  ctrl.PublishHello(context.Background(), HelloMessage{Payload: "HelloWorld!"})
+
+  // ...
+}
 ```
 
 #### Types
@@ -290,7 +301,7 @@ func (s Subscriber) Ping(req PingMessage, _ bool) {
 }
 
 func main() {
-	/* ... */
+	// ...
 
 	// Create a new application controller
 	ctrl, _ := NewAppController(/* Add corresponding broker controller */)
@@ -301,7 +312,7 @@ func main() {
 	ctrl.SubscribeAll(context.Background(), sub)
 
 	// Process messages until interruption signal
-	/* ... */
+	// ...
 }
 ```
 
@@ -381,7 +392,7 @@ type BrokerController interface {
 	Publish(ctx context.Context, channel string, mw extensions.BrokerMessage) error
 
 	// Subscribe to messages from the broker
-	Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan interface{}, err error)
+	Subscribe(ctx context.Context, channel string) (msgs chan extensions.BrokerMessage, stop chan any, err error)
 }
 ```
 
@@ -437,7 +448,7 @@ If you want to target specific messages, you can use the context passed in argum
 ```golang
 import(
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	/* ... */
+	// ...
 )
 
 func myMiddleware(ctx context.Context, _ middleware.Next) context.Context {
@@ -464,7 +475,7 @@ Here is an example:
 ```golang
 import(
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	/* ... */
+	// ...
 )
 
 func surroundingMiddleware(ctx context.Context, next extensions.NextMiddleware) context.Context {
@@ -513,11 +524,15 @@ to initialize the controller with a logger, with the function `WithLogger()`:
 ```golang
 import(
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	/* ... */
+	// ...
 )
 
-// Create a new app controller with an Elastic Common Schema JSON compatible logger
-ctrl, _ := NewAppController(/* Broker of your choice */, WithLogger(log.NewECS()))
+func main() {
+  // Create a new app controller with an Elastic Common Schema JSON compatible logger
+  ctrl, _ := NewAppController(/* Broker of your choice */, WithLogger(log.NewECS()))
+
+  // ...
+}
 ```
 
 You can find all loggers in the directory `pkg/log`.
@@ -530,12 +545,16 @@ in order to execute it on every published and received messages:
 ```golang
 import(
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	/* ... */
+	// ...
 )
 
-// Create a new app controller with a middleware for logging incoming/outgoing messages
-loggingMiddleware := middleware.Logging(log.NewECS())
-ctrl, _ := NewAppController(/* Broker of your choice */, WithMiddlewares(loggingMiddleware))
+func main() {
+  // Create a new app controller with a middleware for logging incoming/outgoing messages
+  loggingMiddleware := middleware.Logging(log.NewECS())
+  ctrl, _ := NewAppController(/* Broker of your choice */, WithMiddlewares(loggingMiddleware))
+
+  // ...
+}
 ```
 
 #### Custom logging
@@ -586,11 +605,54 @@ ctrl, _ := NewAppController(
 )
 ```
 
-### Multiple versions support
+### Versioning
 
-TODO
+If you are in need to do a migration or support multiple versions of your
+AsyncAPI specifications, you can use the `versioning` package:
 
-### Extensions
+```golang
+
+import (
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions/versioning"
+	v1 "path/to/asyncapi/spec/version/1"
+	v2 "path/to/asyncapi/spec/version/2"
+)
+
+func main() {
+  // Create a broker (here from NATS)
+  broker := nats.NewController("nats://nats:4222"))
+
+  // Add a version wrapper to the broker
+  vw := versioning.NewWrapper(broker)
+
+  // Create application for version 1
+  appV1, _ := v1.NewAppController(vw, /* controller options */)
+  defer appV1.Close(context.Background())
+
+  // Create v2 app
+  appV2, _ := v2.NewAppController(vw, /* controller options */)
+  defer appV2.Close(context.Background())
+
+  // ...
+}
+```
+
+Then you can use each applicatin independently:
+
+```golang
+err := appV1.SubscribeHello(context.Background(), func(_ context.Context, msg v1.HelloMessage, _ bool) {
+		// Stuff for version 1
+})
+
+err := appV2.SubscribeHello(context.Background(), func(_ context.Context, msg v2.HelloMessage, _ bool) {
+		// Stuff for version 2
+})
+```
+
+That way, you can support multiple different versions with the same broker.
+
+### AsyncAPI Extensions
 
 #### Schema Object extensions
 
