@@ -5,7 +5,7 @@ import "context"
 // LogInfo is a key-value pair that will be added to the log.
 type LogInfo struct {
 	Key   string
-	Value interface{}
+	Value any
 }
 
 // Logger is the interface that must be implemented by a logger.

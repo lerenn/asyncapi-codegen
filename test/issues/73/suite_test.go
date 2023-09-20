@@ -12,6 +12,7 @@ import (
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/versioning"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
 	v1 "github.com/lerenn/asyncapi-codegen/test/issues/73/v1"
@@ -54,7 +55,7 @@ func (suite *Suite) SetupTest() {
 	suite.interceptor = make(chan extensions.BrokerMessage, 8)
 
 	// Add a version wrapper to the broker
-	vw := extensions.NewVersionWrapper(suite.broker)
+	vw := versioning.NewWrapper(suite.broker)
 
 	// Create v1 appV1
 	appV1, err := v1.NewAppController(vw, v1.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))

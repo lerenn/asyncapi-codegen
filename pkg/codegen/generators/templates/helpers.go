@@ -94,7 +94,7 @@ func ReferenceToStructAttributePath(ref string) string {
 }
 
 // HasField will check if a struct has a field with the given name.
-func HasField(v interface{}, name string) bool {
+func HasField(v any, name string) bool {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()

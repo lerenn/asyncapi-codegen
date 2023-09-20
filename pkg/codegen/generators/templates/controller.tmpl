@@ -14,7 +14,7 @@ func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...Contr
     // Create default controller
     controller := controller{
         broker:         bc,
-        cancelChannels: make(map[string]chan interface{}),
+        cancelChannels: make(map[string]chan any),
         logger:         extensions.DummyLogger{},
         middlewares:    make([]extensions.Middleware, 0),
     }

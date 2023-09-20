@@ -78,12 +78,12 @@ func (c *Controller) Publish(_ context.Context, channel string, bm extensions.Br
 // Subscribe to messages from the broker.
 func (c *Controller) Subscribe(ctx context.Context, channel string) (
 	messages chan extensions.BrokerMessage,
-	cancel chan interface{},
+	cancel chan any,
 	err error,
 ) {
 	// Initialize channels
 	messages = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
-	cancel = make(chan interface{}, 1)
+	cancel = make(chan any, 1)
 
 	// Subscribe on subject
 	sub, err := c.connection.QueueSubscribe(channel, c.queueGroup, messagesHandler(messages))

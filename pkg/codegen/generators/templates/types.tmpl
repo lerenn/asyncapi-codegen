@@ -4,7 +4,7 @@ type controller struct {
     // broker is the broker controller that will be used to communicate
     broker extensions.BrokerController
     // cancelChannels is a map of cancel channels for each subscribed channel
-    cancelChannels  map[string]chan interface{}
+    cancelChannels  map[string]chan any
     // logger is the logger that will be used² to log operations on controller
     logger           extensions.Logger
     // middlewares are the middlewares that will be executed when sending or

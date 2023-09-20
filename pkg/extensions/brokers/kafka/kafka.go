@@ -123,7 +123,7 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 // Subscribe to messages from the broker.
 func (c *Controller) Subscribe(ctx context.Context, channel string) (
 	messages chan extensions.BrokerMessage,
-	cancel chan interface{},
+	cancel chan any,
 	err error,
 ) {
 	r := kafka.NewReader(kafka.ReaderConfig{
@@ -136,7 +136,7 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (
 
 	// Handle events
 	messages = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
-	cancel = make(chan interface{}, 1)
+	cancel = make(chan any, 1)
 	go func() {
 		for {
 			c.messagesHandler(ctx, r, messages)
