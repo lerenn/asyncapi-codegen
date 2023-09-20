@@ -17,5 +17,5 @@ type BrokerController interface {
 	Publish(ctx context.Context, channel string, mw BrokerMessage) error
 
 	// Subscribe to messages from the broker
-	Subscribe(ctx context.Context, channel string) (msgs chan BrokerMessage, stop chan interface{}, err error)
+	Subscribe(ctx context.Context, channel string) (messages chan BrokerMessage, cancel chan any, err error)
 }

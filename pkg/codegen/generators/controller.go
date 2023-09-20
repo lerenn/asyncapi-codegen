@@ -13,6 +13,7 @@ type ControllerGenerator struct {
 	SubscribeChannels map[string]*asyncapi.Channel
 	PublishChannels   map[string]*asyncapi.Channel
 	Prefix            string
+	Version           string
 }
 
 // NewControllerGenerator will create a new controller code generator.
@@ -48,6 +49,9 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	} else {
 		gen.Prefix = "User"
 	}
+
+	// Set version
+	gen.Version = spec.Info.Version
 
 	return gen
 }

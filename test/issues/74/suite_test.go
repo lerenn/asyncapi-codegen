@@ -37,7 +37,7 @@ func NewSuite(broker extensions.BrokerController) *Suite {
 	}
 }
 
-func (suite *Suite) SetupSuite() {
+func (suite *Suite) SetupTest() {
 	// Create a channel to intercept message before sending to broker and after
 	// reception from broker
 	suite.interceptor = make(chan extensions.BrokerMessage, 8)
@@ -53,6 +53,12 @@ func (suite *Suite) SetupSuite() {
 	suite.user = user
 }
 
+func (suite *Suite) TearDownTest() {
+	suite.app.Close(context.Background())
+	suite.user.Close(context.Background())
+	close(suite.interceptor)
+}
+
 func (suite *Suite) TestHeaders() {
 	var wg sync.WaitGroup
 
@@ -66,12 +72,12 @@ func (suite *Suite) TestHeaders() {
 
 	// Check what the app receive and translate
 	var recvMsg TestMessage
+	wg.Add(1)
 	err := suite.app.SubscribeTestChannel(context.Background(), func(_ context.Context, msg TestMessage, _ bool) {
 		recvMsg = msg
 		wg.Done()
 	})
 	suite.Require().NoError(err)
-	wg.Add(1)
 
 	// Publish the message
 	err = suite.user.PublishTestChannel(context.Background(), sent)

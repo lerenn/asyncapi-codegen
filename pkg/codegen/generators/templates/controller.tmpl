@@ -8,17 +8,17 @@ type {{ .Prefix }}Controller struct {
 func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...ControllerOption) (*{{ .Prefix }}Controller, error) {
     // Check if broker controller has been provided
     if bc == nil {
-        return nil, ErrNilBrokerController
+        return nil, extensions.ErrNilBrokerController
     }
 
     // Create default controller
     controller := controller{
-        broker: bc,
-        stopSubscribers:  make(map[string]chan interface{}),
-        logger:           extensions.DummyLogger{},
-        middlewares:      make([]extensions.Middleware, 0),
+        broker:         bc,
+        cancelChannels: make(map[string]chan any),
+        logger:         extensions.DummyLogger{},
+        middlewares:    make([]extensions.Middleware, 0),
     }
-    
+
     // Apply options
     for _, option := range options {
         option(&controller)
@@ -29,7 +29,7 @@ func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...Contr
 
 func (c {{ .Prefix }}Controller) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
     var called bool
-   
+
     // If there is no more middleware
     if len(middlewares) == 0 {
         return func(ctx context.Context) {
@@ -66,6 +66,7 @@ func (c {{ .Prefix }}Controller) executeMiddlewares(ctx context.Context, callbac
 }
 
 func add{{ .Prefix }}ContextValues(ctx context.Context, path string) context.Context {
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "{{ .Version }}")
     ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "{{ snakeCase .Prefix }}")
     return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
@@ -75,6 +76,7 @@ func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
     // Unsubscribing remaining channels
 {{if .MethodCount -}}
     c.UnsubscribeAll(ctx)
+
     c.logger.Info(ctx, "Closed {{ snakeCase .Prefix }} controller")
 {{end -}}
 }
@@ -84,7 +86,7 @@ func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
 // For channels with parameters, they should be subscribed independently.
 func (c *{{ .Prefix }}Controller) SubscribeAll(ctx context.Context, as {{ .Prefix }}Subscriber) error {
     if as == nil {
-        return ErrNil{{ .Prefix }}Subscriber
+        return extensions.ErrNil{{ .Prefix }}Subscriber
     }
 
     {{range  $key, $value := .SubscribeChannels -}}
@@ -100,18 +102,11 @@ func (c *{{ .Prefix }}Controller) SubscribeAll(ctx context.Context, as {{ .Prefi
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *{{ .Prefix }}Controller) UnsubscribeAll(ctx context.Context) {
-    // Unsubscribe channels with no parameters (if any)
     {{- range  $key, $value := .SubscribeChannels}}
     {{- if not .Parameters}}
     c.Unsubscribe{{namify $key}}(ctx)
     {{- end}}
     {{- end}}
-
-    // Unsubscribe remaining channels
-    for n, stopChan := range c.stopSubscribers {
-        stopChan <- true
-        delete(c.stopSubscribers, n)
-    }
 }
 {{- end}}
 
@@ -131,17 +126,17 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
 
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
-    
+
     // Check if there is already a subscription
-    _, exists := c.stopSubscribers[path]
+    _, exists := c.cancelChannels[path]
     if exists {
-        err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
+        err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
         c.logger.Error(ctx, err.Error())
         return err
     }
 
     // Subscribe to broker channel
-    msgs, stop, err := c.broker.Subscribe(ctx, path)
+    msgs, cancel, err := c.broker.Subscribe(ctx, path)
     if err != nil {
         c.logger.Error(ctx, err.Error())
         return err
@@ -168,14 +163,14 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
             // Add context
             msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
             msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
-            
+
             {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
                 // Add correlation ID to context if it exists
                 if id := msg.CorrelationID(); id != "" {
                     ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
                 }
             {{- end}}
-            
+
             // Process message if no error and still open
             if err == nil && open {
                 // Execute middlewares with the callback
@@ -191,8 +186,8 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
         }
     } ()
 
-    // Add the stop channel to the inside map
-    c.stopSubscribers[path] = stop
+    // Add the cancel channel to the inside map
+    c.cancelChannels[path] = cancel
 
     return nil
 }
@@ -206,18 +201,21 @@ func (c *{{ $.Prefix }}Controller) Unsubscribe{{namify $key}}(ctx context.Contex
     // Get channel path
     path := {{ generateChannelPath $value }}
 
-    // Set context
-    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
-
-    // Get stop channel
-    stopChan, exists := c.stopSubscribers[path]
+    // Check if there subscribers for this channel
+    cancel, exists := c.cancelChannels[path]
     if !exists {
         return
     }
 
-    // Stop the channel and remove the entry
-    stopChan <- true
-    delete(c.stopSubscribers, path)
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+
+    // Stop the subscription and wait for its closure to be complete
+    cancel <- true
+    <- cancel
+
+    // Remove if from the subscribers
+    delete(c.cancelChannels, path)
 
     c.logger.Info(ctx, "Unsubscribed from channel")
 }
@@ -286,7 +284,7 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
 
     // Subscribe to broker channel
-    msgs, stop, err := cc.broker.Subscribe(ctx, path)
+    messages, cancel, err := cc.broker.Subscribe(ctx, path)
     if err != nil {
         cc.logger.Error(ctx, err.Error())
         return {{channelToMessageTypeName $value}}{}, err
@@ -295,8 +293,9 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
 
     // Close subscriber on leave
     defer func(){
-        // Unsubscribe
-        stop <- true
+        // Stop the subscription and wait for its closure to be complete
+        cancel <- true
+        <- cancel
 
         // Logging unsubscribing
         cc.logger.Info(ctx, "Unsubscribed from channel")
@@ -310,7 +309,7 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
     // Wait for corresponding response
     for {
         select {
-        case bMsg, open := <-msgs:
+        case bMsg, open := <-messages:
             // Get new message
             msg, err := new{{channelToMessageTypeName $value}}FromBrokerMessage(bMsg)
             if err != nil {
@@ -333,11 +332,11 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
                 return msg, nil
             } else if !open { // If message is invalid or not corresponding and the subscription is closed, then set corresponding error
                 cc.logger.Error(ctx, "Channel closed before getting message")
-                return {{channelToMessageTypeName $value}}{}, ErrSubscriptionCanceled
+                return {{channelToMessageTypeName $value}}{}, extensions.ErrSubscriptionCanceled
             }
         case <-ctx.Done(): // Set corrsponding error if context is done
             cc.logger.Error(ctx, "Context done before getting message")
-            return {{channelToMessageTypeName $value}}{}, ErrContextCanceled
+            return {{channelToMessageTypeName $value}}{}, extensions.ErrContextCanceled
         }
     }
 }

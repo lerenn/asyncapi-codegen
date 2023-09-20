@@ -2,7 +2,6 @@ package nats
 
 import (
 	"context"
-	"errors"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
@@ -78,55 +77,53 @@ func (c *Controller) Publish(_ context.Context, channel string, bm extensions.Br
 
 // Subscribe to messages from the broker.
 func (c *Controller) Subscribe(ctx context.Context, channel string) (
-	receivedBrokerMessages chan extensions.BrokerMessage,
-	cancelSubscription chan interface{},
+	messages chan extensions.BrokerMessage,
+	cancel chan any,
 	err error,
 ) {
-	// Subscribe to channel
-	natsChan := make(chan *nats.Msg, 64)
-	sub, err := c.connection.QueueSubscribeSyncWithChan(channel, c.queueGroup, natsChan)
+	// Initialize channels
+	messages = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
+	cancel = make(chan any, 1)
+
+	// Subscribe on subject
+	sub, err := c.connection.QueueSubscribe(channel, c.queueGroup, messagesHandler(messages))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Handle events
-	receivedBrokerMessages = make(chan extensions.BrokerMessage, 64)
-	cancelSubscription = make(chan interface{}, 1)
 	go func() {
-		for stop := false; !stop; {
-			select {
-			// If its a new message, then handle it
-			case msg := <-natsChan:
-				transferMessageToBroker(receivedBrokerMessages, msg)
-			// If its a closure request from function caller, then stop everything
-			case <-cancelSubscription:
-				stop = true
-			}
-		}
+		// Wait for cancel request
+		<-cancel
 
-		// Unsubscribe from channel
-		if err := sub.Unsubscribe(); err != nil && !errors.Is(err, nats.ErrConnectionClosed) && c.logger != nil {
+		// Drain the NATS subscription
+		if err := sub.Drain(); err != nil {
 			c.logger.Error(ctx, err.Error())
 		}
 
-		close(receivedBrokerMessages)
+		// Close messages in order to avoid new messages
+		close(messages)
+
+		// Close cancel to let listeners know that the cancellation is complete
+		close(cancel)
 	}()
 
-	return receivedBrokerMessages, cancelSubscription, nil
+	return messages, cancel, nil
 }
 
-func transferMessageToBroker(receivedBrokerMessages chan extensions.BrokerMessage, msg *nats.Msg) {
-	// Get headers
-	headers := make(map[string][]byte, len(msg.Header))
-	for k, v := range msg.Header {
-		if len(v) > 0 {
-			headers[k] = []byte(v[0])
+func messagesHandler(messages chan extensions.BrokerMessage) nats.MsgHandler {
+	return func(msg *nats.Msg) {
+		// Get headers
+		headers := make(map[string][]byte, len(msg.Header))
+		for k, v := range msg.Header {
+			if len(v) > 0 {
+				headers[k] = []byte(v[0])
+			}
 		}
-	}
 
-	// Create and transmit message to user
-	receivedBrokerMessages <- extensions.BrokerMessage{
-		Headers: headers,
-		Payload: msg.Data,
+		// Create and transmit message to user
+		messages <- extensions.BrokerMessage{
+			Headers: headers,
+			Payload: msg.Data,
+		}
 	}
 }

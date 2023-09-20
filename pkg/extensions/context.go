@@ -10,6 +10,8 @@ const Prefix = "asyncapi-"
 type ContextKey string
 
 const (
+	// ContextKeyIsVersion is the AsyncAPI specification version.
+	ContextKeyIsVersion ContextKey = Prefix + "version"
 	// ContextKeyIsProvider is the name of the provider this data is coming from.
 	// When coming from a generated user, it is `asyncapi`.
 	ContextKeyIsProvider ContextKey = Prefix + "provider"
@@ -31,7 +33,7 @@ func (k ContextKey) String() string {
 	return string(k)
 }
 
-// IfContextSetWith executes the function if the key is set in the context as a string.
+// IfContextSetWith executes the function if the key is set in the context.
 func IfContextSetWith[T any](ctx context.Context, key ContextKey, fn func(value T)) {
 	// Get value
 	value := ctx.Value(key)
@@ -42,6 +44,15 @@ func IfContextSetWith[T any](ctx context.Context, key ContextKey, fn func(value 
 	// Get value as type T
 	if tValue, ok := value.(T); ok {
 		fn(tValue)
+	}
+}
+
+// IfContextNotSetWith executes the function if the key is not set in the context.
+func IfContextNotSetWith[T any](ctx context.Context, key ContextKey, fn func()) {
+	// Get value
+	value := ctx.Value(key)
+	if value == nil {
+		fn()
 	}
 }
 

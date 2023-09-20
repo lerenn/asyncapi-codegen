@@ -10,8 +10,11 @@ import (
 )
 
 func main() {
+	// Create a new broker
+	broker := nats.NewController("nats://nats:4222", nats.WithQueueGroup("helloworld-users"))
+
 	// Create a new user controller
-	ctrl, err := NewUserController(nats.NewController("nats://nats:4222"))
+	ctrl, err := NewUserController(broker)
 	if err != nil {
 		panic(err)
 	}

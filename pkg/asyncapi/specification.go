@@ -58,7 +58,7 @@ func (s Specification) ReferenceSchema(ref string) *Schema {
 	return msg
 }
 
-func (s Specification) reference(ref string) interface{} {
+func (s Specification) reference(ref string) any {
 	refPath := strings.Split(ref, "/")[1:]
 
 	if refPath[0] == "components" {

@@ -147,7 +147,7 @@ func downToCorrelationID(path []string, child *Schema) (correlationIDParent *Sch
 	return correlationIDParent
 }
 
-func (msg *Message) referenceFrom(ref []string) interface{} {
+func (msg *Message) referenceFrom(ref []string) any {
 	if len(ref) == 0 {
 		return msg
 	}

@@ -5,8 +5,6 @@ package issue49
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
@@ -28,15 +26,15 @@ type AppController struct {
 func NewAppController(bc extensions.BrokerController, options ...ControllerOption) (*AppController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
-		return nil, ErrNilBrokerController
+		return nil, extensions.ErrNilBrokerController
 	}
 
 	// Create default controller
 	controller := controller{
-		broker:          bc,
-		stopSubscribers: make(map[string]chan interface{}),
-		logger:          extensions.DummyLogger{},
-		middlewares:     make([]extensions.Middleware, 0),
+		broker:         bc,
+		cancelChannels: make(map[string]chan any),
+		logger:         extensions.DummyLogger{},
+		middlewares:    make([]extensions.Middleware, 0),
 	}
 
 	// Apply options
@@ -86,6 +84,7 @@ func (c AppController) executeMiddlewares(ctx context.Context, callback func(ctx
 }
 
 func addAppContextValues(ctx context.Context, path string) context.Context {
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "app")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
@@ -94,6 +93,7 @@ func addAppContextValues(ctx context.Context, path string) context.Context {
 func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeAll(ctx)
+
 	c.logger.Info(ctx, "Closed app controller")
 }
 
@@ -101,7 +101,7 @@ func (c *AppController) Close(ctx context.Context) {
 // For channels with parameters, they should be subscribed independently.
 func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) error {
 	if as == nil {
-		return ErrNilAppSubscriber
+		return extensions.ErrNilAppSubscriber
 	}
 
 	if err := c.SubscribeChat(ctx, as.Chat); err != nil {
@@ -113,14 +113,7 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll(ctx context.Context) {
-	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribeChat(ctx)
-
-	// Unsubscribe remaining channels
-	for n, stopChan := range c.stopSubscribers {
-		stopChan <- true
-		delete(c.stopSubscribers, n)
-	}
 }
 
 // SubscribeChat will subscribe to new messages from '/chat' channel.
@@ -136,15 +129,15 @@ func (c *AppController) SubscribeChat(ctx context.Context, fn func(ctx context.C
 	ctx = addAppContextValues(ctx, path)
 
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers[path]
+	_, exists := c.cancelChannels[path]
 	if exists {
-		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
+		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.broker.Subscribe(ctx, path)
+	msgs, cancel, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
@@ -185,8 +178,8 @@ func (c *AppController) SubscribeChat(ctx context.Context, fn func(ctx context.C
 		}
 	}()
 
-	// Add the stop channel to the inside map
-	c.stopSubscribers[path] = stop
+	// Add the cancel channel to the inside map
+	c.cancelChannels[path] = cancel
 
 	return nil
 }
@@ -196,18 +189,21 @@ func (c *AppController) UnsubscribeChat(ctx context.Context) {
 	// Get channel path
 	path := "/chat"
 
-	// Set context
-	ctx = addAppContextValues(ctx, path)
-
-	// Get stop channel
-	stopChan, exists := c.stopSubscribers[path]
+	// Check if there subscribers for this channel
+	cancel, exists := c.cancelChannels[path]
 	if !exists {
 		return
 	}
 
-	// Stop the channel and remove the entry
-	stopChan <- true
-	delete(c.stopSubscribers, path)
+	// Set context
+	ctx = addAppContextValues(ctx, path)
+
+	// Stop the subscription and wait for its closure to be complete
+	cancel <- true
+	<-cancel
+
+	// Remove if from the subscribers
+	delete(c.cancelChannels, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
@@ -287,15 +283,15 @@ type UserController struct {
 func NewUserController(bc extensions.BrokerController, options ...ControllerOption) (*UserController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
-		return nil, ErrNilBrokerController
+		return nil, extensions.ErrNilBrokerController
 	}
 
 	// Create default controller
 	controller := controller{
-		broker:          bc,
-		stopSubscribers: make(map[string]chan interface{}),
-		logger:          extensions.DummyLogger{},
-		middlewares:     make([]extensions.Middleware, 0),
+		broker:         bc,
+		cancelChannels: make(map[string]chan any),
+		logger:         extensions.DummyLogger{},
+		middlewares:    make([]extensions.Middleware, 0),
 	}
 
 	// Apply options
@@ -345,6 +341,7 @@ func (c UserController) executeMiddlewares(ctx context.Context, callback func(ct
 }
 
 func addUserContextValues(ctx context.Context, path string) context.Context {
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
@@ -353,6 +350,7 @@ func addUserContextValues(ctx context.Context, path string) context.Context {
 func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeAll(ctx)
+
 	c.logger.Info(ctx, "Closed user controller")
 }
 
@@ -360,7 +358,7 @@ func (c *UserController) Close(ctx context.Context) {
 // For channels with parameters, they should be subscribed independently.
 func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) error {
 	if as == nil {
-		return ErrNilUserSubscriber
+		return extensions.ErrNilUserSubscriber
 	}
 
 	if err := c.SubscribeChat(ctx, as.Chat); err != nil {
@@ -375,15 +373,8 @@ func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) er
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *UserController) UnsubscribeAll(ctx context.Context) {
-	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribeChat(ctx)
 	c.UnsubscribeStatus(ctx)
-
-	// Unsubscribe remaining channels
-	for n, stopChan := range c.stopSubscribers {
-		stopChan <- true
-		delete(c.stopSubscribers, n)
-	}
 }
 
 // SubscribeChat will subscribe to new messages from '/chat' channel.
@@ -399,15 +390,15 @@ func (c *UserController) SubscribeChat(ctx context.Context, fn func(ctx context.
 	ctx = addUserContextValues(ctx, path)
 
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers[path]
+	_, exists := c.cancelChannels[path]
 	if exists {
-		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
+		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.broker.Subscribe(ctx, path)
+	msgs, cancel, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
@@ -448,8 +439,8 @@ func (c *UserController) SubscribeChat(ctx context.Context, fn func(ctx context.
 		}
 	}()
 
-	// Add the stop channel to the inside map
-	c.stopSubscribers[path] = stop
+	// Add the cancel channel to the inside map
+	c.cancelChannels[path] = cancel
 
 	return nil
 }
@@ -459,18 +450,21 @@ func (c *UserController) UnsubscribeChat(ctx context.Context) {
 	// Get channel path
 	path := "/chat"
 
-	// Set context
-	ctx = addUserContextValues(ctx, path)
-
-	// Get stop channel
-	stopChan, exists := c.stopSubscribers[path]
+	// Check if there subscribers for this channel
+	cancel, exists := c.cancelChannels[path]
 	if !exists {
 		return
 	}
 
-	// Stop the channel and remove the entry
-	stopChan <- true
-	delete(c.stopSubscribers, path)
+	// Set context
+	ctx = addUserContextValues(ctx, path)
+
+	// Stop the subscription and wait for its closure to be complete
+	cancel <- true
+	<-cancel
+
+	// Remove if from the subscribers
+	delete(c.cancelChannels, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
 } // SubscribeStatus will subscribe to new messages from '/status' channel.
@@ -485,15 +479,15 @@ func (c *UserController) SubscribeStatus(ctx context.Context, fn func(ctx contex
 	ctx = addUserContextValues(ctx, path)
 
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers[path]
+	_, exists := c.cancelChannels[path]
 	if exists {
-		err := fmt.Errorf("%w: %q channel is already subscribed", ErrAlreadySubscribedChannel, path)
+		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.broker.Subscribe(ctx, path)
+	msgs, cancel, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
@@ -534,8 +528,8 @@ func (c *UserController) SubscribeStatus(ctx context.Context, fn func(ctx contex
 		}
 	}()
 
-	// Add the stop channel to the inside map
-	c.stopSubscribers[path] = stop
+	// Add the cancel channel to the inside map
+	c.cancelChannels[path] = cancel
 
 	return nil
 }
@@ -545,18 +539,21 @@ func (c *UserController) UnsubscribeStatus(ctx context.Context) {
 	// Get channel path
 	path := "/status"
 
-	// Set context
-	ctx = addUserContextValues(ctx, path)
-
-	// Get stop channel
-	stopChan, exists := c.stopSubscribers[path]
+	// Check if there subscribers for this channel
+	cancel, exists := c.cancelChannels[path]
 	if !exists {
 		return
 	}
 
-	// Stop the channel and remove the entry
-	stopChan <- true
-	delete(c.stopSubscribers, path)
+	// Set context
+	ctx = addUserContextValues(ctx, path)
+
+	// Stop the subscription and wait for its closure to be complete
+	cancel <- true
+	<-cancel
+
+	// Remove if from the subscribers
+	delete(c.cancelChannels, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
@@ -589,38 +586,14 @@ func (c *UserController) PublishChat(ctx context.Context, msg ChatMessage) error
 	return err
 }
 
-var (
-	// Generic error for AsyncAPI generated code
-	ErrAsyncAPI = errors.New("error when using AsyncAPI")
-
-	// ErrContextCanceled is given when a given context is canceled
-	ErrContextCanceled = fmt.Errorf("%w: context canceled", ErrAsyncAPI)
-
-	// ErrNilBrokerController is raised when a nil broker controller is user
-	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
-
-	// ErrNilAppSubscriber is raised when a nil app subscriber is user
-	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
-
-	// ErrNilUserSubscriber is raised when a nil user subscriber is user
-	ErrNilUserSubscriber = fmt.Errorf("%w: nil user subscriber has been used", ErrAsyncAPI)
-
-	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
-	// or more without unsubscribing
-	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)
-
-	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens
-	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
-)
-
 // controller is the controller that will be used to communicate with the broker
 // It will be used internally by AppController and UserController
 type controller struct {
 	// broker is the broker controller that will be used to communicate
 	broker extensions.BrokerController
-	// stopSubscribers is a map of stop channels for each subscribed channel
-	stopSubscribers map[string]chan interface{}
-	// logger is the logger that will be used to log operations on controller
+	// cancelChannels is a map of cancel channels for each subscribed channel
+	cancelChannels map[string]chan any
+	// logger is the logger that will be used² to log operations on controller
 	logger extensions.Logger
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
@@ -675,11 +648,8 @@ func NewChatMessage() ChatMessage {
 func newChatMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (ChatMessage, error) {
 	var msg ChatMessage
 
-	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
-	if err != nil {
-		return msg, err
-	}
+	// Convert to string
+	msg.Payload = string(bMsg.Payload)
 
 	// TODO: run checks on msg type
 
@@ -690,11 +660,8 @@ func newChatMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (ChatMessage
 func (msg ChatMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
-	// Marshal payload to JSON
-	payload, err := json.Marshal(msg.Payload)
-	if err != nil {
-		return extensions.BrokerMessage{}, err
-	}
+	// Convert to []byte
+	payload := []byte(msg.Payload)
 
 	// There is no headers here
 	headers := make(map[string][]byte, 0)
@@ -721,11 +688,8 @@ func NewMessage() Message {
 func newMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Message, error) {
 	var msg Message
 
-	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
-	if err != nil {
-		return msg, err
-	}
+	// Convert to string
+	msg.Payload = string(bMsg.Payload)
 
 	// TODO: run checks on msg type
 
@@ -736,11 +700,8 @@ func newMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Message, error)
 func (msg Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
-	// Marshal payload to JSON
-	payload, err := json.Marshal(msg.Payload)
-	if err != nil {
-		return extensions.BrokerMessage{}, err
-	}
+	// Convert to []byte
+	payload := []byte(msg.Payload)
 
 	// There is no headers here
 	headers := make(map[string][]byte, 0)
@@ -767,11 +728,8 @@ func NewStatusMessage() StatusMessage {
 func newStatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (StatusMessage, error) {
 	var msg StatusMessage
 
-	// Unmarshal payload to expected message payload format
-	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
-	if err != nil {
-		return msg, err
-	}
+	// Convert to string
+	msg.Payload = string(bMsg.Payload)
 
 	// TODO: run checks on msg type
 
@@ -782,11 +740,8 @@ func newStatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (StatusMes
 func (msg StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
-	// Marshal payload to JSON
-	payload, err := json.Marshal(msg.Payload)
-	if err != nil {
-		return extensions.BrokerMessage{}, err
-	}
+	// Convert to []byte
+	payload := []byte(msg.Payload)
 
 	// There is no headers here
 	headers := make(map[string][]byte, 0)

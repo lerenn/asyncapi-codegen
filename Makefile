@@ -22,7 +22,7 @@ lint/fix: ## Fix what can be fixed regarding the linter
 clean: __examples/clean brokers/down ## Clean up the project
 
 .PHONY: check
-check: clean generate lint examples test ## Check that everything is ready for commit
+check: generate lint clean examples test ## Check that everything is ready for commit
 
 .PHONY: __examples/clean
 __examples/clean:
@@ -34,7 +34,7 @@ examples: brokers/up ## Perform examples
 
 .PHONY: test
 test: brokers/up ## Perform tests
-	@go test ./... -timeout=30s
+	@go test ./... -p 1 -timeout=1m
 
 .PHONY: generate
 generate: ## Generate files
