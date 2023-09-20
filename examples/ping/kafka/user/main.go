@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"time"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
@@ -53,7 +52,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	// Wait for the message to be received
-	time.Sleep(time.Second)
 }

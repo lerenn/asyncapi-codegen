@@ -10,11 +10,11 @@ import (
 
 // BrokerControllers returns a list of BrokerController to test based on the
 // docker-compose file of the project.
-func BrokerControllers(t *testing.T) []extensions.BrokerController {
+func BrokerControllers(t *testing.T) map[string]extensions.BrokerController {
 	t.Helper() // Set this function as a helper
 
-	return []extensions.BrokerController{
-		nats.NewController("nats://localhost:4222"),
-		kafka.NewController([]string{"localhost:9094"}),
+	return map[string]extensions.BrokerController{
+		"NATS":  nats.NewController("nats://localhost:4222"),
+		"Kafka": kafka.NewController([]string{"localhost:9094"}),
 	}
 }

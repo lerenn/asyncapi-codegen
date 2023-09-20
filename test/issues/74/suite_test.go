@@ -72,12 +72,12 @@ func (suite *Suite) TestHeaders() {
 
 	// Check what the app receive and translate
 	var recvMsg TestMessage
+	wg.Add(1)
 	err := suite.app.SubscribeTestChannel(context.Background(), func(_ context.Context, msg TestMessage, _ bool) {
 		recvMsg = msg
 		wg.Done()
 	})
 	suite.Require().NoError(err)
-	wg.Add(1)
 
 	// Publish the message
 	err = suite.user.PublishTestChannel(context.Background(), sent)

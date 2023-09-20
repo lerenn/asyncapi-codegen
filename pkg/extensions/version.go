@@ -34,14 +34,22 @@ func newChannelsByVersion(version string, parent *channelsByBroker) channelsByVe
 	}
 }
 
-func (cbv channelsByVersion) launchListener() {
+func (cbv *channelsByVersion) launchListener() {
 	go func() {
 		// Wait to receive cancel
 		<-cbv.cancel
 
 		// When cancel is received, then remove version listener
-		cbv.parent.removeVersionListener(cbv.version)
+		cbv.parent.removeVersionListener(cbv)
 	}()
+}
+
+func (cbv *channelsByVersion) closeChannels() {
+	// Receiving no more messages
+	close(cbv.messages)
+
+	// Closing cancel channel to let caller knows that everything is cleaned up
+	close(cbv.cancel)
 }
 
 type channelsByBroker struct {
@@ -88,13 +96,21 @@ func (cbb *channelsByBroker) createVersionListener(version string) (channelsByVe
 	return cbv, nil
 }
 
-func (cbb *channelsByBroker) removeVersionListener(version string) {
+func (cbb *channelsByBroker) removeVersionListener(cbv *channelsByVersion) {
 	// Lock the versions to avoid conflict
 	cbb.versionsMutex.Lock()
 	defer cbb.versionsMutex.Unlock()
 
+	// Cleanup the channelsByVersion when leaving
+	//
+	// NOTE: this is important to make it cleanup at the end of this function as
+	// it should be cleanup AFTER the broker have been stopped (in case it was
+	// the last version listener), in order to let the caller knows that everything
+	// was cleaned up properly.
+	defer cbv.closeChannels()
+
 	// Remove the version from the channelsByBroker
-	delete(cbb.versionsChannels, version)
+	delete(cbb.versionsChannels, cbv.version)
 
 	// Lock the channels to avoid conflict
 	cbb.parent.channelsMutex.Lock()
@@ -105,15 +121,20 @@ func (cbb *channelsByBroker) removeVersionListener(version string) {
 		return
 	}
 
-	// Otherwise delete the channelsByBroker from the Version Switch Wrapper
-	// and cancel the broker listener
-	delete(cbb.parent.channels, cbb.channelName)
+	// Otherwise cancel the broker listener and wait for its closure
 	cbb.cancel <- true
+	<-cbb.cancel
+
+	// Then delete the channelsByBroker from the Version Switch Wrapper
+	delete(cbb.parent.channels, cbb.channelName)
 }
 
 func (cbb *channelsByBroker) launchListener(ctx context.Context) {
 	go func() {
-		for msg := range cbb.messages {
+		for {
+			// Wait for new messages
+			msg := <-cbb.messages
+
 			// Get the version from the message
 			version := string(msg.Headers[VersionField])
 
@@ -213,6 +234,7 @@ func (vw *VersionWrapper) Subscribe(ctx context.Context, channel string) (chan B
 			return nil, nil, err
 		}
 		defer cbb.launchListener(ctx)
+		brokerChannel = cbb
 	}
 
 	// Check if the version already exists

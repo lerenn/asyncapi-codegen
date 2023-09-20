@@ -34,7 +34,7 @@ examples: brokers/up ## Perform examples
 
 .PHONY: test
 test: brokers/up ## Perform tests
-	@go test ./... -timeout=30s
+	@go test ./... -p 1 -timeout=1m
 
 .PHONY: generate
 generate: ## Generate files

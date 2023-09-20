@@ -53,23 +53,26 @@ func (suite *Suite) SetupTest() {
 	// reception from broker
 	suite.interceptor = make(chan extensions.BrokerMessage, 8)
 
+	// Add a version wrapper to the broker
+	vw := extensions.NewVersionWrapper(suite.broker)
+
 	// Create v1 appV1
-	appV1, err := v1.NewAppController(suite.broker, v1.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
+	appV1, err := v1.NewAppController(vw, v1.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
 	suite.Require().NoError(err)
 	suite.v1.app = appV1
 
 	// Create v1 userV1
-	userV1, err := v1.NewUserController(suite.broker, v1.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
+	userV1, err := v1.NewUserController(vw, v1.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
 	suite.Require().NoError(err)
 	suite.v1.user = userV1
 
 	// Create v2 app
-	appV2, err := v2.NewAppController(suite.broker, v2.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
+	appV2, err := v2.NewAppController(vw, v2.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
 	suite.Require().NoError(err)
 	suite.v2.app = appV2
 
 	// Create v2 user
-	userV2, err := v2.NewUserController(suite.broker, v2.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
+	userV2, err := v2.NewUserController(vw, v2.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
 	suite.Require().NoError(err)
 	suite.v2.user = userV2
 }
@@ -92,12 +95,18 @@ func (suite *Suite) TestV1Reception() {
 
 	// Check what the app receive and translate
 	var recvMsg v1.HelloMessage
+	wg.Add(1)
 	err := suite.v1.app.SubscribeHello(context.Background(), func(_ context.Context, msg v1.HelloMessage, _ bool) {
 		recvMsg = msg
 		wg.Done()
 	})
 	suite.Require().NoError(err)
-	wg.Add(1)
+
+	// Check that the other app doesn't receive
+	err = suite.v2.app.SubscribeHello(context.Background(), func(_ context.Context, _ v2.HelloMessage, _ bool) {
+		suite.Require().FailNow("this should not happen")
+	})
+	suite.Require().NoError(err)
 
 	// Publish the message
 	err = suite.v1.user.PublishHello(context.Background(), sent)
@@ -130,14 +139,20 @@ func (suite *Suite) TestV2Reception() {
 		},
 	}
 
+	// Check that the other app doesn't receive
+	err := suite.v1.app.SubscribeHello(context.Background(), func(_ context.Context, _ v1.HelloMessage, _ bool) {
+		suite.Require().FailNow("this should not happen")
+	})
+	suite.Require().NoError(err)
+
 	// Check what the app receive and translate
 	var recvMsg v2.HelloMessage
-	err := suite.v2.app.SubscribeHello(context.Background(), func(_ context.Context, msg v2.HelloMessage, _ bool) {
+	wg.Add(1)
+	err = suite.v2.app.SubscribeHello(context.Background(), func(_ context.Context, msg v2.HelloMessage, _ bool) {
 		recvMsg = msg
 		wg.Done()
 	})
 	suite.Require().NoError(err)
-	wg.Add(1)
 
 	// Publish the message
 	err = suite.v2.user.PublishHello(context.Background(), sent)

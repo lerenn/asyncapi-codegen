@@ -31,10 +31,10 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 
 	// Create default controller
 	controller := controller{
-		broker:          bc,
-		stopSubscribers: make(map[string]chan interface{}),
-		logger:          extensions.DummyLogger{},
-		middlewares:     make([]extensions.Middleware, 0),
+		broker:         bc,
+		cancelChannels: make(map[string]chan interface{}),
+		logger:         extensions.DummyLogger{},
+		middlewares:    make([]extensions.Middleware, 0),
 	}
 
 	// Apply options
@@ -93,6 +93,7 @@ func addAppContextValues(ctx context.Context, path string) context.Context {
 func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeAll(ctx)
+
 	c.logger.Info(ctx, "Closed app controller")
 }
 
@@ -112,14 +113,7 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll(ctx context.Context) {
-	// Unsubscribe channels with no parameters (if any)
 	c.UnsubscribeHello(ctx)
-
-	// Unsubscribe remaining channels
-	for n, stopChan := range c.stopSubscribers {
-		stopChan <- true
-		delete(c.stopSubscribers, n)
-	}
 }
 
 // SubscribeHello will subscribe to new messages from 'hello' channel.
@@ -135,7 +129,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 	ctx = addAppContextValues(ctx, path)
 
 	// Check if there is already a subscription
-	_, exists := c.stopSubscribers[path]
+	_, exists := c.cancelChannels[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
 		c.logger.Error(ctx, err.Error())
@@ -143,7 +137,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 	}
 
 	// Subscribe to broker channel
-	msgs, stop, err := c.broker.Subscribe(ctx, path)
+	msgs, cancel, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
@@ -184,8 +178,8 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 		}
 	}()
 
-	// Add the stop channel to the inside map
-	c.stopSubscribers[path] = stop
+	// Add the cancel channel to the inside map
+	c.cancelChannels[path] = cancel
 
 	return nil
 }
@@ -195,18 +189,21 @@ func (c *AppController) UnsubscribeHello(ctx context.Context) {
 	// Get channel path
 	path := "hello"
 
-	// Set context
-	ctx = addAppContextValues(ctx, path)
-
-	// Get stop channel
-	stopChan, exists := c.stopSubscribers[path]
+	// Check if there subscribers for this channel
+	cancel, exists := c.cancelChannels[path]
 	if !exists {
 		return
 	}
 
-	// Stop the channel and remove the entry
-	stopChan <- true
-	delete(c.stopSubscribers, path)
+	// Set context
+	ctx = addAppContextValues(ctx, path)
+
+	// Stop the subscription and wait for its closure to be complete
+	cancel <- true
+	<-cancel
+
+	// Remove if from the subscribers
+	delete(c.cancelChannels, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
@@ -226,10 +223,10 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 
 	// Create default controller
 	controller := controller{
-		broker:          bc,
-		stopSubscribers: make(map[string]chan interface{}),
-		logger:          extensions.DummyLogger{},
-		middlewares:     make([]extensions.Middleware, 0),
+		broker:         bc,
+		cancelChannels: make(map[string]chan interface{}),
+		logger:         extensions.DummyLogger{},
+		middlewares:    make([]extensions.Middleware, 0),
 	}
 
 	// Apply options
@@ -322,9 +319,9 @@ func (c *UserController) PublishHello(ctx context.Context, msg HelloMessage) err
 type controller struct {
 	// broker is the broker controller that will be used to communicate
 	broker extensions.BrokerController
-	// stopSubscribers is a map of stop channels for each subscribed channel
-	stopSubscribers map[string]chan interface{}
-	// logger is the logger that will be used to log operations on controller
+	// cancelChannels is a map of cancel channels for each subscribed channel
+	cancelChannels map[string]chan interface{}
+	// logger is the logger that will be used² to log operations on controller
 	logger extensions.Logger
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages

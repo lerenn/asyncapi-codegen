@@ -37,6 +37,8 @@ Generate Go application and user boilerplate from AsyncAPI specifications.
   * Elastic Common Schema (JSON)
   * Text (Humand readable)
   * Custom
+* Others:
+  * Multiple specification versions support
 
 ## Usage
 
@@ -583,6 +585,10 @@ ctrl, _ := NewAppController(
   WithMiddleware(middleware.Logging(SimpleLogger{})), /* Use to log incoming/outgoing messages */
 )
 ```
+
+### Multiple versions support
+
+TODO
 
 ### Extensions
 

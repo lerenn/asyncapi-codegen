@@ -25,10 +25,10 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 
 	// Create default controller
 	controller := controller{
-		broker:          bc,
-		stopSubscribers: make(map[string]chan interface{}),
-		logger:          extensions.DummyLogger{},
-		middlewares:     make([]extensions.Middleware, 0),
+		broker:         bc,
+		cancelChannels: make(map[string]chan interface{}),
+		logger:         extensions.DummyLogger{},
+		middlewares:    make([]extensions.Middleware, 0),
 	}
 
 	// Apply options
@@ -121,9 +121,9 @@ func (c *UserController) PublishHello(ctx context.Context, msg HelloMessage) err
 type controller struct {
 	// broker is the broker controller that will be used to communicate
 	broker extensions.BrokerController
-	// stopSubscribers is a map of stop channels for each subscribed channel
-	stopSubscribers map[string]chan interface{}
-	// logger is the logger that will be used to log operations on controller
+	// cancelChannels is a map of cancel channels for each subscribed channel
+	cancelChannels map[string]chan interface{}
+	// logger is the logger that will be used² to log operations on controller
 	logger extensions.Logger
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages

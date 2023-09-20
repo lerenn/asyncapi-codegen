@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
@@ -13,11 +14,14 @@ import (
 
 // Controller is the Kafka implementation for asyncapi-codegen.
 type Controller struct {
-	logger    extensions.Logger
-	groupID   string
 	hosts     []string
 	partition int
 	maxBytes  int
+
+	// Reception only
+	groupID string
+
+	logger extensions.Logger
 }
 
 // ControllerOption is a function that can be used to configure a Kafka controller
@@ -107,7 +111,7 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 		// created, so let's retry
 		if errors.Is(err, kafka.UnknownTopicOrPartition) {
 			c.logger.Warning(ctx, fmt.Sprintf("Topic %s does not exists: waiting for creation and retry", channel))
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(time.Second)
 			continue
 		}
 
@@ -118,8 +122,8 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 
 // Subscribe to messages from the broker.
 func (c *Controller) Subscribe(ctx context.Context, channel string) (
-	msgs chan extensions.BrokerMessage,
-	stop chan interface{},
+	messages chan extensions.BrokerMessage,
+	cancel chan interface{},
 	err error,
 ) {
 	r := kafka.NewReader(kafka.ReaderConfig{
@@ -131,39 +135,53 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (
 	})
 
 	// Handle events
-	msgs = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
-	stop = make(chan interface{}, 1)
+	messages = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
+	cancel = make(chan interface{}, 1)
 	go func() {
 		for {
-			msg, err := r.ReadMessage(ctx)
-			if err != nil {
-				break
-			}
-
-			// Get headers
-			headers := make(map[string][]byte, len(msg.Headers))
-			for _, header := range msg.Headers {
-				headers[header.Key] = header.Value
-			}
-
-			// Create message
-			msgs <- extensions.BrokerMessage{
-				Headers: headers,
-				Payload: msg.Value,
-			}
+			c.messagesHandler(ctx, r, messages)
 		}
 	}()
 
 	go func() {
-		// Handle closure request from function caller
-		for range stop {
-			c.logger.Info(ctx, "Stopping subscriber")
-			if err := r.Close(); err != nil && c.logger != nil {
-				c.logger.Error(ctx, err.Error())
-			}
-			close(msgs)
+		// Wait for cancel request
+		<-cancel
+
+		// Stopping the Kafka listener
+		if err := r.Close(); err != nil {
+			c.logger.Error(ctx, err.Error())
 		}
+
+		// Close messages in order to avoid new messages
+		close(messages)
+
+		// Close cancel to let listeners know that the cancellation is complete
+		close(cancel)
 	}()
 
-	return msgs, stop, nil
+	return messages, cancel, nil
+}
+
+func (c *Controller) messagesHandler(ctx context.Context, r *kafka.Reader, messages chan extensions.BrokerMessage) {
+	msg, err := r.ReadMessage(ctx)
+	if err != nil {
+		// If the error is not io.EOF, then it is a real error
+		if !errors.Is(err, io.EOF) {
+			c.logger.Warning(ctx, fmt.Sprintf("Error when reading message: %q", err.Error()))
+		}
+
+		return
+	}
+
+	// Get headers
+	headers := make(map[string][]byte, len(msg.Headers))
+	for _, header := range msg.Headers {
+		headers[header.Key] = header.Value
+	}
+
+	// Create message
+	messages <- extensions.BrokerMessage{
+		Headers: headers,
+		Payload: msg.Value,
+	}
 }
