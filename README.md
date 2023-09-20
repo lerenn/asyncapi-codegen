@@ -652,9 +652,29 @@ err := appV2.SubscribeHello(context.Background(), func(_ context.Context, msg v2
 
 That way, you can support multiple different versions with the same broker.
 
+#### Version tagging
+
 **Important**: this feature will add an `application-version` header to each
-message in order to have the correction version of the application on each of
+message in order to have the correct version of the application on each of
 them.
+
+##### Non-tagged messages
+
+If messages can have no `application-version`, you can use the option `WithDefaultVersion`
+to add a default version to non-tagged messages.
+
+```golang
+vw := versioning.NewWrapper(broker, versioning.WithDefaultVersion("1.1.4"))
+```
+
+##### Change header key for application version
+
+Also, if you don't want to use this header as a recipient to the application version,
+you can specify your own header with the option `WithVersionHeaderKey`.
+
+```golang
+vw := versioning.NewWrapper(broker, versioning.WithVersionHeaderKey("my-version-key"))
+```
 
 ### AsyncAPI Extensions
 

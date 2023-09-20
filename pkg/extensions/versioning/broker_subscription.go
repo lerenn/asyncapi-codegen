@@ -19,17 +19,17 @@ type brokerSubscription struct {
 }
 
 func newBrokerSubscription(
-	channel string,
+	channelName string,
 	messages chan extensions.BrokerMessage,
 	cancel chan any,
 	parent *Wrapper,
 ) brokerSubscription {
 	return brokerSubscription{
-		channelName:      channel,
+		channelName:      channelName,
 		messages:         messages,
 		cancel:           cancel,
-		versionsChannels: make(map[string]versionSubcription),
 		parent:           parent,
+		versionsChannels: make(map[string]versionSubcription),
 	}
 }
 
@@ -89,10 +89,26 @@ func (bs *brokerSubscription) launchListener(ctx context.Context) {
 	go func() {
 		for {
 			// Wait for new messages
-			msg := <-bs.messages
+			msg, open := <-bs.messages
+			if !open {
+				break
+			}
 
 			// Get the version from the message
-			version := string(msg.Headers[VersionField])
+			bVersion, exists := msg.Headers[bs.parent.versionHeaderKey]
+			version := string(bVersion)
+
+			// Add default version if none is specified
+			if !exists || version == "" {
+				// If there is a default version activated, then go on with it
+				if bs.parent.defaultVersion != nil {
+					version = *bs.parent.defaultVersion
+				} else {
+					ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, msg)
+					bs.parent.logger.Error(ctx, "no version in the message and no default version")
+					continue
+				}
+			}
 
 			// Lock the versions to avoid conflict
 			bs.versionsMutex.Lock()
@@ -100,12 +116,13 @@ func (bs *brokerSubscription) launchListener(ctx context.Context) {
 			// Get the correct channel based on the version
 			ch, exists := bs.versionsChannels[version]
 			if !exists {
-				// Set contextextensions.
+				// Set context
 				ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, msg)
 				ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, version)
 
 				// Log the error
 				bs.parent.logger.Error(ctx, fmt.Sprintf("version %q is not registered", version))
+				continue
 			}
 
 			// Unlock the versions

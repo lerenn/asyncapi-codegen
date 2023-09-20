@@ -2,7 +2,7 @@ version: '3.5'
 
 services:
   kafka:
-    image: 'bitnami/kafka:latest'
+    image: 'bitnami/kafka:3.5.1'
     ports:
       # Listening on a different port to avoid collision with 9092 internal listener
       # Prefering to keep 9092 for internal listener as it is the port for examples
@@ -19,7 +19,8 @@ services:
     networks:
       - brokers
   nats:
-    image: nats:alpine
+    image: nats:2.10
+    command: ["-V"]
     ports:
       - 4222:4222
     networks:

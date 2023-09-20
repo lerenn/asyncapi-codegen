@@ -10,8 +10,8 @@ import (
 
 var _ extensions.BrokerController = (*Wrapper)(nil)
 
-// VersionField is the field that will be added to a message to get the version.
-const VersionField = "application-version"
+// DefaultVersionHeaderKey is the field that will be added to a message to get the version.
+const DefaultVersionHeaderKey = "application-version"
 
 var (
 	// ErrNoVersion happens when there is no version in the context or the message.
@@ -21,8 +21,10 @@ var (
 // Wrapper allows to use multiple version of the same App/User Controllers
 // on one Broker Controller in order to handle migrations.
 type Wrapper struct {
-	broker extensions.BrokerController
-	logger extensions.Logger
+	broker           extensions.BrokerController
+	logger           extensions.Logger
+	defaultVersion   *string
+	versionHeaderKey string
 
 	channels      map[string]*brokerSubscription
 	channelsMutex sync.Mutex
@@ -34,24 +36,41 @@ type WrapperOption func(versionWrapper *Wrapper)
 // NewWrapper creates a Version Wrapper around a Broker Controller.
 func NewWrapper(broker extensions.BrokerController, options ...WrapperOption) *Wrapper {
 	// Create version Wrapper
-	vw := Wrapper{
-		broker:   broker,
-		channels: make(map[string]*brokerSubscription),
-		logger:   extensions.DummyLogger{},
+	w := Wrapper{
+		broker:           broker,
+		channels:         make(map[string]*brokerSubscription),
+		logger:           extensions.DummyLogger{},
+		versionHeaderKey: DefaultVersionHeaderKey,
 	}
 
 	// Execute options
 	for _, option := range options {
-		option(&vw)
+		option(&w)
 	}
 
-	return &vw
+	return &w
 }
 
 // WithLogger lets add a logger to the Wrapper struct.
 func WithLogger(logger extensions.Logger) WrapperOption {
-	return func(versionWrapper *Wrapper) {
-		versionWrapper.logger = logger
+	return func(wrapper *Wrapper) {
+		wrapper.logger = logger
+	}
+}
+
+// WithDefaultVersion lets add a default version to tag messages that don't have
+// versions tagged.
+func WithDefaultVersion(version string) WrapperOption {
+	return func(wrapper *Wrapper) {
+		wrapper.defaultVersion = &version
+	}
+}
+
+// WithVersionHeaderKey lets use a different version header key to add application
+// version to published messages and retrieve it from received messages.
+func WithVersionHeaderKey(headerKey string) WrapperOption {
+	return func(wrapper *Wrapper) {
+		wrapper.versionHeaderKey = headerKey
 	}
 }
 
@@ -59,7 +78,7 @@ func WithLogger(logger extensions.Logger) WrapperOption {
 func (w *Wrapper) Publish(ctx context.Context, channel string, mw extensions.BrokerMessage) error {
 	// Add version to message
 	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsVersion, func(version string) {
-		mw.Headers[VersionField] = []byte(version)
+		mw.Headers[w.versionHeaderKey] = []byte(version)
 	})
 
 	// Send message
