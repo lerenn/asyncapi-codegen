@@ -3,7 +3,7 @@
 type {{ .Prefix }}Subscriber interface {
 {{- range  $key, $value := .Channels}}
     // {{namify $key}} subscribes to messages placed on the '{{ $key }}' channel
-    {{namify $key}}(ctx context.Context, msg {{channelToMessageTypeName $value}}, done bool)
+    {{namify $key}}(ctx context.Context, msg {{channelToMessageTypeName $value}})
 {{end}}
 }
 {{- end}}

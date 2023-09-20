@@ -127,7 +127,7 @@ comments:
 
 ```go
 // AppController is the struct that you will need in order to interact with the
-// event broker from the application side. You will generate this with the 
+// event broker from the application side. You will generate this with the
 // NewAppController function below.
 type AppController struct
 
@@ -142,7 +142,7 @@ func (ac *AppController) Close(ctx context.Context)
 
 // SubscribeAll will subscribe to all channel that the application should listen to.
 //
-// In order to use it, you'll have to implement the AppSubscriber interface and 
+// In order to use it, you'll have to implement the AppSubscriber interface and
 // pass it as an argument to this function. Thus, the subscription will automatically
 // call the corresponding function when it will receive a message.
 //
@@ -165,7 +165,7 @@ func (ac *AppController) UnsubscribeAll(ctx context.Context)
 //
 // The subscription will be canceled if the context is canceled, if the subscription
 // is explicitely unsubscribed or if the controller is closed
-func (ac *AppController) SubscribeHello(ctx context.Context, fn func(msg HelloMessage, done bool)) error
+func (ac *AppController) SubscribeHello(ctx context.Context, fn func(msg HelloMessage)) error
 
 // UnsubscribeHello will unsubscribe only the subscription on the "hello" channel.
 // It should be only used when wanting specifically that, otherwise the clean up
@@ -190,7 +190,7 @@ func main() {
   // Subscribe to HelloWorld messages
   // Note: it will indefinitely wait for messages as context has no timeout
   log.Println("Subscribe to hello world...")
-  ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage, _ bool) {
+  ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage) {
     log.Println("Received message:", msg.Payload)
   })
 
@@ -206,7 +206,7 @@ comments:
 
 ```go
 // UserController is the struct that you will need in order to interact with the
-// event broker from the user side. You will generate this with the 
+// event broker from the user side. You will generate this with the
 // NewUserController function below.
 type UserController struct
 
@@ -262,7 +262,7 @@ type HelloMessage struct {
 
 ### Request/Response example
 
-This example will use a `ping` example that you can find 
+This example will use a `ping` example that you can find
 [here](./examples/ping/asyncapi.yaml).
 
 > The code for this example have already been generated and can be
@@ -280,7 +280,7 @@ asyncapi-codegen -i examples/ping/asyncapi.yaml -p main -o ./ping.gen.go
 ```
 
 We can then go through the possible application and user implementations that
-use `ping.gen.go`. 
+use `ping.gen.go`.
 
 #### Application
 
@@ -289,7 +289,7 @@ type Subscriber struct {
 	Controller *AppController
 }
 
-func (s Subscriber) Ping(req PingMessage, _ bool) {
+func (s Subscriber) Ping(req PingMessage) {
 	// Generate a pong message, set as a response of the request
 	resp := NewPongMessage()
 	resp.SetAsResponseFrom(&req)
@@ -335,7 +335,7 @@ publicationFunc := func(ctx context.Context) error {
 // The following function will subscribe to the 'pong' channel, execute the publication
 // function and wait for a response. The response will be detected through its
 // correlation ID.
-// 
+//
 // This function is available only if the 'correlationId' field has been filled
 // for any channel in the AsyncAPI specification. You will then be able to use it
 // with the form WaitForXXX where XXX is the channel name.
@@ -613,10 +613,10 @@ AsyncAPI specifications, you can use the `versioning` package:
 ```golang
 
 import (
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
   "github.com/lerenn/asyncapi-codegen/pkg/extensions/versioning"
-	v1 "path/to/asyncapi/spec/version/1"
-	v2 "path/to/asyncapi/spec/version/2"
+  v1 "path/to/asyncapi/spec/version/1"
+  v2 "path/to/asyncapi/spec/version/2"
 )
 
 func main() {
@@ -641,12 +641,12 @@ func main() {
 Then you can use each application independently:
 
 ```golang
-err := appV1.SubscribeHello(context.Background(), func(_ context.Context, msg v1.HelloMessage, _ bool) {
-		// Stuff for version 1
+err := appV1.SubscribeHello(context.Background(), func(ctx context.Context, msg v1.HelloMessage) {
+  // Stuff for version 1
 })
 
-err := appV2.SubscribeHello(context.Background(), func(_ context.Context, msg v2.HelloMessage, _ bool) {
-		// Stuff for version 2
+err := appV2.SubscribeHello(context.Background(), func(ctx context.Context, msg v2.HelloMessage) {
+  // Stuff for version 2
 })
 ```
 
@@ -654,7 +654,7 @@ That way, you can support multiple different versions with the same broker.
 
 #### Version tagging
 
-**Important**: this feature will add an `application-version` header to each
+The versioning feature will add an `application-version` header to each
 message in order to have the correct version of the application on each of
 them.
 

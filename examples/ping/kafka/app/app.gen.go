@@ -17,7 +17,7 @@ import (
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// Ping subscribes to messages placed on the 'ping' channel
-	Ping(ctx context.Context, msg PingMessage, done bool)
+	Ping(ctx context.Context, msg PingMessage)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -125,12 +125,13 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // Callback function 'fn' will be called each time a new message is received.
 // The 'done' argument indicates when the subscription is canceled and can be
 // used to clean up resources.
-func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.Context, msg PingMessage, done bool)) error {
+func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
 	// Get channel path
 	path := "ping"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
 
 	// Check if there is already a subscription
 	_, exists := c.cancelChannels[path]
@@ -154,6 +155,12 @@ func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.C
 			// Wait for next message
 			bMsg, open := <-msgs
 
+			// If subscription is closed and there is no more message
+			// (i.e. uninitialized message), then exit the function
+			if !open && bMsg.IsUninitialized() {
+				return
+			}
+
 			// Set broker message to context
 			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
 
@@ -162,28 +169,17 @@ func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.C
 			if err != nil {
 				c.logger.Error(ctx, err.Error())
 			}
-
-			// Add context
 			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsMessageDirection, "reception")
 
 			// Add correlation ID to context if it exists
 			if id := msg.CorrelationID(); id != "" {
 				ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
 			}
 
-			// Process message if no error and still open
-			if err == nil && open {
-				// Execute middlewares with the callback
-				c.executeMiddlewares(msgCtx, func(ctx context.Context) {
-					fn(ctx, msg, !open)
-				})
-			}
-
-			// If subscription is closed, then exit the function
-			if !open {
-				return
-			}
+			// Execute middlewares with the callback
+			c.executeMiddlewares(msgCtx, func(ctx context.Context) {
+				fn(ctx, msg)
+			})
 		}
 	}()
 
