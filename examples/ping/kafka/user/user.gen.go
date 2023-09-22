@@ -187,7 +187,8 @@ func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.
 	return nil
 }
 
-// UnsubscribePong will unsubscribe messages from 'pong' channel
+// UnsubscribePong will unsubscribe messages from 'pong' channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
 func (c *UserController) UnsubscribePong(ctx context.Context) {
 	// Get channel path
 	path := "pong"
@@ -202,7 +203,7 @@ func (c *UserController) UnsubscribePong(ctx context.Context) {
 	ctx = addUserContextValues(ctx, path)
 
 	// Stop the subscription
-	sub.Cancel()
+	sub.Cancel(ctx)
 
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
@@ -244,10 +245,12 @@ func (c *UserController) PublishPing(ctx context.Context, msg PingMessage) error
 	return err
 }
 
-// WaitForPong will wait for a specific message by its correlation ID
+// WaitForPong will wait for a specific message by its correlation ID.
 //
-// The pub function is the publication function that should be used to send the message
-// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
+// The pub function is the publication function that should be used to send the message.
+// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
+//
+// A timeout can be set in context to avoid blocking operation, if needed.
 func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) (PongMessage, error) {
 	// Get channel path
 	path := "pong"
@@ -266,7 +269,7 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 	// Close subscriber on leave
 	defer func() {
 		// Stop the subscription
-		sub.Cancel()
+		sub.Cancel(ctx)
 
 		// Logging unsubscribing
 		cc.logger.Info(ctx, "Unsubscribed from channel")

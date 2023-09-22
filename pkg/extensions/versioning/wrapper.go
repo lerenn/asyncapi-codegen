@@ -115,7 +115,7 @@ func (w *Wrapper) Subscribe(ctx context.Context, channel string) (extensions.Bro
 	}
 
 	// Check if the version already exists
-	cbv, err := brokerChannel.createVersionListener(version)
+	cbv, err := brokerChannel.createVersionListener(ctx, version)
 
 	return cbv.subscription, err
 }

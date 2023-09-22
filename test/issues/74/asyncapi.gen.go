@@ -180,7 +180,8 @@ func (c *AppController) SubscribeTestChannel(ctx context.Context, fn func(ctx co
 	return nil
 }
 
-// UnsubscribeTestChannel will unsubscribe messages from 'testChannel' channel
+// UnsubscribeTestChannel will unsubscribe messages from 'testChannel' channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeTestChannel(ctx context.Context) {
 	// Get channel path
 	path := "testChannel"
@@ -195,7 +196,7 @@ func (c *AppController) UnsubscribeTestChannel(ctx context.Context) {
 	ctx = addAppContextValues(ctx, path)
 
 	// Stop the subscription
-	sub.Cancel()
+	sub.Cancel(ctx)
 
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)

@@ -53,13 +53,14 @@ func (bcs BrokerChannelSubscription) WaitForCancellationAsync(cleanup func()) {
 // Cancel cancels the subscription from user perspective. It will ask for clean
 // up on broker, which will return when finished to avoid dangling resources, such
 // as non-existent queue listeners on (broker) server side.
-func (bcs BrokerChannelSubscription) Cancel() {
+func (bcs BrokerChannelSubscription) Cancel(ctx context.Context) {
 	// Send a cancellation request
 	bcs.cancel <- true
 
 	// Wait for the cancellation to be effective
-	for open := true; open; {
-		_, open = <-bcs.cancel
+	select {
+	case <-bcs.cancel:
+	case <-ctx.Done():
 	}
 }
 

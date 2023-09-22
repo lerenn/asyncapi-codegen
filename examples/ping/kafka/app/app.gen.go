@@ -187,7 +187,8 @@ func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.C
 	return nil
 }
 
-// UnsubscribePing will unsubscribe messages from 'ping' channel
+// UnsubscribePing will unsubscribe messages from 'ping' channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribePing(ctx context.Context) {
 	// Get channel path
 	path := "ping"
@@ -202,7 +203,7 @@ func (c *AppController) UnsubscribePing(ctx context.Context) {
 	ctx = addAppContextValues(ctx, path)
 
 	// Stop the subscription
-	sub.Cancel()
+	sub.Cancel(ctx)
 
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)

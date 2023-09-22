@@ -186,7 +186,8 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
     return nil
 }
 
-// Unsubscribe{{namify $key}} will unsubscribe messages from '{{$key}}' channel
+// Unsubscribe{{namify $key}} will unsubscribe messages from '{{$key}}' channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Parameters}}
 func (c *{{ $.Prefix }}Controller) Unsubscribe{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters) {
 {{- else}}
@@ -205,7 +206,7 @@ func (c *{{ $.Prefix }}Controller) Unsubscribe{{namify $key}}(ctx context.Contex
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
 
     // Stop the subscription
-    sub.Cancel()
+    sub.Cancel(ctx)
 
     // Remove if from the subscribers
     delete(c.subscriptions, path)
@@ -261,10 +262,12 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
 {{if eq .Prefix "User" -}}
 {{- range  $key, $value := .SubscribeChannels -}}
 {{- if ne $value.Subscribe.Message.CorrelationIDLocation ""}}
-// WaitFor{{namify $key}} will wait for a specific message by its correlation ID
+// WaitFor{{namify $key}} will wait for a specific message by its correlation ID.
 //
-// The pub function is the publication function that should be used to send the message
-// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
+// The pub function is the publication function that should be used to send the message.
+// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
+//
+// A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Parameters}}
 func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
 {{- else}}
@@ -287,7 +290,7 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
     // Close subscriber on leave
     defer func(){
         // Stop the subscription
-        sub.Cancel()
+        sub.Cancel(ctx)
 
         // Logging unsubscribing
         cc.logger.Info(ctx, "Unsubscribed from channel")

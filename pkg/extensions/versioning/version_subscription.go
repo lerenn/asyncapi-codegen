@@ -1,6 +1,9 @@
 package versioning
 
 import (
+	"context"
+	"time"
+
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 )
@@ -22,9 +25,14 @@ func newVersionSubscription(version string, parent *brokerSubscription) versionS
 	}
 }
 
-func (vs *versionSubcription) launchListener() {
+func (vs *versionSubcription) launchListener(ctx context.Context) {
 	// Wait for cancellation and remove version listener when it happens
 	vs.subscription.WaitForCancellationAsync(func() {
-		vs.parent.removeVersionListener(vs)
+		// Create cancel function in case there is a problem with broker removal
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+
+		// Remove the version listener
+		vs.parent.removeVersionListener(ctx, vs)
 	})
 }

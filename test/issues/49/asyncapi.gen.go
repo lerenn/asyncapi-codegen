@@ -178,7 +178,8 @@ func (c *AppController) SubscribeChat(ctx context.Context, fn func(ctx context.C
 	return nil
 }
 
-// UnsubscribeChat will unsubscribe messages from '/chat' channel
+// UnsubscribeChat will unsubscribe messages from '/chat' channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeChat(ctx context.Context) {
 	// Get channel path
 	path := "/chat"
@@ -193,7 +194,7 @@ func (c *AppController) UnsubscribeChat(ctx context.Context) {
 	ctx = addAppContextValues(ctx, path)
 
 	// Stop the subscription
-	sub.Cancel()
+	sub.Cancel(ctx)
 
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
@@ -432,7 +433,8 @@ func (c *UserController) SubscribeChat(ctx context.Context, fn func(ctx context.
 	return nil
 }
 
-// UnsubscribeChat will unsubscribe messages from '/chat' channel
+// UnsubscribeChat will unsubscribe messages from '/chat' channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
 func (c *UserController) UnsubscribeChat(ctx context.Context) {
 	// Get channel path
 	path := "/chat"
@@ -447,7 +449,7 @@ func (c *UserController) UnsubscribeChat(ctx context.Context) {
 	ctx = addUserContextValues(ctx, path)
 
 	// Stop the subscription
-	sub.Cancel()
+	sub.Cancel(ctx)
 
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
@@ -514,7 +516,8 @@ func (c *UserController) SubscribeStatus(ctx context.Context, fn func(ctx contex
 	return nil
 }
 
-// UnsubscribeStatus will unsubscribe messages from '/status' channel
+// UnsubscribeStatus will unsubscribe messages from '/status' channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
 func (c *UserController) UnsubscribeStatus(ctx context.Context) {
 	// Get channel path
 	path := "/status"
@@ -529,7 +532,7 @@ func (c *UserController) UnsubscribeStatus(ctx context.Context) {
 	ctx = addUserContextValues(ctx, path)
 
 	// Stop the subscription
-	sub.Cancel()
+	sub.Cancel(ctx)
 
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
