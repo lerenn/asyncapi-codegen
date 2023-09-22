@@ -1,40 +1,38 @@
 package versioning
 
 import (
+	"context"
+	"time"
+
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 )
 
 type versionSubcription struct {
-	version  string
-	messages chan extensions.BrokerMessage
-	cancel   chan any
-	parent   *brokerSubscription
+	version      string
+	subscription extensions.BrokerChannelSubscription
+	parent       *brokerSubscription
 }
 
 func newVersionSubscription(version string, parent *brokerSubscription) versionSubcription {
 	return versionSubcription{
-		version:  version,
-		messages: make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
-		cancel:   make(chan any, 1),
-		parent:   parent,
+		version: version,
+		subscription: extensions.NewBrokerChannelSubscription(
+			make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
+			make(chan any, 1),
+		),
+		parent: parent,
 	}
 }
 
-func (vs *versionSubcription) launchListener() {
-	go func() {
-		// Wait to receive cancel
-		<-vs.cancel
+func (vs *versionSubcription) launchListener(ctx context.Context) {
+	// Wait for cancellation and remove version listener when it happens
+	vs.subscription.WaitForCancellationAsync(func() {
+		// Create cancel function in case there is a problem with broker removal
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
 
-		// When cancel is received, then remove version listener
-		vs.parent.removeVersionListener(vs)
-	}()
-}
-
-func (vs *versionSubcription) closeChannels() {
-	// Receiving no more messages
-	close(vs.messages)
-
-	// Closing cancel channel to let caller knows that everything is cleaned up
-	close(vs.cancel)
+		// Remove the version listener
+		vs.parent.removeVersionListener(ctx, vs)
+	})
 }

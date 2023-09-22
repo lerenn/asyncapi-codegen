@@ -14,7 +14,7 @@ func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...Contr
     // Create default controller
     controller := controller{
         broker:         bc,
-        cancelChannels: make(map[string]chan any),
+        subscriptions:  make(map[string]extensions.BrokerChannelSubscription),
         logger:         extensions.DummyLogger{},
         middlewares:    make([]extensions.Middleware, 0),
     }
@@ -114,8 +114,6 @@ func (c *{{ .Prefix }}Controller) UnsubscribeAll(ctx context.Context) {
 // Subscribe{{namify $key}} will subscribe to new messages from '{{$key}}' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-// The 'done' argument indicates when the subscription is canceled and can be
-// used to clean up resources.
 {{- if .Parameters}}
 func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
 {{- else}}
@@ -129,7 +127,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
     ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
 
     // Check if there is already a subscription
-    _, exists := c.cancelChannels[path]
+    _, exists := c.subscriptions[path]
     if exists {
         err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
         c.logger.Error(ctx, err.Error())
@@ -137,7 +135,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
     }
 
     // Subscribe to broker channel
-    msgs, cancel, err := c.broker.Subscribe(ctx, path)
+    sub, err := c.broker.Subscribe(ctx, path)
     if err != nil {
         c.logger.Error(ctx, err.Error())
         return err
@@ -148,7 +146,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
     go func() {
         for {
             // Wait for next message
-            bMsg, open := <-msgs
+            bMsg, open := <-sub.MessagesChannel()
 
             // If subscription is closed and there is no more message
             // (i.e. uninitialized message), then exit the function
@@ -183,12 +181,13 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{namify $key}}(ctx context.Context,
     } ()
 
     // Add the cancel channel to the inside map
-    c.cancelChannels[path] = cancel
+    c.subscriptions[path] = sub
 
     return nil
 }
 
-// Unsubscribe{{namify $key}} will unsubscribe messages from '{{$key}}' channel
+// Unsubscribe{{namify $key}} will unsubscribe messages from '{{$key}}' channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Parameters}}
 func (c *{{ $.Prefix }}Controller) Unsubscribe{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters) {
 {{- else}}
@@ -198,7 +197,7 @@ func (c *{{ $.Prefix }}Controller) Unsubscribe{{namify $key}}(ctx context.Contex
     path := {{ generateChannelPath $value }}
 
     // Check if there subscribers for this channel
-    cancel, exists := c.cancelChannels[path]
+    sub, exists := c.subscriptions[path]
     if !exists {
         return
     }
@@ -206,12 +205,11 @@ func (c *{{ $.Prefix }}Controller) Unsubscribe{{namify $key}}(ctx context.Contex
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
 
-    // Stop the subscription and wait for its closure to be complete
-    cancel <- true
-    <- cancel
+    // Stop the subscription
+    sub.Cancel(ctx)
 
     // Remove if from the subscribers
-    delete(c.cancelChannels, path)
+    delete(c.subscriptions, path)
 
     c.logger.Info(ctx, "Unsubscribed from channel")
 }
@@ -264,10 +262,12 @@ func (c *{{ $.Prefix }}Controller) Publish{{namify $key}}(ctx context.Context, m
 {{if eq .Prefix "User" -}}
 {{- range  $key, $value := .SubscribeChannels -}}
 {{- if ne $value.Subscribe.Message.CorrelationIDLocation ""}}
-// WaitFor{{namify $key}} will wait for a specific message by its correlation ID
+// WaitFor{{namify $key}} will wait for a specific message by its correlation ID.
 //
-// The pub function is the publication function that should be used to send the message
-// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message
+// The pub function is the publication function that should be used to send the message.
+// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
+//
+// A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Parameters}}
 func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, params {{namify $key}}Parameters, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
 {{- else}}
@@ -280,7 +280,7 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
 
     // Subscribe to broker channel
-    messages, cancel, err := cc.broker.Subscribe(ctx, path)
+    sub, err := cc.broker.Subscribe(ctx, path)
     if err != nil {
         cc.logger.Error(ctx, err.Error())
         return {{channelToMessageTypeName $value}}{}, err
@@ -289,9 +289,8 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
 
     // Close subscriber on leave
     defer func(){
-        // Stop the subscription and wait for its closure to be complete
-        cancel <- true
-        <- cancel
+        // Stop the subscription
+        sub.Cancel(ctx)
 
         // Logging unsubscribing
         cc.logger.Info(ctx, "Unsubscribed from channel")
@@ -305,7 +304,7 @@ func (cc *UserController) WaitFor{{namify $key}}(ctx context.Context, publishMsg
     // Wait for corresponding response
     for {
         select {
-        case bMsg, open := <-messages:
+        case bMsg, open := <-sub.MessagesChannel():
             // If subscription is closed and there is no more message
             // (i.e. uninitialized message), then the subscription ended before
             // receiving the expected message

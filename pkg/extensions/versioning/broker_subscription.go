@@ -9,31 +9,28 @@ import (
 )
 
 type brokerSubscription struct {
-	channelName string
-	messages    chan extensions.BrokerMessage
-	cancel      chan any
-	parent      *Wrapper
+	channel      string
+	subscription extensions.BrokerChannelSubscription
+	parent       *Wrapper
 
 	versionsChannels map[string]versionSubcription
 	versionsMutex    sync.Mutex
 }
 
 func newBrokerSubscription(
-	channelName string,
-	messages chan extensions.BrokerMessage,
-	cancel chan any,
+	channel string,
+	sub extensions.BrokerChannelSubscription,
 	parent *Wrapper,
 ) brokerSubscription {
 	return brokerSubscription{
-		channelName:      channelName,
-		messages:         messages,
-		cancel:           cancel,
+		channel:          channel,
+		subscription:     sub,
 		parent:           parent,
 		versionsChannels: make(map[string]versionSubcription),
 	}
 }
 
-func (bs *brokerSubscription) createVersionListener(version string) (versionSubcription, error) {
+func (bs *brokerSubscription) createVersionListener(ctx context.Context, version string) (versionSubcription, error) {
 	// Lock the versions to avoid conflict
 	bs.versionsMutex.Lock()
 	defer bs.versionsMutex.Unlock()
@@ -47,23 +44,15 @@ func (bs *brokerSubscription) createVersionListener(version string) (versionSubc
 	// Create the channels necessary
 	cbv := newVersionSubscription(version, bs)
 	bs.versionsChannels[version] = cbv
-	defer cbv.launchListener()
+	defer cbv.launchListener(ctx)
 
 	return cbv, nil
 }
 
-func (bs *brokerSubscription) removeVersionListener(vs *versionSubcription) {
+func (bs *brokerSubscription) removeVersionListener(ctx context.Context, vs *versionSubcription) {
 	// Lock the versions to avoid conflict
 	bs.versionsMutex.Lock()
 	defer bs.versionsMutex.Unlock()
-
-	// Cleanup the channelsByVersion when leaving
-	//
-	// NOTE: this is important to make it cleanup at the end of this function as
-	// it should be cleanup AFTER the broker have been stopped (in case it was
-	// the last version listener), in order to let the caller knows that everything
-	// was cleaned up properly.
-	defer vs.closeChannels()
 
 	// Remove the version from the channelsByBroker
 	delete(bs.versionsChannels, vs.version)
@@ -77,19 +66,18 @@ func (bs *brokerSubscription) removeVersionListener(vs *versionSubcription) {
 		return
 	}
 
-	// Otherwise cancel the broker listener and wait for its closure
-	bs.cancel <- true
-	<-bs.cancel
+	// Otherwise cancel the broker listener
+	bs.subscription.Cancel(ctx)
 
 	// Then delete the channelsByBroker from the Version Switch Wrapper
-	delete(bs.parent.channels, bs.channelName)
+	delete(bs.parent.channels, bs.channel)
 }
 
 func (bs *brokerSubscription) launchListener(ctx context.Context) {
 	go func() {
 		for {
 			// Wait for new messages
-			msg, open := <-bs.messages
+			msg, open := <-bs.subscription.MessagesChannel()
 			if !open {
 				break
 			}
@@ -114,7 +102,7 @@ func (bs *brokerSubscription) launchListener(ctx context.Context) {
 			bs.versionsMutex.Lock()
 
 			// Get the correct channel based on the version
-			ch, exists := bs.versionsChannels[version]
+			vc, exists := bs.versionsChannels[version]
 			if !exists {
 				// Set context
 				ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, msg)
@@ -129,7 +117,7 @@ func (bs *brokerSubscription) launchListener(ctx context.Context) {
 			bs.versionsMutex.Unlock()
 
 			// Send the message to the correct channel
-			ch.messages <- msg
+			vc.subscription.TransmitReceivedMessage(msg)
 		}
 	}()
 }

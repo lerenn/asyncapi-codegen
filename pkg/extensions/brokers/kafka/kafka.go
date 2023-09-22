@@ -12,6 +12,9 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+// Check that it still fills the interface.
+var _ extensions.BrokerController = (*Controller)(nil)
+
 // Controller is the Kafka implementation for asyncapi-codegen.
 type Controller struct {
 	hosts     []string
@@ -121,11 +124,7 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 }
 
 // Subscribe to messages from the broker.
-func (c *Controller) Subscribe(ctx context.Context, channel string) (
-	messages chan extensions.BrokerMessage,
-	cancel chan any,
-	err error,
-) {
+func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   c.hosts,
 		Topic:     channel,
@@ -134,54 +133,47 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (
 		GroupID:   c.groupID,
 	})
 
+	// Create subscription
+	sub := extensions.NewBrokerChannelSubscription(
+		make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
+		make(chan any, 1),
+	)
+
 	// Handle events
-	messages = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
-	cancel = make(chan any, 1)
-	go func() {
-		for {
-			c.messagesHandler(ctx, r, messages)
-		}
-	}()
+	go c.messagesHandler(ctx, r, sub)
 
-	go func() {
-		// Wait for cancel request
-		<-cancel
-
-		// Stopping the Kafka listener
+	// Wait for cancellation and stop the kafka listener when it happens
+	sub.WaitForCancellationAsync(func() {
 		if err := r.Close(); err != nil {
 			c.logger.Error(ctx, err.Error())
 		}
+	})
 
-		// Close messages in order to avoid new messages
-		close(messages)
-
-		// Close cancel to let listeners know that the cancellation is complete
-		close(cancel)
-	}()
-
-	return messages, cancel, nil
+	return sub, nil
 }
 
-func (c *Controller) messagesHandler(ctx context.Context, r *kafka.Reader, messages chan extensions.BrokerMessage) {
-	msg, err := r.ReadMessage(ctx)
-	if err != nil {
-		// If the error is not io.EOF, then it is a real error
-		if !errors.Is(err, io.EOF) {
-			c.logger.Warning(ctx, fmt.Sprintf("Error when reading message: %q", err.Error()))
+func (c *Controller) messagesHandler(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
+	for {
+		msg, err := r.ReadMessage(ctx)
+		if err != nil {
+			// If the error is not io.EOF, then it is a real error
+			if !errors.Is(err, io.EOF) {
+				c.logger.Warning(ctx, fmt.Sprintf("Error when reading message: %q", err.Error()))
+			}
+
+			return
 		}
 
-		return
-	}
+		// Get headers
+		headers := make(map[string][]byte, len(msg.Headers))
+		for _, header := range msg.Headers {
+			headers[header.Key] = header.Value
+		}
 
-	// Get headers
-	headers := make(map[string][]byte, len(msg.Headers))
-	for _, header := range msg.Headers {
-		headers[header.Key] = header.Value
-	}
-
-	// Create message
-	messages <- extensions.BrokerMessage{
-		Headers: headers,
-		Payload: msg.Value,
+		// Send received message
+		sub.TransmitReceivedMessage(extensions.BrokerMessage{
+			Headers: headers,
+			Payload: msg.Value,
+		})
 	}
 }

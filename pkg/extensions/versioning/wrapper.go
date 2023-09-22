@@ -8,6 +8,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
+// Check that it still fills the interface.
 var _ extensions.BrokerController = (*Wrapper)(nil)
 
 // DefaultVersionHeaderKey is the field that will be added to a message to get the version.
@@ -86,11 +87,7 @@ func (w *Wrapper) Publish(ctx context.Context, channel string, mw extensions.Bro
 }
 
 // Subscribe to messages from the broker.
-func (w *Wrapper) Subscribe(ctx context.Context, channel string) (
-	messages chan extensions.BrokerMessage,
-	cancel chan any,
-	err error,
-) {
+func (w *Wrapper) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
 	// Set context
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsChannel, channel)
@@ -99,7 +96,7 @@ func (w *Wrapper) Subscribe(ctx context.Context, channel string) (
 	var version string
 	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsVersion, func(v string) { version = v })
 	if version == "" {
-		return nil, nil, ErrNoVersion
+		return extensions.BrokerChannelSubscription{}, ErrNoVersion
 	}
 
 	// Lock the channels to avoid conflict
@@ -111,27 +108,27 @@ func (w *Wrapper) Subscribe(ctx context.Context, channel string) (
 	if !exists {
 		cbb, err := w.createBrokerChannels(ctx, channel)
 		if err != nil {
-			return nil, nil, err
+			return extensions.BrokerChannelSubscription{}, err
 		}
 		defer cbb.launchListener(ctx)
 		brokerChannel = cbb
 	}
 
 	// Check if the version already exists
-	cbv, err := brokerChannel.createVersionListener(version)
+	cbv, err := brokerChannel.createVersionListener(ctx, version)
 
-	return cbv.messages, cbv.cancel, err
+	return cbv.subscription, err
 }
 
 func (w *Wrapper) createBrokerChannels(ctx context.Context, channel string) (*brokerSubscription, error) {
 	// Subscribe to broker
-	messages, cancel, err := w.broker.Subscribe(ctx, channel)
+	subscription, err := w.broker.Subscribe(ctx, channel)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add channels from broker to brokerChannels
-	cbb := newBrokerSubscription(channel, messages, cancel, w)
+	cbb := newBrokerSubscription(channel, subscription, w)
 	w.channels[channel] = &cbb // Already locked in parent function
 
 	return &cbb, nil
