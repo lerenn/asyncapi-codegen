@@ -80,39 +80,29 @@ func (c *Controller) Publish(_ context.Context, channel string, bm extensions.Br
 
 // Subscribe to messages from the broker.
 func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
-	// Initialize channels
-	messages := make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
-	cancel := make(chan any, 1)
+	// Create a new subscription
+	sub := extensions.NewBrokerChannelSubscription(
+		make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
+		make(chan any, 1),
+	)
 
 	// Subscribe on subject
-	sub, err := c.connection.QueueSubscribe(channel, c.queueGroup, messagesHandler(messages))
+	natsSub, err := c.connection.QueueSubscribe(channel, c.queueGroup, messagesHandler(sub))
 	if err != nil {
 		return extensions.BrokerChannelSubscription{}, err
 	}
 
-	go func() {
-		// Wait for cancel request
-		<-cancel
-
-		// Drain the NATS subscription
-		if err := sub.Drain(); err != nil {
+	// Wait for cancellation and drain the NATS subscription
+	sub.WaitForCancellationAsync(func() {
+		if err := natsSub.Drain(); err != nil {
 			c.logger.Error(ctx, err.Error())
 		}
+	})
 
-		// Close messages in order to avoid new messages
-		close(messages)
-
-		// Close cancel to let listeners know that the cancellation is complete
-		close(cancel)
-	}()
-
-	return extensions.BrokerChannelSubscription{
-		Messages: messages,
-		Cancel:   cancel,
-	}, nil
+	return sub, nil
 }
 
-func messagesHandler(messages chan extensions.BrokerMessage) nats.MsgHandler {
+func messagesHandler(sub extensions.BrokerChannelSubscription) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		// Get headers
 		headers := make(map[string][]byte, len(msg.Header))
@@ -123,9 +113,9 @@ func messagesHandler(messages chan extensions.BrokerMessage) nats.MsgHandler {
 		}
 
 		// Create and transmit message to user
-		messages <- extensions.BrokerMessage{
+		sub.TransmitReceivedMessage(extensions.BrokerMessage{
 			Headers: headers,
 			Payload: msg.Data,
-		}
+		})
 	}
 }

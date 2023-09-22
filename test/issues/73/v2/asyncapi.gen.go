@@ -149,7 +149,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 	go func() {
 		for {
 			// Wait for next message
-			bMsg, open := <-sub.Messages
+			bMsg, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
@@ -194,9 +194,8 @@ func (c *AppController) UnsubscribeHello(ctx context.Context) {
 	// Set context
 	ctx = addAppContextValues(ctx, path)
 
-	// Stop the subscription and wait for its closure to be complete
-	sub.Cancel <- true
-	<-sub.Cancel
+	// Stop the subscription
+	sub.Cancel()
 
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)

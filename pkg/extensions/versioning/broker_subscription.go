@@ -54,14 +54,6 @@ func (bs *brokerSubscription) removeVersionListener(vs *versionSubcription) {
 	bs.versionsMutex.Lock()
 	defer bs.versionsMutex.Unlock()
 
-	// Cleanup the channelsByVersion when leaving
-	//
-	// NOTE: this is important to make it cleanup at the end of this function as
-	// it should be cleanup AFTER the broker have been stopped (in case it was
-	// the last version listener), in order to let the caller knows that everything
-	// was cleaned up properly.
-	defer vs.closeChannels()
-
 	// Remove the version from the channelsByBroker
 	delete(bs.versionsChannels, vs.version)
 
@@ -74,9 +66,8 @@ func (bs *brokerSubscription) removeVersionListener(vs *versionSubcription) {
 		return
 	}
 
-	// Otherwise cancel the broker listener and wait for its closure
-	bs.subscription.Cancel <- true
-	<-bs.subscription.Cancel
+	// Otherwise cancel the broker listener
+	bs.subscription.Cancel()
 
 	// Then delete the channelsByBroker from the Version Switch Wrapper
 	delete(bs.parent.channels, bs.channel)
@@ -86,7 +77,7 @@ func (bs *brokerSubscription) launchListener(ctx context.Context) {
 	go func() {
 		for {
 			// Wait for new messages
-			msg, open := <-bs.subscription.Messages
+			msg, open := <-bs.subscription.MessagesChannel()
 			if !open {
 				break
 			}
@@ -126,7 +117,7 @@ func (bs *brokerSubscription) launchListener(ctx context.Context) {
 			bs.versionsMutex.Unlock()
 
 			// Send the message to the correct channel
-			vc.subscription.Messages <- msg
+			vc.subscription.TransmitReceivedMessage(msg)
 		}
 	}()
 }

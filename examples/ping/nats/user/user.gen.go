@@ -151,7 +151,7 @@ func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.
 	go func() {
 		for {
 			// Wait for next message
-			bMsg, open := <-sub.Messages
+			bMsg, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
@@ -201,9 +201,8 @@ func (c *UserController) UnsubscribePong(ctx context.Context) {
 	// Set context
 	ctx = addUserContextValues(ctx, path)
 
-	// Stop the subscription and wait for its closure to be complete
-	sub.Cancel <- true
-	<-sub.Cancel
+	// Stop the subscription
+	sub.Cancel()
 
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
@@ -266,9 +265,8 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 
 	// Close subscriber on leave
 	defer func() {
-		// Stop the subscription and wait for its closure to be complete
-		sub.Cancel <- true
-		<-sub.Cancel
+		// Stop the subscription
+		sub.Cancel()
 
 		// Logging unsubscribing
 		cc.logger.Info(ctx, "Unsubscribed from channel")
@@ -282,7 +280,7 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 	// Wait for corresponding response
 	for {
 		select {
-		case bMsg, open := <-sub.Messages:
+		case bMsg, open := <-sub.MessagesChannel():
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then the subscription ended before
 			// receiving the expected message

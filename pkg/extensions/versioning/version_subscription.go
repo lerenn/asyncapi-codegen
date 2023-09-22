@@ -14,28 +14,17 @@ type versionSubcription struct {
 func newVersionSubscription(version string, parent *brokerSubscription) versionSubcription {
 	return versionSubcription{
 		version: version,
-		subscription: extensions.BrokerChannelSubscription{
-			Messages: make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
-			Cancel:   make(chan any, 1),
-		},
+		subscription: extensions.NewBrokerChannelSubscription(
+			make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
+			make(chan any, 1),
+		),
 		parent: parent,
 	}
 }
 
 func (vs *versionSubcription) launchListener() {
-	go func() {
-		// Wait to receive cancel
-		<-vs.subscription.Cancel
-
-		// When cancel is received, then remove version listener
+	// Wait for cancellation and remove version listener when it happens
+	vs.subscription.WaitForCancellationAsync(func() {
 		vs.parent.removeVersionListener(vs)
-	}()
-}
-
-func (vs *versionSubcription) closeChannels() {
-	// Receiving no more messages
-	close(vs.subscription.Messages)
-
-	// Closing cancel channel to let caller knows that everything is cleaned up
-	close(vs.subscription.Cancel)
+	})
 }
