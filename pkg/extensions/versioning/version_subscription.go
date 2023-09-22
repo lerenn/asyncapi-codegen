@@ -6,25 +6,26 @@ import (
 )
 
 type versionSubcription struct {
-	version  string
-	messages chan extensions.BrokerMessage
-	cancel   chan any
-	parent   *brokerSubscription
+	version      string
+	subscription extensions.BrokerChannelSubscription
+	parent       *brokerSubscription
 }
 
 func newVersionSubscription(version string, parent *brokerSubscription) versionSubcription {
 	return versionSubcription{
-		version:  version,
-		messages: make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
-		cancel:   make(chan any, 1),
-		parent:   parent,
+		version: version,
+		subscription: extensions.BrokerChannelSubscription{
+			Messages: make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
+			Cancel:   make(chan any, 1),
+		},
+		parent: parent,
 	}
 }
 
 func (vs *versionSubcription) launchListener() {
 	go func() {
 		// Wait to receive cancel
-		<-vs.cancel
+		<-vs.subscription.Cancel
 
 		// When cancel is received, then remove version listener
 		vs.parent.removeVersionListener(vs)
@@ -33,8 +34,8 @@ func (vs *versionSubcription) launchListener() {
 
 func (vs *versionSubcription) closeChannels() {
 	// Receiving no more messages
-	close(vs.messages)
+	close(vs.subscription.Messages)
 
 	// Closing cancel channel to let caller knows that everything is cleaned up
-	close(vs.cancel)
+	close(vs.subscription.Cancel)
 }

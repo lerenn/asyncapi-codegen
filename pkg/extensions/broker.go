@@ -4,6 +4,13 @@ import (
 	"context"
 )
 
+// BrokerChannelSubscription is a struct that contains every returned structures
+// when subscribing a channel.
+type BrokerChannelSubscription struct {
+	Messages chan BrokerMessage
+	Cancel   chan any
+}
+
 // BrokerMessage is a wrapper that will contain all information regarding a message.
 type BrokerMessage struct {
 	Headers map[string][]byte
@@ -23,5 +30,5 @@ type BrokerController interface {
 	Publish(ctx context.Context, channel string, mw BrokerMessage) error
 
 	// Subscribe to messages from the broker
-	Subscribe(ctx context.Context, channel string) (messages chan BrokerMessage, cancel chan any, err error)
+	Subscribe(ctx context.Context, channel string) (BrokerChannelSubscription, error)
 }

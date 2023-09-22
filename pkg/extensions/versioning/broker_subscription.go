@@ -9,25 +9,22 @@ import (
 )
 
 type brokerSubscription struct {
-	channelName string
-	messages    chan extensions.BrokerMessage
-	cancel      chan any
-	parent      *Wrapper
+	channel      string
+	subscription extensions.BrokerChannelSubscription
+	parent       *Wrapper
 
 	versionsChannels map[string]versionSubcription
 	versionsMutex    sync.Mutex
 }
 
 func newBrokerSubscription(
-	channelName string,
-	messages chan extensions.BrokerMessage,
-	cancel chan any,
+	channel string,
+	sub extensions.BrokerChannelSubscription,
 	parent *Wrapper,
 ) brokerSubscription {
 	return brokerSubscription{
-		channelName:      channelName,
-		messages:         messages,
-		cancel:           cancel,
+		channel:          channel,
+		subscription:     sub,
 		parent:           parent,
 		versionsChannels: make(map[string]versionSubcription),
 	}
@@ -78,18 +75,18 @@ func (bs *brokerSubscription) removeVersionListener(vs *versionSubcription) {
 	}
 
 	// Otherwise cancel the broker listener and wait for its closure
-	bs.cancel <- true
-	<-bs.cancel
+	bs.subscription.Cancel <- true
+	<-bs.subscription.Cancel
 
 	// Then delete the channelsByBroker from the Version Switch Wrapper
-	delete(bs.parent.channels, bs.channelName)
+	delete(bs.parent.channels, bs.channel)
 }
 
 func (bs *brokerSubscription) launchListener(ctx context.Context) {
 	go func() {
 		for {
 			// Wait for new messages
-			msg, open := <-bs.messages
+			msg, open := <-bs.subscription.Messages
 			if !open {
 				break
 			}
@@ -114,7 +111,7 @@ func (bs *brokerSubscription) launchListener(ctx context.Context) {
 			bs.versionsMutex.Lock()
 
 			// Get the correct channel based on the version
-			ch, exists := bs.versionsChannels[version]
+			vc, exists := bs.versionsChannels[version]
 			if !exists {
 				// Set context
 				ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, msg)
@@ -129,7 +126,7 @@ func (bs *brokerSubscription) launchListener(ctx context.Context) {
 			bs.versionsMutex.Unlock()
 
 			// Send the message to the correct channel
-			ch.messages <- msg
+			vc.subscription.Messages <- msg
 		}
 	}()
 }

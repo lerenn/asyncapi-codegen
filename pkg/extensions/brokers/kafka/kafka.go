@@ -12,6 +12,9 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+// Check that it still fills the interface.
+var _ extensions.BrokerController = (*Controller)(nil)
+
 // Controller is the Kafka implementation for asyncapi-codegen.
 type Controller struct {
 	hosts     []string
@@ -121,11 +124,7 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 }
 
 // Subscribe to messages from the broker.
-func (c *Controller) Subscribe(ctx context.Context, channel string) (
-	messages chan extensions.BrokerMessage,
-	cancel chan any,
-	err error,
-) {
+func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   c.hosts,
 		Topic:     channel,
@@ -135,8 +134,8 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (
 	})
 
 	// Handle events
-	messages = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
-	cancel = make(chan any, 1)
+	messages := make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
+	cancel := make(chan any, 1)
 	go func() {
 		for {
 			c.messagesHandler(ctx, r, messages)
@@ -159,7 +158,10 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (
 		close(cancel)
 	}()
 
-	return messages, cancel, nil
+	return extensions.BrokerChannelSubscription{
+		Messages: messages,
+		Cancel:   cancel,
+	}, nil
 }
 
 func (c *Controller) messagesHandler(ctx context.Context, r *kafka.Reader, messages chan extensions.BrokerMessage) {

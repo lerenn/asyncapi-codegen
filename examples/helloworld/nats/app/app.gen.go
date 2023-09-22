@@ -31,10 +31,10 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 
 	// Create default controller
 	controller := controller{
-		broker:         bc,
-		cancelChannels: make(map[string]chan any),
-		logger:         extensions.DummyLogger{},
-		middlewares:    make([]extensions.Middleware, 0),
+		broker:        bc,
+		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
+		logger:        extensions.DummyLogger{},
+		middlewares:   make([]extensions.Middleware, 0),
 	}
 
 	// Apply options
@@ -119,8 +119,6 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribeHello will subscribe to new messages from 'hello' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-// The 'done' argument indicates when the subscription is canceled and can be
-// used to clean up resources.
 func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.Context, msg HelloMessage)) error {
 	// Get channel path
 	path := "hello"
@@ -130,7 +128,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
 
 	// Check if there is already a subscription
-	_, exists := c.cancelChannels[path]
+	_, exists := c.subscriptions[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
 		c.logger.Error(ctx, err.Error())
@@ -138,7 +136,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 	}
 
 	// Subscribe to broker channel
-	msgs, cancel, err := c.broker.Subscribe(ctx, path)
+	sub, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
@@ -149,7 +147,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 	go func() {
 		for {
 			// Wait for next message
-			bMsg, open := <-msgs
+			bMsg, open := <-sub.Messages
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
@@ -175,7 +173,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 	}()
 
 	// Add the cancel channel to the inside map
-	c.cancelChannels[path] = cancel
+	c.subscriptions[path] = sub
 
 	return nil
 }
@@ -186,7 +184,7 @@ func (c *AppController) UnsubscribeHello(ctx context.Context) {
 	path := "hello"
 
 	// Check if there subscribers for this channel
-	cancel, exists := c.cancelChannels[path]
+	sub, exists := c.subscriptions[path]
 	if !exists {
 		return
 	}
@@ -195,11 +193,11 @@ func (c *AppController) UnsubscribeHello(ctx context.Context) {
 	ctx = addAppContextValues(ctx, path)
 
 	// Stop the subscription and wait for its closure to be complete
-	cancel <- true
-	<-cancel
+	sub.Cancel <- true
+	<-sub.Cancel
 
 	// Remove if from the subscribers
-	delete(c.cancelChannels, path)
+	delete(c.subscriptions, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
@@ -209,8 +207,8 @@ func (c *AppController) UnsubscribeHello(ctx context.Context) {
 type controller struct {
 	// broker is the broker controller that will be used to communicate
 	broker extensions.BrokerController
-	// cancelChannels is a map of cancel channels for each subscribed channel
-	cancelChannels map[string]chan any
+	// subscriptions is a map of all subscriptions
+	subscriptions map[string]extensions.BrokerChannelSubscription
 	// logger is the logger that will be used² to log operations on controller
 	logger extensions.Logger
 	// middlewares are the middlewares that will be executed when sending or

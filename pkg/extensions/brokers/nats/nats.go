@@ -8,6 +8,9 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+// Check that it still fills the interface.
+var _ extensions.BrokerController = (*Controller)(nil)
+
 // Controller is the Controller implementation for asyncapi-codegen.
 type Controller struct {
 	connection *nats.Conn
@@ -76,19 +79,15 @@ func (c *Controller) Publish(_ context.Context, channel string, bm extensions.Br
 }
 
 // Subscribe to messages from the broker.
-func (c *Controller) Subscribe(ctx context.Context, channel string) (
-	messages chan extensions.BrokerMessage,
-	cancel chan any,
-	err error,
-) {
+func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
 	// Initialize channels
-	messages = make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
-	cancel = make(chan any, 1)
+	messages := make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize)
+	cancel := make(chan any, 1)
 
 	// Subscribe on subject
 	sub, err := c.connection.QueueSubscribe(channel, c.queueGroup, messagesHandler(messages))
 	if err != nil {
-		return nil, nil, err
+		return extensions.BrokerChannelSubscription{}, err
 	}
 
 	go func() {
@@ -107,7 +106,10 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (
 		close(cancel)
 	}()
 
-	return messages, cancel, nil
+	return extensions.BrokerChannelSubscription{
+		Messages: messages,
+		Cancel:   cancel,
+	}, nil
 }
 
 func messagesHandler(messages chan extensions.BrokerMessage) nats.MsgHandler {
