@@ -1,6 +1,6 @@
 # Issue: https://github.com/lerenn/asyncapi-codegen/issues/74
 
-# Tt was failing when headers properties were defined as a reference to a schema
+# It was failing when headers properties were defined as a reference to a schema
 # instead of a plain list of properties.
 
 asyncapi: 2.6.0

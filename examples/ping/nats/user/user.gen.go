@@ -396,7 +396,8 @@ func newPingMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PingMessage
 	var msg PingMessage
 
 	// Convert to string
-	msg.Payload = string(bMsg.Payload)
+	payload := string(bMsg.Payload)
+	msg.Payload = payload // No need for type conversion to reference
 
 	// Get each headers from broker message
 	for k, v := range bMsg.Headers {

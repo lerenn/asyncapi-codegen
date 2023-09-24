@@ -265,7 +265,8 @@ func newHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (HelloMessa
 	var msg HelloMessage
 
 	// Convert to string
-	msg.Payload = string(bMsg.Payload)
+	payload := string(bMsg.Payload)
+	msg.Payload = payload // No need for type conversion to reference
 
 	// TODO: run checks on msg type
 
