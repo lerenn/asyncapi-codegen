@@ -12,6 +12,7 @@ import (
 func main() {
 	// Create a new broker
 	broker := nats.NewController("nats://nats:4222", nats.WithQueueGroup("helloworld-users"))
+	defer broker.Close()
 
 	// Create a new user controller
 	ctrl, err := NewUserController(broker)

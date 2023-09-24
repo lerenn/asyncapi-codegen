@@ -183,8 +183,12 @@ import(
 )
 
 func main() {
+  // Create a broker adapter
+  broker := nats.NewController("nats://nats:4222")
+  defer broker.Close()
+
   // Create a new application controller
-  ctrl, _ := NewAppController(nats.NewController("nats://nats:4222"))
+  ctrl, _ := NewAppController(broker)
   defer ctrl.Close(context.Background())
 
   // Subscribe to HelloWorld messages
@@ -234,8 +238,12 @@ import(
 )
 
 func main() {
+  // Create a broker adapter
+  broker := nats.NewController("nats://nats:4222")
+  defer broker.Close()
+
   // Create a new user controller
-  ctrl, _ := NewUserController(nats.NewController("nats://nats:4222"))
+  ctrl, _ := NewUserController(broker)
   defer ctrl.Close(context.Background())
 
   // Send HelloWorld
@@ -369,7 +377,14 @@ Here are the options that you can use with the Kafka controller:
 In order to use NATS as a broker, you can use the following code:
 
 ```golang
-ctrl, err := NewAppController(nats.NewController("nats://<host>:<port>"), /* options */)
+// Create the NATS adapter
+broker := nats.NewController("nats://<host>:<port>")
+defer broker.Close()
+
+// Add NATS adapter to a new controller
+ctrl, err := NewAppController(broker, /* options */)
+
+//...
 ```
 
 Here are the options that you can use with the NATS controller:
@@ -622,6 +637,7 @@ import (
 func main() {
   // Create a broker (here from NATS)
   broker := nats.NewController("nats://nats:4222"))
+  defer broker.Close()
 
   // Add a version wrapper to the broker
   vw := versioning.NewWrapper(broker)

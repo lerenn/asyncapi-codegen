@@ -21,7 +21,8 @@ import (
 )
 
 func TestSuite(t *testing.T) {
-	brokers := asyncapi_test.BrokerControllers(t)
+	brokers, cleanup := asyncapi_test.BrokerControllers(t)
+	defer cleanup()
 
 	for _, b := range brokers {
 		suite.Run(t, NewSuite(b))

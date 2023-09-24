@@ -18,6 +18,7 @@ func main() {
 		nats.WithLogger(logger),           // Attach an internal logger
 		nats.WithQueueGroup("ping-users"), // Set a specific queue group to avoid collisions
 	)
+	defer broker.Close()
 
 	// Create a new user controller
 	ctrl, err := NewUserController(

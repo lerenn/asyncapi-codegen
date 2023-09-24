@@ -12,14 +12,26 @@ import (
 
 // BrokerControllers returns a list of BrokerController to test based on the
 // docker-compose file of the project.
-func BrokerControllers(t *testing.T) map[string]extensions.BrokerController {
+func BrokerControllers(t *testing.T) (brokers []extensions.BrokerController, cleanup func()) {
 	t.Helper() // Set this function as a helper
+
+	// Initialize returned values
+	brokers = make([]extensions.BrokerController, 0)
 
 	// Set a specific queueGroupeID to avoid collision between tests
 	queueGroupID := fmt.Sprintf("test-%d", time.Now().UnixNano())
 
-	return map[string]extensions.BrokerController{
-		"NATS":  nats.NewController("nats://localhost:4222", nats.WithQueueGroup(queueGroupID)),
-		"Kafka": kafka.NewController([]string{"localhost:9094"}, kafka.WithGroupID(queueGroupID)),
+	// Add NATS broker
+	nb := nats.NewController("nats://localhost:4222", nats.WithQueueGroup(queueGroupID))
+	brokers = append(brokers, nb)
+
+	// Add kafka broker
+	kb := kafka.NewController([]string{"localhost:9094"}, kafka.WithGroupID(queueGroupID))
+	brokers = append(brokers, kb)
+
+	// Return brokers with their cleanup functions
+	return brokers, func() {
+		// Clean up NATS
+		nb.Close()
 	}
 }
