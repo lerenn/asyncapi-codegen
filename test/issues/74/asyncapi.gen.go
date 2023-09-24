@@ -419,7 +419,7 @@ func (msg TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}
 
 	// Add each headers to broker message
-	headers := make(map[string][]byte, 0)
+	headers := make(map[string][]byte, 2)
 
 	// Adding DateTime header
 	headers["dateTime"] = []byte(msg.Headers.DateTime.Format(time.RFC3339)) // Adding Version header

@@ -75,7 +75,7 @@ struct {
 
 {{- /* If no know type but reference a component */ -}}
 {{- else if .Reference -}}
-{{ referenceToTypeName .Reference }}Schema
+{{ referenceToTypeName .Reference }}
 
 {{- /* Should not get to this point */ -}}
 {{- else -}}

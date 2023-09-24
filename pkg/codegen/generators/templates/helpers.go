@@ -62,6 +62,8 @@ func ReferenceToTypeName(ref string) string {
 	name := parts[3]
 	if parts[2] == "messages" {
 		name += "Message"
+	} else if parts[2] == "schemas" {
+		name += "Schema"
 	}
 
 	return Namify(name)
