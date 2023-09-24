@@ -86,8 +86,8 @@ concepts](https://www.asyncapi.com/docs/concepts).
 ![with codegen schema](assets/with-codegen-schema.svg)
 
 * <span style="color:yellow">Yellow parts</span>: when using the codegen tool,
-you will generate the code that will act as an adapter (or controller) between
-the user, the broker, and the application.
+you will generate the code that will act as an adapter (called **controller**)
+between the user, the broker, and the application.
 * <span style="color:red">Red parts</span>: you will need to fill these parts
 between user, broker and application. These will allow message production and
 reception with the generated code.
@@ -183,7 +183,7 @@ import(
 )
 
 func main() {
-  // Create a broker adapter
+  // Create a NATS controller
   broker := nats.NewController("nats://nats:4222")
   defer broker.Close()
 
@@ -238,7 +238,7 @@ import(
 )
 
 func main() {
-  // Create a broker adapter
+  // Create a NATS controller
   broker := nats.NewController("nats://nats:4222")
   defer broker.Close()
 
@@ -377,11 +377,11 @@ Here are the options that you can use with the Kafka controller:
 In order to use NATS as a broker, you can use the following code:
 
 ```golang
-// Create the NATS adapter
+// Create the NATS controller
 broker := nats.NewController("nats://<host>:<port>")
 defer broker.Close()
 
-// Add NATS adapter to a new controller
+// Add NATS controller to a new App controller
 ctrl, err := NewAppController(broker, /* options */)
 
 //...
@@ -395,7 +395,7 @@ Here are the options that you can use with the NATS controller:
 ### Custom broker
 
 In order to connect your application and your user to your broker, we need to
-provide an adapter to it. Here is the interface that you need to satisfy:
+provide a controller to it. Here is the interface that you need to satisfy:
 
 ```go
 import(
