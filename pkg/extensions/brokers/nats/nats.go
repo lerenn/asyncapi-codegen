@@ -119,3 +119,8 @@ func messagesHandler(sub extensions.BrokerChannelSubscription) nats.MsgHandler {
 		})
 	}
 }
+
+// Close closes everything related to the broker.
+func (c *Controller) Close() {
+	c.connection.Close()
+}
