@@ -17,13 +17,11 @@ const (
 	ContextKeyIsProvider ContextKey = Prefix + "provider"
 	// ContextKeyIsChannel is the name of the channel this data is coming from.
 	ContextKeyIsChannel ContextKey = Prefix + "channel"
-	// ContextKeyIsMessageDirection is the direction this data is coming from.
+	// ContextKeyIsDirection is the direction this data is coming from.
 	// It can be either "publication" or "reception".
-	ContextKeyIsMessageDirection ContextKey = Prefix + "operation"
+	ContextKeyIsDirection ContextKey = Prefix + "operation"
 	// ContextKeyIsBrokerMessage is the message that has been sent or received from/to the broker.
 	ContextKeyIsBrokerMessage ContextKey = Prefix + "broker-message"
-	// ContextKeyIsMessage is the message that has been sent or received.
-	ContextKeyIsMessage ContextKey = Prefix + "message"
 	// ContextKeyIsCorrelationID is the correlation ID of the message.
 	ContextKeyIsCorrelationID ContextKey = Prefix + "correlationID"
 )

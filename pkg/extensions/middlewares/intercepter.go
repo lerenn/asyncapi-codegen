@@ -8,12 +8,11 @@ import (
 
 // Intercepter is a middleware that intercepts messages in reception and in publication.
 func Intercepter(ch chan extensions.BrokerMessage) extensions.Middleware {
-	return func(ctx context.Context, next extensions.NextMiddleware) context.Context {
-		// If there is a broker message, then send it to the channel
-		extensions.IfContextSetWith(ctx, extensions.ContextKeyIsBrokerMessage, func(brokerMessage extensions.BrokerMessage) {
-			ch <- brokerMessage
-		})
+	return func(_ context.Context, msg *extensions.BrokerMessage, _ extensions.NextMiddleware) error {
+		// Send the message to the channel
+		ch <- *msg
 
-		return ctx
+		// Do not interrupt the operations
+		return nil
 	}
 }

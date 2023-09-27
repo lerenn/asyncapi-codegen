@@ -2,6 +2,7 @@ package extensions
 
 import (
 	"context"
+	"fmt"
 )
 
 // BrokerChannelSubscription is a struct that contains every returned structures
@@ -74,6 +75,21 @@ type BrokerMessage struct {
 // uninitialized structure. It can be used to check that a channel is closed.
 func (bm BrokerMessage) IsUninitialized() bool {
 	return bm.Headers == nil && bm.Payload == nil
+}
+
+// String returns a string version of the broker message.
+func (bm BrokerMessage) String() string {
+	var str string
+
+	for k, v := range bm.Headers {
+		str = fmt.Sprintf("%s,%q:%q", str, k, string(v))
+	}
+
+	if len(str) == 0 {
+		return fmt.Sprintf("{\"payload\":%s}", string(bm.Payload))
+	} else {
+		return fmt.Sprintf("{\"headers\":{%s},\"payload\":%s}", str[1:], string(bm.Payload))
+	}
 }
 
 // BrokerController represents the functions that should be implemented to connect

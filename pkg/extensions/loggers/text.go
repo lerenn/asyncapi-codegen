@@ -75,7 +75,7 @@ func (tl Text) setInfoFromContext(ctx context.Context, msg string, info ...exten
 	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsCorrelationID, func(value any) {
 		info = append(info, extensions.LogInfo{Key: "CorrelationID", Value: value})
 	})
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsMessage, func(value any) {
+	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsBrokerMessage, func(value any) {
 		info = append(info, extensions.LogInfo{Key: "Content", Value: value})
 	})
 

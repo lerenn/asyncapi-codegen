@@ -450,15 +450,15 @@ ctrl, _ := NewAppController(/* Broker of your choice */, WithMiddlewares(myMiddl
 Here the function signature that should be satisfied:
 
 ```golang
-func(ctx context.Context, next middleware.Next) context.Context
+func(ctx context.Context, msg *extensions.BrokerMessage, next extensions.NextMiddleware) error
 ```
 
 **Note:** the returned context will be the one that will be passed to following
 middlewares, and finally to the generated code (and subscription callback).
 
-#### Filtering messages
+#### Examples
 
-If you want to target specific messages, you can use the context passed in argument:
+##### Filtering messages
 
 ```golang
 import(
@@ -466,17 +466,47 @@ import(
   // ...
 )
 
-func myMiddleware(ctx context.Context, _ middleware.Next) context.Context {
+func myMiddleware(ctx context.Context, _ *extensions.BrokerMessage, _ middleware.Next) error {
   // Execute this middleware only if this is a received message
   extensions.IfContextValueEquals(ctx, extensions.ContextKeyIsDirection, "reception", func() {
     // Do specific stuff if message is received
   })
 
-  return ctx
+  return nil
 }
 ```
 
 You can even discriminate on more specification. Please see the [Context section](#context).
+
+##### Modify messages before sending/receiving
+
+```golang
+import(
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions"
+  // ...
+)
+
+func myMiddleware(_ context.Context, msg *extensions.BrokerMessage, _ middleware.Next) error {
+  msg.Headers["additional"] = "some-info"
+  return nil
+}
+```
+
+##### Stopping message processing
+
+```golang
+import(
+  "github.com/lerenn/asyncapi-codegen/pkg/extensions"
+  // ...
+)
+
+func myMiddleware(_ context.Context, msg *extensions.BrokerMessage, _ middleware.Next) error {
+  if msg.Headers["author"] != "me" {
+    return fmt.Errorf("this is not me, aborting...")
+  }
+  return nil
+}
+```
 
 #### Executing code after receiving/publishing the message
 

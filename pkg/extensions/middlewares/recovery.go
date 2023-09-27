@@ -10,7 +10,7 @@ import (
 // Recovery is a middleware that recovers from panic in middlewares coming after
 // it and user code from subscription.
 func Recovery(logger extensions.Logger) extensions.Middleware {
-	return func(ctx context.Context, next extensions.NextMiddleware) context.Context {
+	return func(ctx context.Context, msg *extensions.BrokerMessage, next extensions.NextMiddleware) error {
 		// Recover in case of panic
 		defer func() {
 			if r := recover(); r != nil {
@@ -19,8 +19,6 @@ func Recovery(logger extensions.Logger) extensions.Middleware {
 		}()
 
 		// Call next middleware
-		next(ctx)
-
-		return ctx
+		return next()
 	}
 }
