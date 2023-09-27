@@ -25,14 +25,14 @@ func (ecs ECS) setInfoFromContext(ctx context.Context, msg string, info ...exten
 	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsChannel, func(value any) {
 		info = append(info, extensions.LogInfo{Key: "asyncapi.channel", Value: value})
 	})
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsMessageDirection, func(value any) {
+	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsDirection, func(value any) {
 		if value == "publication" {
 			info = append(info, extensions.LogInfo{Key: "event.action", Value: "published-message"})
 		} else if value == "reception" {
 			info = append(info, extensions.LogInfo{Key: "event.action", Value: "received-message"})
 		}
 	})
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsMessage, func(value any) {
+	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsBrokerMessage, func(value any) {
 		info = append(info, extensions.LogInfo{Key: "event.original", Value: value})
 	})
 	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsCorrelationID, func(value any) {

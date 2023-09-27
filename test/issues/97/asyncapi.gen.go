@@ -40,42 +40,62 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 	return &AppController{controller: controller}, nil
 }
 
-func (c AppController) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
+func (c AppController) wrapMiddlewares(
+	middlewares []extensions.Middleware,
+	callback extensions.NextMiddleware,
+) func(ctx context.Context, msg *extensions.BrokerMessage) error {
 	var called bool
 
 	// If there is no more middleware
 	if len(middlewares) == 0 {
-		return func(ctx context.Context) {
-			if !called {
+		return func(ctx context.Context, msg *extensions.BrokerMessage) error {
+			// Call the callback if it exists and it has not been called already
+			if callback != nil && !called {
 				called = true
-				last(ctx)
+				return callback()
 			}
+
+			// Nil can be returned, as the callback has already been called
+			return nil
 		}
 	}
+
+	// Get the next function to call from next middlewares or callback
+	next := c.wrapMiddlewares(middlewares[1:], callback)
 
 	// Wrap middleware into a check function that will call execute the middleware
 	// and call the next wrapped middleware if the returned function has not been
 	// called already
-	next := c.wrapMiddlewares(middlewares[1:], last)
-	return func(ctx context.Context) {
+	return func(ctx context.Context, msg *extensions.BrokerMessage) error {
 		// Call the middleware and the following if it has not been done already
 		if !called {
+			// Create the next call with the context and the message
+			nextWithArgs := func() error {
+				return next(ctx, msg)
+			}
+
+			// Call the middleware and register it as already called
 			called = true
-			ctx = middlewares[0](ctx, next)
+			if err := middlewares[0](ctx, msg, nextWithArgs); err != nil {
+				return err
+			}
 
 			// If next has already been called in middleware, it should not be
 			// executed again
-			next(ctx)
+			return nextWithArgs()
 		}
+
+		// Nil can be returned, as the next middleware has already been called
+		return nil
 	}
 }
 
-func (c AppController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
+func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
 	// Execute wrapped middlewares
-	wrapped(ctx)
+	return wrapped(ctx, msg)
 }
 
 func addAppContextValues(ctx context.Context, path string) context.Context {
@@ -96,25 +116,21 @@ func (c *AppController) PublishReferencePayloadArray(ctx context.Context, msg Re
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
-	bMsg, err := msg.toBrokerMessage()
+	brokerMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
 	}
 
 	// Set broker message to context
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 	// Publish the message on event-broker through middlewares
-	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		err = c.broker.Publish(ctx, path, bMsg)
+	return c.executeMiddlewares(ctx, &brokerMsg, func() error {
+		return c.broker.Publish(ctx, path, brokerMsg)
 	})
-
-	// Return error from publication on broker
-	return err
 }
 
 // PublishReferencePayloadObject will publish messages to 'referencePayloadObject' channel
@@ -124,25 +140,21 @@ func (c *AppController) PublishReferencePayloadObject(ctx context.Context, msg R
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
-	bMsg, err := msg.toBrokerMessage()
+	brokerMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
 	}
 
 	// Set broker message to context
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 	// Publish the message on event-broker through middlewares
-	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		err = c.broker.Publish(ctx, path, bMsg)
+	return c.executeMiddlewares(ctx, &brokerMsg, func() error {
+		return c.broker.Publish(ctx, path, brokerMsg)
 	})
-
-	// Return error from publication on broker
-	return err
 }
 
 // PublishReferencePayloadString will publish messages to 'referencePayloadString' channel
@@ -152,25 +164,21 @@ func (c *AppController) PublishReferencePayloadString(ctx context.Context, msg R
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "publication")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
-	bMsg, err := msg.toBrokerMessage()
+	brokerMsg, err := msg.toBrokerMessage()
 	if err != nil {
 		return err
 	}
 
 	// Set broker message to context
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 	// Publish the message on event-broker through middlewares
-	c.executeMiddlewares(ctx, func(ctx context.Context) {
-		err = c.broker.Publish(ctx, path, bMsg)
+	return c.executeMiddlewares(ctx, &brokerMsg, func() error {
+		return c.broker.Publish(ctx, path, brokerMsg)
 	})
-
-	// Return error from publication on broker
-	return err
 }
 
 // UserSubscriber represents all handlers that are expecting messages for User
@@ -214,42 +222,62 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 	return &UserController{controller: controller}, nil
 }
 
-func (c UserController) wrapMiddlewares(middlewares []extensions.Middleware, last extensions.NextMiddleware) func(ctx context.Context) {
+func (c UserController) wrapMiddlewares(
+	middlewares []extensions.Middleware,
+	callback extensions.NextMiddleware,
+) func(ctx context.Context, msg *extensions.BrokerMessage) error {
 	var called bool
 
 	// If there is no more middleware
 	if len(middlewares) == 0 {
-		return func(ctx context.Context) {
-			if !called {
+		return func(ctx context.Context, msg *extensions.BrokerMessage) error {
+			// Call the callback if it exists and it has not been called already
+			if callback != nil && !called {
 				called = true
-				last(ctx)
+				return callback()
 			}
+
+			// Nil can be returned, as the callback has already been called
+			return nil
 		}
 	}
+
+	// Get the next function to call from next middlewares or callback
+	next := c.wrapMiddlewares(middlewares[1:], callback)
 
 	// Wrap middleware into a check function that will call execute the middleware
 	// and call the next wrapped middleware if the returned function has not been
 	// called already
-	next := c.wrapMiddlewares(middlewares[1:], last)
-	return func(ctx context.Context) {
+	return func(ctx context.Context, msg *extensions.BrokerMessage) error {
 		// Call the middleware and the following if it has not been done already
 		if !called {
+			// Create the next call with the context and the message
+			nextWithArgs := func() error {
+				return next(ctx, msg)
+			}
+
+			// Call the middleware and register it as already called
 			called = true
-			ctx = middlewares[0](ctx, next)
+			if err := middlewares[0](ctx, msg, nextWithArgs); err != nil {
+				return err
+			}
 
 			// If next has already been called in middleware, it should not be
 			// executed again
-			next(ctx)
+			return nextWithArgs()
 		}
+
+		// Nil can be returned, as the next middleware has already been called
+		return nil
 	}
 }
 
-func (c UserController) executeMiddlewares(ctx context.Context, callback func(ctx context.Context)) {
+func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
 	// Execute wrapped middlewares
-	wrapped(ctx)
+	return wrapped(ctx, msg)
 }
 
 func addUserContextValues(ctx context.Context, path string) context.Context {
@@ -302,7 +330,7 @@ func (c *UserController) SubscribeReferencePayloadArray(ctx context.Context, fn 
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if there is already a subscription
 	_, exists := c.subscriptions[path]
@@ -324,28 +352,32 @@ func (c *UserController) SubscribeReferencePayloadArray(ctx context.Context, fn 
 	go func() {
 		for {
 			// Wait for next message
-			bMsg, open := <-sub.MessagesChannel()
+			brokerMsg, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && bMsg.IsUninitialized() {
+			if !open && brokerMsg.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
-			// Process message
-			msg, err := newReferencePayloadArrayMessageFromBrokerMessage(bMsg)
-			if err != nil {
+			// Execute middlewares before handling the message
+			if err := c.executeMiddlewares(ctx, &brokerMsg, func() error {
+				// Process message
+				msg, err := newReferencePayloadArrayMessageFromBrokerMessage(brokerMsg)
+				if err != nil {
+					return err
+				}
+
+				// Execute the subscription function
+				fn(ctx, msg)
+
+				return nil
+			}); err != nil {
 				c.logger.Error(ctx, err.Error())
 			}
-			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-
-			// Execute middlewares with the callback
-			c.executeMiddlewares(msgCtx, func(ctx context.Context) {
-				fn(ctx, msg)
-			})
 		}
 	}()
 
@@ -385,7 +417,7 @@ func (c *UserController) SubscribeReferencePayloadObject(ctx context.Context, fn
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if there is already a subscription
 	_, exists := c.subscriptions[path]
@@ -407,28 +439,32 @@ func (c *UserController) SubscribeReferencePayloadObject(ctx context.Context, fn
 	go func() {
 		for {
 			// Wait for next message
-			bMsg, open := <-sub.MessagesChannel()
+			brokerMsg, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && bMsg.IsUninitialized() {
+			if !open && brokerMsg.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
-			// Process message
-			msg, err := newReferencePayloadObjectMessageFromBrokerMessage(bMsg)
-			if err != nil {
+			// Execute middlewares before handling the message
+			if err := c.executeMiddlewares(ctx, &brokerMsg, func() error {
+				// Process message
+				msg, err := newReferencePayloadObjectMessageFromBrokerMessage(brokerMsg)
+				if err != nil {
+					return err
+				}
+
+				// Execute the subscription function
+				fn(ctx, msg)
+
+				return nil
+			}); err != nil {
 				c.logger.Error(ctx, err.Error())
 			}
-			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-
-			// Execute middlewares with the callback
-			c.executeMiddlewares(msgCtx, func(ctx context.Context) {
-				fn(ctx, msg)
-			})
 		}
 	}()
 
@@ -468,7 +504,7 @@ func (c *UserController) SubscribeReferencePayloadString(ctx context.Context, fn
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if there is already a subscription
 	_, exists := c.subscriptions[path]
@@ -490,28 +526,32 @@ func (c *UserController) SubscribeReferencePayloadString(ctx context.Context, fn
 	go func() {
 		for {
 			// Wait for next message
-			bMsg, open := <-sub.MessagesChannel()
+			brokerMsg, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && bMsg.IsUninitialized() {
+			if !open && brokerMsg.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, bMsg)
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
-			// Process message
-			msg, err := newReferencePayloadStringMessageFromBrokerMessage(bMsg)
-			if err != nil {
+			// Execute middlewares before handling the message
+			if err := c.executeMiddlewares(ctx, &brokerMsg, func() error {
+				// Process message
+				msg, err := newReferencePayloadStringMessageFromBrokerMessage(brokerMsg)
+				if err != nil {
+					return err
+				}
+
+				// Execute the subscription function
+				fn(ctx, msg)
+
+				return nil
+			}); err != nil {
 				c.logger.Error(ctx, err.Error())
 			}
-			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsMessage, msg)
-
-			// Execute middlewares with the callback
-			c.executeMiddlewares(msgCtx, func(ctx context.Context) {
-				fn(ctx, msg)
-			})
 		}
 	}()
 

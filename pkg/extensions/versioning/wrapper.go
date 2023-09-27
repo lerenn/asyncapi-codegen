@@ -89,7 +89,7 @@ func (w *Wrapper) Publish(ctx context.Context, channel string, mw extensions.Bro
 // Subscribe to messages from the broker.
 func (w *Wrapper) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
 	// Set context
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsMessageDirection, "reception")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsChannel, channel)
 
 	// Get version
