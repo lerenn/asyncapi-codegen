@@ -34,10 +34,9 @@ func NewSuite(broker extensions.BrokerController) *Suite {
 }
 
 func (suite *Suite) SetupTest() {
-
-	// Middleware that adds info on emi
+	// Middleware that adds info on context and check it
 	m1 := func(ctx context.Context, _ *extensions.BrokerMessage, next extensions.NextMiddleware) error {
-		ctx = context.WithValue(ctx, "test-ctx-passing-middlewares", "value passed")
+		ctx = context.WithValue(ctx, "test-ctx-passing-middlewares", "value passed") //nolint:staticcheck
 		return next(ctx)
 	}
 	m2 := func(ctx context.Context, msg *extensions.BrokerMessage, _ extensions.NextMiddleware) error {
