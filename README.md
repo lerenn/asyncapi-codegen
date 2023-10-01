@@ -523,18 +523,18 @@ import(
   // ...
 )
 
-func surroundingMiddleware(ctx context.Context, next extensions.NextMiddleware) context.Context {
+func surroundingMiddleware(ctx context.Context, next extensions.NextMiddleware) error {
   // Pre-operation
   fmt.Println("This will be displayed BEFORE the reception/publication")
 
   // Calling next middleware or reception/publication code
   // The given context will be the one propagated to other middlewares and operation source code
-  next(ctx)
+  err := next(ctx)
 
   // Post-operation
   fmt.Println("This will be displayed AFTER the reception/publication")
 
-  return ctx
+  return err
 }
 ```
 

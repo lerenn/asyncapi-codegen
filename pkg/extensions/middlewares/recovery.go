@@ -19,6 +19,6 @@ func Recovery(logger extensions.Logger) extensions.Middleware {
 		}()
 
 		// Call next middleware
-		return next()
+		return next(ctx)
 	}
 }

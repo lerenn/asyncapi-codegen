@@ -52,7 +52,7 @@ func (c AppController) wrapMiddlewares(
 			// Call the callback if it exists and it has not been called already
 			if callback != nil && !called {
 				called = true
-				return callback()
+				return callback(ctx)
 			}
 
 			// Nil can be returned, as the callback has already been called
@@ -70,7 +70,7 @@ func (c AppController) wrapMiddlewares(
 		// Call the middleware and the following if it has not been done already
 		if !called {
 			// Create the next call with the context and the message
-			nextWithArgs := func() error {
+			nextWithArgs := func(ctx context.Context) error {
 				return next(ctx, msg)
 			}
 
@@ -80,9 +80,8 @@ func (c AppController) wrapMiddlewares(
 				return err
 			}
 
-			// If next has already been called in middleware, it should not be
-			// executed again
-			return nextWithArgs()
+			// If next has already been called in middleware, it should not be executed again
+			return nextWithArgs(ctx)
 		}
 
 		// Nil can be returned, as the next middleware has already been called
@@ -128,7 +127,7 @@ func (c *AppController) PublishReferencePayloadArray(ctx context.Context, msg Re
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 	// Publish the message on event-broker through middlewares
-	return c.executeMiddlewares(ctx, &brokerMsg, func() error {
+	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 		return c.broker.Publish(ctx, path, brokerMsg)
 	})
 }
@@ -152,7 +151,7 @@ func (c *AppController) PublishReferencePayloadObject(ctx context.Context, msg R
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 	// Publish the message on event-broker through middlewares
-	return c.executeMiddlewares(ctx, &brokerMsg, func() error {
+	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 		return c.broker.Publish(ctx, path, brokerMsg)
 	})
 }
@@ -176,7 +175,7 @@ func (c *AppController) PublishReferencePayloadString(ctx context.Context, msg R
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 	// Publish the message on event-broker through middlewares
-	return c.executeMiddlewares(ctx, &brokerMsg, func() error {
+	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 		return c.broker.Publish(ctx, path, brokerMsg)
 	})
 }
@@ -234,7 +233,7 @@ func (c UserController) wrapMiddlewares(
 			// Call the callback if it exists and it has not been called already
 			if callback != nil && !called {
 				called = true
-				return callback()
+				return callback(ctx)
 			}
 
 			// Nil can be returned, as the callback has already been called
@@ -252,7 +251,7 @@ func (c UserController) wrapMiddlewares(
 		// Call the middleware and the following if it has not been done already
 		if !called {
 			// Create the next call with the context and the message
-			nextWithArgs := func() error {
+			nextWithArgs := func(ctx context.Context) error {
 				return next(ctx, msg)
 			}
 
@@ -262,9 +261,8 @@ func (c UserController) wrapMiddlewares(
 				return err
 			}
 
-			// If next has already been called in middleware, it should not be
-			// executed again
-			return nextWithArgs()
+			// If next has already been called in middleware, it should not be executed again
+			return nextWithArgs(ctx)
 		}
 
 		// Nil can be returned, as the next middleware has already been called
@@ -364,7 +362,7 @@ func (c *UserController) SubscribeReferencePayloadArray(ctx context.Context, fn 
 			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func() error {
+			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 				// Process message
 				msg, err := newReferencePayloadArrayMessageFromBrokerMessage(brokerMsg)
 				if err != nil {
@@ -451,7 +449,7 @@ func (c *UserController) SubscribeReferencePayloadObject(ctx context.Context, fn
 			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func() error {
+			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 				// Process message
 				msg, err := newReferencePayloadObjectMessageFromBrokerMessage(brokerMsg)
 				if err != nil {
@@ -538,7 +536,7 @@ func (c *UserController) SubscribeReferencePayloadString(ctx context.Context, fn
 			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func() error {
+			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 				// Process message
 				msg, err := newReferencePayloadStringMessageFromBrokerMessage(brokerMsg)
 				if err != nil {

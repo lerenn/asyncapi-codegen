@@ -57,7 +57,7 @@ func (c AppController) wrapMiddlewares(
 			// Call the callback if it exists and it has not been called already
 			if callback != nil && !called {
 				called = true
-				return callback()
+				return callback(ctx)
 			}
 
 			// Nil can be returned, as the callback has already been called
@@ -75,7 +75,7 @@ func (c AppController) wrapMiddlewares(
 		// Call the middleware and the following if it has not been done already
 		if !called {
 			// Create the next call with the context and the message
-			nextWithArgs := func() error {
+			nextWithArgs := func(ctx context.Context) error {
 				return next(ctx, msg)
 			}
 
@@ -85,9 +85,8 @@ func (c AppController) wrapMiddlewares(
 				return err
 			}
 
-			// If next has already been called in middleware, it should not be
-			// executed again
-			return nextWithArgs()
+			// If next has already been called in middleware, it should not be executed again
+			return nextWithArgs(ctx)
 		}
 
 		// Nil can be returned, as the next middleware has already been called
@@ -179,7 +178,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func() error {
+			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 				// Process message
 				msg, err := newHelloMessageFromBrokerMessage(brokerMsg)
 				if err != nil {
