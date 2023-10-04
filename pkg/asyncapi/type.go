@@ -19,4 +19,6 @@ const (
 	TypeIsString Type = "string"
 	// TypeIsInteger represents the type of an integer.
 	TypeIsInteger Type = "integer"
+	// TypeIsPayload represents the type of a payload.
+	TypeIsPayload Type = "payload"
 )

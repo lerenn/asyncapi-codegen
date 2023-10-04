@@ -108,13 +108,17 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Schema)
 			msg.Headers.Type = TypeIsObject.String()
 		}
 		child = msg.Headers
-	} else if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") && msg.Payload != nil {
-		if msg.Payload == nil {
+	} else if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") {
+		switch {
+		case msg.Payload.ReferenceTo != nil:
+			child = msg.Payload.ReferenceTo
+
+		case msg.Payload == nil:
 			msg.Payload = utils.ToPointer(NewSchema())
-			msg.Payload.Name = TypeIsHeader.String()
+			msg.Payload.Name = TypeIsPayload.String()
 			msg.Payload.Type = TypeIsObject.String()
+			child = msg.Payload
 		}
-		child = msg.Payload
 	}
 
 	// Go down the path to correlation ID
