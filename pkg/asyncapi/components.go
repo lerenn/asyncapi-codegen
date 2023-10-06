@@ -11,14 +11,14 @@ type Components struct {
 
 // Process processes the Components structure to make it ready for code generation.
 func (c *Components) Process(spec Specification) {
-	// For all messages, process message
-	for name, msg := range c.Messages {
-		msg.Process(name, spec)
-	}
-
 	// For all schemas, process schema
 	for name, schema := range c.Schemas {
 		schema.Process(name, spec, false)
+	}
+
+	// For all messages, process message
+	for name, msg := range c.Messages {
+		msg.Process(name, spec)
 	}
 
 	// For all parameters, process param

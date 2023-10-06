@@ -23,7 +23,7 @@ func (suite *Suite) TestExtensionsWithSchema() {
 		Components: asyncapi.Components{
 			Schemas: map[string]*asyncapi.Schema{
 				"flag": {
-					Type:       asyncapi.TypeIsInteger.String(),
+					Type:       asyncapi.MessageTypeIsInteger.String(),
 					Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 				},
 			},
@@ -41,11 +41,11 @@ func (suite *Suite) TestExtensionsWithObjectProperty() {
 	spec := asyncapi.Specification{
 		Components: asyncapi.Components{
 			Schemas: map[string]*asyncapi.Schema{
-				asyncapi.TypeIsObject.String(): {
-					Type: asyncapi.TypeIsObject.String(),
+				asyncapi.MessageTypeIsObject.String(): {
+					Type: asyncapi.MessageTypeIsObject.String(),
 					Properties: map[string]*asyncapi.Schema{
 						"flag": {
-							Type:       asyncapi.TypeIsInteger.String(),
+							Type:       asyncapi.MessageTypeIsInteger.String(),
 							Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 						},
 					},
@@ -67,9 +67,9 @@ func (suite *Suite) TestExtensionsWithArrayItem() {
 		Components: asyncapi.Components{
 			Schemas: map[string]*asyncapi.Schema{
 				"flags": {
-					Type: asyncapi.TypeIsArray.String(),
+					Type: asyncapi.MessageTypeIsArray.String(),
 					Items: &asyncapi.Schema{
-						Type:       asyncapi.TypeIsInteger.String(),
+						Type:       asyncapi.MessageTypeIsInteger.String(),
 						Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 					},
 				},
@@ -88,11 +88,11 @@ func (suite *Suite) TestExtensionsWithObjectPropertyAndTypeFromPackage() {
 	spec := asyncapi.Specification{
 		Components: asyncapi.Components{
 			Schemas: map[string]*asyncapi.Schema{
-				asyncapi.TypeIsObject.String(): {
-					Type: asyncapi.TypeIsObject.String(),
+				asyncapi.MessageTypeIsObject.String(): {
+					Type: asyncapi.MessageTypeIsObject.String(),
 					Properties: map[string]*asyncapi.Schema{
 						"flag": {
-							Type:       asyncapi.TypeIsInteger.String(),
+							Type:       asyncapi.MessageTypeIsInteger.String(),
 							Extensions: asyncapi.Extensions{ExtGoType: "mypackage.Flag"},
 						},
 					},

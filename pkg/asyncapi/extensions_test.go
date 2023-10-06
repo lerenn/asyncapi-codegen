@@ -21,7 +21,7 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithSchema() {
 		Components: Components{
 			Schemas: map[string]*Schema{
 				"flag": {
-					Type: TypeIsInteger.String(),
+					Type: MessageTypeIsInteger.String(),
 					Extensions: Extensions{
 						ExtGoType: "mypackage.Flag",
 						ExtGoTypeImport: &GoTypeImportExtension{
@@ -47,11 +47,11 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectProperty() {
 	spec := Specification{
 		Components: Components{
 			Schemas: map[string]*Schema{
-				TypeIsObject.String(): {
-					Type: TypeIsObject.String(),
+				MessageTypeIsObject.String(): {
+					Type: MessageTypeIsObject.String(),
 					Properties: map[string]*Schema{
 						"flag": {
-							Type: TypeIsInteger.String(),
+							Type: MessageTypeIsInteger.String(),
 							Extensions: Extensions{
 								ExtGoType: "mypackage.Flag",
 								ExtGoTypeImport: &GoTypeImportExtension{
@@ -81,9 +81,9 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithArrayItem() {
 		Components: Components{
 			Schemas: map[string]*Schema{
 				"flag": {
-					Type: TypeIsArray.String(),
+					Type: MessageTypeIsArray.String(),
 					Items: &Schema{
-						Type: TypeIsInteger.String(),
+						Type: MessageTypeIsInteger.String(),
 						Extensions: Extensions{
 							ExtGoType: "mypackage.Flag",
 							ExtGoTypeImport: &GoTypeImportExtension{
@@ -110,11 +110,11 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectPropertyAndDifferentP
 	spec := Specification{
 		Components: Components{
 			Schemas: map[string]*Schema{
-				TypeIsObject.String(): {
-					Type: TypeIsObject.String(),
+				MessageTypeIsObject.String(): {
+					Type: MessageTypeIsObject.String(),
 					Properties: map[string]*Schema{
 						"flag": {
-							Type: TypeIsInteger.String(),
+							Type: MessageTypeIsInteger.String(),
 							Extensions: Extensions{
 								ExtGoType: "alias.Flag",
 								ExtGoTypeImport: &GoTypeImportExtension{
@@ -144,11 +144,11 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectPropertyAndMultipleIm
 	spec := Specification{
 		Components: Components{
 			Schemas: map[string]*Schema{
-				TypeIsObject.String(): {
-					Type: TypeIsObject.String(),
+				MessageTypeIsObject.String(): {
+					Type: MessageTypeIsObject.String(),
 					Properties: map[string]*Schema{
 						"flag": {
-							Type: TypeIsInteger.String(),
+							Type: MessageTypeIsInteger.String(),
 							Extensions: Extensions{
 								ExtGoType: "alias.Flag",
 								ExtGoTypeImport: &GoTypeImportExtension{
@@ -158,7 +158,7 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectPropertyAndMultipleIm
 							},
 						},
 						"id": {
-							Type: TypeIsString.String(),
+							Type: MessageTypeIsString.String(),
 							Extensions: Extensions{
 								ExtGoType: "xid.ID",
 								ExtGoTypeImport: &GoTypeImportExtension{
@@ -187,11 +187,11 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithConflictingPackageNames() {
 	spec := Specification{
 		Components: Components{
 			Schemas: map[string]*Schema{
-				TypeIsObject.String(): {
-					Type: TypeIsObject.String(),
+				MessageTypeIsObject.String(): {
+					Type: MessageTypeIsObject.String(),
 					Properties: map[string]*Schema{
 						"start_flag": {
-							Type: TypeIsInteger.String(),
+							Type: MessageTypeIsInteger.String(),
 							Extensions: Extensions{
 								ExtGoType: "alias2.Flag",
 								ExtGoTypeImport: &GoTypeImportExtension{
@@ -201,7 +201,7 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithConflictingPackageNames() {
 							},
 						},
 						"end_flag": {
-							Type: TypeIsInteger.String(),
+							Type: MessageTypeIsInteger.String(),
 							Extensions: Extensions{
 								ExtGoType: "alias2.Flag",
 								ExtGoTypeImport: &GoTypeImportExtension{

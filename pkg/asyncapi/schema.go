@@ -99,7 +99,7 @@ func (a *Schema) referenceFrom(ref []string) *Schema {
 // MergeWith merges the given Schema structure with another one
 // (basically for AllOf, AnyOf, OneOf, etc).
 func (a *Schema) MergeWith(spec Specification, a2 Schema) {
-	a.Type = TypeIsObject.String()
+	a.Type = MessageTypeIsObject.String()
 
 	// Getting merged with reference
 	if a2.Reference != "" {
