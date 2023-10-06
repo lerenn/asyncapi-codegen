@@ -15,64 +15,136 @@ type MessageSuite struct {
 	suite.Suite
 }
 
-func (suite *MessageSuite) TestIsCorrelationIDRequired() {
-	cases := []struct {
-		Message  Message
-		Required bool
-	}{
-		{
-			Message: Message{
-				Headers: &Schema{
-					Required: []string{"correlationId"},
-				},
-				CorrelationID: &CorrelationID{
-					Location: "$message.header#/correlationId",
-				},
-			},
-			Required: true,
+func (suite *MessageSuite) TestIsCorrelationIDRequiredWithTopLevelHeader() {
+	// Set message
+	msg := Message{
+		Headers: &Schema{
+			Required: []string{"correlationId"},
 		},
-		{
-			Message: Message{
-				Payload: &Schema{
-					Required: []string{"correlationId"},
-				},
-				CorrelationID: &CorrelationID{
-					Location: "$message.payload#/correlationId",
-				},
-			},
-			Required: true,
-		},
-		{
-			Message: Message{
-				Headers: &Schema{
-					Properties: map[string]*Schema{
-						"toto": utils.ToPointer(Schema{
-							Required: []string{"correlationId"},
-						}),
-					},
-				},
-				CorrelationID: &CorrelationID{
-					Location: "$message.header#/toto/correlationId",
-				},
-			},
-			Required: true,
-		},
-		{
-			Message: Message{
-				Headers: &Schema{},
-				CorrelationID: &CorrelationID{
-					Location: "$message.header#/correlationId",
-				},
-			},
-			Required: false,
-		},
-		{
-			Message:  Message{},
-			Required: false,
+		CorrelationID: &CorrelationID{
+			Location: "$message.header#/correlationId",
 		},
 	}
 
-	for i, c := range cases {
-		suite.Require().Equal(c.Required, c.Message.isCorrelationIDRequired(), i)
+	// Check if true
+	suite.Require().True(msg.isCorrelationIDRequired())
+}
+
+func (suite *MessageSuite) TestIsCorrelationIDRequiredWithTopLevelPayload() {
+	// Set message
+	msg := Message{
+		Payload: &Schema{
+			Required: []string{"correlationId"},
+		},
+		CorrelationID: &CorrelationID{
+			Location: "$message.payload#/correlationId",
+		},
 	}
+
+	// Check if true
+	suite.Require().True(msg.isCorrelationIDRequired())
+}
+
+func (suite *MessageSuite) TestIsCorrelationIDRequiredWithDeepLevelHeader() {
+	// Set message
+	msg := Message{
+		Headers: &Schema{
+			Properties: map[string]*Schema{
+				"toto": utils.ToPointer(Schema{
+					Required: []string{"correlationId"},
+				}),
+			},
+		},
+		CorrelationID: &CorrelationID{
+			Location: "$message.header#/toto/correlationId",
+		},
+	}
+
+	// Check if true
+	suite.Require().True(msg.isCorrelationIDRequired())
+}
+
+func (suite *MessageSuite) TestIsCorrelationIDRequiredWithDeepLevelPayload() {
+	// Set message
+	msg := Message{
+		Payload: &Schema{
+			Properties: map[string]*Schema{
+				"toto": utils.ToPointer(Schema{
+					Required: []string{"correlationId"},
+				}),
+			},
+		},
+		CorrelationID: &CorrelationID{
+			Location: "$message.payload#/toto/correlationId",
+		},
+	}
+
+	// Check if true
+	suite.Require().True(msg.isCorrelationIDRequired())
+}
+
+func (suite *MessageSuite) TestIsCorrelationIDRequiredWithReferencedHeaders() {
+	// Set message
+	msg := Message{
+		Headers: &Schema{
+			ReferenceTo: utils.ToPointer(Schema{
+				Required: []string{"correlationId"},
+			}),
+		},
+		CorrelationID: &CorrelationID{
+			Location: "$message.header#/correlationId",
+		},
+	}
+
+	// Check if true
+	suite.Require().True(msg.isCorrelationIDRequired())
+}
+
+func (suite *MessageSuite) TestIsCorrelationIDRequiredWithReferencedPayload() {
+	// Set message
+	msg := Message{
+		Payload: &Schema{
+			ReferenceTo: utils.ToPointer(Schema{
+				Required: []string{"correlationId"},
+			}),
+		},
+		CorrelationID: &CorrelationID{
+			Location: "$message.payload#/correlationId",
+		},
+	}
+
+	// Check if true
+	suite.Require().True(msg.isCorrelationIDRequired())
+}
+
+func (suite *MessageSuite) TestIsCorrelationIDRequiredWithInexistantHeaders() {
+	// Set message
+	msg := Message{
+		CorrelationID: &CorrelationID{
+			Location: "$message.header#/correlationId",
+		},
+	}
+
+	// Check if true
+	suite.Require().False(msg.isCorrelationIDRequired())
+}
+
+func (suite *MessageSuite) TestIsCorrelationIDRequiredWithInexistantPayload() {
+	// Set message
+	msg := Message{
+		CorrelationID: &CorrelationID{
+			Location: "$message.payload#/correlationId",
+		},
+	}
+
+	// Check if true
+	suite.Require().False(msg.isCorrelationIDRequired())
+}
+
+func (suite *MessageSuite) TestIsCorrelationIDRequiredWithEmptyMessage() {
+	// Set message
+	msg := Message{}
+
+	// Check if true
+	suite.Require().False(msg.isCorrelationIDRequired())
 }

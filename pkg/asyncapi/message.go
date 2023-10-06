@@ -8,6 +8,44 @@ import (
 	"github.com/mohae/deepcopy"
 )
 
+// MessageField is a structure that represents the type of a field.
+type MessageField string
+
+// String returns the string representation of the type.
+func (t MessageField) String() string {
+	return string(t)
+}
+
+const (
+	// MessageFieldIsHeader represents the message field of a header.
+	MessageFieldIsHeader MessageField = "header"
+	// MessageFieldIsPayload represents the message field of a payload.
+	MessageFieldIsPayload MessageField = "payload"
+)
+
+// MessageType is a structure that represents the type of a field.
+type MessageType string
+
+// String returns the string representation of the type.
+func (t MessageType) String() string {
+	return string(t)
+}
+
+const (
+	// MessageTypeIsArray represents the type of an array.
+	MessageTypeIsArray MessageType = "array"
+	// MessageTypeIsHeader represents the type of a header.
+	MessageTypeIsHeader MessageType = "header"
+	// MessageTypeIsObject represents the type of an object.
+	MessageTypeIsObject MessageType = "object"
+	// MessageTypeIsString represents the type of a string.
+	MessageTypeIsString MessageType = "string"
+	// MessageTypeIsInteger represents the type of an integer.
+	MessageTypeIsInteger MessageType = "integer"
+	// MessageTypeIsPayload represents the type of a payload.
+	MessageTypeIsPayload MessageType = "payload"
+)
+
 // Message is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#messageObject
@@ -98,46 +136,67 @@ func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Schema)
 		return utils.ToPointer(NewSchema())
 	}
 
-	// Get root from header or payload
-	var child *Schema
-	path := strings.Split(msg.CorrelationID.Location, "/")
+	// Check that the correlation ID is in header
 	if strings.HasPrefix(msg.CorrelationID.Location, "$message.header#") {
-		if msg.Headers == nil {
-			msg.Headers = utils.ToPointer(NewSchema())
-			msg.Headers.Name = TypeIsHeader.String()
-			msg.Headers.Type = TypeIsObject.String()
-		}
-		child = msg.Headers
-	} else if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") {
-		switch {
-		case msg.Payload.ReferenceTo != nil:
-			child = msg.Payload.ReferenceTo
+		return msg.createTreeUntilCorrelationIDFromMessageType(MessageTypeIsHeader)
+	}
 
-		case msg.Payload == nil:
-			msg.Payload = utils.ToPointer(NewSchema())
-			msg.Payload.Name = TypeIsPayload.String()
-			msg.Payload.Type = TypeIsObject.String()
-			child = msg.Payload
-		}
+	// Check that the correlation ID is in payload
+	if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") {
+		return msg.createTreeUntilCorrelationIDFromMessageType(MessageTypeIsPayload)
+	}
+
+	// Default to nothing
+	return utils.ToPointer(NewSchema())
+}
+
+func (msg *Message) createTreeUntilCorrelationIDFromMessageType(t MessageType) (correlationIDParent *Schema) {
+	// Get correct top level placeholder
+	var placeholder **Schema
+	if t == MessageTypeIsHeader {
+		placeholder = &msg.Headers
+	} else {
+		placeholder = &msg.Payload
+	}
+
+	var child *Schema
+	switch {
+	case (*placeholder) != nil && (*placeholder).ReferenceTo != nil: // If there is a reference
+		// Use it as child
+		child = (*placeholder).ReferenceTo
+	case (*placeholder) == nil: // If there is no header and no reference
+		// Create a default one for the message
+		(*placeholder) = utils.ToPointer(NewSchema())
+		(*placeholder).Name = MessageTypeIsHeader.String()
+		(*placeholder).Type = MessageTypeIsObject.String()
+		fallthrough
+	default:
+		// Set the child as the message headers
+		child = (*placeholder)
 	}
 
 	// Go down the path to correlation ID
-	return downToCorrelationID(path, child)
+	return msg.downToCorrelationID(child)
 }
 
-func downToCorrelationID(path []string, child *Schema) (correlationIDParent *Schema) {
+func (msg Message) downToCorrelationID(child *Schema) (correlationIDParent *Schema) {
 	var exists bool
+
+	path := strings.Split(msg.CorrelationID.Location, "/")
 	for i, v := range path[1:] {
+		// Keep the parent
 		correlationIDParent = child
+
+		// Get the corresponding child
 		child, exists = correlationIDParent.Properties[v]
-		if !exists {
+		if !exists { // If it doesn't exist
 			// Create child
 			child = utils.ToPointer(NewSchema())
 			child.Name = v
 			if i == len(path)-2 { // As there is -1 in the loop slice
-				child.Type = TypeIsString.String()
+				child.Type = MessageTypeIsString.String()
 			} else {
-				child.Type = TypeIsHeader.String()
+				child.Type = MessageTypeIsHeader.String()
 			}
 
 			// Add it to parent
@@ -159,7 +218,7 @@ func (msg *Message) referenceFrom(ref []string) any {
 	var next *Schema
 	if ref[0] == "payload" {
 		next = msg.Payload
-	} else if ref[0] == TypeIsHeader.String() {
+	} else if ref[0] == MessageTypeIsHeader.String() {
 		next = msg.Headers
 	}
 
