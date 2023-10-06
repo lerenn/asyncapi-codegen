@@ -28,9 +28,16 @@ func (suite *HelpersSuite) TestNamify() {
 		{In: "name", Out: "Name"},
 		// Snake Case
 		{In: "eh_oh__ah", Out: "EhOhAh"},
-		// With acronym
+		// With acronym in middle
+		{In: "IdTata", Out: "IDTata"},
+		// With acronym in middle
 		{In: "TotoIdLala", Out: "TotoIDLala"},
+		// With acronym at the end
 		{In: "TotoId", Out: "TotoID"},
+		// Without acronym, but still the same letters as the acronym
+		{In: "identity", Out: "Identity"},
+		{In: "Identity", Out: "Identity"},
+		{In: "covid", Out: "Covid"},
 	}
 
 	for i, c := range cases {
