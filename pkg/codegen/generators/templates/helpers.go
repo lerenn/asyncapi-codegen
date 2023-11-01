@@ -161,3 +161,16 @@ func MultiLineComment(comment string) string {
 func Args(vs ...any) []any {
 	return vs
 }
+
+// OperationName returns `operationId` value from Publish or Subscribe operation if any.
+// If no `operationID` exists — return provided default value (`name`).
+func OperationName(channel *asyncapi.Channel, name string) string {
+	switch {
+	case channel.Publish != nil && channel.Publish.OperationID != "":
+		return channel.Publish.OperationID
+	case channel.Subscribe != nil && channel.Subscribe.OperationID != "":
+		return channel.Subscribe.OperationID
+	default:
+		return name
+	}
+}
