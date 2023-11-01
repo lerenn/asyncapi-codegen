@@ -61,3 +61,56 @@ func (suite *HelpersSuite) TestIsRequired() {
 		suite.Require().Equal(c.Result, IsRequired(c.Schema, c.Field), i)
 	}
 }
+
+func (suite *HelpersSuite) TestOperationName() {
+	cases := []struct {
+		Channel asyncapi.Channel
+		Result  string
+	}{
+		// By default
+		{
+			Channel: asyncapi.Channel{Name: "Default"},
+			Result:  "Default",
+		},
+		// With subscribe but no ooperation ID
+		{
+			Channel: asyncapi.Channel{
+				Subscribe: &asyncapi.Operation{},
+				Name:      "Default",
+			},
+			Result: "Default",
+		},
+		// With subscribe and operation ID
+		{
+			Channel: asyncapi.Channel{
+				Subscribe: &asyncapi.Operation{
+					OperationID: "Subscribe",
+				},
+				Name: "Default",
+			},
+			Result: "Subscribe",
+		},
+		// With publish but no ooperation ID
+		{
+			Channel: asyncapi.Channel{
+				Publish: &asyncapi.Operation{},
+				Name:    "Default",
+			},
+			Result: "Default",
+		},
+		// With publish and operation ID
+		{
+			Channel: asyncapi.Channel{
+				Publish: &asyncapi.Operation{
+					OperationID: "Publish",
+				},
+				Name: "Default",
+			},
+			Result: "Publish",
+		},
+	}
+
+	for i, c := range cases {
+		suite.Require().Equal(c.Result, OperationName(c.Channel), i)
+	}
+}

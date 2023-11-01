@@ -164,7 +164,7 @@ func Args(vs ...any) []any {
 
 // OperationName returns `operationId` value from Publish or Subscribe operation if any.
 // If no `operationID` exists — return provided default value (`name`).
-func OperationName(channel *asyncapi.Channel) string {
+func OperationName(channel asyncapi.Channel) string {
 	switch {
 	case channel.Publish != nil && channel.Publish.OperationID != "":
 		return channel.Publish.OperationID
