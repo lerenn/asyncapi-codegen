@@ -45,5 +45,6 @@ func templateFunctions() template.FuncMap {
 		"describeStruct":                 templates.DescribeStruct,
 		"multiLineComment":               templates.MultiLineComment,
 		"args":                           templates.Args,
+		"operationName":                  templates.OperationName,
 	}
 }

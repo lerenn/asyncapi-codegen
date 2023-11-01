@@ -270,7 +270,7 @@ func (c *UserController) PublishPing(ctx context.Context, msg PingMessage) error
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) (PongMessage, error) {
+func (c *UserController) WaitForPong(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) (PongMessage, error) {
 	// Get channel path
 	path := "pong"
 
@@ -278,12 +278,12 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 	ctx = addUserContextValues(ctx, path)
 
 	// Subscribe to broker channel
-	sub, err := cc.broker.Subscribe(ctx, path)
+	sub, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
-		cc.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error())
 		return PongMessage{}, err
 	}
-	cc.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel")
 
 	// Close subscriber on leave
 	defer func() {
@@ -291,7 +291,7 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 		sub.Cancel(ctx)
 
 		// Logging unsubscribing
-		cc.logger.Info(ctx, "Unsubscribed from channel")
+		c.logger.Info(ctx, "Unsubscribed from channel")
 	}()
 
 	// Execute callback for publication
@@ -307,14 +307,14 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 			// (i.e. uninitialized message), then the subscription ended before
 			// receiving the expected message
 			if !open && brokerMsg.IsUninitialized() {
-				cc.logger.Error(ctx, "Channel closed before getting message")
+				c.logger.Error(ctx, "Channel closed before getting message")
 				return PongMessage{}, extensions.ErrSubscriptionCanceled
 			}
 
 			// Get new message
 			msg, err := newPongMessageFromBrokerMessage(brokerMsg)
 			if err != nil {
-				cc.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error())
 			}
 
 			// If message doesn't have corresponding correlation ID, then continue
@@ -328,7 +328,7 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
 
 			// Execute middlewares before returning
-			if err := cc.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
+			if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
 				return PongMessage{}, err
 			}
 
@@ -336,7 +336,7 @@ func (cc *UserController) WaitForPong(ctx context.Context, publishMsg MessageWit
 			// been modified by middlewares
 			return newPongMessageFromBrokerMessage(brokerMsg)
 		case <-ctx.Done(): // Set corrsponding error if context is done
-			cc.logger.Error(ctx, "Context done before getting message")
+			c.logger.Error(ctx, "Context done before getting message")
 			return PongMessage{}, extensions.ErrContextCanceled
 		}
 	}
