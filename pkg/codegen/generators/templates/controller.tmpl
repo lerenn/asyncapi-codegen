@@ -110,7 +110,7 @@ func (c *{{ .Prefix }}Controller) SubscribeAll(ctx context.Context, as {{ .Prefi
 
     {{range  $key, $value := .SubscribeChannels -}}
     {{- if not .Parameters }}
-    if err := c.Subscribe{{operationName $value | namify}}(ctx, as.{{operationName $value | namify}}); err != nil {
+    if err := c.Subscribe{{operationName $value}}(ctx, as.{{operationName $value}}); err != nil {
         return err
     }
     {{- end}}
@@ -123,20 +123,20 @@ func (c *{{ .Prefix }}Controller) SubscribeAll(ctx context.Context, as {{ .Prefi
 func (c *{{ .Prefix }}Controller) UnsubscribeAll(ctx context.Context) {
     {{- range  $key, $value := .SubscribeChannels}}
     {{- if not .Parameters}}
-    c.Unsubscribe{{operationName $value | namify}}(ctx)
+    c.Unsubscribe{{operationName $value}}(ctx)
     {{- end}}
     {{- end}}
 }
 {{- end}}
 
 {{range  $key, $value := .SubscribeChannels -}}
-// Subscribe{{operationName $value | namify}} will subscribe to new messages from '{{$key}}' channel.
+// Subscribe{{operationName $value}} will subscribe to new messages from '{{$key}}' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 {{- if .Parameters}}
-func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value | namify}}(ctx context.Context, params {{namify $key}}Parameters, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context.Context, params {{namify $key}}Parameters, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value | namify}}(ctx context.Context, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context.Context, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
 {{- end }}
     // Get channel path
     path := {{ generateChannelPath $value }}
@@ -207,12 +207,12 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value | namify}}(ct
     return nil
 }
 
-// Unsubscribe{{operationName $value | namify}} will unsubscribe messages from '{{$key}}' channel.
+// Unsubscribe{{operationName $value}} will unsubscribe messages from '{{$key}}' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Parameters}}
-func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value | namify}}(ctx context.Context, params {{namify $key}}Parameters) {
+func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value}}(ctx context.Context, params {{namify $key}}Parameters) {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value | namify}}(ctx context.Context) {
+func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value}}(ctx context.Context) {
 {{- end}}
     // Get channel path
     path := {{ generateChannelPath $value }}
@@ -237,11 +237,11 @@ func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value | namify}}(
 {{- end}}
 
 {{- range  $key, $value := .PublishChannels}}
-// Publish{{operationName $value | namify}} will publish messages to '{{$key}}' channel
+// Publish{{operationName $value}} will publish messages to '{{$key}}' channel
 {{- if .Parameters }}
-func (c *{{ $.Prefix }}Controller) Publish{{operationName $value | namify}}(ctx context.Context, params {{namify $key}}Parameters, msg {{channelToMessageTypeName $value}}) error {
+func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(ctx context.Context, params {{namify $key}}Parameters, msg {{channelToMessageTypeName $value}}) error {
 {{- else }}
-func (c *{{ $.Prefix }}Controller) Publish{{operationName $value | namify}}(ctx context.Context, msg {{channelToMessageTypeName $value}}) error {
+func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(ctx context.Context, msg {{channelToMessageTypeName $value}}) error {
 {{- end }}
     // Get channel path
     path := {{ generateChannelPath $value }}
@@ -279,16 +279,16 @@ func (c *{{ $.Prefix }}Controller) Publish{{operationName $value | namify}}(ctx 
 {{if eq .Prefix "User" -}}
 {{- range  $key, $value := .SubscribeChannels -}}
 {{- if ne $value.Subscribe.Message.CorrelationIDLocation ""}}
-// WaitFor{{operationName $value | namify}} will wait for a specific message by its correlation ID.
+// WaitFor{{operationName $value}} will wait for a specific message by its correlation ID.
 //
 // The pub function is the publication function that should be used to send the message.
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Parameters}}
-func (c *UserController) WaitFor{{operationName $value | namify}}(ctx context.Context, params {{namify $key}}Parameters, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
+func (c *UserController) WaitFor{{operationName $value}}(ctx context.Context, params {{namify $key}}Parameters, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
 {{- else}}
-func (c *UserController) WaitFor{{operationName $value | namify}}(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
+func (c *UserController) WaitFor{{operationName $value}}(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
 {{- end}}
     // Get channel path
     path := {{ generateChannelPath $value }}
