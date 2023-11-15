@@ -5,6 +5,10 @@ DOCKER_COMPOSE := docker-compose -p $(EXAMPLE_NAME)
 clean: ## Clean remains of run
 	@$(DOCKER_COMPOSE) down
 
+.PHONY: generate
+generate: ## Generate files
+	@go generate ./...
+
 .PHONY: run
 run: ## Run the example
 	@$(MAKE) -C ../../.. brokers/up
