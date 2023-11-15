@@ -13,7 +13,7 @@ Generate Go application and user boilerplate from AsyncAPI specifications.
 * [Usage](#usage)
 * [Concepts](#concepts)
 * [Examples](#examples)
-  * [Basic example](#basic-example)
+  * [Hello World example](#hello-world-example)
   * [Request/Response example](#requestresponse-example)
 * [Supported Brokers](#supported-brokers)
   * [Kafka](#kafka)
@@ -99,14 +99,16 @@ use the implement it yourself if the broker is not supported yet.
 
 Here is a list of example, from basic to advanced ones.
 
-### Basic example
+**Please note that the examples are separated in different subdirectories per broker.**
+
+### Hello World example
 
 This example will use the AsyncAPI official example of the
 [HelloWorld](https://www.asyncapi.com/docs/tutorials/getting-started/hello-world).
 
-> The code for this example have already been generated and can be
-[read here](./examples/helloworld/nats), in the subdirectories `app/`
-and `user/`. You can execute the example with `make run`.
+The code for this example have already been generated and can be
+[read here for NATS](./examples/helloworld/nats), in the subdirectories `app/`
+and `user/`. You can execute the examples with `make run`.
 
 In order to recreate the code for user and application, you have to run this command:
 

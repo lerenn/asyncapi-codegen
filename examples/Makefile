@@ -4,6 +4,12 @@ clean: ## Clean remains of run
 	@$(MAKE) -C ping/nats clean
 	@$(MAKE) -C ping/kafka clean
 
+.PHONY: generate
+generate: ## Generate files
+	@$(MAKE) -C helloworld/nats generate
+	@$(MAKE) -C ping/nats generate
+	@$(MAKE) -C ping/kafka generate
+
 .PHONY: run
 run: ## Run the examples
 	@$(MAKE) -C helloworld/nats run
