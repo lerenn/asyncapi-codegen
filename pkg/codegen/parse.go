@@ -1,11 +1,13 @@
 package codegen
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/asyncapi/parser-go/pkg/parser"
 	"github.com/ghodss/yaml"
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 )
@@ -29,11 +31,18 @@ func FromFile(path string) (CodeGen, error) {
 
 // FromYAML parses the AsyncAPI specification from a YAML file.
 func FromYAML(data []byte) (CodeGen, error) {
+	// Verify specification
+	if err := verifySpecificationData(data); err != nil {
+		return CodeGen{}, err
+	}
+
+	// Change YAML to JSON
 	data, err := yaml.YAMLToJSON(data)
 	if err != nil {
 		return CodeGen{}, err
 	}
 
+	// Parse JSON
 	return FromJSON(data)
 }
 
@@ -41,11 +50,35 @@ func FromYAML(data []byte) (CodeGen, error) {
 func FromJSON(data []byte) (CodeGen, error) {
 	var spec asyncapi.Specification
 
+	// Verify specification
+	if err := verifySpecificationData(data); err != nil {
+		return CodeGen{}, err
+	}
+
+	// Parse JSON
 	if err := json.Unmarshal(data, &spec); err != nil {
 		return CodeGen{}, err
 	}
 
+	// Process specification
 	spec.Process()
 
 	return New(spec), nil
+}
+
+func verifySpecificationData(data []byte) error {
+	// Create a new parser
+	p, err := parser.New()
+	if err != nil {
+		return err
+	}
+
+	// Check the result of the parsing, and display it if there is an error
+	var b bytes.Buffer
+	err = p(bytes.NewReader(data), &b)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, " --- Anomalies detected in specification ---%s\n", b.String())
+	}
+
+	return err
 }
