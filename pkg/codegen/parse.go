@@ -73,6 +73,12 @@ func verifySpecificationData(data []byte) error {
 		return err
 	}
 
-	// Return the result of the parsing
-	return p(bytes.NewReader(data), os.Stdout)
+	// Check the result of the parsing, and display it if there is an error
+	var b bytes.Buffer
+	err = p(bytes.NewReader(data), &b)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, " --- Anomalies detected in specification ---%s\n", b.String())
+	}
+
+	return err
 }
