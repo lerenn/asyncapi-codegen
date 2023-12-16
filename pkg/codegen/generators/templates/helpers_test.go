@@ -15,33 +15,46 @@ type HelpersSuite struct {
 	suite.Suite
 }
 
+type namifyCases struct {
+	In  string
+	Out string
+}
+
+var namifyBaseCases = []namifyCases{
+	// Remove leading digits
+	{In: "0name0", Out: "Name0"},
+	// Remove non alphanumerics
+	{In: "?#!name", Out: "Name"},
+	// Capitalize
+	{In: "name", Out: "Name"},
+	// Snake Case
+	{In: "eh_oh__ah", Out: "EhOhAh"},
+	// With acronym in middle
+	{In: "IdTata", Out: "IDTata"},
+	// With acronym in middle
+	{In: "TotoIdLala", Out: "TotoIDLala"},
+	// With acronym at the end
+	{In: "TotoId", Out: "TotoID"},
+	// Without acronym, but still the same letters as the acronym
+	{In: "identity", Out: "Identity"},
+	{In: "Identity", Out: "Identity"},
+	{In: "covid", Out: "Covid"},
+}
+
 func (suite *HelpersSuite) TestNamify() {
-	cases := []struct {
-		In  string
-		Out string
-	}{
-		// Remove leading digits
-		{In: "0name0", Out: "Name0"},
-		// Remove non alphanumerics
-		{In: "?#!name", Out: "Name"},
-		// Capitalize
-		{In: "name", Out: "Name"},
-		// Snake Case
-		{In: "eh_oh__ah", Out: "EhOhAh"},
-		// With acronym in middle
-		{In: "IdTata", Out: "IDTata"},
-		// With acronym in middle
-		{In: "TotoIdLala", Out: "TotoIDLala"},
-		// With acronym at the end
-		{In: "TotoId", Out: "TotoID"},
-		// Without acronym, but still the same letters as the acronym
-		{In: "identity", Out: "Identity"},
-		{In: "Identity", Out: "Identity"},
-		{In: "covid", Out: "Covid"},
+	for i, c := range namifyBaseCases {
+		suite.Require().Equal(c.Out, Namify(c.In), i)
+	}
+}
+
+func (suite *HelpersSuite) TestNamifyWithoutParams() {
+	cases := []namifyCases{
+		// With argument
+		{In: "name.{id}", Out: "Name"},
 	}
 
 	for i, c := range cases {
-		suite.Require().Equal(c.Out, Namify(c.In), i)
+		suite.Require().Equal(c.Out, NamifyWithoutParams(c.In), i)
 	}
 }
 

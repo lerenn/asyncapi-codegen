@@ -47,8 +47,8 @@ func (e *Error) Error() string {
 {{range $key, $value := .Channels -}}
 
 {{- if $value.Parameters -}}
-// {{ namify .Name }}Parameters represents {{ namify .Name }} channel parameters
-type {{ namify .Name }}Parameters struct {
+// {{ namifyWithoutParam .Name }}Parameters represents {{ namify .Name }} channel parameters
+type {{ namifyWithoutParam .Name }}Parameters struct {
 {{- range $key, $value := .Parameters}}
     {{- template "parameter" $value}}
 {{- end}}

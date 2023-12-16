@@ -10,6 +10,16 @@ import (
 	"github.com/stoewer/go-strcase"
 )
 
+// NamifyWithoutParams will convert a sentence to a golang conventional type name.
+// and will remove all parameters that can appear between '{' and '}'.
+func NamifyWithoutParams(sentence string) string {
+	// Remove parameters
+	re := regexp.MustCompile("{[^()]*}")
+	sentence = string(re.ReplaceAll([]byte(sentence), []byte("_")))
+
+	return Namify(sentence)
+}
+
 // Namify will convert a sentence to a golang conventional type name.
 func Namify(sentence string) string {
 	// Remove everything except alphanumerics and '_'
