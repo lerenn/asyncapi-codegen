@@ -34,6 +34,7 @@ func loadTemplate(paths ...string) (*template.Template, error) {
 
 func templateFunctions() template.FuncMap {
 	return template.FuncMap{
+		"namifyWithoutParam":             templates.NamifyWithoutParams,
 		"namify":                         templates.Namify,
 		"snakeCase":                      templates.SnakeCase,
 		"referenceToStructAttributePath": templates.ReferenceToStructAttributePath,
