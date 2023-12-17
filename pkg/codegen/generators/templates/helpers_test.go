@@ -31,6 +31,8 @@ var namifyBaseCases = []namifyCases{
 	{In: "name", Out: "Name"},
 	// Snake Case
 	{In: "eh_oh__ah", Out: "EhOhAh"},
+	// Weird delimiters
+	{In: "eh.oh__ah", Out: "EhOhAh"},
 	// With acronym in middle
 	{In: "IDTata", Out: "IDTata"},
 	// With acronym in middle
