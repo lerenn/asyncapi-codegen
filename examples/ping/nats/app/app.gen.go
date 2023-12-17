@@ -315,7 +315,7 @@ type PingMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
 		// Description: Correlation ID set by user
-		CorrelationID *string `json:"correlation_id"`
+		CorrelationId *string `json:"correlation_id"`
 	}
 
 	// Payload will be inserted in the message payload
@@ -327,7 +327,7 @@ func NewPingMessage() PingMessage {
 
 	// Set correlation ID
 	u := uuid.New().String()
-	msg.Headers.CorrelationID = &u
+	msg.Headers.CorrelationId = &u
 
 	return msg
 }
@@ -343,9 +343,9 @@ func newPingMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PingMessage
 	// Get each headers from broker message
 	for k, v := range bMsg.Headers {
 		switch {
-		case k == "correlationId": // Retrieving CorrelationID header
+		case k == "correlationId": // Retrieving CorrelationId header
 			h := string(v)
-			msg.Headers.CorrelationID = &h
+			msg.Headers.CorrelationId = &h
 		default:
 			// TODO: log unknown error
 		}
@@ -366,9 +366,9 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// Add each headers to broker message
 	headers := make(map[string][]byte, 1)
 
-	// Adding CorrelationID header
-	if msg.Headers.CorrelationID != nil {
-		headers["correlationId"] = []byte(*msg.Headers.CorrelationID)
+	// Adding CorrelationId header
+	if msg.Headers.CorrelationId != nil {
+		headers["correlationId"] = []byte(*msg.Headers.CorrelationId)
 	}
 
 	return extensions.BrokerMessage{
@@ -379,8 +379,8 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 
 // CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
 func (msg PingMessage) CorrelationID() string {
-	if msg.Headers.CorrelationID != nil {
-		return *msg.Headers.CorrelationID
+	if msg.Headers.CorrelationId != nil {
+		return *msg.Headers.CorrelationId
 	}
 
 	return ""
@@ -388,7 +388,7 @@ func (msg PingMessage) CorrelationID() string {
 
 // SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
 func (msg *PingMessage) SetCorrelationID(id string) {
-	msg.Headers.CorrelationID = &id
+	msg.Headers.CorrelationId = &id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.
@@ -396,7 +396,7 @@ func (msg *PingMessage) SetCorrelationID(id string) {
 // both specified in AsyncAPI spec.
 func (msg *PingMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	id := req.CorrelationID()
-	msg.Headers.CorrelationID = &id
+	msg.Headers.CorrelationId = &id
 }
 
 // PongMessage is the message expected for 'Pong' channel
@@ -404,7 +404,7 @@ type PongMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
 		// Description: Correlation ID set by user on corresponding request
-		CorrelationID *string `json:"correlation_id"`
+		CorrelationId *string `json:"correlation_id"`
 	}
 
 	// Payload will be inserted in the message payload
@@ -422,7 +422,7 @@ func NewPongMessage() PongMessage {
 
 	// Set correlation ID
 	u := uuid.New().String()
-	msg.Headers.CorrelationID = &u
+	msg.Headers.CorrelationId = &u
 
 	return msg
 }
@@ -440,9 +440,9 @@ func newPongMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PongMessage
 	// Get each headers from broker message
 	for k, v := range bMsg.Headers {
 		switch {
-		case k == "correlationId": // Retrieving CorrelationID header
+		case k == "correlationId": // Retrieving CorrelationId header
 			h := string(v)
-			msg.Headers.CorrelationID = &h
+			msg.Headers.CorrelationId = &h
 		default:
 			// TODO: log unknown error
 		}
@@ -466,9 +466,9 @@ func (msg PongMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// Add each headers to broker message
 	headers := make(map[string][]byte, 1)
 
-	// Adding CorrelationID header
-	if msg.Headers.CorrelationID != nil {
-		headers["correlationId"] = []byte(*msg.Headers.CorrelationID)
+	// Adding CorrelationId header
+	if msg.Headers.CorrelationId != nil {
+		headers["correlationId"] = []byte(*msg.Headers.CorrelationId)
 	}
 
 	return extensions.BrokerMessage{
@@ -479,8 +479,8 @@ func (msg PongMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 
 // CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
 func (msg PongMessage) CorrelationID() string {
-	if msg.Headers.CorrelationID != nil {
-		return *msg.Headers.CorrelationID
+	if msg.Headers.CorrelationId != nil {
+		return *msg.Headers.CorrelationId
 	}
 
 	return ""
@@ -488,7 +488,7 @@ func (msg PongMessage) CorrelationID() string {
 
 // SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
 func (msg *PongMessage) SetCorrelationID(id string) {
-	msg.Headers.CorrelationID = &id
+	msg.Headers.CorrelationId = &id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.
@@ -496,5 +496,5 @@ func (msg *PongMessage) SetCorrelationID(id string) {
 // both specified in AsyncAPI spec.
 func (msg *PongMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	id := req.CorrelationID()
-	msg.Headers.CorrelationID = &id
+	msg.Headers.CorrelationId = &id
 }

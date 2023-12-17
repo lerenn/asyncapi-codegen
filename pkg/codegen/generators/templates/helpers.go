@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
-	"github.com/stoewer/go-strcase"
 )
 
 // NamifyWithoutParams will convert a sentence to a golang conventional type name.
@@ -22,32 +21,30 @@ func NamifyWithoutParams(sentence string) string {
 
 // Namify will convert a sentence to a golang conventional type name.
 func Namify(sentence string) string {
-	// Remove everything except alphanumerics and '_'
-	re := regexp.MustCompile("[^a-zA-Z0-9_]")
-	sentence = string(re.ReplaceAll([]byte(sentence), []byte("_")))
+	// Check if empty
+	if len(sentence) == 0 {
+		return sentence
+	}
+
+	// Upper letters that are preceded with an underscore
+	previous := '_'
+	for i, r := range sentence {
+		if previous == '_' {
+			sentence = sentence[:i] + strings.ToUpper(string(r)) + sentence[i+1:]
+		}
+		previous = r
+	}
+
+	// Remove everything except alphanumerics
+	re := regexp.MustCompile("[^a-zA-Z0-9]")
+	sentence = string(re.ReplaceAll([]byte(sentence), []byte("")))
 
 	// Remove leading numbers
 	re = regexp.MustCompile("^[0-9]+")
 	sentence = string(re.ReplaceAll([]byte(sentence), []byte("")))
 
-	// Snake case to Upper Camel case
-	sentence = strcase.UpperCamelCase(sentence)
-
-	// Correct acronyms
-	return correctAcronyms(sentence)
-}
-
-func correctAcronyms(sentence string) string {
-	acronyms := []string{"ID"}
-	for _, a := range acronyms {
-		wronglyFormatedAcronym := strcase.UpperCamelCase(a)
-		re := regexp.MustCompile(fmt.Sprintf("%s([A-Z]+|$)", wronglyFormatedAcronym))
-
-		positions := re.FindAllStringIndex(sentence, -1)
-		for _, p := range positions {
-			sentence = sentence[:p[0]] + a + sentence[p[0]+len(a):]
-		}
-	}
+	// Upper first letter
+	sentence = strings.ToUpper(sentence[:1]) + sentence[1:]
 
 	return sentence
 }
