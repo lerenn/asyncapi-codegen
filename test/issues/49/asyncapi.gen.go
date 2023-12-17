@@ -606,6 +606,9 @@ func (c *UserController) PublishChat(ctx context.Context, msg ChatMessage) error
 	})
 }
 
+// AsyncAPIVersion is the version of the used AsyncAPI document
+const AsyncAPIVersion = "1.0.0"
+
 // controller is the controller that will be used to communicate with the broker
 // It will be used internally by AppController and UserController
 type controller struct {
