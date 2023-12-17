@@ -21,6 +21,8 @@ type namifyCases struct {
 }
 
 var namifyBaseCases = []namifyCases{
+	// Nothing
+	{In: "", Out: ""},
 	// Remove leading digits
 	{In: "0name0", Out: "Name0"},
 	// Remove non alphanumerics
@@ -30,11 +32,14 @@ var namifyBaseCases = []namifyCases{
 	// Snake Case
 	{In: "eh_oh__ah", Out: "EhOhAh"},
 	// With acronym in middle
-	{In: "IdTata", Out: "IDTata"},
+	{In: "IDTata", Out: "IDTata"},
 	// With acronym in middle
-	{In: "TotoIdLala", Out: "TotoIDLala"},
+	{In: "TotoIDLala", Out: "TotoIDLala"},
+	{In: "Toto_IDLala", Out: "TotoIDLala"},
+	{In: "TotoSMALala", Out: "TotoSMALala"},
 	// With acronym at the end
-	{In: "TotoId", Out: "TotoID"},
+	{In: "TotoID", Out: "TotoID"},
+	{In: "Toto_ID", Out: "TotoID"},
 	// Without acronym, but still the same letters as the acronym
 	{In: "identity", Out: "Identity"},
 	{In: "Identity", Out: "Identity"},

@@ -404,7 +404,7 @@ type TestMessage struct {
 	Payload struct {
 		Obj1 struct {
 			// Description: reference ID.
-			ReferenceID string `json:"reference_id"`
+			ReferenceId string `json:"reference_id"`
 		} `json:"obj1"`
 	}
 }
@@ -483,6 +483,6 @@ type HeaderSchema struct {
 type TestSchemaSchema struct {
 	Obj1 struct {
 		// Description: reference ID.
-		ReferenceID string `json:"reference_id"`
+		ReferenceId string `json:"reference_id"`
 	} `json:"obj1"`
 }
