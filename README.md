@@ -724,6 +724,15 @@ you can specify your own header with the option `WithVersionHeaderKey`.
 vw := versioning.NewWrapper(broker, versioning.WithVersionHeaderKey("my-version-key"))
 ```
 
+#### Knowing generated version
+
+If you want to use the version of the AsyncAPI document used, you can access the constant
+`AsyncAPIVersion` that is generated with the types. It is generated as followed:
+
+```go
+const AsyncAPIVersion = "{{ .Info.Version }}"
+```
+
 ### AsyncAPI Extensions
 
 #### Schema Object extensions
@@ -764,7 +773,7 @@ These extension properties apply to "Schema Objects" in AsyncAPI spec.
         flag:
           type: integer
           x-go-type: mypackage.Flag
-          x-go-type-import: 
+          x-go-type-import:
             path: abc.xyz/repo/mypackage
   ```
 
@@ -791,7 +800,7 @@ These extension properties apply to "Schema Objects" in AsyncAPI spec.
         flag:
           type: integer
           x-go-type: alias.Flag
-          x-go-type-import: 
+          x-go-type-import:
             path: abc.xyz/repo/mypackage
             name: alias
   ```
