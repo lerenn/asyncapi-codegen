@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 )
@@ -29,7 +30,7 @@ func Namify(sentence string) string {
 	// Upper letters that are preceded with an underscore
 	previous := '_'
 	for i, r := range sentence {
-		if previous == '_' {
+		if !unicode.IsLetter(previous) && !unicode.IsDigit(previous) {
 			sentence = sentence[:i] + strings.ToUpper(string(r)) + sentence[i+1:]
 		}
 		previous = r
