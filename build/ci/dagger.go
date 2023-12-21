@@ -10,18 +10,22 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/lerenn/asyncapi-codegen/pkg/pipeline"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
 var (
 	client *dagger.Client
 
+	exampleFlag string
+	testFlag    string
+
 	brokers map[string]*dagger.Service
 
 	generator *dagger.Container
 	linter    *dagger.Container
-	examples  []*dagger.Container
-	tests     []*dagger.Container
+	examples  map[string]*dagger.Container
+	tests     map[string]*dagger.Container
 )
 
 var rootCmd = &cobra.Command{
@@ -54,7 +58,7 @@ var allCmd = &cobra.Command{
 	Short:   "Execute all CI",
 	Run: func(cmd *cobra.Command, args []string) {
 		executeContainers(context.Background(), []*dagger.Container{generator, linter})
-		executeContainers(context.Background(), tests, examples)
+		executeContainers(context.Background(), utils.MapToList(tests), utils.MapToList(examples))
 	},
 }
 
@@ -63,7 +67,15 @@ var examplesCmd = &cobra.Command{
 	Aliases: []string{"g"},
 	Short:   "Execute examples step of the CI",
 	Run: func(cmd *cobra.Command, args []string) {
-		executeContainers(context.Background(), examples)
+		if exampleFlag != "" {
+			_, exists := examples[exampleFlag]
+			if !exists {
+				panic(fmt.Errorf("example %q doesn't exist", exampleFlag))
+			}
+			executeContainers(context.Background(), []*dagger.Container{examples[exampleFlag]})
+		} else {
+			executeContainers(context.Background(), utils.MapToList(examples))
+		}
 	},
 }
 
@@ -90,16 +102,26 @@ var testCmd = &cobra.Command{
 	Aliases: []string{"g"},
 	Short:   "Execute tests step of the CI",
 	Run: func(cmd *cobra.Command, args []string) {
-		executeContainers(context.Background(), tests)
+		if testFlag != "" {
+			_, exists := tests[testFlag]
+			if !exists {
+				panic(fmt.Errorf("test %q doesn't exist", testFlag))
+			}
+			executeContainers(context.Background(), []*dagger.Container{tests[testFlag]})
+		} else {
+			executeContainers(context.Background(), utils.MapToList(tests))
+		}
 	},
 }
 
 func main() {
 	rootCmd.AddCommand(allCmd)
 	rootCmd.AddCommand(examplesCmd)
+	examplesCmd.Flags().StringVarP(&exampleFlag, "example", "e", "", "Example to execute")
 	rootCmd.AddCommand(generatorCmd)
 	rootCmd.AddCommand(linterCmd)
 	rootCmd.AddCommand(testCmd)
+	testCmd.Flags().StringVarP(&testFlag, "test", "t", "", "Test to execute")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)

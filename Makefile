@@ -10,11 +10,11 @@ lint: ## Lint the code
 
 .PHONY: examples
 examples: ## Perform examples
-	@${DAGGER_COMMAND} examples
+	@${DAGGER_COMMAND} examples -e $$EXAMPLE
 
 .PHONY: test
 test: ## Perform tests
-	@${DAGGER_COMMAND} tests
+	@${DAGGER_COMMAND} tests -t $$TEST
 
 .PHONY: generate
 generate: ## Generate files
