@@ -108,7 +108,7 @@ This example will use the AsyncAPI official example of the
 
 The code for this example have already been generated and can be
 [read here for NATS](./examples/helloworld/nats), in the subdirectories `app/`
-and `user/`. You can execute the examples with `make run`.
+and `user/`. You can execute the examples with `make examples`.
 
 In order to recreate the code for user and application, you have to run this command:
 
@@ -277,7 +277,7 @@ This example will use a `ping` example that you can find
 
 > The code for this example have already been generated and can be
 [read here](./examples/ping/nats), in the subdirectories `app/`
-and `user/`. You can execute the example with `make run`.
+and `user/`. You can execute the example with `make examples`.
 
 In order to recreate the code for user and application, you have to run this command:
 

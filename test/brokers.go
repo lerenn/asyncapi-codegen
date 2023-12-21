@@ -22,11 +22,11 @@ func BrokerControllers(t *testing.T) (brokers []extensions.BrokerController, cle
 	queueGroupID := fmt.Sprintf("test-%d", time.Now().UnixNano())
 
 	// Add NATS broker
-	nb := nats.NewController("nats://localhost:4222", nats.WithQueueGroup(queueGroupID))
+	nb := nats.NewController("nats://nats:4222", nats.WithQueueGroup(queueGroupID))
 	brokers = append(brokers, nb)
 
 	// Add kafka broker
-	kb := kafka.NewController([]string{"localhost:9094"}, kafka.WithGroupID(queueGroupID))
+	kb := kafka.NewController([]string{"kafka:9092"}, kafka.WithGroupID(queueGroupID))
 	brokers = append(brokers, kb)
 
 	// Return brokers with their cleanup functions

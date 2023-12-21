@@ -4,10 +4,9 @@ package main
 
 import (
 	"context"
-	"os"
-	"os/signal"
 	"time"
 
+	"github.com/lerenn/asyncapi-codegen/examples"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
@@ -57,8 +56,6 @@ func main() {
 		panic(err)
 	}
 
-	// Process messages until interruption signal
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	<-c
+	// Listen on port to let know that app is ready
+	examples.ListenLocalPort(1234)
 }
