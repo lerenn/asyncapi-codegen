@@ -7,8 +7,8 @@ import (
 )
 
 // Tests returns containers for all tests.
-func Tests(client *dagger.Client, brokers map[string]*dagger.Service) []*dagger.Container {
-	containers := make([]*dagger.Container, 0)
+func Tests(client *dagger.Client, brokers map[string]*dagger.Service) map[string]*dagger.Container {
+	containers := make(map[string]*dagger.Container, 0)
 
 	// Set examples
 	for _, p := range testsPaths() {
@@ -20,10 +20,10 @@ func Tests(client *dagger.Client, brokers map[string]*dagger.Service) []*dagger.
 			// Set brokers as dependencies of app and user
 			With(BindBrokers(brokers)).
 			// Execute command
-			WithExec([]string{"go", "test", p})
+			WithExec([]string{"go", "test", "./test/" + p})
 
 		// Add user containers to containers
-		containers = append(containers, t)
+		containers[p] = t
 	}
 
 	return containers
@@ -32,17 +32,28 @@ func Tests(client *dagger.Client, brokers map[string]*dagger.Service) []*dagger.
 func testsPaths() []string {
 	paths := make([]string, 0)
 
-	test, err := os.ReadDir("./test/issues")
+	tests, err := os.ReadDir("./test")
 	if err != nil {
 		panic(err)
 	}
 
-	for _, t := range test {
+	for _, t := range tests {
 		if !t.Type().IsDir() {
 			continue
 		}
 
-		paths = append(paths, "./test/issues/"+t.Name())
+		subtests, err := os.ReadDir("./test/" + t.Name())
+		if err != nil {
+			panic(err)
+		}
+
+		for _, st := range subtests {
+			if !st.Type().IsDir() {
+				continue
+			}
+
+			paths = append(paths, t.Name()+"/"+st.Name())
+		}
 	}
 
 	return paths

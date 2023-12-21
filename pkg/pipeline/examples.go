@@ -2,25 +2,29 @@ package pipeline
 
 import (
 	"os"
+	"strings"
 
 	"dagger.io/dagger"
 )
 
 // Examples returns a container that runs all examples.
-func Examples(client *dagger.Client, brokers map[string]*dagger.Service) []*dagger.Container {
-	containers := make([]*dagger.Container, 0)
+func Examples(client *dagger.Client, brokers map[string]*dagger.Service) map[string]*dagger.Container {
+	containers := make(map[string]*dagger.Container, 0)
 
 	// Set examples
 	for _, p := range examplesPaths() {
+		// Get corresponding broker
+		brokerName := strings.Split(p, "/")[1]
+
 		// Set app container
 		app := client.Container().
 			From(GolangImage).
 			// Add source code as work directory
 			With(sourceAsWorkdir(client)).
-			// Add brokers as dependencies
-			With(BindBrokers(brokers)).
+			// Set broker as dependency
+			WithServiceBinding(brokerName, brokers[brokerName]).
 			// Execute command
-			WithExec([]string{"go", "run", p + "/app"}).
+			WithExec([]string{"go", "run", "./examples/" + p + "/app"}).
 			// Add exposed port to let know when the service is ready
 			WithExposedPort(1234).
 			// Set as service
@@ -32,15 +36,15 @@ func Examples(client *dagger.Client, brokers map[string]*dagger.Service) []*dagg
 			From(GolangImage).
 			// Add source code as work directory
 			With(sourceAsWorkdir(client)).
-			// Set brokers as dependencies of app and user
-			With(BindBrokers(brokers)).
+			// Set broker as dependency
+			WithServiceBinding(brokerName, brokers[brokerName]).
 			// Add app as dependency of user
 			WithServiceBinding("app", app).
 			// Execute command
-			WithExec([]string{"go", "run", p + "/user"})
+			WithExec([]string{"go", "run", "./examples/" + p + "/user"})
 
 		// Add user containers to containers
-		containers = append(containers, user)
+		containers[p] = user
 	}
 
 	return containers
@@ -69,7 +73,7 @@ func examplesPaths() []string {
 				continue
 			}
 
-			paths = append(paths, "./examples/"+e.Name()+"/"+b.Name())
+			paths = append(paths, e.Name()+"/"+b.Name())
 		}
 	}
 
