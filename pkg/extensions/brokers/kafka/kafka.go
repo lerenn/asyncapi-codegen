@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
@@ -87,9 +86,6 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 		Balancer: &kafka.LeastBytes{},
 	})
 
-	// Allow topic creation
-	w.AllowAutoTopicCreation = true
-
 	// Create the message
 	msg := kafka.Message{
 		Headers: make([]kafka.Header, 0),
@@ -113,8 +109,11 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 		// Create topic if not exists, then it means that the topic is being
 		// created, so let's retry
 		if errors.Is(err, kafka.UnknownTopicOrPartition) {
-			c.logger.Warning(ctx, fmt.Sprintf("Topic %s does not exists: waiting for creation and retry", channel))
-			time.Sleep(time.Second)
+			c.logger.Warning(ctx, fmt.Sprintf("Topic %s does not exists: request creation and retry", channel))
+			if err := c.checkTopicExistOrCreateIt(ctx, channel); err != nil {
+				return err
+			}
+
 			continue
 		}
 
@@ -125,6 +124,12 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 
 // Subscribe to messages from the broker.
 func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
+	// Check that topic exists before
+	if err := c.checkTopicExistOrCreateIt(ctx, channel); err != nil {
+		return extensions.BrokerChannelSubscription{}, err
+	}
+
+	// Create reader
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   c.hosts,
 		Topic:     channel,
@@ -175,5 +180,45 @@ func (c *Controller) messagesHandler(ctx context.Context, r *kafka.Reader, sub e
 			Headers: headers,
 			Payload: msg.Value,
 		})
+	}
+}
+
+func (c Controller) checkTopicExistOrCreateIt(ctx context.Context, topic string) error {
+	// Get connection to first host
+	conn, err := kafka.Dial("tcp", c.hosts[0])
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	for i := 0; ; i++ {
+		// Create topic
+		topicConfigs := []kafka.TopicConfig{{
+			Topic:             topic,
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		}}
+		err = conn.CreateTopics(topicConfigs...)
+		if err != nil {
+			return err
+		}
+
+		// Read partitions
+		partitions, err := conn.ReadPartitions()
+		if err != nil {
+			return err
+		}
+
+		// Get topic from partitions
+		for _, p := range partitions {
+			if topic == p.Topic {
+				if i > 0 {
+					c.logger.Warning(ctx, fmt.Sprintf("Topic %s has been created.", topic))
+				}
+				return nil
+			}
+		}
+
+		c.logger.Warning(ctx, fmt.Sprintf("Topic %s doesn't exists yet, retrying (#%d)", topic, i))
 	}
 }
