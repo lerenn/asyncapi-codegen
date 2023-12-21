@@ -5,9 +5,8 @@ package main
 import (
 	"context"
 	"log"
-	"os"
-	"os/signal"
 
+	"github.com/lerenn/asyncapi-codegen/examples"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 )
 
@@ -30,8 +29,6 @@ func main() {
 		log.Println("Received message:", msg.Payload)
 	})
 
-	// Process messages until interruption signal
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	<-c
+	// Listen on port to let know that app is ready
+	examples.ListenLocalPort(1234)
 }

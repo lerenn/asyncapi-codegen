@@ -1,44 +1,24 @@
-.PHONY: brokers/up
-brokers/up: ## Start the brokers
-	@docker-compose up -d
+DAGGER_COMMAND := dagger run go run ./build/ci/dagger.go
 
-.PHONY: brokers/logs
-brokers/logs: ## Get the brokers logs
-	@docker-compose logs
-
-.PHONY: brokers/down
-brokers/down: ## Stop the brokers
-	@docker-compose down
+.PHONY: ci
+ci: ## Run the CI
+	@${DAGGER_COMMAND} all
 
 .PHONY: lint
 lint: ## Lint the code
-	@LOG_LEVEL=error go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2 run
-
-.PHONY: lint/fix
-lint/fix: ## Fix what can be fixed regarding the linter
-	@LOG_LEVEL=error go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2 run --fix
-
-.PHONY: clean
-clean: __examples/clean brokers/down ## Clean up the project
-
-.PHONY: check
-check: generate lint clean examples test ## Check that everything is ready for commit
-
-.PHONY: __examples/clean
-__examples/clean:
-	@$(MAKE) -C examples clean
+	@${DAGGER_COMMAND} linter
 
 .PHONY: examples
-examples: brokers/up ## Perform examples
-	@$(MAKE) -C examples run
+examples: ## Perform examples
+	@${DAGGER_COMMAND} examples
 
 .PHONY: test
-test: brokers/up ## Perform tests
-	@go test ./... -p 1 -timeout=1m
+test: ## Perform tests
+	@${DAGGER_COMMAND} tests
 
 .PHONY: generate
 generate: ## Generate files
-	@go generate ./...
+	@${DAGGER_COMMAND} generator
 
 .PHONY: help
 help: ## Display this help message
