@@ -7,6 +7,10 @@ import (
 	"dagger.io/dagger"
 )
 
+const (
+	examplesPath = "./examples/"
+)
+
 // Examples returns a container that runs all examples.
 func Examples(client *dagger.Client, brokers map[string]*dagger.Service) map[string]*dagger.Container {
 	containers := make(map[string]*dagger.Container, 0)
@@ -24,7 +28,7 @@ func Examples(client *dagger.Client, brokers map[string]*dagger.Service) map[str
 			// Set broker as dependency
 			WithServiceBinding(brokerName, brokers[brokerName]).
 			// Execute command
-			WithExec([]string{"go", "run", "./examples/" + p + "/app"}).
+			WithExec([]string{"go", "run", examplesPath + p + "/app"}).
 			// Add exposed port to let know when the service is ready
 			WithExposedPort(1234).
 			// Set as service
@@ -41,7 +45,7 @@ func Examples(client *dagger.Client, brokers map[string]*dagger.Service) map[str
 			// Add app as dependency of user
 			WithServiceBinding("app", app).
 			// Execute command
-			WithExec([]string{"go", "run", "./examples/" + p + "/user"})
+			WithExec([]string{"go", "run", examplesPath + p + "/user"})
 
 		// Add user containers to containers
 		containers[p] = user
@@ -53,7 +57,7 @@ func Examples(client *dagger.Client, brokers map[string]*dagger.Service) map[str
 func examplesPaths() []string {
 	paths := make([]string, 0)
 
-	examples, err := os.ReadDir("./examples")
+	examples, err := os.ReadDir(examplesPath)
 	if err != nil {
 		panic(err)
 	}
