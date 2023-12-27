@@ -1,4 +1,12 @@
-DAGGER_COMMAND := dagger run go run ./build/ci/dagger.go
+DAGGER_COMMAND := _EXPERIMENTAL_DAGGER_INTERACTIVE_TUI=true dagger run go run ./build/ci/dagger.go
+
+ifndef EXAMPLE
+	EXAMPLE=""
+endif
+
+ifndef TEST
+	TEST=""
+endif
 
 .PHONY: ci
 ci: ## Run the CI
@@ -10,11 +18,11 @@ lint: ## Lint the code
 
 .PHONY: examples
 examples: ## Perform examples
-	@${DAGGER_COMMAND} examples -e $$EXAMPLE
+	@${DAGGER_COMMAND} examples -e ${EXAMPLE}
 
 .PHONY: test
 test: ## Perform tests
-	@${DAGGER_COMMAND} tests -t $$TEST
+	@${DAGGER_COMMAND} test -t ${TEST}
 
 .PHONY: generate
 generate: ## Generate files

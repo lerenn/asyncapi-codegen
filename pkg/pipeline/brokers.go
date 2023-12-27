@@ -18,6 +18,7 @@ func Brokers(client *dagger.Client) map[string]*dagger.Service {
 
 	brokers["kafka"] = BrokerKafka(client)
 	brokers["nats"] = BrokerNATS(client)
+	brokers["nats-jetstream"] = BrokerNATSJetstream(client)
 
 	return brokers
 }
@@ -54,6 +55,19 @@ func BrokerNATS(client *dagger.Client) *dagger.Service {
 		From(NATSImage).
 		// Add exposed ports
 		WithExposedPort(4222).
+		// Return container as a service
+		AsService()
+}
+
+// BrokerNATSJetstream returns a service for the NATS broker.
+func BrokerNATSJetstream(client *dagger.Client) *dagger.Service {
+	return client.Container().
+		// Add base image
+		From(NATSImage).
+		// Add exposed ports
+		WithExposedPort(4222).
+		// Add command
+		WithExec([]string{"-js"}).
 		// Return container as a service
 		AsService()
 }
