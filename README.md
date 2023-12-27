@@ -18,6 +18,7 @@ Generate Go application and user boilerplate from AsyncAPI specifications.
 * [Supported Brokers](#supported-brokers)
   * [Kafka](#kafka)
   * [NATS](#nats)
+  * [NATS JetStream](#nats-jetstream)
   * [Custom broker](#custom-broker)
 * [CLI options](#cli-options)
 * [Advanced topics](#advanced-topics)
@@ -397,6 +398,29 @@ Here are the options that you can use with the NATS controller:
 
 * `WithLogger`: specify the logger that will be used by the controller. If not specified, a silent logger is used that won't log anything.
 * `WithQueueGroup`: specify the queue group that will be used by the controller. If not specified, default queue name (`asyncapi`) will be used.
+
+### NATS JetStream
+
+In order to use NATS JetStream as a broker, you can use the following code:
+
+```golang
+// Create the NATS controller
+broker := natsjetstream.NewController("nats://<host>:<port>", /* options */)
+defer broker.Close()
+
+// Add NATS controller to a new App controller
+ctrl, err := NewAppController(broker)
+
+//...
+```
+
+It is important to either create/update a stream with `WithStreamConfig` or to use `WithStream` to specify the stream that will be used by the broker.
+Consumer for the user controller can be either created/updated with `WithConsumerConfig` or `WithConsumer`.
+
+#### Limitations
+
+* the messages will be ack'd once received
+* the messages will be ack'd from the consumer even though the subscription was not setup (this will be logged)
 
 ### Custom broker
 
