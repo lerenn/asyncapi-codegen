@@ -12,7 +12,10 @@ import (
 
 func main() {
 	// Create a new broker adapter
-	broker := nats.NewController("nats://nats:4222", nats.WithQueueGroup("helloworld-apps"))
+	broker, err := nats.NewController("nats://nats:4222", nats.WithQueueGroup("helloworld-apps"))
+	if err != nil {
+		panic(err)
+	}
 	defer broker.Close()
 
 	// Create a new application controller

@@ -11,14 +11,17 @@ import (
 )
 
 func main() {
-	// Instanciate a NATS controller with a logger
+	// Instantiate a NATS controller with a logger
 	logger := loggers.NewText()
-	broker := natsjetstream.NewController(
+	broker, err := natsjetstream.NewController(
 		"nats://nats-jetstream:4222",       // Set URL to broker
 		natsjetstream.WithLogger(logger),   // Attach an internal logger
 		natsjetstream.WithStream("ping"),   // Set the stream used
 		natsjetstream.WithConsumer("ping"), // Create the corresponding consumer
 	)
+	if err != nil {
+		panic(err)
+	}
 	defer broker.Close()
 
 	// Create a new user controller

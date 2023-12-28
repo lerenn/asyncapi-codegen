@@ -11,13 +11,16 @@ import (
 )
 
 func main() {
-	// Instanciate a NATS controller with a logger
+	// Instantiate a NATS controller with a logger
 	logger := loggers.NewText()
-	broker := nats.NewController(
+	broker, err := nats.NewController(
 		"nats://nats:4222",                // Set URL to broker
 		nats.WithLogger(logger),           // Attach an internal logger
 		nats.WithQueueGroup("ping-users"), // Set a specific queue group to avoid collisions
 	)
+	if err != nil {
+		panic(err)
+	}
 	defer broker.Close()
 
 	// Create a new user controller

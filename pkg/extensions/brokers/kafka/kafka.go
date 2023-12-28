@@ -31,7 +31,7 @@ type Controller struct {
 type ControllerOption func(controller *Controller)
 
 // NewController creates a new KafkaController that fulfill the BrokerLinker interface.
-func NewController(hosts []string, options ...ControllerOption) *Controller {
+func NewController(hosts []string, options ...ControllerOption) (*Controller, error) {
 	// Create default controller
 	controller := &Controller{
 		logger:    extensions.DummyLogger{},
@@ -46,7 +46,7 @@ func NewController(hosts []string, options ...ControllerOption) *Controller {
 		option(controller)
 	}
 
-	return controller
+	return controller, nil
 }
 
 // WithGroupID set a custom group ID for channel subscription.
@@ -183,7 +183,7 @@ func (c *Controller) messagesHandler(ctx context.Context, r *kafka.Reader, sub e
 	}
 }
 
-func (c Controller) checkTopicExistOrCreateIt(ctx context.Context, topic string) error {
+func (c *Controller) checkTopicExistOrCreateIt(ctx context.Context, topic string) error {
 	// Get connection to first host
 	conn, err := kafka.Dial("tcp", c.hosts[0])
 	if err != nil {

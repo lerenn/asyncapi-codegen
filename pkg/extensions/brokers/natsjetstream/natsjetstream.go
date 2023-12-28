@@ -91,17 +91,17 @@ func WithConsumer(name string) ControllerOption {
 }
 
 // NewController creates a new NATS JetStream controller.
-func NewController(url string, options ...ControllerOption) *Controller {
+func NewController(url string, options ...ControllerOption) (*Controller, error) {
 	// Connect to NATS
 	nc, err := nats.Connect(url)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("could not connect to nats: %w", err)
 	}
 
 	// Create a JetStream management interface
 	js, err := jetstream.New(nc)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("could not connect to jetstream: %w", err)
 	}
 
 	// Creates default controller
@@ -115,13 +115,12 @@ func NewController(url string, options ...ControllerOption) *Controller {
 
 	// Execute options
 	for _, option := range options {
-		err := option(controller)
-		if err != nil {
-			panic(err)
+		if err := option(controller); err != nil {
+			return nil, fmt.Errorf("could not apply option to controller: %w", err)
 		}
 	}
 
-	return controller
+	return controller, nil
 }
 
 // Publish a message to the broker.

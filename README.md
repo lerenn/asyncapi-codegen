@@ -189,7 +189,7 @@ import(
 
 func main() {
   // Create a NATS controller
-  broker := nats.NewController("nats://nats:4222")
+  broker, _ := nats.NewController("nats://nats:4222")
   defer broker.Close()
 
   // Create a new application controller
@@ -244,7 +244,7 @@ import(
 
 func main() {
   // Create a NATS controller
-  broker := nats.NewController("nats://nats:4222")
+  broker, _ := nats.NewController("nats://nats:4222")
   defer broker.Close()
 
   // Create a new user controller
@@ -369,7 +369,7 @@ You can use one of the already supported brokers or implement your own.
 In order to use Kafka as a broker, you can use the following code:
 
 ```golang
-broker := kafka.NewController([]string{"<host>:<port>", /* additional hosts */}, /* options */)
+broker, _ := kafka.NewController([]string{"<host>:<port>", /* additional hosts */}, /* options */)
 ```
 
 Here are the options that you can use with the Kafka controller:
@@ -385,7 +385,7 @@ In order to use NATS as a broker, you can use the following code:
 
 ```golang
 // Create the NATS controller
-broker := nats.NewController("nats://<host>:<port>")
+broker, _ := nats.NewController("nats://<host>:<port>")
 defer broker.Close()
 
 // Add NATS controller to a new App controller
@@ -405,7 +405,7 @@ In order to use NATS JetStream as a broker, you can use the following code:
 
 ```golang
 // Create the NATS controller
-broker := natsjetstream.NewController("nats://<host>:<port>", /* options */)
+broker, _ := natsjetstream.NewController("nats://<host>:<port>", /* options */)
 defer broker.Close()
 
 // Add NATS controller to a new App controller
@@ -696,7 +696,7 @@ import (
 
 func main() {
   // Create a broker (here from NATS)
-  broker := nats.NewController("nats://nats:4222"))
+  broker, _ := nats.NewController("nats://nats:4222"))
   defer broker.Close()
 
   // Add a version wrapper to the broker
