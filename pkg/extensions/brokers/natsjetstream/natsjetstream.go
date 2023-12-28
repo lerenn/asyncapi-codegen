@@ -12,10 +12,10 @@ import (
 )
 
 // Check that it still fills the interface.
-var _ extensions.BrokerController = (*ControllerOption)(nil)
+var _ extensions.BrokerController = (*Controller)(nil)
 
-// ControllerOption is the Controller implementation for asyncapi-codegen.
-type ControllerOption struct {
+// Controller is the Controller implementation for asyncapi-codegen.
+type Controller struct {
 	natsConn       *nats.Conn
 	jetStream      jetstream.JetStream
 	logger         extensions.Logger
@@ -25,20 +25,20 @@ type ControllerOption struct {
 	channels       map[string]chan jetstream.Msg
 }
 
-// ControllerOptionOption is a function that can be used to configure a NATS controller
-type ControllerOptionOption func(controller *ControllerOption) error
+// ControllerOption is a function that can be used to configure a NATS controller.
+type ControllerOption func(controller *Controller) error
 
 // WithLogger set a custom logger that will log operations on broker controller.
-func WithLogger(logger extensions.Logger) ControllerOptionOption {
-	return func(controller *ControllerOption) error {
+func WithLogger(logger extensions.Logger) ControllerOption {
+	return func(controller *Controller) error {
 		controller.logger = logger
 		return nil
 	}
 }
 
 // WithStreamConfig creates or updates a stream based on the given stream configuration.
-func WithStreamConfig(config jetstream.StreamConfig) ControllerOptionOption {
-	return func(controller *ControllerOption) error {
+func WithStreamConfig(config jetstream.StreamConfig) ControllerOption {
+	return func(controller *Controller) error {
 		if config.Name == "" {
 			return fmt.Errorf("stream name is required")
 		}
@@ -57,23 +57,24 @@ func WithStreamConfig(config jetstream.StreamConfig) ControllerOptionOption {
 	}
 }
 
-// WithStream uses the given stream name (the stream has to be created before initializing)
-func WithStream(name string) ControllerOptionOption {
-	return func(controller *ControllerOption) error {
+// WithStream uses the given stream name (the stream has to be created before initializing).
+func WithStream(name string) ControllerOption {
+	return func(controller *Controller) error {
 		controller.streamName = name
 		return nil
 	}
 }
 
 // WithConsumerConfig creates or updates a consumer based on the given consumer configuration.
-func WithConsumerConfig(config jetstream.ConsumerConfig) ControllerOptionOption {
-	return func(controller *ControllerOption) error {
+func WithConsumerConfig(config jetstream.ConsumerConfig) ControllerOption {
+	return func(controller *Controller) error {
 		if config.Name == "" {
 			return fmt.Errorf("consumer name is required")
 		}
 		controller.consumerName = config.Name
 
-		if _, err := controller.jetStream.CreateOrUpdateConsumer(context.Background(), controller.streamName, config); err != nil {
+		_, err := controller.jetStream.CreateOrUpdateConsumer(context.Background(), controller.streamName, config)
+		if err != nil {
 			return fmt.Errorf("could not create or update consumer: %w", err)
 		}
 
@@ -82,15 +83,15 @@ func WithConsumerConfig(config jetstream.ConsumerConfig) ControllerOptionOption 
 }
 
 // WithConsumer uses the given consumer name (the consumer has to be created before initializing).
-func WithConsumer(name string) ControllerOptionOption {
-	return func(controller *ControllerOption) error {
+func WithConsumer(name string) ControllerOption {
+	return func(controller *Controller) error {
 		controller.consumerName = name
 		return nil
 	}
 }
 
 // NewController creates a new NATS JetStream controller.
-func NewController(url string, options ...ControllerOptionOption) *ControllerOption {
+func NewController(url string, options ...ControllerOption) *Controller {
 	// Connect to NATS
 	nc, err := nats.Connect(url)
 	if err != nil {
@@ -104,7 +105,7 @@ func NewController(url string, options ...ControllerOptionOption) *ControllerOpt
 	}
 
 	// Creates default controller
-	controller := &ControllerOption{
+	controller := &Controller{
 		natsConn:       nc,
 		jetStream:      js,
 		logger:         extensions.DummyLogger{},
@@ -124,7 +125,7 @@ func NewController(url string, options ...ControllerOptionOption) *ControllerOpt
 }
 
 // Publish a message to the broker.
-func (c *ControllerOption) Publish(ctx context.Context, channel string, bm extensions.BrokerMessage) error {
+func (c *Controller) Publish(ctx context.Context, channel string, bm extensions.BrokerMessage) error {
 	msg := nats.NewMsg(channel)
 
 	// Set message headers and content
@@ -142,8 +143,7 @@ func (c *ControllerOption) Publish(ctx context.Context, channel string, bm exten
 }
 
 // Subscribe to messages from the broker.
-func (c *ControllerOption) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
-
+func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
 	// Create a new subscription
 	sub := extensions.NewBrokerChannelSubscription(
 		make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
@@ -178,7 +178,7 @@ func (c *ControllerOption) Subscribe(ctx context.Context, channel string) (exten
 }
 
 // HandleMessage handles a message received from a stream.
-func (c *ControllerOption) HandleMessage(msg jetstream.Msg, sub extensions.BrokerChannelSubscription) {
+func (c *Controller) HandleMessage(msg jetstream.Msg, sub extensions.BrokerChannelSubscription) {
 	// Get headers
 	headers := make(map[string][]byte, len(msg.Headers()))
 	for k, v := range msg.Headers() {
@@ -198,18 +198,18 @@ func (c *ControllerOption) HandleMessage(msg jetstream.Msg, sub extensions.Broke
 }
 
 // Close closes everything related to the broker.
-func (c *ControllerOption) Close() {
+func (c *Controller) Close() {
 	c.natsConn.Close()
 }
 
 // ConsumeIfNeeded starts consuming messages if needed.
-func (c *ControllerOption) ConsumeIfNeeded(ctx context.Context) error {
+func (c *Controller) ConsumeIfNeeded(ctx context.Context) error {
 	if c.consumeContext == nil {
 		consumer, err := c.jetStream.Consumer(ctx, c.streamName, c.consumerName)
 		if err != nil {
 			return err
 		}
-		consumeContext, err := consumer.Consume(c.ConsumeMessage())
+		consumeContext, err := consumer.Consume(c.ConsumeMessage(ctx))
 		if err != nil {
 			return err
 		}
@@ -220,20 +220,24 @@ func (c *ControllerOption) ConsumeIfNeeded(ctx context.Context) error {
 }
 
 // StopConsumeIfNeeded stops consuming messages if needed (there is no other subscription).
-func (c *ControllerOption) StopConsumeIfNeeded() {
+func (c *Controller) StopConsumeIfNeeded() {
 	if len(c.channels) == 0 && c.consumeContext != nil {
 		c.consumeContext.Stop()
 		c.consumeContext = nil
 	}
 }
 
-// ConsumeMessage writes the message to a the channel corresponding to the subject or in case there is no subscription the message will be ack'd.
-func (c *ControllerOption) ConsumeMessage() jetstream.MessageHandler {
+// ConsumeMessage writes the message to the correct channel of the subject or in case
+// there is no subscription the message will be acknowledged.
+func (c *Controller) ConsumeMessage(ctx context.Context) jetstream.MessageHandler {
 	return func(msg jetstream.Msg) {
 		if c.channels[msg.Subject()] == nil {
 			c.logger.Warning(
-				context.Background(),
-				fmt.Sprintf("Received message for not subscribed channel '%s'. Message will be ack'd.", msg.Subject()),
+				ctx,
+				fmt.Sprintf(
+					"Received message for not subscribed channel '%s'. Message will be ack'd.",
+					msg.Subject(),
+				),
 				extensions.LogInfo{Key: "msg.subject", Value: msg.Subject()},
 				extensions.LogInfo{Key: "msg.headers", Value: msg.Headers()},
 				extensions.LogInfo{Key: "msg.data", Value: msg.Data()},
