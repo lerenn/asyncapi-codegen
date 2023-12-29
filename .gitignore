@@ -17,3 +17,6 @@
 # Testing
 tmp/
 __debug_bin
+
+# IDEs
+.idea

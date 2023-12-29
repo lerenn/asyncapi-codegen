@@ -2,6 +2,7 @@ package nats
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
@@ -23,11 +24,11 @@ type Controller struct {
 type ControllerOption func(controller *Controller)
 
 // NewController creates a new NATS controller.
-func NewController(url string, options ...ControllerOption) *Controller {
+func NewController(url string, options ...ControllerOption) (*Controller, error) {
 	// Connect to NATS
 	nc, err := nats.Connect(url)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("could not connect to nats: %w", err)
 	}
 
 	// Creates default controller
@@ -42,7 +43,7 @@ func NewController(url string, options ...ControllerOption) *Controller {
 		option(controller)
 	}
 
-	return controller
+	return controller, nil
 }
 
 // WithQueueGroup set a custom queue group for channel subscription.

@@ -18,15 +18,21 @@ func BrokerControllers(t *testing.T) (brokers []extensions.BrokerController, cle
 	// Initialize returned values
 	brokers = make([]extensions.BrokerController, 0)
 
-	// Set a specific queueGroupeID to avoid collision between tests
+	// Set a specific queueGroupID to avoid collision between tests
 	queueGroupID := fmt.Sprintf("test-%d", time.Now().UnixNano())
 
 	// Add NATS broker
-	nb := nats.NewController("nats://nats:4222", nats.WithQueueGroup(queueGroupID))
+	nb, err := nats.NewController("nats://nats:4222", nats.WithQueueGroup(queueGroupID))
+	if err != nil {
+		panic(err)
+	}
 	brokers = append(brokers, nb)
 
 	// Add kafka broker
-	kb := kafka.NewController([]string{"kafka:9092"}, kafka.WithGroupID(queueGroupID))
+	kb, err := kafka.NewController([]string{"kafka:9092"}, kafka.WithGroupID(queueGroupID))
+	if err != nil {
+		panic(err)
+	}
 	brokers = append(brokers, kb)
 
 	// Return brokers with their cleanup functions

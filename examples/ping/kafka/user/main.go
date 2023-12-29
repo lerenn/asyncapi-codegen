@@ -11,13 +11,16 @@ import (
 )
 
 func main() {
-	// Instanciate a Kafka controller with a logger
+	// Instantiate a Kafka controller with a logger
 	logger := loggers.NewText()
-	broker := kafka.NewController(
+	broker, err := kafka.NewController(
 		[]string{"kafka:9092"},          // List of hosts
 		kafka.WithLogger(logger),        // Attach an internal logger
 		kafka.WithGroupID("ping-users"), // Change group id
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	// Create a new user controller
 	ctrl, err := NewUserController(

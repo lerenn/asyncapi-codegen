@@ -7,16 +7,17 @@ import (
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/examples"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
-type Subscriber struct {
+type ServerSubscriber struct {
 	Controller *AppController
 }
 
-func (s Subscriber) Ping(ctx context.Context, req PingMessage) {
+func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage) {
 	// Generate a pong message, set as a response of the request
 	resp := NewPongMessage()
 	resp.SetAsResponseFrom(&req)
@@ -32,20 +33,27 @@ func (s Subscriber) Ping(ctx context.Context, req PingMessage) {
 }
 
 func main() {
-	// Instantiate a Kafka controller with a logger
+	// Instantiate a NATS controller with a logger
 	logger := loggers.NewText()
-	broker, err := kafka.NewController(
-		[]string{"kafka:9092"},         // List of hosts
-		kafka.WithLogger(logger),       // Attach an internal logger
-		kafka.WithGroupID("ping-apps"), // Change group id
+	broker, err := natsjetstream.NewController(
+		"nats://nats-jetstream:4222",     // Set URL to broker
+		natsjetstream.WithLogger(logger), // Attach an internal logger
+		natsjetstream.WithStreamConfig(jetstream.StreamConfig{
+			Name: "ping",
+			Subjects: []string{
+				"ping", "pong",
+			},
+		}), // Create the stream "ping"
+		natsjetstream.WithConsumerConfig(jetstream.ConsumerConfig{Name: "ping"}), // Create the corresponding consumer
 	)
 	if err != nil {
 		panic(err)
 	}
+	defer broker.Close()
 
 	// Create a new app controller
 	ctrl, err := NewAppController(
-		broker,             // Attach the kafka controller
+		broker,             // Attach the NATS controller
 		WithLogger(logger), // Attach an internal logger
 		WithMiddlewares(middlewares.Logging(logger))) // Attach a middleware to log messages
 	if err != nil {
@@ -54,7 +62,7 @@ func main() {
 	defer ctrl.Close(context.Background())
 
 	// Subscribe to all (we could also have just listened on the ping request channel)
-	sub := Subscriber{Controller: ctrl}
+	sub := ServerSubscriber{Controller: ctrl}
 	if err := ctrl.SubscribeAll(context.Background(), sub); err != nil {
 		panic(err)
 	}
