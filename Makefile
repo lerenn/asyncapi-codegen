@@ -1,4 +1,4 @@
-DAGGER_COMMAND := _EXPERIMENTAL_DAGGER_INTERACTIVE_TUI=true dagger run go run ./build/ci/dagger.go
+DAGGER_COMMAND := dagger run go run ./build/ci/dagger.go
 
 ifndef EXAMPLE
 	EXAMPLE=""

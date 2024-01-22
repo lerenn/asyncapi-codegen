@@ -22,7 +22,7 @@ var (
 
 	brokers map[string]*dagger.Service
 
-	generator *dagger.Container
+	generator func(context.Context) error
 	linter    *dagger.Container
 	examples  map[string]*dagger.Container
 	tests     map[string]*dagger.Container
@@ -57,7 +57,8 @@ var allCmd = &cobra.Command{
 	Aliases: []string{"a"},
 	Short:   "Execute all CI",
 	Run: func(cmd *cobra.Command, args []string) {
-		executeContainers(context.Background(), []*dagger.Container{generator, linter})
+		execute(context.Background(), generator)
+		executeContainers(context.Background(), []*dagger.Container{linter})
 		executeContainers(context.Background(), utils.MapToList(tests), utils.MapToList(examples))
 	},
 }
@@ -84,7 +85,7 @@ var generatorCmd = &cobra.Command{
 	Aliases: []string{"g"},
 	Short:   "Execute generator step of the CI",
 	Run: func(cmd *cobra.Command, args []string) {
-		executeContainers(context.Background(), []*dagger.Container{generator})
+		execute(context.Background(), generator)
 	},
 }
 
@@ -131,21 +132,37 @@ func main() {
 
 func executeContainers(ctx context.Context, containers ...[]*dagger.Container) {
 	// Regroup arg
-	rContainers := make([]*dagger.Container, 0)
-	for _, c := range containers {
-		rContainers = append(rContainers, c...)
+	funcs := make([]func(context.Context) error, 0)
+	for _, l1 := range containers {
+		for _, l2 := range l1 {
+			if l2 == nil {
+				continue
+			}
+
+			// Note: create a new local variable to store value of actual l2
+			callback := l2
+
+			fn := func(ctx context.Context) error {
+				_, err := callback.Stderr(ctx)
+				return err
+			}
+			funcs = append(funcs, fn)
+		}
 	}
 
+	execute(ctx, funcs...)
+}
+
+func execute(ctx context.Context, funcs ...func(context.Context) error) {
 	// Excute containers
 	var wg sync.WaitGroup
-	for _, ec := range rContainers {
-		go func(e *dagger.Container) {
-			_, err := e.Stderr(ctx)
-			if err != nil {
+	for _, fn := range funcs {
+		go func(callback func(context.Context) error) {
+			if err := callback(ctx); err != nil {
 				panic(err)
 			}
 			wg.Done()
-		}(ec)
+		}(fn)
 
 		wg.Add(1)
 	}
