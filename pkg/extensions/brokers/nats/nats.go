@@ -88,7 +88,13 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 	)
 
 	// Subscribe on subject
-	natsSub, err := c.connection.QueueSubscribe(channel, c.queueGroup, messagesHandler(sub))
+	var natsSub *nats.Subscription
+	var err error
+	if c.queueGroup == "" {
+		natsSub, err = c.connection.Subscribe(channel, messagesHandler(sub))
+	} else {
+		natsSub, err = c.connection.QueueSubscribe(channel, c.queueGroup, messagesHandler(sub))
+	}
 	if err != nil {
 		return extensions.BrokerChannelSubscription{}, err
 	}
