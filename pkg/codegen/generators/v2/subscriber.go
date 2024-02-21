@@ -1,4 +1,4 @@
-package generators
+package v2
 
 import (
 	"bytes"
@@ -6,17 +6,17 @@ import (
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
 )
 
-// SubscriberGenerator is a code generator for subscribers that will turn an
+// subscriberGenerator is a code generator for subscribers that will turn an
 // asyncapi specification into subscriber golang code.
-type SubscriberGenerator struct {
+type subscriberGenerator struct {
 	MethodCount uint
 	Channels    map[string]*asyncapi.Channel
 	Prefix      string
 }
 
-// NewSubscriberGenerator will create a new subscriber code generator.
-func NewSubscriberGenerator(side Side, spec asyncapi.Specification) SubscriberGenerator {
-	var gen SubscriberGenerator
+// newSubscriberGenerator will create a new subscriber code generator.
+func newSubscriberGenerator(side Side, spec asyncapi.Specification) subscriberGenerator {
+	var gen subscriberGenerator
 
 	// Get subscription methods count based on publish/subscribe count
 	publishCount, subscribeCount := spec.GetPublishSubscribeCount()
@@ -48,7 +48,7 @@ func NewSubscriberGenerator(side Side, spec asyncapi.Specification) SubscriberGe
 }
 
 // Generate will generate the subscriber code.
-func (asg SubscriberGenerator) Generate() (string, error) {
+func (asg subscriberGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		subscriberTemplatePath,
 		schemaTemplatePath,

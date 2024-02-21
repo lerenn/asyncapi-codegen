@@ -1,4 +1,4 @@
-package generators
+package v2
 
 import (
 	"bytes"
@@ -16,8 +16,8 @@ type ControllerGenerator struct {
 	Version           string
 }
 
-// NewControllerGenerator will create a new controller code generator.
-func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGenerator {
+// newControllerGenerator will create a new controller code generator.
+func newControllerGenerator(side Side, spec asyncapi.Specification) ControllerGenerator {
 	var gen ControllerGenerator
 
 	// Get subscription methods count based on publish/subscribe count

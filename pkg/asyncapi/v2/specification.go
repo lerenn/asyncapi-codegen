@@ -76,3 +76,9 @@ func (s Specification) reference(ref string) any {
 
 	return nil
 }
+
+// AsyncAPIVersion returns the asyncapi version of this document.
+// This function is used mainly by the interface.
+func (s Specification) AsyncAPIVersion() string {
+	return s.Version
+}

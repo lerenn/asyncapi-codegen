@@ -1,4 +1,4 @@
-package generators
+package v2
 
 // Side represents the side of the code generation based on asyncapi documentation,
 // i.e in front (user) or behind (application) asyncapi specification.

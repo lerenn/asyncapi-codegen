@@ -1,13 +1,13 @@
-package generators
+package v2
 
 import (
 	"bytes"
 )
 
-// ImportsGenerator is a code generator for imports that will add needed imports
+// importsGenerator is a code generator for imports that will add needed imports
 // to the code, being asyncapi-codegen packages, standard library packages or
 // custom packages.
-type ImportsGenerator struct {
+type importsGenerator struct {
 	PackageName   string
 	ModuleVersion string
 	ModuleName    string
@@ -15,7 +15,7 @@ type ImportsGenerator struct {
 }
 
 // Generate will generate the imports code.
-func (ig ImportsGenerator) Generate() (string, error) {
+func (ig importsGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(importsTemplatePath)
 	if err != nil {
 		return "", err

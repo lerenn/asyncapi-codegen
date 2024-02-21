@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"html/template"
 	"reflect"
 	"regexp"
 	"strings"
@@ -165,7 +166,7 @@ func MultiLineComment(comment string) string {
 	return strings.ReplaceAll(comment, "\n", "\n// ")
 }
 
-// Args is a function used to pass arguments to templates.
+// Args is a function used to pass arguments to
 func Args(vs ...any) []any {
 	return vs
 }
@@ -185,4 +186,24 @@ func OperationName(channel asyncapi.Channel) string {
 	}
 
 	return Namify(name)
+}
+
+// HelpersFunctions returns the functions that can be used as helpers
+// in a golang template.
+func HelpersFunctions() template.FuncMap {
+	return template.FuncMap{
+		"namifyWithoutParam":             NamifyWithoutParams,
+		"namify":                         Namify,
+		"snakeCase":                      SnakeCase,
+		"referenceToStructAttributePath": ReferenceToStructAttributePath,
+		"referenceToTypeName":            ReferenceToTypeName,
+		"channelToMessageTypeName":       ChannelToMessageTypeName,
+		"hasField":                       HasField,
+		"isRequired":                     IsRequired,
+		"generateChannelPath":            GenerateChannelPath,
+		"describeStruct":                 DescribeStruct,
+		"multiLineComment":               MultiLineComment,
+		"args":                           Args,
+		"operationName":                  OperationName,
+	}
 }
