@@ -18,7 +18,7 @@ type CodeGen struct {
 }
 
 // New creates a new code generation structure that can be used to generate code.
-func New(spec asyncapi.Specification) CodeGen {
+func New(spec asyncapi.Specification) (CodeGen, error) {
 	modulePath := "unknown module path"
 	moduleVersion := "unknown version"
 	if bi, ok := debug.ReadBuildInfo(); ok {
@@ -34,7 +34,7 @@ func New(spec asyncapi.Specification) CodeGen {
 		Specification: spec,
 		ModulePath:    modulePath,
 		ModuleVersion: moduleVersion,
-	}
+	}, nil
 }
 
 // Generate generates code from the code generation structure, that have already

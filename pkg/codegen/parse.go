@@ -1,13 +1,12 @@
 package codegen
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 
-	"github.com/asyncapi/parser-go/pkg/parser"
 	"github.com/ghodss/yaml"
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
 )
@@ -31,11 +30,6 @@ func FromFile(path string) (CodeGen, error) {
 
 // FromYAML parses the AsyncAPI specification from a YAML file.
 func FromYAML(data []byte) (CodeGen, error) {
-	// Verify specification
-	if err := verifySpecificationData(data); err != nil {
-		return CodeGen{}, err
-	}
-
 	// Change YAML to JSON
 	data, err := yaml.YAMLToJSON(data)
 	if err != nil {
@@ -50,8 +44,9 @@ func FromYAML(data []byte) (CodeGen, error) {
 func FromJSON(data []byte) (CodeGen, error) {
 	var spec asyncapi.Specification
 
-	// Verify specification
-	if err := verifySpecificationData(data); err != nil {
+	// Check that the version is correct
+	_, err := versionFromJSON(data)
+	if err != nil {
 		return CodeGen{}, err
 	}
 
@@ -63,22 +58,33 @@ func FromJSON(data []byte) (CodeGen, error) {
 	// Process specification
 	spec.Process()
 
-	return New(spec), nil
+	return New(spec)
 }
 
-func verifySpecificationData(data []byte) error {
-	// Create a new parser
-	p, err := parser.New()
-	if err != nil {
-		return err
+func versionFromJSON(data []byte) (string, error) {
+	var m map[string]any
+
+	// Parse JSON
+	if err := json.Unmarshal(data, &m); err != nil {
+		return "", err
 	}
 
-	// Check the result of the parsing, and display it if there is an error
-	var b bytes.Buffer
-	err = p(bytes.NewReader(data), &b)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, " --- Anomalies detected in specification ---%s\n", b.String())
+	// Get version
+	version, exists := m["version"]
+	if !exists {
+		return "", fmt.Errorf("%w: there is no 'version' field in specification", ErrInvalidVersion)
 	}
 
-	return err
+	// Get stringed version
+	versionStr, ok := version.(string)
+	if !ok {
+		return "", fmt.Errorf("%w: 'version' field is no string (%q)", ErrInvalidVersion, reflect.TypeOf(version))
+	}
+
+	// Check versions
+	if !IsVersionSupported(versionStr) {
+		return "", fmt.Errorf("%w: %q", ErrInvalidVersion, versionStr)
+	}
+
+	return versionStr, nil
 }
