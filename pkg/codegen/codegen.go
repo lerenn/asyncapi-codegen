@@ -7,7 +7,9 @@ import (
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
-	generatorsv2 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v2"
+	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
+	generatorv2 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v2"
+	generatorv3 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v3"
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
 	"golang.org/x/tools/imports"
 )
@@ -77,13 +79,25 @@ func (cg CodeGen) generateContent(opt options.Options) (string, error) {
 	// NOTE: version should already be correct at this moment
 	switch version[:1] {
 	case "2":
-		spec, ok := cg.specification.(asyncapiv2.Specification)
+		spec, ok := cg.specification.(*asyncapiv2.Specification)
 		if !ok {
 			return "", fmt.Errorf("unknown spec format: this should not have happened")
 		}
 
-		return generatorsv2.Generator{
-			Specification: spec,
+		return generatorv2.Generator{
+			Specification: *spec,
+			Options:       opt,
+			ModulePath:    cg.modulePath,
+			ModuleVersion: cg.moduleVersion,
+		}.Generate()
+	case "3":
+		spec, ok := cg.specification.(*asyncapiv3.Specification)
+		if !ok {
+			return "", fmt.Errorf("unknown spec format: this should not have happened")
+		}
+
+		return generatorv3.Generator{
+			Specification: *spec,
 			Options:       opt,
 			ModulePath:    cg.modulePath,
 			ModuleVersion: cg.moduleVersion,

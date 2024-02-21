@@ -1,9 +1,9 @@
-package generatorv2
+package generatorv3
 
 import (
 	"fmt"
 
-	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
 )
 
@@ -11,7 +11,7 @@ import (
 // the specification.
 type Generator struct {
 	Options       options.Options
-	Specification asyncapiv2.Specification
+	Specification asyncapi.Specification
 	ModulePath    string
 	ModuleVersion string
 }

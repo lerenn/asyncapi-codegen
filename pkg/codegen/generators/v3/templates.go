@@ -1,4 +1,4 @@
-package generatorv2
+package generatorv3
 
 import (
 	"embed"

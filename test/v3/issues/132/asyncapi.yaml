@@ -1,0 +1,18 @@
+asyncapi: 3.0.0
+...
+channels:
+  UserSignup:
+    address: user/signedup
+    messages: 
+      UserMessage: 
+        payload:
+          type: object
+          properties:
+            displayName:
+              type: string
+              description: Name of the user
+operations:
+  ConsumeUserSignups:
+    action: receive
+    channel: 
+      $ref: "#/channels/UserSignup"

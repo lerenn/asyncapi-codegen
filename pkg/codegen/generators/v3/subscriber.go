@@ -1,9 +1,9 @@
-package generatorv2
+package generatorv3
 
 import (
 	"bytes"
 
-	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 )
 
 // SubscriberGenerator is a code generator for subscribers that will turn an

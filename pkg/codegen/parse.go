@@ -8,7 +8,9 @@ import (
 	"reflect"
 
 	"github.com/ghodss/yaml"
-	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 )
 
 // FromFile parses the AsyncAPI specification either from a YAML file or a JSON file.
@@ -42,12 +44,23 @@ func FromYAML(data []byte) (CodeGen, error) {
 
 // FromJSON parses the AsyncAPI specification from a JSON file.
 func FromJSON(data []byte) (CodeGen, error) {
-	var spec asyncapi.Specification
 
 	// Check that the version is correct
-	_, err := versionFromJSON(data)
+	version, err := versionFromJSON(data)
 	if err != nil {
 		return CodeGen{}, err
+	}
+
+	// Use a different specification based on the AsyncAPI version
+	// NOTE: version should already be correct at this moment
+	var spec asyncapi.Specification
+	switch version[:1] {
+	case "2":
+		spec = &asyncapiv2.Specification{}
+	case "3":
+		spec = &asyncapiv3.Specification{}
+	default:
+		return CodeGen{}, fmt.Errorf("unknown version (%q): this should not have happened", version)
 	}
 
 	// Parse JSON
@@ -58,6 +71,7 @@ func FromJSON(data []byte) (CodeGen, error) {
 	// Process specification
 	spec.Process()
 
+	// Return a new codegen with this spec
 	return New(spec)
 }
 

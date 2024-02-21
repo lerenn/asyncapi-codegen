@@ -1,9 +1,9 @@
-package generatorv2
+package generatorv3
 
 import (
 	"bytes"
 
-	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 )
 
 // ControllerGenerator is a code generator for controllers that will turn an

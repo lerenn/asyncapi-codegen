@@ -4,4 +4,5 @@ package asyncapi
 // This should be casted to get all other functions, base on the version.
 type Specification interface {
 	AsyncAPIVersion() string
+	Process()
 }

@@ -1,0 +1,269 @@
+{{define "message" -}}
+
+// {{namify .Name}}Message is the message expected for '{{namify .Name}}' channel
+{{if $.Description -}}
+// {{multiLineComment $.Description}}
+{{end -}}
+
+type {{namify .Name}}Message struct {
+
+{{- /* Display headers if they exists */}}
+{{- if .Headers}}
+// Headers will be used to fill the message headers
+Headers {{template "schema" .Headers}}
+{{end -}}
+
+{{- /* Display payload */}}
+// Payload will be inserted in the message payload
+Payload {{template "schema" .Payload}}
+}
+
+func New{{namify .Name}}Message() {{namify .Name}}Message {
+    var msg {{namify .Name}}Message
+
+    {{if ne $.CorrelationIDLocation "" -}}
+    // Set correlation ID
+    u := uuid.New().String()
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired}}&{{end}}u
+    {{- end}}
+
+    return msg
+}
+
+// new{{namify .Name}}MessageFromBrokerMessage will fill a new {{namify .Name}}Message with data from generic broker message
+func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) ({{namify .Name}}Message, error) {
+    var msg {{namify .Name}}Message
+
+    {{/* Get payload by reference, or not*/}}
+    {{- $payload := .Payload}}
+    {{- if .Payload.Reference }}
+    {{- $payload = .Payload.ReferenceTo }}
+    {{- end}}
+
+    {{- /* Handle payload based on type */}}
+    {{- if eq $payload.Type "string"}}
+        // Convert to string
+        {{- if and $payload.Format (or (eq $payload.Format "date") (eq $payload.Format "date-time"))}}
+            t, err := time.Parse(time.RFC3339, string(bMsg.Payload))
+            if err != nil {
+                return {{namify .Name}}Message{}, err
+            }
+            payload := t
+        {{- else}}
+            payload := string(bMsg.Payload)
+        {{- end}}
+    {{- else if eq $payload.Type "integer"}}
+        // Convert to integer
+        {{- if and $payload.Format (eq $payload.Format "int32")}}
+            payload := int32(binary.LittleEndian.Uint32(bMsg.Payload))
+        {{- else}}
+            payload := int64(binary.LittleEndian.Uint64(bMsg.Payload))
+        {{- end}}
+    {{- else if eq $payload.Type "number"}}
+        // Convert to float
+        {{- if and $payload.Format (eq $payload.Format "float") -}}
+            payload := math.Float32frombits(binary.LittleEndian.Uint32(bMsg.Payload))
+        {{- else}}
+            payload := math.Float64frombits(binary.LittleEndian.Uint64(bMsg.Payload))
+        {{- end}}
+    {{- else}}
+        // Unmarshal payload to expected message payload format
+        err := json.Unmarshal(bMsg.Payload, &msg.Payload)
+        if err != nil {
+            return msg, err
+        }
+    {{- end -}}
+
+    {{- /* If that's a string, an integer or a numeric, there maybe some more operation to do */}}
+    {{- if or (eq $payload.Type "string") (eq $payload.Type "integer") (eq $payload.Type "numeric")}}
+        {{- /* If that's a reference, then there will be a conversion to struct to add */}}
+        {{- if .Payload.Reference}}
+            msg.Payload = {{referenceToTypeName .Payload.Reference}}(payload)
+        {{- else}}
+            msg.Payload = payload // No need for type conversion to reference
+        {{- end}}
+    {{- end}}
+
+    {{ if .Headers -}}
+    // Get each headers from broker message
+    for k, v := range bMsg.Headers {
+        switch {
+
+            {{- /* Get headers by reference, or not*/}}
+            {{- $headerProperties := .Headers.Properties}}
+            {{- if .Headers.Reference }}
+                {{- $headerProperties = .Headers.ReferenceTo.Properties}}
+            {{- end}}
+
+            {{- /* For each header */}}
+            {{- range  $key, $value := $headerProperties}}
+            case k == "{{$key}}": // Retrieving {{namify $key}} header
+                {{- if $value.IsRequired }}
+                    {{- if eq $value.Type "object" }}
+                        err := json.Unmarshal(v, &msg.Headers.{{ namify $key}})
+                        if err != nil {
+                            return msg, err
+                        }
+                    {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                        t, err := time.Parse(time.RFC3339, string(v))
+                        if err != nil {
+                            return msg, err
+                        }
+                        msg.Headers.{{ namify $key}} = t
+                    {{- else}}
+                        msg.Headers.{{ namify $key}} = {{$value.Type}}(v)
+                    {{- end}}
+                {{- else}}
+                    {{- if eq $value.Type "object" }}
+                        err := json.Unmarshal(v, msg.Headers.{{ namify $key}})
+                        if err != nil {
+                            return msg, err
+                        }
+                    {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                        t, err := time.Parse(time.RFC3339, string(v))
+                        if err != nil {
+                            return msg, err
+                        }
+                        msg.Headers.{{ namify $key}} = &t
+                    {{- else}}
+                        h := {{$value.Type}}(v)
+                        msg.Headers.{{ namify $key}} = &h
+                    {{- end}}
+                {{- end}}
+            {{- end}}
+        default:
+            // TODO: log unknown error
+        }
+    }
+    {{- end}}
+
+    // TODO: run checks on msg type
+
+    return msg, nil
+}
+
+// toBrokerMessage will generate a generic broker message from {{namify .Name}}Message data
+func (msg {{namify .Name}}Message) toBrokerMessage() (extensions.BrokerMessage, error) {
+    // TODO: implement checks on message
+
+    {{/* Get payload by reference, or not*/}}
+    {{- $payload := .Payload}}
+    {{- if .Payload.Reference }}
+    {{- $payload = .Payload.ReferenceTo }}
+    {{- end}}
+
+    {{/* Handle payload based on type */}}
+    {{- if or (eq $payload.Type "object") (eq $payload.Type "array")}}
+        // Marshal payload to JSON
+        payload, err := json.Marshal(msg.Payload)
+        if err != nil {
+            return extensions.BrokerMessage{}, err
+        }
+    {{- else if eq $payload.Type "integer"}}
+        // Convert to []byte{}
+        {{- if and .Payload.Format (eq .Payload.Format "int32")}}
+            payload := make([]byte, 4)
+            binary.BigEndian.PutUint32(payload, uint32(msg.Payload))
+        {{- else}}
+            payload := make([]byte, 8)
+            binary.BigEndian.PutUint64(payload, uint64(msg.Payload))
+        {{- end}}
+    {{- else if eq $payload.Type "number"}}
+        // Convert to []byte{}
+        {{- if and $payload.Format (eq $payload.Format "float")}}
+            payload := make([]byte, 4)
+            binary.BigEndian.PutUint32(payload, math.Float32bits(msg.Payload))
+        {{- else}}
+            payload := make([]byte, 8)
+            binary.BigEndian.PutUint64(payload, math.Float64bits(msg.Payload))
+        {{- end}}
+    {{- else if and (eq $payload.Type "string") (and $payload.Format (or (eq $payload.Format "date") (eq $payload.Format "date-time")))}}
+        // Convert to RFC3339 and to []byte
+        payload := []byte(msg.Payload.Format(time.RFC3339))
+    {{- else}}
+        // Convert to []byte
+        payload := []byte(msg.Payload)
+    {{- end}}
+
+    {{/* Handle headers, if defined */}}
+    {{ if .Headers -}}
+
+        {{- /* Get headers by reference, or not*/}}
+        {{- $headerProperties := .Headers.Properties}}
+        {{if .Headers.Reference }}
+            {{- $headerProperties = .Headers.ReferenceTo.Properties}}
+        {{- end -}}
+
+        // Add each headers to broker message
+        headers := make(map[string][]byte, {{ len $headerProperties }})
+
+        {{/* For each header */ -}}
+        {{- range  $key, $value := $headerProperties -}}
+            // Adding {{ namify $key}} header
+            {{- if $value.IsRequired }}
+                {{- if eq $value.Type "object" }}
+                    h, err := json.Marshal(msg.Headers.{{ namify $key}})
+                    if err != nil {
+                        return extensions.BrokerMessage{}, err
+                    }
+                    headers["{{$key}}"] = h
+                {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                    headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}}.Format(time.RFC3339))
+                {{- else }}
+                    headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}})
+                {{- end }}
+            {{- else}}
+                if msg.Headers.{{namify $key}} != nil {
+                    {{- if eq $value.Type "object" }}
+                        h, err := json.Marshal(*msg.Headers.{{ namify $key}})
+                        if err != nil {
+                            return extensions.BrokerMessage{}, err
+                        }
+                        headers["{{$key}}"] = h
+                    {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                        headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}}.Format(time.RFC3339))
+                    {{- else }}
+                        headers["{{$key}}"] = []byte(*msg.Headers.{{namify $key}})
+                    {{- end }}
+                }
+            {{- end }}
+        {{- end}}
+        {{ else -}}
+        // There is no headers here
+        headers := make(map[string][]byte, 0)
+    {{- end}}
+
+    return extensions.BrokerMessage{
+        Headers: headers,
+        Payload: payload,
+    }, nil
+}
+
+{{if ne $.CorrelationIDLocation "" -}}
+// CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
+func (msg {{namify .Name}}Message) CorrelationID() string {
+    {{if $.CorrelationIDRequired -}}
+        return msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
+    {{- else -}}
+    if msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} != nil{
+        return *msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
+    }
+
+    return ""
+    {{- end}}
+}
+
+// SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
+func (msg *{{namify .Name}}Message) SetCorrelationID(id string) {
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
+}
+
+// SetAsResponseFrom will correlate the message with the one passed in parameter.
+// It will assign the 'req' message correlation ID to the message correlation ID,
+// both specified in AsyncAPI spec.
+func (msg *{{namify .Name}}Message) SetAsResponseFrom(req MessageWithCorrelationID) {
+    id := req.CorrelationID()
+    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
+}
+{{- end -}}
+{{- end }}

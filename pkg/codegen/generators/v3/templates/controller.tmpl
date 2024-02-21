@@ -1,0 +1,365 @@
+// {{ .Prefix }}Controller is the structure that provides publishing capabilities to the
+// developer and and connect the broker with the {{ .Prefix }}
+type {{ .Prefix }}Controller struct {
+    controller
+}
+
+// New{{ .Prefix }}Controller links the {{ .Prefix }} to the broker
+func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...ControllerOption) (*{{ .Prefix }}Controller, error) {
+    // Check if broker controller has been provided
+    if bc == nil {
+        return nil, extensions.ErrNilBrokerController
+    }
+
+    // Create default controller
+    controller := controller{
+        broker:         bc,
+        subscriptions:  make(map[string]extensions.BrokerChannelSubscription),
+        logger:         extensions.DummyLogger{},
+        middlewares:    make([]extensions.Middleware, 0),
+    }
+
+    // Apply options
+    for _, option := range options {
+        option(&controller)
+    }
+
+    return &{{ .Prefix }}Controller{controller: controller}, nil
+}
+
+func (c {{ .Prefix }}Controller) wrapMiddlewares(
+    middlewares []extensions.Middleware,
+    callback extensions.NextMiddleware,
+) func(ctx context.Context, msg *extensions.BrokerMessage) error {
+    var called bool
+
+    // If there is no more middleware
+    if len(middlewares) == 0 {
+        return func(ctx context.Context, msg *extensions.BrokerMessage) error {
+            // Call the callback if it exists and it has not been called already
+            if callback != nil && !called {
+                called = true
+                return callback(ctx)
+            }
+
+            // Nil can be returned, as the callback has already been called
+            return nil
+        }
+    }
+
+    // Get the next function to call from next middlewares or callback
+    next := c.wrapMiddlewares(middlewares[1:], callback)
+
+    // Wrap middleware into a check function that will call execute the middleware
+    // and call the next wrapped middleware if the returned function has not been
+    // called already
+    return func(ctx context.Context, msg *extensions.BrokerMessage) error {
+        // Call the middleware and the following if it has not been done already
+        if !called {
+            // Create the next call with the context and the message
+            nextWithArgs := func(ctx context.Context) error {
+                return next(ctx, msg)
+            }
+
+            // Call the middleware and register it as already called
+            called = true
+            if err := middlewares[0](ctx, msg, nextWithArgs); err != nil {
+                return err
+            }
+
+            // If next has already been called in middleware, it should not be executed again
+            return nextWithArgs(ctx)
+        }
+
+        // Nil can be returned, as the next middleware has already been called
+        return nil
+    }
+}
+
+func (c {{ .Prefix }}Controller) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+    // Wrap middleware to have 'next' function when calling them
+    wrapped := c.wrapMiddlewares(c.middlewares, callback)
+
+    // Execute wrapped middlewares
+    return wrapped(ctx, msg)
+}
+
+func add{{ .Prefix }}ContextValues(ctx context.Context, path string) context.Context {
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "{{ .Version }}")
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "{{ snakeCase .Prefix }}")
+    return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
+}
+
+// Close will clean up any existing resources on the controller
+func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
+    // Unsubscribing remaining channels
+{{if .MethodCount -}}
+    c.UnsubscribeAll(ctx)
+
+    c.logger.Info(ctx, "Closed {{ snakeCase .Prefix }} controller")
+{{end -}}
+}
+
+{{if .MethodCount -}}
+// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be subscribed independently.
+func (c *{{ .Prefix }}Controller) SubscribeAll(ctx context.Context, as {{ .Prefix }}Subscriber) error {
+    if as == nil {
+        return extensions.ErrNil{{ .Prefix }}Subscriber
+    }
+
+    {{range  $key, $value := .SubscribeChannels -}}
+    {{- if not .Parameters }}
+    if err := c.Subscribe{{operationName $value}}(ctx, as.{{operationName $value}}); err != nil {
+        return err
+    }
+    {{- end}}
+    {{- end}}
+
+    return nil
+}
+
+// UnsubscribeAll will unsubscribe all remaining subscribed channels
+func (c *{{ .Prefix }}Controller) UnsubscribeAll(ctx context.Context) {
+    {{- range  $key, $value := .SubscribeChannels}}
+    {{- if not .Parameters}}
+    c.Unsubscribe{{operationName $value}}(ctx)
+    {{- end}}
+    {{- end}}
+}
+{{- end}}
+
+{{range  $key, $value := .SubscribeChannels -}}
+// Subscribe{{operationName $value}} will subscribe to new messages from '{{$key}}' channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+{{- if .Parameters}}
+func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
+{{- else}}
+func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context.Context, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
+{{- end }}
+    // Get channel path
+    path := {{ generateChannelPath $value }}
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
+
+    // Check if there is already a subscription
+    _, exists := c.subscriptions[path]
+    if exists {
+        err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
+        c.logger.Error(ctx, err.Error())
+        return err
+    }
+
+    // Subscribe to broker channel
+    sub, err := c.broker.Subscribe(ctx, path)
+    if err != nil {
+        c.logger.Error(ctx, err.Error())
+        return err
+    }
+    c.logger.Info(ctx, "Subscribed to channel")
+
+    // Asynchronously listen to new messages and pass them to app subscriber
+    go func() {
+        for {
+            // Wait for next message
+            brokerMsg, open := <-sub.MessagesChannel()
+
+            // If subscription is closed and there is no more message
+            // (i.e. uninitialized message), then exit the function
+            if !open && brokerMsg.IsUninitialized() {
+                return
+            }
+
+            // Set broker message to context
+            ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+
+            // Execute middlewares before handling the message
+            if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+                // Process message
+                msg, err := new{{channelToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
+                if err != nil {
+                    return err
+                }
+
+                {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
+                    // Add correlation ID to context if it exists
+                    if id := msg.CorrelationID(); id != "" {
+                        ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
+                    }
+                {{- end}}
+
+                // Execute the subscription function
+                fn(ctx, msg)
+
+                return nil
+            }); err != nil {
+                c.logger.Error(ctx, err.Error())
+            }
+        }
+    } ()
+
+    // Add the cancel channel to the inside map
+    c.subscriptions[path] = sub
+
+    return nil
+}
+
+// Unsubscribe{{operationName $value}} will unsubscribe messages from '{{$key}}' channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
+{{- if .Parameters}}
+func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters) {
+{{- else}}
+func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value}}(ctx context.Context) {
+{{- end}}
+    // Get channel path
+    path := {{ generateChannelPath $value }}
+
+    // Check if there subscribers for this channel
+    sub, exists := c.subscriptions[path]
+    if !exists {
+        return
+    }
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+
+    // Stop the subscription
+    sub.Cancel(ctx)
+
+    // Remove if from the subscribers
+    delete(c.subscriptions, path)
+
+    c.logger.Info(ctx, "Unsubscribed from channel")
+}
+{{- end}}
+
+{{- range  $key, $value := .PublishChannels}}
+// Publish{{operationName $value}} will publish messages to '{{$key}}' channel
+{{- if .Parameters }}
+func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters, msg {{channelToMessageTypeName $value}}) error {
+{{- else }}
+func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(ctx context.Context, msg {{channelToMessageTypeName $value}}) error {
+{{- end }}
+    // Get channel path
+    path := {{ generateChannelPath $value }}
+
+    {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
+    // Set correlation ID if it does not exist
+    if id := msg.CorrelationID(); id == "" {
+        msg.SetCorrelationID(uuid.New().String())
+    }
+    {{- end}}
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
+    {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
+    {{- end}}
+
+    // Convert to BrokerMessage
+    brokerMsg, err := msg.toBrokerMessage()
+    if err != nil  {
+        return err
+    }
+
+    // Set broker message to context
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+
+    // Publish the message on event-broker through middlewares
+    return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+        return c.broker.Publish(ctx, path, brokerMsg)
+    })
+}
+{{end}}
+
+{{if eq .Prefix "User" -}}
+{{- range  $key, $value := .SubscribeChannels -}}
+{{- if ne $value.Subscribe.Message.CorrelationIDLocation ""}}
+// WaitFor{{operationName $value}} will wait for a specific message by its correlation ID.
+//
+// The pub function is the publication function that should be used to send the message.
+// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
+//
+// A timeout can be set in context to avoid blocking operation, if needed.
+{{- if .Parameters}}
+func (c *UserController) WaitFor{{operationName $value}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
+{{- else}}
+func (c *UserController) WaitFor{{operationName $value}}(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
+{{- end}}
+    // Get channel path
+    path := {{ generateChannelPath $value }}
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+
+    // Subscribe to broker channel
+    sub, err := c.broker.Subscribe(ctx, path)
+    if err != nil {
+        c.logger.Error(ctx, err.Error())
+        return {{channelToMessageTypeName $value}}{}, err
+    }
+    c.logger.Info(ctx, "Subscribed to channel")
+
+    // Close subscriber on leave
+    defer func(){
+        // Stop the subscription
+        sub.Cancel(ctx)
+
+        // Logging unsubscribing
+        c.logger.Info(ctx, "Unsubscribed from channel")
+    } ()
+
+    // Execute callback for publication
+    if err = pub(ctx); err != nil {
+        return {{channelToMessageTypeName $value}}{}, err
+    }
+
+    // Wait for corresponding response
+    for {
+        select {
+        case brokerMsg, open := <-sub.MessagesChannel():
+            // If subscription is closed and there is no more message
+            // (i.e. uninitialized message), then the subscription ended before
+            // receiving the expected message
+            if !open && brokerMsg.IsUninitialized() {
+                c.logger.Error(ctx, "Channel closed before getting message")
+                return {{channelToMessageTypeName $value}}{}, extensions.ErrSubscriptionCanceled
+            }
+
+            // Get new message
+            msg, err := new{{channelToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
+            if err != nil {
+                c.logger.Error(ctx, err.Error())
+            }
+
+            // If message doesn't have corresponding correlation ID, then continue
+            if publishMsg.CorrelationID() != msg.CorrelationID() {
+                continue
+            }
+
+            // Set context with received values as it is the expected message
+            msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
+
+            // Execute middlewares before returning
+            if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
+                return {{channelToMessageTypeName $value}}{}, err
+            }
+
+            // Return the message to the caller from the broker that could have
+            // been modified by middlewares
+            return new{{channelToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
+        case <-ctx.Done(): // Set corrsponding error if context is done
+            c.logger.Error(ctx, "Context done before getting message")
+            return {{channelToMessageTypeName $value}}{}, extensions.ErrContextCanceled
+        }
+    }
+}
+{{- end -}}
+{{- end -}}
+{{- end}}
