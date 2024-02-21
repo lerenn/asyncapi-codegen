@@ -1,4 +1,4 @@
-//go:generate go run ../../../../cmd/asyncapi-codegen -g application,types -p main -i ../../asyncapi.yaml -o ./app.gen.go
+//go:generate go run ../../../../../cmd/asyncapi-codegen -g application,types -p main -i ../../asyncapi.yaml -o ./app.gen.go
 
 package main
 
@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/examples"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 type ServerSubscriber struct {
@@ -34,10 +35,16 @@ func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage) {
 func main() {
 	// Instantiate a NATS controller with a logger
 	logger := loggers.NewText()
-	broker, err := nats.NewController(
-		"nats://nats:4222",               // Set URL to broker
-		nats.WithLogger(logger),          // Attach an internal logger
-		nats.WithQueueGroup("ping-apps"), // Set a specific queue group to avoid collisions
+	broker, err := natsjetstream.NewController(
+		"nats://nats-jetstream:4222",     // Set URL to broker
+		natsjetstream.WithLogger(logger), // Attach an internal logger
+		natsjetstream.WithStreamConfig(jetstream.StreamConfig{
+			Name: "ping",
+			Subjects: []string{
+				"ping", "pong",
+			},
+		}), // Create the stream "ping"
+		natsjetstream.WithConsumerConfig(jetstream.ConsumerConfig{Name: "ping"}), // Create the corresponding consumer
 	)
 	if err != nil {
 		panic(err)

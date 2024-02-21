@@ -108,7 +108,7 @@ This example will use the AsyncAPI official example of the
 [HelloWorld](https://www.asyncapi.com/docs/tutorials/getting-started/hello-world).
 
 The code for this example have already been generated and can be
-[read here for NATS](./examples/helloworld/nats), in the subdirectories `app/`
+[read here for NATS](./examples/helloworld/v2/nats), in the subdirectories `app/`
 and `user/`. You can execute examples with `make examples`, or just one with
 `EXAMPLE=<example> make examples` where the example is `<example>/<broker>`
 (here `EXAMPLE=helloworld/nats`).
@@ -179,7 +179,7 @@ func (ac *AppController) UnsubscribeHello(ctx context.Context)
 ```
 
 And here is an example of the application that could be written to use this generated
-code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.go)):
+code with NATS (you can also find it [here](./examples/helloworld/v2/nats/app/main.go)):
 
 ```go
 import(
@@ -234,7 +234,7 @@ func (cc *UserController) PublishHello(ctx context.Context, msg HelloMessage) er
 ```
 
 And here is an example of the user that could be written to use this generated
-code with NATS (you can also find it [here](./examples/helloworld/nats/app/main.go)):
+code with NATS (you can also find it [here](./examples/helloworld/v2/nats/app/main.go)):
 
 ```go
 import(
@@ -276,10 +276,10 @@ type HelloMessage struct {
 ### Request/Response example
 
 This example will use a `ping` example that you can find
-[here](./examples/ping/asyncapi.yaml).
+[here](./examples/ping/v2/asyncapi.yaml).
 
 > The code for this example have already been generated and can be
-[read here](./examples/ping/nats), in the subdirectories `app/`
+[read here](./examples/ping/v2/nats), in the subdirectories `app/`
 and `user/`. You can execute examples with `make examples`, or just one with
 `EXAMPLE=<example> make examples` where the example is `<example>/<broker>`
 (here `EXAMPLE=ping/nats`).
