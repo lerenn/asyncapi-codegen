@@ -166,7 +166,7 @@ func MultiLineComment(comment string) string {
 	return strings.ReplaceAll(comment, "\n", "\n// ")
 }
 
-// Args is a function used to pass arguments to
+// Args is a function used to pass arguments to templates.
 func Args(vs ...any) []any {
 	return vs
 }

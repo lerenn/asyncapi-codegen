@@ -1,4 +1,4 @@
-//go:generate go run ../../../cmd/asyncapi-codegen -p issue99 -i ./asyncapi.yaml -o ./asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -p issue99 -i ./asyncapi.yaml -o ./asyncapi.gen.go
 
 package issue99
 

@@ -1,5 +1,5 @@
-//go:generate go run ../../../cmd/asyncapi-codegen -p v1 -i ./asyncapi-1.0.0.yaml -o ./v1/asyncapi.gen.go
-//go:generate go run ../../../cmd/asyncapi-codegen -p v2 -i ./asyncapi-2.0.0.yaml -o ./v2/asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -p v1 -i ./asyncapi-1.0.0.yaml -o ./v1/asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -p v2 -i ./asyncapi-2.0.0.yaml -o ./v2/asyncapi.gen.go
 
 package issue73
 

@@ -70,15 +70,15 @@ func versionFromJSON(data []byte) (string, error) {
 	}
 
 	// Get version
-	version, exists := m["version"]
+	version, exists := m["asyncapi"]
 	if !exists {
-		return "", fmt.Errorf("%w: there is no 'version' field in specification", ErrInvalidVersion)
+		return "", fmt.Errorf("%w: there is no 'asyncapi' field in specification", ErrInvalidVersion)
 	}
 
 	// Get stringed version
 	versionStr, ok := version.(string)
 	if !ok {
-		return "", fmt.Errorf("%w: 'version' field is no string (%q)", ErrInvalidVersion, reflect.TypeOf(version))
+		return "", fmt.Errorf("%w: 'asyncapi' field is no string (%q)", ErrInvalidVersion, reflect.TypeOf(version))
 	}
 
 	// Check versions

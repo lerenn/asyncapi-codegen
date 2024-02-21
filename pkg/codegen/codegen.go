@@ -75,8 +75,8 @@ func (cg CodeGen) generateContent(opt options.Options) (string, error) {
 	version := cg.specification.AsyncAPIVersion()
 
 	// NOTE: version should already be correct at this moment
-	switch version[:2] {
-	case "v2":
+	switch version[:1] {
+	case "2":
 		spec, ok := cg.specification.(asyncapiv2.Specification)
 		if !ok {
 			return "", fmt.Errorf("unknown spec format: this should not have happened")
@@ -89,6 +89,6 @@ func (cg CodeGen) generateContent(opt options.Options) (string, error) {
 			ModuleVersion: cg.moduleVersion,
 		}.Generate()
 	default:
-		return "", fmt.Errorf("unkown version (%q): this should not have happened", version)
+		return "", fmt.Errorf("unknown version (%q): this should not have happened", version)
 	}
 }

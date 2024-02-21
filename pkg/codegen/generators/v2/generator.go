@@ -7,6 +7,8 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
 )
 
+// Generator is the structure that contains information to generate the code from
+// the specification.
 type Generator struct {
 	Options       options.Options
 	Specification asyncapiv2.Specification
@@ -14,6 +16,7 @@ type Generator struct {
 	ModuleVersion string
 }
 
+// Generate generates the source code from the specification.
 func (g Generator) Generate() (string, error) {
 	content, err := g.generateImports(g.Options)
 	if err != nil {
@@ -51,7 +54,7 @@ func (g Generator) generateImports(opts options.Options) (string, error) {
 		return "", fmt.Errorf("failed to generate custom imports: %w", err)
 	}
 
-	return importsGenerator{
+	return ImportsGenerator{
 		PackageName:   opts.PackageName,
 		ModuleVersion: g.ModuleVersion,
 		ModuleName:    g.ModulePath,
@@ -60,14 +63,14 @@ func (g Generator) generateImports(opts options.Options) (string, error) {
 }
 
 func (g Generator) generateTypes() (string, error) {
-	return typesGenerator{Specification: g.Specification}.Generate()
+	return TypesGenerator{Specification: g.Specification}.Generate()
 }
 
 func (g Generator) generateApp() (string, error) {
 	var content string
 
 	// Generate application subscriber
-	subscriber, err := newSubscriberGenerator(
+	subscriber, err := NewSubscriberGenerator(
 		SideIsApplication,
 		g.Specification,
 	).Generate()
@@ -77,7 +80,7 @@ func (g Generator) generateApp() (string, error) {
 	content += subscriber
 
 	// Generate application controller
-	controller, err := newControllerGenerator(
+	controller, err := NewControllerGenerator(
 		SideIsApplication,
 		g.Specification,
 	).Generate()
@@ -93,7 +96,7 @@ func (g Generator) generateUser() (string, error) {
 	var content string
 
 	// Generate user subscriber
-	subscriber, err := newSubscriberGenerator(
+	subscriber, err := NewSubscriberGenerator(
 		SideIsUser,
 		g.Specification,
 	).Generate()
@@ -102,7 +105,7 @@ func (g Generator) generateUser() (string, error) {
 	}
 	content += subscriber
 	// Generate user controller
-	controller, err := newControllerGenerator(
+	controller, err := NewControllerGenerator(
 		SideIsUser,
 		g.Specification,
 	).Generate()
