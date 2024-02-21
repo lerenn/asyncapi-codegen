@@ -15,8 +15,8 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/versioning"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
-	v1 "github.com/lerenn/asyncapi-codegen/test/issues/73/v1"
-	v2 "github.com/lerenn/asyncapi-codegen/test/issues/73/v2"
+	v1 "github.com/lerenn/asyncapi-codegen/test/v2/issues/73/v1"
+	v2 "github.com/lerenn/asyncapi-codegen/test/v2/issues/73/v2"
 	"github.com/stretchr/testify/suite"
 )
 

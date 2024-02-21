@@ -1,4 +1,4 @@
-package asyncapi
+package asyncapiv2
 
 import (
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"

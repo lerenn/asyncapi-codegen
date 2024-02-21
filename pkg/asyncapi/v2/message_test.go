@@ -1,4 +1,4 @@
-package asyncapi
+package asyncapiv2
 
 import (
 	"testing"

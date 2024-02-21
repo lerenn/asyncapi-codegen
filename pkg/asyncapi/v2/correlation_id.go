@@ -1,4 +1,4 @@
-package asyncapi
+package asyncapiv2
 
 // CorrelationID is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
