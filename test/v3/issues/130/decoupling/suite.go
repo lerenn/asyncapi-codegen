@@ -44,18 +44,18 @@ func (suite *Suite) TearDownTest() {
 func (suite *Suite) TestSendReceive() {
 	var wg sync.WaitGroup
 
-	// Subscribe to a message
-	suite.app.SubscribeToConsumeUserSignup(context.Background(), func(ctx context.Context, msg UserMessage) {
+	// Listen to new messages
+	suite.app.ListenConsumeUserSignup(context.Background(), func(ctx context.Context, msg UserMessage) {
 		suite.Require().NotNil(msg.Payload.DisplayName)
 		suite.Require().Equal("testing", *msg.Payload.DisplayName)
 		wg.Done()
 	})
 	wg.Add(1)
 
-	// Publish a message
+	// Send a new message
 	var msg UserMessage
 	msg.Payload.DisplayName = utils.ToPointer("testing")
-	suite.user.PublishConsumeUserSignup(context.Background(), msg)
+	suite.user.SendConsumeUserSignup(context.Background(), msg)
 
 	wg.Wait()
 }

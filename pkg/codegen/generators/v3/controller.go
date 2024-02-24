@@ -2,7 +2,6 @@ package generatorv3
 
 import (
 	"bytes"
-	"fmt"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 )
@@ -43,7 +42,6 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 			gen.SendOperations[name] = op
 		}
 	}
-	fmt.Println(side, gen.ReceiveOperations, gen.SendOperations)
 
 	// Set generation name
 	if side == SideIsApplication {

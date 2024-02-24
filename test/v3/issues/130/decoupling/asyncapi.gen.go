@@ -11,7 +11,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
-// AppController is the structure that provides publishing capabilities to the
+// AppController is the structure that provides sending capabilities to the
 // developer and and connect the broker with the App
 type AppController struct {
 	controller
@@ -108,10 +108,10 @@ func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// SubscribeToConsumeUserSignup will receive 'UserMessage' messages from 'user/signedup' channel
+// ListenConsumeUserSignup will receive 'UserMessage' messages from 'user/signedup' channel
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeToConsumeUserSignup(ctx context.Context, fn func(ctx context.Context, msg UserMessage)) error {
+func (c *AppController) ListenConsumeUserSignup(ctx context.Context, fn func(ctx context.Context, msg UserMessage)) error {
 	// Get channel path
 	path := "UserSignup"
 
@@ -119,10 +119,10 @@ func (c *AppController) SubscribeToConsumeUserSignup(ctx context.Context, fn fun
 	ctx = addAppContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
-	// Check if there is already a subscription
+	// Check if the controller is already listening
 	_, exists := c.subscriptions[path]
 	if exists {
-		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
+		err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, path)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
@@ -133,7 +133,7 @@ func (c *AppController) SubscribeToConsumeUserSignup(ctx context.Context, fn fun
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Listening to channel")
 
 	// Asynchronously listen to new messages and pass them to app receiver
 	go func() {
@@ -174,9 +174,9 @@ func (c *AppController) SubscribeToConsumeUserSignup(ctx context.Context, fn fun
 	return nil
 }
 
-// UnsubscribeConsumeUserSignup will stop the reception of messages from 'user/signedup' channel.
+// UnlistenConsumeUserSignup will stop the reception of messages from 'user/signedup' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeConsumeUserSignup(ctx context.Context) {
+func (c *AppController) UnlistenConsumeUserSignup(ctx context.Context) {
 	// Get channel path
 	path := "UserSignup"
 
@@ -195,16 +195,16 @@ func (c *AppController) UnsubscribeConsumeUserSignup(ctx context.Context) {
 	// Remove if from the receivers
 	delete(c.subscriptions, path)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unlistend from channel")
 }
 
-// UserSubscriber represents all handlers that are expecting messages for User
-type UserSubscriber interface {
-	// ConsumeUserSignup subscribes to messages placed on the 'ConsumeUserSignup' channel
+// UserListener represents all handlers that are listening messages for User
+type UserListener interface {
+	// ConsumeUserSignup listen to messages placed on the 'ConsumeUserSignup' channel
 	ConsumeUserSignup(ctx context.Context, msg UserMessage)
 }
 
-// UserController is the structure that provides publishing capabilities to the
+// UserController is the structure that provides sending capabilities to the
 // developer and and connect the broker with the User
 type UserController struct {
 	controller
@@ -299,27 +299,27 @@ func addUserContextValues(ctx context.Context, path string) context.Context {
 // Close will clean up any existing resources on the controller
 func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.UnsubscribeAll(ctx)
+	c.UnlistenAll(ctx)
 
 	c.logger.Info(ctx, "Closed user controller")
 }
 
-// SubscribeToAll will receive to channels without parameters on which the app is expecting messages.
+// ListenAll will receive to channels without parameters on which the app is expecting messages.
 // For channels with parameters, they should be received independently.
-func (c *UserController) SubscribeToAll(ctx context.Context, as UserSubscriber) error {
+func (c *UserController) ListenAll(ctx context.Context, as UserListener) error {
 	if as == nil {
-		return extensions.ErrNilUserSubscriber
+		return extensions.ErrNilUserListener
 	}
 
 	return nil
 }
 
-// UnsubscribeAll will stop the reception of all remaining received channels
-func (c *UserController) UnsubscribeAll(ctx context.Context) {
+// UnlistenAll will stop the listening of all remaining listening channels
+func (c *UserController) UnlistenAll(ctx context.Context) {
 }
 
-// PublishConsumeUserSignup will publish 'UserMessage' messages to 'user/signedup' channel
-func (c *UserController) PublishConsumeUserSignup(ctx context.Context, msg UserMessage) error {
+// SendConsumeUserSignup will send 'UserMessage' messages to 'user/signedup' channel
+func (c *UserController) SendConsumeUserSignup(ctx context.Context, msg UserMessage) error {
 	// Get channel path
 	path := "UserSignup"
 

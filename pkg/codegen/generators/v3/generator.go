@@ -69,15 +69,15 @@ func (g Generator) generateTypes() (string, error) {
 func (g Generator) generateApp() (string, error) {
 	var content string
 
-	// Generate application subscriber
-	subscriber, err := NewSubscriberGenerator(
+	// Generate application listener
+	listener, err := NewListenerGenerator(
 		SideIsApplication,
 		g.Specification,
 	).Generate()
 	if err != nil {
 		return "", err
 	}
-	content += subscriber
+	content += listener
 
 	// Generate application controller
 	controller, err := NewControllerGenerator(
@@ -95,15 +95,15 @@ func (g Generator) generateApp() (string, error) {
 func (g Generator) generateUser() (string, error) {
 	var content string
 
-	// Generate user subscriber
-	subscriber, err := NewSubscriberGenerator(
+	// Generate user listener
+	listener, err := NewListenerGenerator(
 		SideIsUser,
 		g.Specification,
 	).Generate()
 	if err != nil {
 		return "", err
 	}
-	content += subscriber
+	content += listener
 	// Generate user controller
 	controller, err := NewControllerGenerator(
 		SideIsUser,

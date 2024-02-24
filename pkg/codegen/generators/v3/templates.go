@@ -17,7 +17,7 @@ const (
 	typesTemplatePath      = templatesDir + "/types.tmpl"
 	schemaTemplatePath     = templatesDir + "/schema.tmpl"
 	messageTemplatePath    = templatesDir + "/message.tmpl"
-	subscriberTemplatePath = templatesDir + "/subscriber.tmpl"
+	listenerTemplatePath   = templatesDir + "/listener.tmpl"
 	controllerTemplatePath = templatesDir + "/controller.tmpl"
 	parameterTemplatePath  = templatesDir + "/parameter.tmpl"
 )

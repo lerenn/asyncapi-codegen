@@ -1,4 +1,4 @@
-// {{ .Prefix }}Controller is the structure that provides publishing capabilities to the
+// {{ .Prefix }}Controller is the structure that provides sending capabilities to the
 // developer and and connect the broker with the {{ .Prefix }}
 type {{ .Prefix }}Controller struct {
     controller
@@ -94,23 +94,23 @@ func add{{ .Prefix }}ContextValues(ctx context.Context, path string) context.Con
 func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
     // Unsubscribing remaining channels
 {{if .MethodCount -}}
-    c.UnsubscribeAll(ctx)
+    c.UnlistenAll(ctx)
 
     c.logger.Info(ctx, "Closed {{ snakeCase .Prefix }} controller")
 {{end -}}
 }
 
 {{if .MethodCount -}}
-// SubscribeToAll will receive to channels without parameters on which the app is expecting messages.
+// ListenAll will receive to channels without parameters on which the app is expecting messages.
 // For channels with parameters, they should be received independently.
-func (c *{{ .Prefix }}Controller) SubscribeToAll(ctx context.Context, as {{ .Prefix }}Subscriber) error {
+func (c *{{ .Prefix }}Controller) ListenAll(ctx context.Context, as {{ .Prefix }}Listener) error {
     if as == nil {
-        return extensions.ErrNil{{ .Prefix }}Subscriber
+        return extensions.ErrNil{{ .Prefix }}Listener
     }
 
     {{range  $key, $value := .ReceiveOperations -}}
     {{- if not .Channel.ReferenceTo.Parameters }}
-    if err := c.SubscribeTo{{$value.Name}}(ctx, as.{{$value.Name}}); err != nil {
+    if err := c.Listen{{$value.Name}}(ctx, as.{{$value.Name}}); err != nil {
         return err
     }
     {{- end}}
@@ -119,24 +119,24 @@ func (c *{{ .Prefix }}Controller) SubscribeToAll(ctx context.Context, as {{ .Pre
     return nil
 }
 
-// UnsubscribeAll will stop the reception of all remaining received channels
-func (c *{{ .Prefix }}Controller) UnsubscribeAll(ctx context.Context) {
+// UnlistenAll will stop the listening of all remaining listening channels
+func (c *{{ .Prefix }}Controller) UnlistenAll(ctx context.Context) {
     {{- range  $key, $value := .ReceiveOperations}}
     {{- if not .Channel.ReferenceTo.Parameters}}
-    c.Unsubscribe{{$value.Name}}(ctx)
+    c.Unlisten{{$value.Name}}(ctx)
     {{- end}}
     {{- end}}
 }
 {{- end}}
 
 {{range $key, $value := .ReceiveOperations -}}
-// SubscribeTo{{$value.Name}} will receive '{{$value.GetMessage.Name}}' messages from '{{$value.Channel.ReferenceTo.Address}}' channel
+// Listen{{$value.Name}} will receive '{{$value.GetMessage.Name}}' messages from '{{$value.Channel.ReferenceTo.Address}}' channel
 //
 // Callback function 'fn' will be called each time a new message is received.
 {{- if .Channel.ReferenceTo.Parameters}}
-func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}(ctx context.Context, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- end }}
     // Get channel path
     path := {{ generateChannelPath $value }}
@@ -145,10 +145,10 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}(ctx context.Contex
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
     ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
-    // Check if there is already a subscription
+    // Check if the controller is already listening
     _, exists := c.subscriptions[path]
     if exists {
-        err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
+        err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, path)
         c.logger.Error(ctx, err.Error())
         return err
     }
@@ -159,7 +159,7 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}(ctx context.Contex
         c.logger.Error(ctx, err.Error())
         return err
     }
-    c.logger.Info(ctx, "Subscribed to channel")
+    c.logger.Info(ctx, "Listening to channel")
 
     // Asynchronously listen to new messages and pass them to app receiver
     go func() {
@@ -207,12 +207,12 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}(ctx context.Contex
     return nil
 }
 
-// Unsubscribe{{$value.Name}} will stop the reception of messages from '{{$value.Channel.ReferenceTo.Address}}' channel.
+// Unlisten{{$value.Name}} will stop the reception of messages from '{{$value.Channel.ReferenceTo.Address}}' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Channel.ReferenceTo.Parameters}}
-func (c *{{ $.Prefix }}Controller) Unsubscribe{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters) {
+func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters) {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) Unsubscribe{{$value.Name}}(ctx context.Context) {
+func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context) {
 {{- end}}
     // Get channel path
     path := {{ generateChannelPath $value }}
@@ -232,16 +232,16 @@ func (c *{{ $.Prefix }}Controller) Unsubscribe{{$value.Name}}(ctx context.Contex
     // Remove if from the receivers
     delete(c.subscriptions, path)
 
-    c.logger.Info(ctx, "Unsubscribed from channel")
+    c.logger.Info(ctx, "Unlistend from channel")
 }
 {{- end}}
 
 {{- range  $key, $value := .SendOperations}}
-// Publish{{$value.Name}} will publish '{{$value.GetMessage.Name}}' messages to '{{$value.Channel.ReferenceTo.Address}}' channel
+// Send{{$value.Name}} will send '{{$value.GetMessage.Name}}' messages to '{{$value.Channel.ReferenceTo.Address}}' channel
 {{- if .Channel.ReferenceTo.Parameters }}
-func (c *{{ $.Prefix }}Controller) Publish{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) error {
+func (c *{{ $.Prefix }}Controller) Send{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) error {
 {{- else }}
-func (c *{{ $.Prefix }}Controller) Publish{{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) error {
+func (c *{{ $.Prefix }}Controller) Send{{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) error {
 {{- end }}
     // Get channel path
     path := {{ generateChannelPath $value }}
@@ -281,7 +281,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{$value.Name}}(ctx context.Context, m
 {{- if ne $value.GetMessage.CorrelationIDLocation ""}}
 // WaitFor{{$value.Name}} will wait for a specific message by its correlation ID.
 //
-// The pub function is the publication function that should be used to publish the message.
+// The pub function is the publication function that should be used to send the message.
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
@@ -310,7 +310,7 @@ func (c *UserController) WaitFor{{$value.Name}}(ctx context.Context, sentMsg Mes
         sub.Cancel(ctx)
 
         // Logging unsubscribing
-        c.logger.Info(ctx, "Unsubscribed from channel")
+        c.logger.Info(ctx, "Unlistend from channel")
     } ()
 
     // Execute callback for publication
