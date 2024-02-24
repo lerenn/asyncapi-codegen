@@ -101,16 +101,16 @@ func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
 }
 
 {{if .MethodCount -}}
-// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
-// For channels with parameters, they should be subscribed independently.
-func (c *{{ .Prefix }}Controller) SubscribeAll(ctx context.Context, as {{ .Prefix }}Subscriber) error {
+// SubscribeToAll will receive to channels without parameters on which the app is expecting messages.
+// For channels with parameters, they should be received independently.
+func (c *{{ .Prefix }}Controller) SubscribeToAll(ctx context.Context, as {{ .Prefix }}Subscriber) error {
     if as == nil {
         return extensions.ErrNil{{ .Prefix }}Subscriber
     }
 
-    {{range  $key, $value := .SubscribeChannels -}}
-    {{- if not .Parameters }}
-    if err := c.Subscribe{{operationName $value}}(ctx, as.{{operationName $value}}); err != nil {
+    {{range  $key, $value := .ReceiveOperations -}}
+    {{- if not .Channel.ReferenceTo.Parameters }}
+    if err := c.SubscribeTo{{$value.Name}}(ctx, as.{{$value.Name}}); err != nil {
         return err
     }
     {{- end}}
@@ -119,24 +119,24 @@ func (c *{{ .Prefix }}Controller) SubscribeAll(ctx context.Context, as {{ .Prefi
     return nil
 }
 
-// UnsubscribeAll will unsubscribe all remaining subscribed channels
+// UnsubscribeAll will stop the reception of all remaining received channels
 func (c *{{ .Prefix }}Controller) UnsubscribeAll(ctx context.Context) {
-    {{- range  $key, $value := .SubscribeChannels}}
-    {{- if not .Parameters}}
-    c.Unsubscribe{{operationName $value}}(ctx)
+    {{- range  $key, $value := .ReceiveOperations}}
+    {{- if not .Channel.ReferenceTo.Parameters}}
+    c.Unsubscribe{{$value.Name}}(ctx)
     {{- end}}
     {{- end}}
 }
 {{- end}}
 
-{{range  $key, $value := .SubscribeChannels -}}
-// Subscribe{{operationName $value}} will subscribe to new messages from '{{$key}}' channel.
+{{range $key, $value := .ReceiveOperations -}}
+// SubscribeTo{{$value.Name}} will receive '{{$value.GetMessage.Name}}' messages from '{{$value.Channel.ReferenceTo.Address}}' channel
 //
 // Callback function 'fn' will be called each time a new message is received.
-{{- if .Parameters}}
-func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
+{{- if .Channel.ReferenceTo.Parameters}}
+func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context.Context, fn func (ctx context.Context, msg {{channelToMessageTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}(ctx context.Context, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- end }}
     // Get channel path
     path := {{ generateChannelPath $value }}
@@ -161,7 +161,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context
     }
     c.logger.Info(ctx, "Subscribed to channel")
 
-    // Asynchronously listen to new messages and pass them to app subscriber
+    // Asynchronously listen to new messages and pass them to app receiver
     go func() {
         for {
             // Wait for next message
@@ -179,12 +179,12 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context
             // Execute middlewares before handling the message
             if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
                 // Process message
-                msg, err := new{{channelToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
+                msg, err := new{{operationToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
                 if err != nil {
                     return err
                 }
 
-                {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
+                {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
                     // Add correlation ID to context if it exists
                     if id := msg.CorrelationID(); id != "" {
                         ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
@@ -207,17 +207,17 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context
     return nil
 }
 
-// Unsubscribe{{operationName $value}} will unsubscribe messages from '{{$key}}' channel.
+// Unsubscribe{{$value.Name}} will stop the reception of messages from '{{$value.Channel.ReferenceTo.Address}}' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-{{- if .Parameters}}
-func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters) {
+{{- if .Channel.ReferenceTo.Parameters}}
+func (c *{{ $.Prefix }}Controller) Unsubscribe{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters) {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value}}(ctx context.Context) {
+func (c *{{ $.Prefix }}Controller) Unsubscribe{{$value.Name}}(ctx context.Context) {
 {{- end}}
     // Get channel path
     path := {{ generateChannelPath $value }}
 
-    // Check if there subscribers for this channel
+    // Check if there receivers for this channel
     sub, exists := c.subscriptions[path]
     if !exists {
         return
@@ -229,24 +229,24 @@ func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value}}(ctx conte
     // Stop the subscription
     sub.Cancel(ctx)
 
-    // Remove if from the subscribers
+    // Remove if from the receivers
     delete(c.subscriptions, path)
 
     c.logger.Info(ctx, "Unsubscribed from channel")
 }
 {{- end}}
 
-{{- range  $key, $value := .PublishChannels}}
-// Publish{{operationName $value}} will publish messages to '{{$key}}' channel
-{{- if .Parameters }}
-func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters, msg {{channelToMessageTypeName $value}}) error {
+{{- range  $key, $value := .SendOperations}}
+// Publish{{$value.Name}} will publish '{{$value.GetMessage.Name}}' messages to '{{$value.Channel.ReferenceTo.Address}}' channel
+{{- if .Channel.ReferenceTo.Parameters }}
+func (c *{{ $.Prefix }}Controller) Publish{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) error {
 {{- else }}
-func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(ctx context.Context, msg {{channelToMessageTypeName $value}}) error {
+func (c *{{ $.Prefix }}Controller) Publish{{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) error {
 {{- end }}
     // Get channel path
     path := {{ generateChannelPath $value }}
 
-    {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
+    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
     // Set correlation ID if it does not exist
     if id := msg.CorrelationID(); id == "" {
         msg.SetCorrelationID(uuid.New().String())
@@ -256,7 +256,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(ctx context.C
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
     ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
-    {{if ne $value.GetChannelMessage.CorrelationIDLocation "" -}}
+    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
     ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
     {{- end}}
 
@@ -269,7 +269,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(ctx context.C
     // Set broker message to context
     ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
 
-    // Publish the message on event-broker through middlewares
+    // Send the message on event-broker through middlewares
     return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
         return c.broker.Publish(ctx, path, brokerMsg)
     })
@@ -277,18 +277,18 @@ func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(ctx context.C
 {{end}}
 
 {{if eq .Prefix "User" -}}
-{{- range  $key, $value := .SubscribeChannels -}}
-{{- if ne $value.Subscribe.Message.CorrelationIDLocation ""}}
-// WaitFor{{operationName $value}} will wait for a specific message by its correlation ID.
+{{- range  $key, $value := .ReceiveOperations -}}
+{{- if ne $value.GetMessage.CorrelationIDLocation ""}}
+// WaitFor{{$value.Name}} will wait for a specific message by its correlation ID.
 //
-// The pub function is the publication function that should be used to send the message.
+// The pub function is the publication function that should be used to publish the message.
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-{{- if .Parameters}}
-func (c *UserController) WaitFor{{operationName $value}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
+{{- if .Channel.ReferenceTo.Parameters}}
+func (c *UserController) WaitFor{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, sentMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{operationToMessageTypeName $value}}, error) {
 {{- else}}
-func (c *UserController) WaitFor{{operationName $value}}(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{channelToMessageTypeName $value}}, error) {
+func (c *UserController) WaitFor{{$value.Name}}(ctx context.Context, sentMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{operationToMessageTypeName $value}}, error) {
 {{- end}}
     // Get channel path
     path := {{ generateChannelPath $value }}
@@ -296,15 +296,15 @@ func (c *UserController) WaitFor{{operationName $value}}(ctx context.Context, pu
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
 
-    // Subscribe to broker channel
+    // Receive to broker channel
     sub, err := c.broker.Subscribe(ctx, path)
     if err != nil {
         c.logger.Error(ctx, err.Error())
-        return {{channelToMessageTypeName $value}}{}, err
+        return {{operationToMessageTypeName $value}}{}, err
     }
-    c.logger.Info(ctx, "Subscribed to channel")
+    c.logger.Info(ctx, "Received to channel")
 
-    // Close subscriber on leave
+    // Close receiver on leave
     defer func(){
         // Stop the subscription
         sub.Cancel(ctx)
@@ -315,7 +315,7 @@ func (c *UserController) WaitFor{{operationName $value}}(ctx context.Context, pu
 
     // Execute callback for publication
     if err = pub(ctx); err != nil {
-        return {{channelToMessageTypeName $value}}{}, err
+        return {{operationToMessageTypeName $value}}{}, err
     }
 
     // Wait for corresponding response
@@ -327,36 +327,36 @@ func (c *UserController) WaitFor{{operationName $value}}(ctx context.Context, pu
             // receiving the expected message
             if !open && brokerMsg.IsUninitialized() {
                 c.logger.Error(ctx, "Channel closed before getting message")
-                return {{channelToMessageTypeName $value}}{}, extensions.ErrSubscriptionCanceled
+                return {{operationToMessageTypeName $value}}{}, extensions.ErrSubscriptionCanceled
             }
 
             // Get new message
-            msg, err := new{{channelToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
+            msg, err := new{{operationToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
             if err != nil {
                 c.logger.Error(ctx, err.Error())
             }
 
             // If message doesn't have corresponding correlation ID, then continue
-            if publishMsg.CorrelationID() != msg.CorrelationID() {
+            if sentMsg.CorrelationID() != msg.CorrelationID() {
                 continue
             }
 
             // Set context with received values as it is the expected message
             msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
             msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
-            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, publishMsg.CorrelationID())
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, sentMsg.CorrelationID())
 
             // Execute middlewares before returning
             if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
-                return {{channelToMessageTypeName $value}}{}, err
+                return {{operationToMessageTypeName $value}}{}, err
             }
 
             // Return the message to the caller from the broker that could have
             // been modified by middlewares
-            return new{{channelToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
+            return new{{operationToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
         case <-ctx.Done(): // Set corrsponding error if context is done
             c.logger.Error(ctx, "Context done before getting message")
-            return {{channelToMessageTypeName $value}}{}, extensions.ErrContextCanceled
+            return {{operationToMessageTypeName $value}}{}, extensions.ErrContextCanceled
         }
     }
 }

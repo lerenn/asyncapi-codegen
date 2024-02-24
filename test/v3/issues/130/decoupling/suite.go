@@ -1,23 +1,15 @@
-//go:generate go run ../../../../cmd/asyncapi-codegen -p issue101 -i ./asyncapi.yaml -o ./asyncapi.gen.go
+//go:generate go run ../../../../../cmd/asyncapi-codegen -p decoupling -i ./asyncapi.yaml -o ./asyncapi.gen.go
 
-package issue101
+package decoupling
 
 import (
 	"context"
-	"testing"
+	"sync"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	"github.com/stretchr/testify/suite"
 )
-
-func TestSuite(t *testing.T) {
-	brokers, cleanup := asyncapi_test.BrokerControllers(t)
-	defer cleanup()
-
-	// Only do it with one broker as this is not testing the broker
-	suite.Run(t, NewSuite(brokers[0]))
-}
 
 type Suite struct {
 	broker extensions.BrokerController
@@ -47,4 +39,23 @@ func (suite *Suite) SetupTest() {
 func (suite *Suite) TearDownTest() {
 	suite.app.Close(context.Background())
 	suite.user.Close(context.Background())
+}
+
+func (suite *Suite) TestSendReceive() {
+	var wg sync.WaitGroup
+
+	// Subscribe to a message
+	suite.app.SubscribeToConsumeUserSignup(context.Background(), func(ctx context.Context, msg UserMessage) {
+		suite.Require().NotNil(msg.Payload.DisplayName)
+		suite.Require().Equal("testing", *msg.Payload.DisplayName)
+		wg.Done()
+	})
+	wg.Add(1)
+
+	// Publish a message
+	var msg UserMessage
+	msg.Payload.DisplayName = utils.ToPointer("testing")
+	suite.user.PublishConsumeUserSignup(context.Background(), msg)
+
+	wg.Wait()
 }

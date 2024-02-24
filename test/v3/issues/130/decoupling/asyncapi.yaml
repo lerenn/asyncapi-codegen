@@ -1,5 +1,4 @@
 asyncapi: 3.0.0
-...
 channels:
   UserSignup:
     address: user/signedup
@@ -12,7 +11,7 @@ channels:
               type: string
               description: Name of the user
 operations:
-  ConsumeUserSignups:
+  ConsumeUserSignup:
     action: receive
     channel: 
       $ref: "#/channels/UserSignup"

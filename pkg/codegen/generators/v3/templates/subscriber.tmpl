@@ -1,9 +1,9 @@
 {{if .MethodCount -}}
 // {{ .Prefix }}Subscriber represents all handlers that are expecting messages for {{ .Prefix }}
 type {{ .Prefix }}Subscriber interface {
-{{- range  $key, $value := .Channels}}
-    // {{operationName $value}} subscribes to messages placed on the '{{ $key }}' channel
-    {{operationName $value}}(ctx context.Context, msg {{channelToMessageTypeName $value}})
+{{- range  $key, $value := .Operations}}
+    // {{$value.Name}} subscribes to messages placed on the '{{ $key }}' channel
+    {{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}})
 {{end}}
 }
 {{- end}}

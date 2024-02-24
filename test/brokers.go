@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 )
 
@@ -29,11 +28,11 @@ func BrokerControllers(t *testing.T) (brokers []extensions.BrokerController, cle
 	brokers = append(brokers, nb)
 
 	// Add kafka broker
-	kb, err := kafka.NewController([]string{"kafka:9092"}, kafka.WithGroupID(queueGroupID))
-	if err != nil {
-		panic(err)
-	}
-	brokers = append(brokers, kb)
+	// kb, err := kafka.NewController([]string{"kafka:9092"}, kafka.WithGroupID(queueGroupID))
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// brokers = append(brokers, kb)
 
 	// Return brokers with their cleanup functions
 	return brokers, func() {

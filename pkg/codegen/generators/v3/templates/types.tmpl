@@ -58,12 +58,14 @@ type {{ namifyWithoutParam .Name }}Parameters struct {
 }
 {{end}}
 
-{{- if and $value.Subscribe $value.Subscribe.Message.Payload}}
-{{template "message" $value.Subscribe.Message}}
+{{- range $key, $value := $value.Messages}}
+{{template "message" $value}}
 {{end -}}
+{{- end}}
 
-{{- if and $value.Publish $value.Publish.Message.Payload}}
-{{template "message" $value.Publish.Message}}
+{{range $key, $value := .Operations -}}
+{{- range $key, $value := $value.Messages}}
+{{template "message" $value}}
 {{end -}}
 {{- end}}
 

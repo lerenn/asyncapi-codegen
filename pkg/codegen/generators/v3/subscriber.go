@@ -10,7 +10,7 @@ import (
 // asyncapi specification into subscriber golang code.
 type SubscriberGenerator struct {
 	MethodCount uint
-	Channels    map[string]*asyncapi.Channel
+	Operations  map[string]*asyncapi.Operation
 	Prefix      string
 }
 
@@ -18,22 +18,22 @@ type SubscriberGenerator struct {
 func NewSubscriberGenerator(side Side, spec asyncapi.Specification) SubscriberGenerator {
 	var gen SubscriberGenerator
 
-	// Get subscription methods count based on publish/subscribe count
-	publishCount, subscribeCount := spec.GetPublishSubscribeCount()
+	// Get subscription methods count based on action count
+	sendCount, receiveCount := spec.GetByActionCount()
 	if side == SideIsApplication {
-		gen.MethodCount = publishCount
+		gen.MethodCount = sendCount
 	} else {
-		gen.MethodCount = subscribeCount
+		gen.MethodCount = receiveCount
 	}
 
-	// Get channels based on publish/subscribe
-	gen.Channels = make(map[string]*asyncapi.Channel)
-	for k, v := range spec.Channels {
+	// Get channels based on send/receive
+	gen.Operations = make(map[string]*asyncapi.Operation)
+	for k, op := range spec.Operations {
 		// Channels are reverse on application side
-		if v.Publish != nil && side == SideIsApplication {
-			gen.Channels[k] = v
-		} else if v.Subscribe != nil && side == SideIsUser {
-			gen.Channels[k] = v
+		if op.Action.IsSend() && side == SideIsApplication {
+			gen.Operations[k] = op
+		} else if op.Action.IsReceive() && side == SideIsUser {
+			gen.Operations[k] = op
 		}
 	}
 

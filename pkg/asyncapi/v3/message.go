@@ -50,6 +50,8 @@ const (
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#messageObject
 type Message struct {
+	// --- AsyncAPI fields -----------------------------------------------------
+
 	Description   string         `json:"description"`
 	Headers       *Schema        `json:"headers"`
 	OneOf         []*Message     `json:"oneOf"`
@@ -58,6 +60,7 @@ type Message struct {
 	Reference     string         `json:"$ref"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
+
 	Name        string   `json:"-"`
 	ReferenceTo *Message `json:"-"`
 

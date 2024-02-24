@@ -9,7 +9,7 @@ func Tests(client *dagger.Client, brokers map[string]*dagger.Service) map[string
 	containers := make(map[string]*dagger.Container, 0)
 
 	// Set examples
-	for _, p := range directoriesAtSublevel(3, "./test") {
+	for _, p := range directoriesAtSublevel(2, "./test") {
 		t := client.Container().
 			// Add base image
 			From(GolangImage).

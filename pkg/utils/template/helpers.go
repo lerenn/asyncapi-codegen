@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
-
-	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
 )
 
 // NamifyWithoutParams will convert a sentence to a golang conventional type name.
@@ -67,41 +65,7 @@ func SnakeCase(sentence string) string {
 // golang conventional type names.
 func ReferenceToTypeName(ref string) string {
 	parts := strings.Split(ref, "/")
-
-	name := parts[3]
-	if parts[2] == "messages" {
-		name += "Message"
-	} else if parts[2] == "schemas" {
-		name += "Schema"
-	}
-
-	return Namify(name)
-}
-
-// referenceToSlicePath will convert a reference to a slice where each element is a
-// step of the path.
-func referenceToSlicePath(ref string) []string {
-	ref = strings.ReplaceAll(ref, ".", "/")
-	ref = strings.ReplaceAll(ref, "#", "")
-	return strings.Split(ref, "/")[1:]
-}
-
-// ReferenceToStructAttributePath will convert a reference to a struct attribute
-// path in the form of "a.b.c" where a, b and c are struct attributes in the
-// form of golang conventional type names.
-func ReferenceToStructAttributePath(ref string) string {
-	path := referenceToSlicePath(ref)
-
-	for k, v := range path {
-		// If this is concerning the header, then it will be named "headers"
-		if v == asyncapi.MessageTypeIsHeader.String() {
-			v = "headers"
-		}
-
-		path[k] = Namify(v)
-	}
-
-	return strings.Join(path, ".")
+	return Namify(parts[3])
 }
 
 // HasField will check if a struct has a field with the given name.
@@ -114,43 +78,6 @@ func HasField(v any, name string) bool {
 		return false
 	}
 	return rv.FieldByName(name).IsValid()
-}
-
-// ChannelToMessageTypeName will convert a channel to a message type name in the
-// form of golang conventional type names.
-func ChannelToMessageTypeName(ch asyncapi.Channel) string {
-	msg := ch.GetChannelMessage()
-
-	if msg.Payload != nil || msg.OneOf != nil {
-		return Namify(ch.Name) + "Message"
-	}
-
-	return ReferenceToTypeName(msg.Reference)
-}
-
-// IsRequired will check if a field is required in a asyncapi struct.
-func IsRequired(schema asyncapi.Schema, field string) bool {
-	return schema.IsFieldRequired(field)
-}
-
-// GenerateChannelPath will generate a channel path with the given channel.
-func GenerateChannelPath(ch asyncapi.Channel) string {
-	// If there is no parameter, then just return the path
-	if ch.Parameters == nil {
-		return fmt.Sprintf("%q", ch.Path)
-	}
-
-	parameterRegexp := regexp.MustCompile("{[^{}]*}")
-
-	matches := parameterRegexp.FindAllString(ch.Path, -1)
-	format := parameterRegexp.ReplaceAllString(ch.Path, "%v")
-
-	sprint := fmt.Sprintf("fmt.Sprintf(%q, ", format)
-	for _, m := range matches {
-		sprint += fmt.Sprintf("params.%s,", Namify(m))
-	}
-
-	return sprint[:len(sprint)-1] + ")"
 }
 
 // DescribeStruct will describe a struct in a human readable way using `%+v`
@@ -171,39 +98,17 @@ func Args(vs ...any) []any {
 	return vs
 }
 
-// OperationName returns `operationId` value from Publish or Subscribe operation if any.
-// If no `operationID` exists — return provided default value (`name`).
-func OperationName(channel asyncapi.Channel) string {
-	var name string
-
-	switch {
-	case channel.Publish != nil && channel.Publish.OperationID != "":
-		name = channel.Publish.OperationID
-	case channel.Subscribe != nil && channel.Subscribe.OperationID != "":
-		name = channel.Subscribe.OperationID
-	default:
-		name = channel.Name
-	}
-
-	return Namify(name)
-}
-
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
 	return template.FuncMap{
-		"namifyWithoutParam":             NamifyWithoutParams,
-		"namify":                         Namify,
-		"snakeCase":                      SnakeCase,
-		"referenceToStructAttributePath": ReferenceToStructAttributePath,
-		"referenceToTypeName":            ReferenceToTypeName,
-		"channelToMessageTypeName":       ChannelToMessageTypeName,
-		"hasField":                       HasField,
-		"isRequired":                     IsRequired,
-		"generateChannelPath":            GenerateChannelPath,
-		"describeStruct":                 DescribeStruct,
-		"multiLineComment":               MultiLineComment,
-		"args":                           Args,
-		"operationName":                  OperationName,
+		"namifyWithoutParam":  NamifyWithoutParams,
+		"namify":              Namify,
+		"snakeCase":           SnakeCase,
+		"referenceToTypeName": ReferenceToTypeName,
+		"hasField":            HasField,
+		"describeStruct":      DescribeStruct,
+		"multiLineComment":    MultiLineComment,
+		"args":                Args,
 	}
 }

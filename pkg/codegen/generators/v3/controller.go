@@ -2,6 +2,7 @@ package generatorv3
 
 import (
 	"bytes"
+	"fmt"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 )
@@ -10,8 +11,8 @@ import (
 // asyncapi specification into controller golang code.
 type ControllerGenerator struct {
 	MethodCount       uint
-	SubscribeChannels map[string]*asyncapi.Channel
-	PublishChannels   map[string]*asyncapi.Channel
+	ReceiveOperations map[string]*asyncapi.Operation
+	SendOperations    map[string]*asyncapi.Operation
 	Prefix            string
 	Version           string
 }
@@ -20,28 +21,29 @@ type ControllerGenerator struct {
 func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGenerator {
 	var gen ControllerGenerator
 
-	// Get subscription methods count based on publish/subscribe count
-	publishCount, subscribeCount := spec.GetPublishSubscribeCount()
+	// Get subscription methods count based on action count
+	sendCount, receiveCount := spec.GetByActionCount()
 	if side == SideIsApplication {
-		gen.MethodCount = publishCount
+		gen.MethodCount = sendCount
 	} else {
-		gen.MethodCount = subscribeCount
+		gen.MethodCount = receiveCount
 	}
 
-	// Get channels based on publish/subscribe
-	gen.SubscribeChannels = make(map[string]*asyncapi.Channel)
-	gen.PublishChannels = make(map[string]*asyncapi.Channel)
-	for name, channel := range spec.Channels {
-		// Add channel to subscribe channels based on channel content and side
-		if isSubscribeChannel(side, channel) {
-			gen.SubscribeChannels[name] = channel
+	// Get channels based on send/receive
+	gen.ReceiveOperations = make(map[string]*asyncapi.Operation)
+	gen.SendOperations = make(map[string]*asyncapi.Operation)
+	for name, op := range spec.Operations {
+		// Add channel to receive channels based on operation action and side
+		if isReceiveOperationForController(side, op) {
+			gen.ReceiveOperations[name] = op
 		}
 
-		// Add channel to publish channels based on channel content and side
-		if isPublishChannel(side, channel) {
-			gen.PublishChannels[name] = channel
+		// Add channel to send channels based on operation action and side
+		if isSendOperationForController(side, op) {
+			gen.SendOperations[name] = op
 		}
 	}
+	fmt.Println(side, gen.ReceiveOperations, gen.SendOperations)
 
 	// Set generation name
 	if side == SideIsApplication {
@@ -56,22 +58,22 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	return gen
 }
 
-func isSubscribeChannel(side Side, channel *asyncapi.Channel) bool {
+func isReceiveOperationForController(side Side, op *asyncapi.Operation) bool {
 	switch {
-	case side == SideIsApplication && channel.Publish != nil:
+	case side == SideIsApplication && op.Action.IsReceive():
 		return true
-	case side == SideIsUser && channel.Subscribe != nil:
+	case side == SideIsUser && op.Action.IsSend():
 		return true
 	default:
 		return false
 	}
 }
 
-func isPublishChannel(side Side, channel *asyncapi.Channel) bool {
+func isSendOperationForController(side Side, op *asyncapi.Operation) bool {
 	switch {
-	case side == SideIsApplication && channel.Subscribe != nil:
+	case side == SideIsApplication && op.Action.IsSend():
 		return true
-	case side == SideIsUser && channel.Publish != nil:
+	case side == SideIsUser && op.Action.IsReceive():
 		return true
 	default:
 		return false
