@@ -97,10 +97,10 @@ func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.B
 	return wrapped(ctx, msg)
 }
 
-func addAppContextValues(ctx context.Context, path string) context.Context {
+func addAppContextValues(ctx context.Context, addr string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "app")
-	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
+	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
@@ -108,27 +108,32 @@ func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// ListenConsumeUserSignup will receive 'UserMessage' messages from 'user/signedup' channel
+// ListenConsumeUserSignup will receive 'UserMessage' messages from 'issue130.user.signedup' channel
 //
 // Callback function 'fn' will be called each time a new message is received.
+//
+// NOTE: for now, this only support the first message from AsyncAPI list.
+//
+// NOTE: for now, this only support the first message from AsyncAPI list.
+// If you need support for other messages, please raise an issue.
 func (c *AppController) ListenConsumeUserSignup(ctx context.Context, fn func(ctx context.Context, msg UserMessage)) error {
-	// Get channel path
-	path := "UserSignup"
+	// Get channel address
+	addr := "issue130.user.signedup"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addAppContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if the controller is already listening
-	_, exists := c.subscriptions[path]
+	_, exists := c.subscriptions[addr]
 	if exists {
-		err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, path)
+		err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	sub, err := c.broker.Subscribe(ctx, path)
+	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
@@ -169,31 +174,31 @@ func (c *AppController) ListenConsumeUserSignup(ctx context.Context, fn func(ctx
 	}()
 
 	// Add the cancel channel to the inside map
-	c.subscriptions[path] = sub
+	c.subscriptions[addr] = sub
 
 	return nil
 }
 
-// UnlistenConsumeUserSignup will stop the reception of messages from 'user/signedup' channel.
+// UnlistenConsumeUserSignup will stop the reception of messages from 'issue130.user.signedup' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnlistenConsumeUserSignup(ctx context.Context) {
-	// Get channel path
-	path := "UserSignup"
+	// Get channel address
+	addr := "issue130.user.signedup"
 
 	// Check if there receivers for this channel
-	sub, exists := c.subscriptions[path]
+	sub, exists := c.subscriptions[addr]
 	if !exists {
 		return
 	}
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addAppContextValues(ctx, addr)
 
 	// Stop the subscription
 	sub.Cancel(ctx)
 
 	// Remove if from the receivers
-	delete(c.subscriptions, path)
+	delete(c.subscriptions, addr)
 
 	c.logger.Info(ctx, "Unlistend from channel")
 }
@@ -290,10 +295,10 @@ func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.
 	return wrapped(ctx, msg)
 }
 
-func addUserContextValues(ctx context.Context, path string) context.Context {
+func addUserContextValues(ctx context.Context, addr string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
-	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
+	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
@@ -318,13 +323,16 @@ func (c *UserController) ListenAll(ctx context.Context, as UserListener) error {
 func (c *UserController) UnlistenAll(ctx context.Context) {
 }
 
-// ConsumeUserSignup will send 'UserMessage' messages to 'user/signedup' channel
+// ConsumeUserSignup will send 'UserMessage' messages to 'issue130.user.signedup' channel.
+
+// NOTE: for now, this only support the first message from AsyncAPI list.
+// If you need support for other messages, please raise an issue.
 func (c *UserController) ConsumeUserSignup(ctx context.Context, msg UserMessage) error {
-	// Get channel path
-	path := "UserSignup"
+	// Get channel address
+	addr := "issue130.user.signedup"
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
@@ -338,7 +346,7 @@ func (c *UserController) ConsumeUserSignup(ctx context.Context, msg UserMessage)
 
 	// Send the message on event-broker through middlewares
 	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
-		return c.broker.Publish(ctx, path, brokerMsg)
+		return c.broker.Publish(ctx, addr, brokerMsg)
 	})
 }
 

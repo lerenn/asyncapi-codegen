@@ -84,10 +84,10 @@ func (c {{ .Prefix }}Controller) executeMiddlewares(ctx context.Context, msg *ex
     return wrapped(ctx, msg)
 }
 
-func add{{ .Prefix }}ContextValues(ctx context.Context, path string) context.Context {
+func add{{ .Prefix }}ContextValues(ctx context.Context, addr string) context.Context {
     ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "{{ .Version }}")
     ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "{{ snakeCase .Prefix }}")
-    return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
+    return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
@@ -143,23 +143,23 @@ func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, pa
 {{- else}}
 func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- end }}
-    // Get channel path
-    path := {{ generateChannelPathFromOp $value }}
+    // Get channel address
+    addr := {{ generateChannelAddrFromOp $value }}
 
     // Set context
-    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
     ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
     // Check if the controller is already listening
-    _, exists := c.subscriptions[path]
+    _, exists := c.subscriptions[addr]
     if exists {
-        err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, path)
+        err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
         c.logger.Error(ctx, err.Error())
         return err
     }
 
     // Subscribe to broker channel
-    sub, err := c.broker.Subscribe(ctx, path)
+    sub, err := c.broker.Subscribe(ctx, addr)
     if err != nil {
         c.logger.Error(ctx, err.Error())
         return err
@@ -207,7 +207,7 @@ func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, fn
     } ()
 
     // Add the cancel channel to the inside map
-    c.subscriptions[path] = sub
+    c.subscriptions[addr] = sub
 
     return nil
 }
@@ -219,23 +219,23 @@ func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context, 
 {{- else}}
 func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context) {
 {{- end}}
-    // Get channel path
-    path := {{ generateChannelPathFromOp $value }}
+    // Get channel address
+    addr := {{ generateChannelAddrFromOp $value }}
 
     // Check if there receivers for this channel
-    sub, exists := c.subscriptions[path]
+    sub, exists := c.subscriptions[addr]
     if !exists {
         return
     }
 
     // Set context
-    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
 
     // Stop the subscription
     sub.Cancel(ctx)
 
     // Remove if from the receivers
-    delete(c.subscriptions, path)
+    delete(c.subscriptions, addr)
 
     c.logger.Info(ctx, "Unlistend from channel")
 }
@@ -258,8 +258,8 @@ func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx 
 {{- else }}
 func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) error {
 {{- end }}
-    // Get channel path
-    path := {{ generateChannelPathFromOp $value }}
+    // Get channel address
+    addr := {{ generateChannelAddrFromOp $value }}
 
     {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
     // Set correlation ID if it does not exist
@@ -274,7 +274,7 @@ func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx 
     {{- end}}
 
     // Set context
-    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
     ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
     {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
     ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
@@ -291,7 +291,7 @@ func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx 
 
     // Send the message on event-broker through middlewares
     return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
-        return c.broker.Publish(ctx, path, brokerMsg)
+        return c.broker.Publish(ctx, addr, brokerMsg)
     })
 }
 
@@ -311,14 +311,14 @@ func (c *UserController) {{$value.Name}}(ctx context.Context, params {{namifyWit
 {{- else}}
 func (c *UserController) {{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
 {{- end}}
-    // Get receiving channel path
-    path := {{ generateChannelPath .Reply.Channel }}
+    // Get receiving channel address
+    addr := {{ generateChannelAddr .Reply.Channel }}
 
     // Set context
-    ctx = add{{ $.Prefix }}ContextValues(ctx, path)
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
 
     // Listening to broker channel
-    sub, err := c.broker.Subscribe(ctx, path)
+    sub, err := c.broker.Subscribe(ctx, addr)
     if err != nil {
         c.logger.Error(ctx, err.Error())
         return {{channelToMessageTypeName .Reply.Channel}}{}, err

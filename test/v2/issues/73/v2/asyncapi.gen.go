@@ -14,8 +14,8 @@ import (
 
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
-	// Hello subscribes to messages placed on the 'hello' channel
-	Hello(ctx context.Context, msg HelloMessage)
+	// Issue73Hello subscribes to messages placed on the 'issue73.hello' channel
+	Issue73Hello(ctx context.Context, msg Issue73HelloMessage)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -125,7 +125,7 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeHello(ctx, as.Hello); err != nil {
+	if err := c.SubscribeIssue73Hello(ctx, as.Issue73Hello); err != nil {
 		return err
 	}
 
@@ -134,15 +134,15 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll(ctx context.Context) {
-	c.UnsubscribeHello(ctx)
+	c.UnsubscribeIssue73Hello(ctx)
 }
 
-// SubscribeHello will subscribe to new messages from 'hello' channel.
+// SubscribeIssue73Hello will subscribe to new messages from 'issue73.hello' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.Context, msg HelloMessage)) error {
+func (c *AppController) SubscribeIssue73Hello(ctx context.Context, fn func(ctx context.Context, msg Issue73HelloMessage)) error {
 	// Get channel path
-	path := "hello"
+	path := "issue73.hello"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -182,7 +182,7 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 				// Process message
-				msg, err := newHelloMessageFromBrokerMessage(brokerMsg)
+				msg, err := newIssue73HelloMessageFromBrokerMessage(brokerMsg)
 				if err != nil {
 					return err
 				}
@@ -203,11 +203,11 @@ func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.
 	return nil
 }
 
-// UnsubscribeHello will unsubscribe messages from 'hello' channel.
+// UnsubscribeIssue73Hello will unsubscribe messages from 'issue73.hello' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeHello(ctx context.Context) {
+func (c *AppController) UnsubscribeIssue73Hello(ctx context.Context) {
 	// Get channel path
-	path := "hello"
+	path := "issue73.hello"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -324,10 +324,10 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishHello will publish messages to 'hello' channel
-func (c *UserController) PublishHello(ctx context.Context, msg HelloMessage) error {
+// PublishIssue73Hello will publish messages to 'issue73.hello' channel
+func (c *UserController) PublishIssue73Hello(ctx context.Context, msg Issue73HelloMessage) error {
 	// Get channel path
-	path := "hello"
+	path := "issue73.hello"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -397,8 +397,8 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// HelloMessage is the message expected for 'Hello' channel
-type HelloMessage struct {
+// Issue73HelloMessage is the message expected for 'Issue73Hello' channel
+type Issue73HelloMessage struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
 		Message   string    `json:"message"`
@@ -406,15 +406,15 @@ type HelloMessage struct {
 	}
 }
 
-func NewHelloMessage() HelloMessage {
-	var msg HelloMessage
+func NewIssue73HelloMessage() Issue73HelloMessage {
+	var msg Issue73HelloMessage
 
 	return msg
 }
 
-// newHelloMessageFromBrokerMessage will fill a new HelloMessage with data from generic broker message
-func newHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (HelloMessage, error) {
-	var msg HelloMessage
+// newIssue73HelloMessageFromBrokerMessage will fill a new Issue73HelloMessage with data from generic broker message
+func newIssue73HelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue73HelloMessage, error) {
+	var msg Issue73HelloMessage
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -427,8 +427,8 @@ func newHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (HelloMessa
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from HelloMessage data
-func (msg HelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from Issue73HelloMessage data
+func (msg Issue73HelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON

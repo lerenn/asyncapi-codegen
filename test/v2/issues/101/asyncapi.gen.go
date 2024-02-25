@@ -12,8 +12,8 @@ import (
 
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
-	// Test101 subscribes to messages placed on the 'test101' channel
-	Test101(ctx context.Context, msg Test101Message)
+	// Issue101Test subscribes to messages placed on the 'issue101.test' channel
+	Issue101Test(ctx context.Context, msg Issue101TestMessage)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -123,7 +123,7 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeTest101(ctx, as.Test101); err != nil {
+	if err := c.SubscribeIssue101Test(ctx, as.Issue101Test); err != nil {
 		return err
 	}
 
@@ -132,15 +132,15 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll(ctx context.Context) {
-	c.UnsubscribeTest101(ctx)
+	c.UnsubscribeIssue101Test(ctx)
 }
 
-// SubscribeTest101 will subscribe to new messages from 'test101' channel.
+// SubscribeIssue101Test will subscribe to new messages from 'issue101.test' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeTest101(ctx context.Context, fn func(ctx context.Context, msg Test101Message)) error {
+func (c *AppController) SubscribeIssue101Test(ctx context.Context, fn func(ctx context.Context, msg Issue101TestMessage)) error {
 	// Get channel path
-	path := "test101"
+	path := "issue101.test"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -180,7 +180,7 @@ func (c *AppController) SubscribeTest101(ctx context.Context, fn func(ctx contex
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 				// Process message
-				msg, err := newTest101MessageFromBrokerMessage(brokerMsg)
+				msg, err := newIssue101TestMessageFromBrokerMessage(brokerMsg)
 				if err != nil {
 					return err
 				}
@@ -201,11 +201,11 @@ func (c *AppController) SubscribeTest101(ctx context.Context, fn func(ctx contex
 	return nil
 }
 
-// UnsubscribeTest101 will unsubscribe messages from 'test101' channel.
+// UnsubscribeIssue101Test will unsubscribe messages from 'issue101.test' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeTest101(ctx context.Context) {
+func (c *AppController) UnsubscribeIssue101Test(ctx context.Context) {
 	// Get channel path
-	path := "test101"
+	path := "issue101.test"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -322,10 +322,10 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishTest101 will publish messages to 'test101' channel
-func (c *UserController) PublishTest101(ctx context.Context, msg Test101Message) error {
+// PublishIssue101Test will publish messages to 'issue101.test' channel
+func (c *UserController) PublishIssue101Test(ctx context.Context, msg Issue101TestMessage) error {
 	// Get channel path
-	path := "test101"
+	path := "issue101.test"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -395,21 +395,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Test101Message is the message expected for 'Test101' channel
-type Test101Message struct {
+// Issue101TestMessage is the message expected for 'Issue101Test' channel
+type Issue101TestMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewTest101Message() Test101Message {
-	var msg Test101Message
+func NewIssue101TestMessage() Issue101TestMessage {
+	var msg Issue101TestMessage
 
 	return msg
 }
 
-// newTest101MessageFromBrokerMessage will fill a new Test101Message with data from generic broker message
-func newTest101MessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Test101Message, error) {
-	var msg Test101Message
+// newIssue101TestMessageFromBrokerMessage will fill a new Issue101TestMessage with data from generic broker message
+func newIssue101TestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue101TestMessage, error) {
+	var msg Issue101TestMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -420,8 +420,8 @@ func newTest101MessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Test101M
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Test101Message data
-func (msg Test101Message) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from Issue101TestMessage data
+func (msg Issue101TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte

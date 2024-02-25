@@ -1,5 +1,6 @@
 //go:generate go run ../../../../../cmd/asyncapi-codegen -p requestreply -i ./asyncapi.yaml -o ./asyncapi.gen.go
 
+//nolint:revive
 package requestreply
 
 import (
@@ -45,7 +46,7 @@ func (suite *Suite) TestRequestReply() {
 	err := suite.app.ListenPingRequest(context.Background(), func(ctx context.Context, msg Ping) {
 		var respMsg Pong
 		respMsg.Payload.Event = msg.Payload.Event
-		err := suite.app.ReplyToPingRequest(context.Background(), respMsg)
+		err := suite.app.ReplyToPingRequest(ctx, respMsg)
 		suite.Require().NoError(err)
 	})
 	suite.Require().NoError(err)
@@ -65,16 +66,17 @@ func (suite *Suite) TestRequestReply() {
 
 func (suite *Suite) TestRequestReplyWithCorrelationID() {
 	// Listen to new pings
-	err := suite.app.ListenPingRequestWithCorrelationID(context.Background(), func(ctx context.Context, msg PingWithCorrelationID) {
-		// Set response
-		var respMsg PongWithCorrelationID
-		respMsg.SetAsResponseFrom(&msg)
-		respMsg.Payload.Event = msg.Payload.Event
+	err := suite.app.ListenPingRequestWithCorrelationID(context.Background(),
+		func(ctx context.Context, msg PingWithCorrelationID) {
+			// Set response
+			var respMsg PongWithCorrelationID
+			respMsg.SetAsResponseFrom(&msg)
+			respMsg.Payload.Event = msg.Payload.Event
 
-		// Send response
-		err := suite.app.ReplyToPingRequestWithCorrelationID(context.Background(), respMsg)
-		suite.Require().NoError(err)
-	})
+			// Send response
+			err := suite.app.ReplyToPingRequestWithCorrelationID(ctx, respMsg)
+			suite.Require().NoError(err)
+		})
 	suite.Require().NoError(err)
 	defer suite.app.UnlistenPingRequestWithCorrelationID(context.Background())
 

@@ -7,24 +7,24 @@ info:
 channels:
     # Without correlation ID
   ping:
-    address: /ping
+    address: issue130.ping
     messages:
       ping:
         $ref: '#/components/messages/ping'
   pong:
-    address: /pong
+    address: issue130.pong
     messages:
       pong:
         $ref: '#/components/messages/pong'
 
     # With correlation ID
   pingWithCorrelationID:
-    address: /pingWithCorrelationID
+    address: issue130.pingWithCorrelationID
     messages:
       ping:
         $ref: '#/components/messages/pingWithCorrelationID'
   pongWithCorrelationID:
-    address: /pongWithCorrelationID
+    address: issue130.pongWithCorrelationID
     messages:
       pong:
         $ref: '#/components/messages/pongWithCorrelationID'

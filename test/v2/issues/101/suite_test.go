@@ -65,19 +65,19 @@ func (suite *Suite) TestAddingHeader() {
 	var wg sync.WaitGroup
 
 	// Expected message
-	sent := Test101Message{
+	sent := Issue101TestMessage{
 		Payload: "hello!",
 	}
 
 	// Check what the app receive
 	wg.Add(1)
-	err := suite.app.SubscribeTest101(context.Background(), func(_ context.Context, msg Test101Message) {
+	err := suite.app.SubscribeIssue101Test(context.Background(), func(_ context.Context, msg Issue101TestMessage) {
 		wg.Done()
 	})
 	suite.Require().NoError(err)
 
 	// Publish the message
-	err = suite.user.PublishTest101(context.Background(), sent)
+	err = suite.user.PublishIssue101Test(context.Background(), sent)
 	suite.Require().NoError(err)
 
 	// Wait for the message to be received by the app

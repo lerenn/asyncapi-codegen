@@ -18,18 +18,18 @@ type Suite struct {
 
 func (suite *Suite) TestCorrectPublicationsSubscriptionsAreGenerated() {
 	// Check that the User subscriber is generated with correct subscriptions
-	_ = UserSubscriber.Chat
-	_ = UserSubscriber.Status
+	_ = UserSubscriber.Issue49Chat
+	_ = UserSubscriber.Issue49Status
 
 	// Check that the User publisher is generated with correct publications
 	userController := UserController{}
-	_ = userController.PublishChat
+	_ = userController.PublishIssue49Chat
 
 	// Check that the User subscriber is generated with correct subscriptions
-	_ = AppSubscriber.Chat
+	_ = AppSubscriber.Issue49Chat
 
 	// Check that the App publisher is generated with correct publications
 	appController := AppController{}
-	_ = appController.PublishStatus
-	_ = appController.PublishChat
+	_ = appController.PublishIssue49Status
+	_ = appController.PublishIssue49Chat
 }

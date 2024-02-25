@@ -20,28 +20,28 @@ type Channel struct {
 }
 
 // Process processes the Channel to make it ready for code generation.
-func (c *Channel) Process(path string, spec Specification) {
+func (ch *Channel) Process(path string, spec Specification) {
 	// Set channel name and path
-	c.Name = utils.UpperFirstLetter(path)
-	c.Path = path
+	ch.Name = utils.UpperFirstLetter(path)
+	ch.Path = path
 
 	// Process messages
-	for name, msg := range c.Messages {
+	for name, msg := range ch.Messages {
 		msg.Process(name, spec)
 	}
 
 	// Process parameters
-	for name, parameter := range c.Parameters {
+	for name, parameter := range ch.Parameters {
 		parameter.Process(name, spec)
 	}
 
 	// Add pointer to reference if there is one
-	if c.Reference != "" {
-		c.ReferenceTo = spec.ReferenceChannel(c.Reference)
+	if ch.Reference != "" {
+		ch.ReferenceTo = spec.ReferenceChannel(ch.Reference)
 	}
 }
 
-// Follow returns referenced channel if specified or the actual channel
+// Follow returns referenced channel if specified or the actual channel.
 func (ch *Channel) Follow() *Channel {
 	if ch.ReferenceTo != nil {
 		return ch.ReferenceTo
@@ -49,7 +49,7 @@ func (ch *Channel) Follow() *Channel {
 	return ch
 }
 
-// GetMessage will return the channel message
+// GetMessage will return the channel message.
 func (ch Channel) GetMessage() *Message {
 	for _, m := range ch.Follow().Messages {
 		return m.Follow() // TODO: change

@@ -7,7 +7,7 @@ info:
   title: Test101 application
   version: '1.0.0'
 channels:
-  test101:
+  issue101.test:
     publish:
       message:
         payload:

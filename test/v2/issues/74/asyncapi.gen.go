@@ -14,8 +14,8 @@ import (
 
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
-	// TestChannel subscribes to messages placed on the 'testChannel' channel
-	TestChannel(ctx context.Context, msg TestMessage)
+	// Issue74TestChannel subscribes to messages placed on the 'issue74.testChannel' channel
+	Issue74TestChannel(ctx context.Context, msg TestMessage)
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -125,7 +125,7 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeTestChannel(ctx, as.TestChannel); err != nil {
+	if err := c.SubscribeIssue74TestChannel(ctx, as.Issue74TestChannel); err != nil {
 		return err
 	}
 
@@ -134,15 +134,15 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll(ctx context.Context) {
-	c.UnsubscribeTestChannel(ctx)
+	c.UnsubscribeIssue74TestChannel(ctx)
 }
 
-// SubscribeTestChannel will subscribe to new messages from 'testChannel' channel.
+// SubscribeIssue74TestChannel will subscribe to new messages from 'issue74.testChannel' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeTestChannel(ctx context.Context, fn func(ctx context.Context, msg TestMessage)) error {
+func (c *AppController) SubscribeIssue74TestChannel(ctx context.Context, fn func(ctx context.Context, msg TestMessage)) error {
 	// Get channel path
-	path := "testChannel"
+	path := "issue74.testChannel"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -203,11 +203,11 @@ func (c *AppController) SubscribeTestChannel(ctx context.Context, fn func(ctx co
 	return nil
 }
 
-// UnsubscribeTestChannel will unsubscribe messages from 'testChannel' channel.
+// UnsubscribeIssue74TestChannel will unsubscribe messages from 'issue74.testChannel' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeTestChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeIssue74TestChannel(ctx context.Context) {
 	// Get channel path
-	path := "testChannel"
+	path := "issue74.testChannel"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -324,10 +324,10 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishTestChannel will publish messages to 'testChannel' channel
-func (c *UserController) PublishTestChannel(ctx context.Context, msg TestMessage) error {
+// PublishIssue74TestChannel will publish messages to 'issue74.testChannel' channel
+func (c *UserController) PublishIssue74TestChannel(ctx context.Context, msg TestMessage) error {
 	// Get channel path
-	path := "testChannel"
+	path := "issue74.testChannel"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)

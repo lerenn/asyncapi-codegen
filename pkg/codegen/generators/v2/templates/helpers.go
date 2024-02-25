@@ -36,6 +36,21 @@ func ReferenceToStructAttributePath(ref string) string {
 	return strings.Join(path, ".")
 }
 
+// ReferenceToTypeName will convert a reference to a type name in the form of
+// golang conventional type names.
+func ReferenceToTypeName(ref string) string {
+	parts := strings.Split(ref, "/")
+
+	name := parts[3]
+	if parts[2] == "messages" {
+		name += "Message"
+	} else if parts[2] == "schemas" {
+		name += "Schema"
+	}
+
+	return templateutil.Namify(name)
+}
+
 // ChannelToMessageTypeName will convert a channel to a message type name in the
 // form of golang conventional type names.
 func ChannelToMessageTypeName(ch asyncapi.Channel) string {
@@ -45,7 +60,7 @@ func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 		return templateutil.Namify(ch.Name) + "Message"
 	}
 
-	return templateutil.ReferenceToTypeName(msg.Reference)
+	return ReferenceToTypeName(msg.Reference)
 }
 
 // IsRequired will check if a field is required in a asyncapi struct.
@@ -99,5 +114,6 @@ func HelpersFunctions() template.FuncMap {
 		"generateChannelPath":            GenerateChannelPath,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
 		"operationName":                  OperationName,
+		"referenceToTypeName":            ReferenceToTypeName,
 	}
 }

@@ -6,22 +6,22 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
 
-// OperationAction represents an OperationAction
+// OperationAction represents an OperationAction.
 type OperationAction string
 
 const (
-	// OperationActionIsSend represents a send action
+	// OperationActionIsSend represents a send action.
 	OperationActionIsSend OperationAction = "send"
-	// OperationActionIsReceive represents a receive action
+	// OperationActionIsReceive represents a receive action.
 	OperationActionIsReceive OperationAction = "receive"
 )
 
-// IsSend returns true if the operation action is send
+// IsSend returns true if the operation action is send.
 func (oa OperationAction) IsSend() bool {
 	return oa == OperationActionIsSend
 }
 
-// IsReceive returns true if the operation action is receive
+// IsReceive returns true if the operation action is receive.
 func (oa OperationAction) IsReceive() bool {
 	return oa == OperationActionIsReceive
 }
@@ -94,7 +94,7 @@ func (op *Operation) Process(name string, spec Specification) {
 	}
 }
 
-// GetMessage will return the operation message
+// GetMessage will return the operation message.
 func (op Operation) GetMessage() *Message {
 	if len(op.Messages) > 0 {
 		return op.Messages[0] // TODO: change

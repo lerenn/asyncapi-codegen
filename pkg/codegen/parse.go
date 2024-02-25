@@ -44,7 +44,6 @@ func FromYAML(data []byte) (CodeGen, error) {
 
 // FromJSON parses the AsyncAPI specification from a JSON file.
 func FromJSON(data []byte) (CodeGen, error) {
-
 	// Check that the version is correct
 	version, err := versionFromJSON(data)
 	if err != nil {

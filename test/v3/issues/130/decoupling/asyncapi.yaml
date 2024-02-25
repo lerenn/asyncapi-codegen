@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 channels:
   UserSignup:
-    address: user/signedup
+    address: issue130.user.signedup
     messages: 
       UserMessage: 
         payload:

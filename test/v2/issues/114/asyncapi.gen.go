@@ -58,21 +58,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// StatusMessage is the message expected for 'Status' channel
-type StatusMessage struct {
+// Issue114StatusMessage is the message expected for 'Issue114Status' channel
+type Issue114StatusMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewStatusMessage() StatusMessage {
-	var msg StatusMessage
+func NewIssue114StatusMessage() Issue114StatusMessage {
+	var msg Issue114StatusMessage
 
 	return msg
 }
 
-// newStatusMessageFromBrokerMessage will fill a new StatusMessage with data from generic broker message
-func newStatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (StatusMessage, error) {
-	var msg StatusMessage
+// newIssue114StatusMessageFromBrokerMessage will fill a new Issue114StatusMessage with data from generic broker message
+func newIssue114StatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue114StatusMessage, error) {
+	var msg Issue114StatusMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -83,8 +83,8 @@ func newStatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (StatusMes
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from StatusMessage data
-func (msg StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from Issue114StatusMessage data
+func (msg Issue114StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte

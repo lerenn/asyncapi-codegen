@@ -99,10 +99,10 @@ func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.B
 	return wrapped(ctx, msg)
 }
 
-func addAppContextValues(ctx context.Context, path string) context.Context {
+func addAppContextValues(ctx context.Context, addr string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "app")
-	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
+	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
@@ -110,7 +110,7 @@ func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// ListenPingRequest will receive 'Ping' messages from '/ping' channel
+// ListenPingRequest will receive 'Ping' messages from 'issue130.ping' channel
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -119,23 +119,23 @@ func (c *AppController) Close(ctx context.Context) {
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *AppController) ListenPingRequest(ctx context.Context, fn func(ctx context.Context, msg Ping)) error {
-	// Get channel path
-	path := "ping"
+	// Get channel address
+	addr := "issue130.ping"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addAppContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if the controller is already listening
-	_, exists := c.subscriptions[path]
+	_, exists := c.subscriptions[addr]
 	if exists {
-		err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, path)
+		err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	sub, err := c.broker.Subscribe(ctx, path)
+	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
@@ -176,34 +176,34 @@ func (c *AppController) ListenPingRequest(ctx context.Context, fn func(ctx conte
 	}()
 
 	// Add the cancel channel to the inside map
-	c.subscriptions[path] = sub
+	c.subscriptions[addr] = sub
 
 	return nil
 }
 
-// UnlistenPingRequest will stop the reception of messages from '/ping' channel.
+// UnlistenPingRequest will stop the reception of messages from 'issue130.ping' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnlistenPingRequest(ctx context.Context) {
-	// Get channel path
-	path := "ping"
+	// Get channel address
+	addr := "issue130.ping"
 
 	// Check if there receivers for this channel
-	sub, exists := c.subscriptions[path]
+	sub, exists := c.subscriptions[addr]
 	if !exists {
 		return
 	}
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addAppContextValues(ctx, addr)
 
 	// Stop the subscription
 	sub.Cancel(ctx)
 
 	// Remove if from the receivers
-	delete(c.subscriptions, path)
+	delete(c.subscriptions, addr)
 
 	c.logger.Info(ctx, "Unlistend from channel")
-} // ListenPingRequestWithCorrelationID will receive 'PingWithCorrelationID' messages from '/pingWithCorrelationID' channel
+} // ListenPingRequestWithCorrelationID will receive 'PingWithCorrelationID' messages from 'issue130.pingWithCorrelationID' channel
 // Callback function 'fn' will be called each time a new message is received.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
@@ -211,23 +211,23 @@ func (c *AppController) UnlistenPingRequest(ctx context.Context) {
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *AppController) ListenPingRequestWithCorrelationID(ctx context.Context, fn func(ctx context.Context, msg PingWithCorrelationID)) error {
-	// Get channel path
-	path := "pingWithCorrelationID"
+	// Get channel address
+	addr := "issue130.pingWithCorrelationID"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addAppContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if the controller is already listening
-	_, exists := c.subscriptions[path]
+	_, exists := c.subscriptions[addr]
 	if exists {
-		err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, path)
+		err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
 
 	// Subscribe to broker channel
-	sub, err := c.broker.Subscribe(ctx, path)
+	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return err
@@ -273,46 +273,46 @@ func (c *AppController) ListenPingRequestWithCorrelationID(ctx context.Context, 
 	}()
 
 	// Add the cancel channel to the inside map
-	c.subscriptions[path] = sub
+	c.subscriptions[addr] = sub
 
 	return nil
 }
 
-// UnlistenPingRequestWithCorrelationID will stop the reception of messages from '/pingWithCorrelationID' channel.
+// UnlistenPingRequestWithCorrelationID will stop the reception of messages from 'issue130.pingWithCorrelationID' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnlistenPingRequestWithCorrelationID(ctx context.Context) {
-	// Get channel path
-	path := "pingWithCorrelationID"
+	// Get channel address
+	addr := "issue130.pingWithCorrelationID"
 
 	// Check if there receivers for this channel
-	sub, exists := c.subscriptions[path]
+	sub, exists := c.subscriptions[addr]
 	if !exists {
 		return
 	}
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addAppContextValues(ctx, addr)
 
 	// Stop the subscription
 	sub.Cancel(ctx)
 
 	// Remove if from the receivers
-	delete(c.subscriptions, path)
+	delete(c.subscriptions, addr)
 
 	c.logger.Info(ctx, "Unlistend from channel")
 }
 
 // ReplyToPingRequest should be used to reply to PingRequest messages by sending
-// 'Pong' messages to '/pong' channel.
+// 'Pong' messages to 'issue130.pong' channel.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *AppController) ReplyToPingRequest(ctx context.Context, msg Pong) error {
-	// Get channel path
-	path := "pong"
+	// Get channel address
+	addr := "issue130.pong"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addAppContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
@@ -326,18 +326,18 @@ func (c *AppController) ReplyToPingRequest(ctx context.Context, msg Pong) error 
 
 	// Send the message on event-broker through middlewares
 	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
-		return c.broker.Publish(ctx, path, brokerMsg)
+		return c.broker.Publish(ctx, addr, brokerMsg)
 	})
 }
 
 // ReplyToPingRequestWithCorrelationID should be used to reply to PingRequestWithCorrelationID messages by sending
-// 'PongWithCorrelationID' messages to '/pongWithCorrelationID' channel.
+// 'PongWithCorrelationID' messages to 'issue130.pongWithCorrelationID' channel.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *AppController) ReplyToPingRequestWithCorrelationID(ctx context.Context, msg PongWithCorrelationID) error {
-	// Get channel path
-	path := "pongWithCorrelationID"
+	// Get channel address
+	addr := "issue130.pongWithCorrelationID"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
@@ -347,7 +347,7 @@ func (c *AppController) ReplyToPingRequestWithCorrelationID(ctx context.Context,
 	}
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addAppContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
 
@@ -362,7 +362,7 @@ func (c *AppController) ReplyToPingRequestWithCorrelationID(ctx context.Context,
 
 	// Send the message on event-broker through middlewares
 	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
-		return c.broker.Publish(ctx, path, brokerMsg)
+		return c.broker.Publish(ctx, addr, brokerMsg)
 	})
 }
 
@@ -461,10 +461,10 @@ func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.
 	return wrapped(ctx, msg)
 }
 
-func addUserContextValues(ctx context.Context, path string) context.Context {
+func addUserContextValues(ctx context.Context, addr string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
-	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
+	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
@@ -489,17 +489,17 @@ func (c *UserController) ListenAll(ctx context.Context, as UserListener) error {
 func (c *UserController) UnlistenAll(ctx context.Context) {
 }
 
-// AsyncPingRequest will send 'Ping' messages to '/ping' channel.
+// AsyncPingRequest will send 'Ping' messages to 'issue130.ping' channel.
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *UserController) AsyncPingRequest(ctx context.Context, msg Ping) error {
-	// Get channel path
-	path := "ping"
+	// Get channel address
+	addr := "issue130.ping"
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
@@ -513,7 +513,7 @@ func (c *UserController) AsyncPingRequest(ctx context.Context, msg Ping) error {
 
 	// Send the message on event-broker through middlewares
 	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
-		return c.broker.Publish(ctx, path, brokerMsg)
+		return c.broker.Publish(ctx, addr, brokerMsg)
 	})
 }
 
@@ -526,14 +526,14 @@ func (c *UserController) AsyncPingRequest(ctx context.Context, msg Ping) error {
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *UserController) PingRequest(ctx context.Context, msg Ping) (Pong, error) {
-	// Get receiving channel path
-	path := "pong"
+	// Get receiving channel address
+	addr := "issue130.pong"
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, addr)
 
 	// Listening to broker channel
-	sub, err := c.broker.Subscribe(ctx, path)
+	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return Pong{}, err
@@ -591,14 +591,14 @@ func (c *UserController) PingRequest(ctx context.Context, msg Ping) (Pong, error
 	}
 }
 
-// AsyncPingRequestWithCorrelationID will send 'PingWithCorrelationID' messages to '/pingWithCorrelationID' channel.
+// AsyncPingRequestWithCorrelationID will send 'PingWithCorrelationID' messages to 'issue130.pingWithCorrelationID' channel.
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *UserController) AsyncPingRequestWithCorrelationID(ctx context.Context, msg PingWithCorrelationID) error {
-	// Get channel path
-	path := "pingWithCorrelationID"
+	// Get channel address
+	addr := "issue130.pingWithCorrelationID"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
@@ -606,7 +606,7 @@ func (c *UserController) AsyncPingRequestWithCorrelationID(ctx context.Context, 
 	}
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
 
@@ -621,7 +621,7 @@ func (c *UserController) AsyncPingRequestWithCorrelationID(ctx context.Context, 
 
 	// Send the message on event-broker through middlewares
 	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
-		return c.broker.Publish(ctx, path, brokerMsg)
+		return c.broker.Publish(ctx, addr, brokerMsg)
 	})
 }
 
@@ -634,14 +634,14 @@ func (c *UserController) AsyncPingRequestWithCorrelationID(ctx context.Context, 
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *UserController) PingRequestWithCorrelationID(ctx context.Context, msg PingWithCorrelationID) (PongWithCorrelationID, error) {
-	// Get receiving channel path
-	path := "pongWithCorrelationID"
+	// Get receiving channel address
+	addr := "issue130.pongWithCorrelationID"
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addUserContextValues(ctx, addr)
 
 	// Listening to broker channel
-	sub, err := c.broker.Subscribe(ctx, path)
+	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return PongWithCorrelationID{}, err

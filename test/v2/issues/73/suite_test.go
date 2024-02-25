@@ -91,27 +91,27 @@ func (suite *Suite) TestV1Reception() {
 	var wg sync.WaitGroup
 
 	// Expected message
-	sent := v1.HelloMessage{
+	sent := v1.Issue73HelloMessage{
 		Payload: "HelloWord!",
 	}
 
 	// Check what the app receive and translate
-	var recvMsg v1.HelloMessage
+	var recvMsg v1.Issue73HelloMessage
 	wg.Add(1)
-	err := suite.v1.app.SubscribeHello(context.Background(), func(_ context.Context, msg v1.HelloMessage) {
+	err := suite.v1.app.SubscribeIssue73Hello(context.Background(), func(_ context.Context, msg v1.Issue73HelloMessage) {
 		recvMsg = msg
 		wg.Done()
 	})
 	suite.Require().NoError(err)
 
 	// Check that the other app doesn't receive
-	err = suite.v2.app.SubscribeHello(context.Background(), func(_ context.Context, _ v2.HelloMessage) {
+	err = suite.v2.app.SubscribeIssue73Hello(context.Background(), func(_ context.Context, _ v2.Issue73HelloMessage) {
 		suite.Require().FailNow("this should not happen")
 	})
 	suite.Require().NoError(err)
 
 	// Publish the message
-	err = suite.v1.user.PublishHello(context.Background(), sent)
+	err = suite.v1.user.PublishIssue73Hello(context.Background(), sent)
 	suite.Require().NoError(err)
 
 	// Wait for the message to be received by the app
@@ -131,7 +131,7 @@ func (suite *Suite) TestV2Reception() {
 	var wg sync.WaitGroup
 
 	// Expected message
-	sent := v2.HelloMessage{
+	sent := v2.Issue73HelloMessage{
 		Payload: struct {
 			Message   string    `json:"message"`
 			Timestamp time.Time `json:"timestamp"`
@@ -142,22 +142,22 @@ func (suite *Suite) TestV2Reception() {
 	}
 
 	// Check that the other app doesn't receive
-	err := suite.v1.app.SubscribeHello(context.Background(), func(_ context.Context, _ v1.HelloMessage) {
+	err := suite.v1.app.SubscribeIssue73Hello(context.Background(), func(_ context.Context, _ v1.Issue73HelloMessage) {
 		suite.Require().FailNow("this should not happen")
 	})
 	suite.Require().NoError(err)
 
 	// Check what the app receive and translate
-	var recvMsg v2.HelloMessage
+	var recvMsg v2.Issue73HelloMessage
 	wg.Add(1)
-	err = suite.v2.app.SubscribeHello(context.Background(), func(_ context.Context, msg v2.HelloMessage) {
+	err = suite.v2.app.SubscribeIssue73Hello(context.Background(), func(_ context.Context, msg v2.Issue73HelloMessage) {
 		recvMsg = msg
 		wg.Done()
 	})
 	suite.Require().NoError(err)
 
 	// Publish the message
-	err = suite.v2.user.PublishHello(context.Background(), sent)
+	err = suite.v2.user.PublishIssue73Hello(context.Background(), sent)
 	suite.Require().NoError(err)
 
 	// Wait for the message to be received by the app

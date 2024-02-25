@@ -1,5 +1,6 @@
 //go:generate go run ../../../../../cmd/asyncapi-codegen -p decoupling -i ./asyncapi.yaml -o ./asyncapi.gen.go
 
+//nolint:revive
 package decoupling
 
 import (

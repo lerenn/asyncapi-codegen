@@ -61,13 +61,6 @@ func SnakeCase(sentence string) string {
 	return strings.ToLower(snake)
 }
 
-// ReferenceToTypeName will convert a reference to a type name in the form of
-// golang conventional type names.
-func ReferenceToTypeName(ref string) string {
-	parts := strings.Split(ref, "/")
-	return Namify(parts[3])
-}
-
 // HasField will check if a struct has a field with the given name.
 func HasField(v any, name string) bool {
 	rv := reflect.ValueOf(v)
@@ -102,13 +95,12 @@ func Args(vs ...any) []any {
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
 	return template.FuncMap{
-		"namifyWithoutParam":  NamifyWithoutParams,
-		"namify":              Namify,
-		"snakeCase":           SnakeCase,
-		"referenceToTypeName": ReferenceToTypeName,
-		"hasField":            HasField,
-		"describeStruct":      DescribeStruct,
-		"multiLineComment":    MultiLineComment,
-		"args":                Args,
+		"namifyWithoutParam": NamifyWithoutParams,
+		"namify":             Namify,
+		"snakeCase":          SnakeCase,
+		"hasField":           HasField,
+		"describeStruct":     DescribeStruct,
+		"multiLineComment":   MultiLineComment,
+		"args":               Args,
 	}
 }

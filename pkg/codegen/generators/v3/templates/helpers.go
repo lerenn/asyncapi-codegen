@@ -55,26 +55,33 @@ func IsRequired(schema asyncapi.Schema, field string) bool {
 	return schema.IsFieldRequired(field)
 }
 
-// GenerateChannelPathFromOp will generate a channel path with the given operation.
-func GenerateChannelPathFromOp(op asyncapi.Operation) string {
+// GenerateChannelAddrFromOp will generate a channel path with the given operation.
+func GenerateChannelAddrFromOp(op asyncapi.Operation) string {
 	ch := op.Channel.Follow()
-	return GenerateChannelPath(ch)
+	return GenerateChannelAddr(ch)
 }
 
-// GenerateChannelPath will generate a channel path with the given channel.
-func GenerateChannelPath(ch *asyncapi.Channel) string {
+// ReferenceToTypeName will convert a reference to a type name in the form of
+// golang conventional type names.
+func ReferenceToTypeName(ref string) string {
+	parts := strings.Split(ref, "/")
+	return templateutil.Namify(parts[3])
+}
+
+// GenerateChannelAddr will generate a channel path with the given channel.
+func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	// Be sure this is the final channel, not a proxy
 	ch = ch.Follow()
 
 	// If there is no parameter, then just return the path
 	if ch.Parameters == nil {
-		return fmt.Sprintf("%q", ch.Path)
+		return fmt.Sprintf("%q", ch.Address)
 	}
 
 	parameterRegexp := regexp.MustCompile("{[^{}]*}")
 
-	matches := parameterRegexp.FindAllString(ch.Path, -1)
-	format := parameterRegexp.ReplaceAllString(ch.Path, "%v")
+	matches := parameterRegexp.FindAllString(ch.Address, -1)
+	format := parameterRegexp.ReplaceAllString(ch.Address, "%v")
 
 	sprint := fmt.Sprintf("fmt.Sprintf(%q, ", format)
 	for _, m := range matches {
@@ -91,8 +98,9 @@ func HelpersFunctions() template.FuncMap {
 		"channelToMessageTypeName":       ChannelToMessageTypeName,
 		"operationToMessageTypeName":     OperationToMessageTypeName,
 		"isRequired":                     IsRequired,
-		"generateChannelPath":            GenerateChannelPath,
-		"generateChannelPathFromOp":      GenerateChannelPathFromOp,
+		"generateChannelAddr":            GenerateChannelAddr,
+		"generateChannelAddrFromOp":      GenerateChannelAddrFromOp,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
+		"referenceToTypeName":            ReferenceToTypeName,
 	}
 }
