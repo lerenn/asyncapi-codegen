@@ -1,5 +1,14 @@
 {{define "message" -}}
 
+{{if $.Reference }}
+
+// Message '{{namify .Name}}' reference another one at '{{$.Reference}}'.
+// This should be fixed in a future version to allow message override.
+// If you encounter this message, feel free to open an issue on this subject
+// to let know that you need this functionnality.
+
+{{else}}
+
 // {{namify .Name}} is the message expected for '{{namify .Name}}' channel
 {{if $.Description -}}
 // {{multiLineComment $.Description}}
@@ -266,4 +275,7 @@ func (msg *{{namify .Name}}) SetAsResponseFrom(req MessageWithCorrelationID) {
     msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
 }
 {{- end -}}
+
+{{- end -}}
+
 {{- end }}

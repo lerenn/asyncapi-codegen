@@ -261,3 +261,11 @@ func (msg *Message) MergeWith(spec Specification, msg2 Message) {
 		}
 	}
 }
+
+// Follow returns referenced message if specified or the actual message
+func (msg *Message) Follow() *Message {
+	if msg.ReferenceTo != nil {
+		return msg.ReferenceTo
+	}
+	return msg
+}

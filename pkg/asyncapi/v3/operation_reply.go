@@ -1,6 +1,10 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils"
+import (
+	"fmt"
+
+	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+)
 
 // OperationReply is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
@@ -8,8 +12,10 @@ import "github.com/lerenn/asyncapi-codegen/pkg/utils"
 type OperationReply struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Reference string `json:"$ref"`
-	// TODO
+	Address   *OperationReplyAddress `json:"address"`
+	Channel   *Channel               `json:"channel"`  // Reference only
+	Messages  []*Message             `json:"messages"` // References only
+	Reference string                 `json:"$ref"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
@@ -18,11 +24,21 @@ type OperationReply struct {
 }
 
 // Process processes the OperationReply to make it ready for code generation.
-func (msg *OperationReply) Process(name string, spec Specification) {
-	msg.Name = utils.UpperFirstLetter(name)
+func (or *OperationReply) Process(name string, spec Specification) {
+	or.Name = utils.UpperFirstLetter(name)
 
 	// Add pointer to reference if there is one
-	if msg.Reference != "" {
-		msg.ReferenceTo = spec.ReferenceOperationReply(msg.Reference)
+	if or.Reference != "" {
+		or.ReferenceTo = spec.ReferenceOperationReply(or.Reference)
+	}
+
+	// Process channel if there is one
+	if or.Channel != nil {
+		or.Channel.Process(name+"Channel", spec)
+	}
+
+	// Process messages
+	for i, msg := range or.Messages {
+		msg.Process(fmt.Sprintf("%s%d", name, i), spec)
 	}
 }

@@ -40,3 +40,19 @@ func (c *Channel) Process(path string, spec Specification) {
 		c.ReferenceTo = spec.ReferenceChannel(c.Reference)
 	}
 }
+
+// Follow returns referenced channel if specified or the actual channel
+func (ch *Channel) Follow() *Channel {
+	if ch.ReferenceTo != nil {
+		return ch.ReferenceTo
+	}
+	return ch
+}
+
+// GetMessage will return the channel message
+func (ch Channel) GetMessage() *Message {
+	for _, m := range ch.Follow().Messages {
+		return m.Follow() // TODO: change
+	}
+	return nil
+}

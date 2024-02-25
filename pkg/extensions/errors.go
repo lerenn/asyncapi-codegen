@@ -33,4 +33,7 @@ var (
 
 	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens.
 	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
+
+	// ErrNoCorrelationIDSet is raise when a correlation ID is expected, but none is detected.
+	ErrNoCorrelationIDSet = fmt.Errorf("%w: no correlation ID but one is expected", ErrAsyncAPI)
 )

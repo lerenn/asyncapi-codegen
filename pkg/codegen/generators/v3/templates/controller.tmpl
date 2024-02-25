@@ -109,7 +109,7 @@ func (c *{{ .Prefix }}Controller) ListenAll(ctx context.Context, as {{ .Prefix }
     }
 
     {{range  $key, $value := .ReceiveOperations -}}
-    {{- if not .Channel.ReferenceTo.Parameters }}
+    {{- if not .Channel.Follow.Parameters }}
     if err := c.Listen{{$value.Name}}(ctx, as.{{$value.Name}}); err != nil {
         return err
     }
@@ -122,7 +122,7 @@ func (c *{{ .Prefix }}Controller) ListenAll(ctx context.Context, as {{ .Prefix }
 // UnlistenAll will stop the listening of all remaining listening channels
 func (c *{{ .Prefix }}Controller) UnlistenAll(ctx context.Context) {
     {{- range  $key, $value := .ReceiveOperations}}
-    {{- if not .Channel.ReferenceTo.Parameters}}
+    {{- if not .Channel.Follow.Parameters}}
     c.Unlisten{{$value.Name}}(ctx)
     {{- end}}
     {{- end}}
@@ -130,16 +130,21 @@ func (c *{{ .Prefix }}Controller) UnlistenAll(ctx context.Context) {
 {{- end}}
 
 {{range $key, $value := .ReceiveOperations -}}
-// Listen{{$value.Name}} will receive '{{$value.GetMessage.Name}}' messages from '{{$value.Channel.ReferenceTo.Address}}' channel
+// Listen{{$value.Name}} will receive '{{$value.GetMessage.Name}}' messages from '{{$value.Channel.Follow.Address}}' channel
 //
 // Callback function 'fn' will be called each time a new message is received.
-{{- if .Channel.ReferenceTo.Parameters}}
+//
+// NOTE: for now, this only support the first message from AsyncAPI list.
+//
+// NOTE: for now, this only support the first message from AsyncAPI list.
+// If you need support for other messages, please raise an issue.
+{{- if .Channel.Follow.Parameters}}
 func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- else}}
 func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- end }}
     // Get channel path
-    path := {{ generateChannelPath $value }}
+    path := {{ generateChannelPathFromOp $value }}
 
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
@@ -207,15 +212,15 @@ func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, fn
     return nil
 }
 
-// Unlisten{{$value.Name}} will stop the reception of messages from '{{$value.Channel.ReferenceTo.Address}}' channel.
+// Unlisten{{$value.Name}} will stop the reception of messages from '{{$value.Channel.Follow.Address}}' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-{{- if .Channel.ReferenceTo.Parameters}}
+{{- if .Channel.Follow.Parameters}}
 func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters) {
 {{- else}}
 func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context) {
 {{- end}}
     // Get channel path
-    path := {{ generateChannelPath $value }}
+    path := {{ generateChannelPathFromOp $value }}
 
     // Check if there receivers for this channel
     sub, exists := c.subscriptions[path]
@@ -237,19 +242,34 @@ func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context) 
 {{- end}}
 
 {{- range  $key, $value := .SendOperations}}
-// Send{{$value.Name}} will send '{{$value.GetMessage.Name}}' messages to '{{$value.Channel.ReferenceTo.Address}}' channel
-{{- if .Channel.ReferenceTo.Parameters }}
-func (c *{{ $.Prefix }}Controller) Send{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) error {
+
+{{- if .IsReplyTo}}
+// {{$value.Name}} should be used to reply to {{.IsReplyTo.Name}} messages by sending
+// '{{$value.GetMessage.Name}}' messages to '{{$value.Channel.Follow.Address}}' channel.
+{{- else}}
+// {{if .Reply}}Async{{end}}{{$value.Name}} will send '{{$value.GetMessage.Name}}' messages to '{{$value.Channel.Follow.Address}}' channel.
+{{if .Reply}}// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.{{end}}
+{{- end}}
+//
+// NOTE: for now, this only support the first message from AsyncAPI list.
+// If you need support for other messages, please raise an issue.
+{{- if .Channel.Follow.Parameters }}
+func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) error {
 {{- else }}
-func (c *{{ $.Prefix }}Controller) Send{{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) error {
+func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) error {
 {{- end }}
     // Get channel path
-    path := {{ generateChannelPath $value }}
+    path := {{ generateChannelPathFromOp $value }}
 
     {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
     // Set correlation ID if it does not exist
     if id := msg.CorrelationID(); id == "" {
+        {{if .IsReplyTo -}}
+        c.logger.Error(ctx, extensions.ErrNoCorrelationIDSet.Error())
+        return extensions.ErrNoCorrelationIDSet
+        {{else -}}
         msg.SetCorrelationID(uuid.New().String())
+        {{- end}}
     }
     {{- end}}
 
@@ -274,35 +294,36 @@ func (c *{{ $.Prefix }}Controller) Send{{$value.Name}}(ctx context.Context, msg 
         return c.broker.Publish(ctx, path, brokerMsg)
     })
 }
-{{end}}
 
-{{if eq .Prefix "User" -}}
-{{- range  $key, $value := .ReceiveOperations -}}
-{{- if ne $value.GetMessage.CorrelationIDLocation ""}}
-// WaitFor{{$value.Name}} will wait for a specific message by its correlation ID.
+
+{{if .Reply -}}
+
+// {{$value.Name}} will send a message and wait for the reply message
+// on channel '{{.Reply.Channel.Follow.Path}}'.
 //
-// The pub function is the publication function that should be used to send the message.
-// It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
+// If a correlation ID is set in the AsyncAPI, then this will wait for the
+// reply with the same correlation ID. Otherwise, it will returns the first
+// message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-{{- if .Channel.ReferenceTo.Parameters}}
-func (c *UserController) WaitFor{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, sentMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{operationToMessageTypeName $value}}, error) {
+{{- if .Channel.Follow.Parameters}}
+func (c *UserController) {{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
 {{- else}}
-func (c *UserController) WaitFor{{$value.Name}}(ctx context.Context, sentMsg MessageWithCorrelationID, pub func(ctx context.Context) error) ({{operationToMessageTypeName $value}}, error) {
+func (c *UserController) {{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
 {{- end}}
-    // Get channel path
-    path := {{ generateChannelPath $value }}
+    // Get receiving channel path
+    path := {{ generateChannelPath .Reply.Channel }}
 
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, path)
 
-    // Receive to broker channel
+    // Listening to broker channel
     sub, err := c.broker.Subscribe(ctx, path)
     if err != nil {
         c.logger.Error(ctx, err.Error())
-        return {{operationToMessageTypeName $value}}{}, err
+        return {{channelToMessageTypeName .Reply.Channel}}{}, err
     }
-    c.logger.Info(ctx, "Received to channel")
+    c.logger.Info(ctx, "Listening to channel")
 
     // Close receiver on leave
     defer func(){
@@ -313,9 +334,17 @@ func (c *UserController) WaitFor{{$value.Name}}(ctx context.Context, sentMsg Mes
         c.logger.Info(ctx, "Unlistend from channel")
     } ()
 
-    // Execute callback for publication
-    if err = pub(ctx); err != nil {
-        return {{operationToMessageTypeName $value}}{}, err
+    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+    // Set correlation ID if it does not exist
+    if id := msg.CorrelationID(); id == "" {
+        msg.SetCorrelationID(uuid.New().String())
+    }
+    {{- end}}
+
+    // Send the message 
+    if err := c.Async{{$value.Name}}(ctx, {{- if .Channel.Follow.Parameters}}params,{{- end}} msg); err != nil {
+        c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
+        return {{channelToMessageTypeName .Reply.Channel}}{}, fmt.Errorf("error happened when sending message: %w", err)
     }
 
     // Wait for corresponding response
@@ -327,39 +356,49 @@ func (c *UserController) WaitFor{{$value.Name}}(ctx context.Context, sentMsg Mes
             // receiving the expected message
             if !open && brokerMsg.IsUninitialized() {
                 c.logger.Error(ctx, "Channel closed before getting message")
-                return {{operationToMessageTypeName $value}}{}, extensions.ErrSubscriptionCanceled
+                return {{channelToMessageTypeName .Reply.Channel}}{}, extensions.ErrSubscriptionCanceled
             }
 
+            {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
             // Get new message
-            msg, err := new{{operationToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
+            rmsg, err := new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(brokerMsg)
             if err != nil {
                 c.logger.Error(ctx, err.Error())
             }
 
-            // If message doesn't have corresponding correlation ID, then continue
-            if sentMsg.CorrelationID() != msg.CorrelationID() {
+            // If message doesn't have corresponding correlation ID, then ingore and continue
+            if msg.CorrelationID() != rmsg.CorrelationID() {
                 continue
             }
+            {{- else}}
+            // There is correlation no ID, so it will automatically return at
+            // the first received message.
+            {{- end}}
 
             // Set context with received values as it is the expected message
             msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
             msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
-            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, sentMsg.CorrelationID())
+            {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
+            {{- end}}
 
             // Execute middlewares before returning
             if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
-                return {{operationToMessageTypeName $value}}{}, err
+                return {{channelToMessageTypeName .Reply.Channel}}{}, err
             }
 
-            // Return the message to the caller from the broker that could have
+            // Return the message to the caller
+            //
+            // NOTE: it is transformed from the broker again, as it could have
             // been modified by middlewares
-            return new{{operationToMessageTypeName $value}}FromBrokerMessage(brokerMsg)
+            return new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(brokerMsg)
         case <-ctx.Done(): // Set corrsponding error if context is done
             c.logger.Error(ctx, "Context done before getting message")
-            return {{operationToMessageTypeName $value}}{}, extensions.ErrContextCanceled
+            return {{channelToMessageTypeName .Reply.Channel}}{}, extensions.ErrContextCanceled
         }
     }
 }
-{{- end -}}
-{{- end -}}
+
+{{- end}}
+
 {{- end}}

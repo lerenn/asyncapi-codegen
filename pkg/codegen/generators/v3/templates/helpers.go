@@ -36,6 +36,13 @@ func ReferenceToStructAttributePath(ref string) string {
 	return strings.Join(path, ".")
 }
 
+// ChannelToMessageTypeName will convert a channel to a message type name in the
+// form of golang conventional type names.
+func ChannelToMessageTypeName(ch asyncapi.Channel) string {
+	msg := ch.Follow().GetMessage()
+	return templateutil.Namify(msg.Name)
+}
+
 // OperationToMessageTypeName will convert an operation to a message type name in the
 // form of golang conventional type names.
 func OperationToMessageTypeName(op asyncapi.Operation) string {
@@ -48,9 +55,16 @@ func IsRequired(schema asyncapi.Schema, field string) bool {
 	return schema.IsFieldRequired(field)
 }
 
-// GenerateChannelPath will generate a channel path with the given operation.
-func GenerateChannelPath(op asyncapi.Operation) string {
-	ch := op.Channel.ReferenceTo
+// GenerateChannelPathFromOp will generate a channel path with the given operation.
+func GenerateChannelPathFromOp(op asyncapi.Operation) string {
+	ch := op.Channel.Follow()
+	return GenerateChannelPath(ch)
+}
+
+// GenerateChannelPath will generate a channel path with the given channel.
+func GenerateChannelPath(ch *asyncapi.Channel) string {
+	// Be sure this is the final channel, not a proxy
+	ch = ch.Follow()
 
 	// If there is no parameter, then just return the path
 	if ch.Parameters == nil {
@@ -74,9 +88,11 @@ func GenerateChannelPath(op asyncapi.Operation) string {
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
 	return template.FuncMap{
+		"channelToMessageTypeName":       ChannelToMessageTypeName,
 		"operationToMessageTypeName":     OperationToMessageTypeName,
 		"isRequired":                     IsRequired,
 		"generateChannelPath":            GenerateChannelPath,
+		"generateChannelPathFromOp":      GenerateChannelPathFromOp,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
 	}
 }

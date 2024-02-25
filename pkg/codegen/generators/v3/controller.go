@@ -33,13 +33,23 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	gen.SendOperations = make(map[string]*asyncapi.Operation)
 	for name, op := range spec.Operations {
 		// Add channel to receive channels based on operation action and side
-		if isReceiveOperationForController(side, op) {
+		if isControllerReceiveOperation(side, op) {
 			gen.ReceiveOperations[name] = op
 		}
 
 		// Add channel to send channels based on operation action and side
-		if isSendOperationForController(side, op) {
+		if isControllerSendOperation(side, op) {
 			gen.SendOperations[name] = op
+		}
+
+		// Add a artificial operation for reply if the controller should respond to a reply
+		if shouldControllerRespondToReply(side, op) {
+			ch := op.Reply.Channel.Follow()
+			gen.SendOperations[ch.Name] = &asyncapi.Operation{
+				Name:      "ReplyTo" + op.Name,
+				Channel:   ch,
+				IsReplyTo: op,
+			}
 		}
 	}
 
@@ -56,7 +66,11 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	return gen
 }
 
-func isReceiveOperationForController(side Side, op *asyncapi.Operation) bool {
+func shouldControllerRespondToReply(side Side, op *asyncapi.Operation) bool {
+	if op.Reply == nil || op.Reply.Channel == nil {
+		return false
+	}
+
 	switch {
 	case side == SideIsApplication && op.Action.IsReceive():
 		return true
@@ -67,7 +81,18 @@ func isReceiveOperationForController(side Side, op *asyncapi.Operation) bool {
 	}
 }
 
-func isSendOperationForController(side Side, op *asyncapi.Operation) bool {
+func isControllerReceiveOperation(side Side, op *asyncapi.Operation) bool {
+	switch {
+	case side == SideIsApplication && op.Action.IsReceive():
+		return true
+	case side == SideIsUser && op.Action.IsSend():
+		return true
+	default:
+		return false
+	}
+}
+
+func isControllerSendOperation(side Side, op *asyncapi.Operation) bool {
 	switch {
 	case side == SideIsApplication && op.Action.IsSend():
 		return true

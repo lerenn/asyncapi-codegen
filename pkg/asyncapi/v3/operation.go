@@ -33,7 +33,7 @@ type Operation struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
 	Action       OperationAction        `json:"action"`
-	Channel      *Channel               `json:"channel"`
+	Channel      *Channel               `json:"channel"` // Reference only
 	Title        string                 `json:"title"`
 	Summary      string                 `json:"summary"`
 	Description  string                 `json:"string"`
@@ -42,13 +42,14 @@ type Operation struct {
 	ExternalDocs *ExternalDocumentation `json:"externalDocs"`
 	Bindings     *OperationBinding      `json:"bindings"`
 	Traits       *OperationTrait        `json:"traits"`
-	Messages     []*Message             `json:"messages"`
+	Messages     []*Message             `json:"messages"` // References only
 	Reply        *OperationReply        `json:"reply"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
-	Name string `json:"-"`
-	Path string `json:"-"`
+	Name      string     `json:"-"`
+	Path      string     `json:"-"`
+	IsReplyTo *Operation `json:"-"`
 }
 
 // Process processes the Channel to make it ready for code generation.
@@ -98,9 +99,6 @@ func (op Operation) GetMessage() *Message {
 	if len(op.Messages) > 0 {
 		return op.Messages[0] // TODO: change
 	} else {
-		for _, m := range op.Channel.ReferenceTo.Messages {
-			return m // TODO: change
-		}
+		return op.Channel.GetMessage()
 	}
-	return nil
 }

@@ -61,13 +61,10 @@ type {{ namifyWithoutParam .Name }}Parameters struct {
 {{- range $key, $value := $value.Messages}}
 {{template "message" $value}}
 {{end -}}
+
 {{- end}}
 
-{{range $key, $value := .Operations -}}
-{{- range $key, $value := $value.Messages}}
-{{template "message" $value}}
-{{end -}}
-{{- end}}
+{{/* NOTE: No need to generate messages from operation as they are only references */}}
 
 {{range $key, $value := .Components.Messages}}
 {{template "message" $value}}
