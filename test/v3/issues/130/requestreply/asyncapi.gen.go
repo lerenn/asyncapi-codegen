@@ -518,7 +518,7 @@ func (c *UserController) AsyncPingRequest(ctx context.Context, msg Ping) error {
 }
 
 // PingRequest will send a message and wait for the reply message
-// on channel 'pong'.
+// on channel 'issue130.pong'.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
 // reply with the same correlation ID. Otherwise, it will returns the first
@@ -626,7 +626,7 @@ func (c *UserController) AsyncPingRequestWithCorrelationID(ctx context.Context, 
 }
 
 // PingRequestWithCorrelationID will send a message and wait for the reply message
-// on channel 'pongWithCorrelationID'.
+// on channel 'issue130.pongWithCorrelationID'.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
 // reply with the same correlation ID. Otherwise, it will returns the first

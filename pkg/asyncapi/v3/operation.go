@@ -40,28 +40,36 @@ type Operation struct {
 	Security     []*SecurityScheme      `json:"security"`
 	Tags         []*Tag                 `json:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs"`
-	Bindings     *OperationBinding      `json:"bindings"`
+	Bindings     *OperationBindings     `json:"bindings"`
 	Traits       *OperationTrait        `json:"traits"`
 	Messages     []*Message             `json:"messages"` // References only
 	Reply        *OperationReply        `json:"reply"`
+	Reference    string                 `json:"$ref"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
-	Name      string     `json:"-"`
-	Path      string     `json:"-"`
-	IsReplyTo *Operation `json:"-"`
+	Name        string     `json:"-"`
+	IsReplyTo   *Operation `json:"-"`
+	ReferenceTo *Operation `json:"-"`
 }
 
 // Process processes the Channel to make it ready for code generation.
 func (op *Operation) Process(name string, spec Specification) {
-	// Set channel name and path
+	// Prevent modification if nil
+	if op == nil {
+		return
+	}
+
+	// Set name
 	op.Name = utils.UpperFirstLetter(name)
-	op.Path = name
+
+	// Add pointer to reference if there is one
+	if op.Reference != "" {
+		op.ReferenceTo = spec.ReferenceOperation(op.Reference)
+	}
 
 	// Process channel if there is one
-	if op.Channel != nil {
-		op.Channel.Process(name+"Channel", spec)
-	}
+	op.Channel.Process(name+"Channel", spec)
 
 	// Process securities
 	for i, s := range op.Security {
@@ -69,19 +77,13 @@ func (op *Operation) Process(name string, spec Specification) {
 	}
 
 	// Process external doc if there is one
-	if op.ExternalDocs != nil {
-		op.ExternalDocs.Process(name+"ExternalDocs", spec)
-	}
+	op.ExternalDocs.Process(name+ExternalDocsNameSuffix, spec)
 
 	// Process bindings if there is one
-	if op.Bindings != nil {
-		op.Bindings.Process(name+"Bindings", spec)
-	}
+	op.Bindings.Process(name+BindingsSuffix, spec)
 
 	// Process traits if there is one
-	if op.Traits != nil {
-		op.Traits.Process(name+"Traits", spec)
-	}
+	op.Traits.Process(name+"Traits", spec)
 
 	// Process messages
 	for i, msg := range op.Messages {
@@ -89,9 +91,7 @@ func (op *Operation) Process(name string, spec Specification) {
 	}
 
 	// Process reply if there is one
-	if op.Reply != nil {
-		op.Reply.Process(name+"Reply", spec)
-	}
+	op.Reply.Process(name+"Reply", spec)
 }
 
 // GetMessage will return the operation message.

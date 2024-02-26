@@ -25,6 +25,12 @@ type OperationReply struct {
 
 // Process processes the OperationReply to make it ready for code generation.
 func (or *OperationReply) Process(name string, spec Specification) {
+	// Prevent modification if nil
+	if or == nil {
+		return
+	}
+
+	// Set name
 	or.Name = utils.UpperFirstLetter(name)
 
 	// Add pointer to reference if there is one
@@ -33,9 +39,7 @@ func (or *OperationReply) Process(name string, spec Specification) {
 	}
 
 	// Process channel if there is one
-	if or.Channel != nil {
-		or.Channel.Process(name+"Channel", spec)
-	}
+	or.Channel.Process(name+"Channel", spec)
 
 	// Process messages
 	for i, msg := range or.Messages {

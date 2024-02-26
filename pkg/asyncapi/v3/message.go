@@ -1,6 +1,7 @@
 package asyncapiv3
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -48,31 +49,48 @@ const (
 
 // Message is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
-// Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#messageObject
+// Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#messageObject
 type Message struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Description   string         `json:"description"`
-	Headers       *Schema        `json:"headers"`
-	OneOf         []*Message     `json:"oneOf"`
-	Payload       *Schema        `json:"payload"`
-	CorrelationID *CorrelationID `json:"correlationID"`
-	Reference     string         `json:"$ref"`
+	Headers       *Schema                `json:"headers"`
+	Payload       *Schema                `json:"payload"`
+	OneOf         []*Message             `json:"oneOf"`
+	CorrelationID *CorrelationID         `json:"correlationID"`
+	ContentType   string                 `json:"contentType"`
+	Name          string                 `json:"name"`
+	Title         string                 `json:"title"`
+	Summary       string                 `json:"summary"`
+	Description   string                 `json:"description"`
+	Tags          []*Tag                 `json:"tags"`
+	ExternalDocs  *ExternalDocumentation `json:"externalDocs"`
+	Bindings      *MessageBindings       `json:"bindings"`
+	Examples      []*MessageExample      `json:"examples"`
+	Reference     string                 `json:"$ref"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
-	Name        string   `json:"-"`
 	ReferenceTo *Message `json:"-"`
 
 	// CorrelationIDLocation will indicate where the correlation id is
-	// According to: https://www.asyncapi.com/docs/reference/specification/v2.6.0#correlationIDObject
+	// According to: https://www.asyncapi.com/docs/reference/specification/v3.0.0#correlationIdObject
 	CorrelationIDLocation string `json:"-"`
 	CorrelationIDRequired bool   `json:"-"`
 }
 
 // Process processes the Message to make it ready for code generation.
 func (msg *Message) Process(name string, spec Specification) {
-	msg.Name = utils.UpperFirstLetter(name)
+	// Prevent modification if nil
+	if msg == nil {
+		return
+	}
+
+	// Set name
+	if msg.Name == "" {
+		msg.Name = utils.UpperFirstLetter(name)
+	} else {
+		msg.Name = utils.UpperFirstLetter(msg.Name)
+	}
 
 	// Add pointer to reference if there is one
 	if msg.Reference != "" {
@@ -80,12 +98,8 @@ func (msg *Message) Process(name string, spec Specification) {
 	}
 
 	// Process Headers and Payload
-	if msg.Headers != nil {
-		msg.Headers.Process(name+"Headers", spec, false)
-	}
-	if msg.Payload != nil {
-		msg.Payload.Process(name+"Payload", spec, false)
-	}
+	msg.Headers.Process(name+"Headers", spec, false)
+	msg.Payload.Process(name+"Payload", spec, false)
 
 	// Process OneOf
 	for k, v := range msg.OneOf {
@@ -94,6 +108,22 @@ func (msg *Message) Process(name string, spec Specification) {
 
 		// Merge the OneOf as one payload
 		msg.MergeWith(spec, *v)
+	}
+
+	// Process tags
+	for i, t := range msg.Tags {
+		t.Process(fmt.Sprintf("%sTag%d", msg.Name, i), spec)
+	}
+
+	// Process external documentation
+	msg.ExternalDocs.Process(msg.Name+ExternalDocsNameSuffix, spec)
+
+	// Process Bindings
+	msg.Bindings.Process(msg.Name+BindingsSuffix, spec)
+
+	// Process Message Examples
+	for i, ex := range msg.Examples {
+		ex.Process(fmt.Sprintf("%sExample%d", msg.Name, i), spec)
 	}
 
 	// Process correlation ID

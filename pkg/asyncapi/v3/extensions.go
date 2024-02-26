@@ -33,32 +33,32 @@ type GoTypeImportName string
 // goTypeImports collects custom imports in this Schema Object set by x-go-type-import key
 // into the imports map.
 // Reports error when the same import path is assigned multiple import names.
-func (a *Schema) goTypeImports(imports map[GoTypeImportPath]GoTypeImportName) error {
+func (s *Schema) goTypeImports(imports map[GoTypeImportPath]GoTypeImportName) error {
 	// Process Properties
-	for _, p := range a.Properties {
+	for _, p := range s.Properties {
 		if err := p.goTypeImports(imports); err != nil {
 			return err
 		}
 	}
 
 	// Process Items
-	if a.Items != nil {
-		if err := a.Items.goTypeImports(imports); err != nil {
+	if s.Items != nil {
+		if err := s.Items.goTypeImports(imports); err != nil {
 			return err
 		}
 	}
 
-	if a.ExtGoTypeImport != nil {
-		name, exists := imports[a.ExtGoTypeImport.Path]
-		if exists && name != a.ExtGoTypeImport.Name {
+	if s.ExtGoTypeImport != nil {
+		name, exists := imports[s.ExtGoTypeImport.Path]
+		if exists && name != s.ExtGoTypeImport.Name {
 			return fmt.Errorf(
 				"x-go-type-import name conflict for item %s: %s and %s for %s",
-				a.Name, name, a.ExtGoTypeImport.Name, a.ExtGoTypeImport.Path,
+				s.Name, name, s.ExtGoTypeImport.Name, s.ExtGoTypeImport.Path,
 			)
 		}
 
 		if !exists {
-			imports[a.ExtGoTypeImport.Path] = a.ExtGoTypeImport.Name
+			imports[s.ExtGoTypeImport.Path] = s.ExtGoTypeImport.Name
 		}
 	}
 	return nil
@@ -68,7 +68,7 @@ func (a *Schema) goTypeImports(imports map[GoTypeImportPath]GoTypeImportName) er
 // in all Schema Objects in the Specification.
 // Returns import strings like `alias "abc.xyz/repo/package"` for code generation.
 // Returns error when import name conflicts.
-func (s Specification) CustomImports() ([]string, error) { //nolint:cyclop
+func (s Specification) CustomImports() ([]string, error) {
 	importsSet := make(map[GoTypeImportPath]GoTypeImportName)
 
 	for _, v := range s.Components.Schemas {
@@ -91,13 +91,7 @@ func (s Specification) CustomImports() ([]string, error) { //nolint:cyclop
 		}
 	}
 
-	for _, v := range s.Components.Parameters {
-		if v.Schema != nil {
-			if err := v.Schema.goTypeImports(importsSet); err != nil {
-				return nil, fmt.Errorf("/components/parameters custom import error: %w", err)
-			}
-		}
-	}
+	// TODO: support Parameters
 
 	return importsMapToList(importsSet), nil
 }

@@ -30,9 +30,10 @@ Generate Go application and user boilerplate from AsyncAPI specifications.
 
 * AsyncAPI versions:
   * 2.6.0
+  * 3.0.0
 * Brokers:
   * Kafka
-  * NATS
+  * NATS / NATS JetStream
   * Custom
 * Formats:
   * JSON

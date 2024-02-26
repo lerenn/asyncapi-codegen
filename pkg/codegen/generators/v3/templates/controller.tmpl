@@ -299,7 +299,7 @@ func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx 
 {{if .Reply -}}
 
 // {{$value.Name}} will send a message and wait for the reply message
-// on channel '{{.Reply.Channel.Follow.Path}}'.
+// on channel '{{.Reply.Channel.Follow.Address}}'.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
 // reply with the same correlation ID. Otherwise, it will returns the first

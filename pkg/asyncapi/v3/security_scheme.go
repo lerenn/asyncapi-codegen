@@ -19,6 +19,12 @@ type SecurityScheme struct {
 
 // Process processes the SecurityScheme to make it ready for code generation.
 func (s *SecurityScheme) Process(name string, spec Specification) {
+	// Prevent modification if nil
+	if s == nil {
+		return
+	}
+
+	// Set name
 	s.Name = utils.UpperFirstLetter(name)
 
 	// Add pointer to reference if there is one
