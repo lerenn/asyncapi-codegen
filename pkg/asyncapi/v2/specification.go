@@ -4,6 +4,11 @@ import (
 	"strings"
 )
 
+const (
+	// MajorVersion is the major version of this AsyncAPI implementation.
+	MajorVersion = 2
+)
+
 // Specification is the asyncapi specification struct that will be used to generate
 // code. It should contains every information given in the asyncapi specification.
 // Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#schema
@@ -77,8 +82,8 @@ func (s Specification) reference(ref string) any {
 	return nil
 }
 
-// AsyncAPIVersion returns the asyncapi version of this document.
+// MajorVersion returns the asyncapi major version of this document.
 // This function is used mainly by the interface.
-func (s Specification) AsyncAPIVersion() string {
-	return s.Version
+func (s Specification) MajorVersion() int {
+	return MajorVersion
 }

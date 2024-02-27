@@ -1,4 +1,4 @@
-package codegen
+package asyncapi
 
 // SupportedVersions describe the asyncapi-codegen supported versions.
 var SupportedVersions = []string{

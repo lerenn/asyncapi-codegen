@@ -6,8 +6,6 @@ import (
 	"runtime/debug"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
-	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
-	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 	generatorv2 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v2"
 	generatorv3 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v3"
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
@@ -19,6 +17,17 @@ type CodeGen struct {
 	specification asyncapi.Specification
 	modulePath    string
 	moduleVersion string
+}
+
+// FromFile returns a code generator from a specification file path.
+func FromFile(path string) (CodeGen, error) {
+	// Get specification from file
+	spec, err := asyncapi.FromFile(path)
+	if err != nil {
+		return CodeGen{}, err
+	}
+
+	return New(spec)
 }
 
 // New creates a new code generation structure that can be used to generate code.
@@ -50,11 +59,16 @@ func modulePathVersion() (path, version string) {
 // Generate generates code from the code generation structure, that have already
 // processed the AsyncAPI file when creating it.
 func (cg CodeGen) Generate(opt options.Options) error {
+	// Process specification
+	cg.specification.Process()
+
+	// Generate content
 	content, err := cg.generateContent(opt)
 	if err != nil {
 		return err
 	}
 
+	// Format content if not disabled
 	var fileContent []byte
 	if !opt.DisableFormatting {
 		fileContent, err = imports.Process("", []byte(content), &imports.Options{
@@ -70,18 +84,17 @@ func (cg CodeGen) Generate(opt options.Options) error {
 		fileContent = []byte(content)
 	}
 
+	// Write to file
 	return os.WriteFile(opt.OutputPath, fileContent, 0644)
 }
 
 func (cg CodeGen) generateContent(opt options.Options) (string, error) {
-	version := cg.specification.AsyncAPIVersion()
-
-	// NOTE: version should already be correct at this moment
-	switch version[:1] {
-	case "2":
-		spec, ok := cg.specification.(*asyncapiv2.Specification)
-		if !ok {
-			return "", fmt.Errorf("unknown spec format: this should not have happened")
+	version := cg.specification.MajorVersion()
+	switch version {
+	case 2:
+		spec, err := asyncapi.ToV2(cg.specification)
+		if err != nil {
+			return "", err
 		}
 
 		return generatorv2.Generator{
@@ -90,10 +103,10 @@ func (cg CodeGen) generateContent(opt options.Options) (string, error) {
 			ModulePath:    cg.modulePath,
 			ModuleVersion: cg.moduleVersion,
 		}.Generate()
-	case "3":
-		spec, ok := cg.specification.(*asyncapiv3.Specification)
-		if !ok {
-			return "", fmt.Errorf("unknown spec format: this should not have happened")
+	case 3:
+		spec, err := asyncapi.ToV3(cg.specification)
+		if err != nil {
+			return "", err
 		}
 
 		return generatorv3.Generator{
@@ -103,6 +116,6 @@ func (cg CodeGen) generateContent(opt options.Options) (string, error) {
 			ModuleVersion: cg.moduleVersion,
 		}.Generate()
 	default:
-		return "", fmt.Errorf("unknown version (%q): this should not have happened", version)
+		return "", fmt.Errorf("unsupported major version (%q)", version)
 	}
 }

@@ -75,3 +75,11 @@ func (mt *MessageTrait) Process(name string, spec Specification) {
 		ex.Process(fmt.Sprintf("%sExample%d", mt.Name, i), spec)
 	}
 }
+
+// Follow returns referenced MessageTrait if specified or the actual MessageTrait.
+func (mt *MessageTrait) Follow() *MessageTrait {
+	if mt.ReferenceTo != nil {
+		return mt.ReferenceTo
+	}
+	return mt
+}

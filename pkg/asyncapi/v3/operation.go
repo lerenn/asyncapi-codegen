@@ -102,3 +102,46 @@ func (op Operation) GetMessage() *Message {
 		return op.Channel.GetMessage()
 	}
 }
+
+// ApplyTrait applies a trait to the operation.
+func (op *Operation) ApplyTrait(ot *OperationTrait, spec Specification) {
+	// Check operation is not nil
+	if op == nil {
+		return
+	}
+
+	// Override title if not set
+	if op.Title == "" {
+		op.Title = ot.Title
+	}
+
+	// Override summary if not set
+	if op.Summary == "" {
+		op.Summary = ot.Summary
+	}
+
+	// Override description if not set
+	if op.Description == "" {
+		op.Description = ot.Description
+	}
+
+	// Merge security scheme
+	op.Security = append(op.Security, ot.Security...)
+	op.Security = RemoveDuplicateSecuritySchemes(op.Security)
+
+	// Merge tags
+	op.Tags = append(op.Tags, ot.Tags...)
+	op.Tags = RemoveDuplicateTags(op.Tags)
+
+	// Override external docs if not set
+	if op.ExternalDocs == nil && ot.ExternalDocs != nil {
+		extDoc := *ot.ExternalDocs
+		op.ExternalDocs = &extDoc
+	}
+
+	// Override bindings if not set
+	if op.Bindings == nil && ot.Bindings != nil {
+		bindings := *ot.Bindings
+		op.Bindings = &bindings
+	}
+}

@@ -33,3 +33,22 @@ func (t *Tag) Process(path string, spec Specification) {
 		t.ReferenceTo = spec.ReferenceTag(t.Reference)
 	}
 }
+
+// RemoveDuplicateTags removes the tags that have the same name, keeping the first occurrence.
+func RemoveDuplicateTags(tags []*Tag) []*Tag {
+	newList := make([]*Tag, 0)
+	for _, t := range tags {
+		present := false
+		for _, pt := range newList {
+			if pt.Name == t.Name {
+				present = true
+				break
+			}
+		}
+
+		if !present {
+			newList = append(newList, t)
+		}
+	}
+	return newList
+}

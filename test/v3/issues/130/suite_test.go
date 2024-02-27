@@ -8,6 +8,7 @@ import (
 	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
 	"github.com/lerenn/asyncapi-codegen/test/v3/issues/130/decoupling"
 	"github.com/lerenn/asyncapi-codegen/test/v3/issues/130/requestreply"
+	"github.com/lerenn/asyncapi-codegen/test/v3/issues/130/trait"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -15,7 +16,9 @@ func TestSuite(t *testing.T) {
 	brokers, cleanup := asyncapi_test.BrokerControllers(t)
 	defer cleanup()
 
-	// Only do it with one broker as this is not testing the broker
-	suite.Run(t, decoupling.NewSuite(brokers[0]))
-	suite.Run(t, requestreply.NewSuite(brokers[0]))
+	for _, b := range brokers {
+		suite.Run(t, decoupling.NewSuite(b))
+		suite.Run(t, requestreply.NewSuite(b))
+	}
+	suite.Run(t, trait.NewSuite())
 }

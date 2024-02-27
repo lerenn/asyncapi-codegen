@@ -66,6 +66,7 @@ type Message struct {
 	ExternalDocs  *ExternalDocumentation `json:"externalDocs"`
 	Bindings      *MessageBindings       `json:"bindings"`
 	Examples      []*MessageExample      `json:"examples"`
+	Traits        []*MessageTrait        `json:"traits"`
 	Reference     string                 `json:"$ref"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
@@ -124,6 +125,12 @@ func (msg *Message) Process(name string, spec Specification) {
 	// Process Message Examples
 	for i, ex := range msg.Examples {
 		ex.Process(fmt.Sprintf("%sExample%d", msg.Name, i), spec)
+	}
+
+	// Process traits and apply them
+	for i, t := range msg.Traits {
+		t.Process(fmt.Sprintf("%sTrait%d", msg.Name, i), spec)
+		msg.ApplyTrait(t.Follow(), spec)
 	}
 
 	// Process correlation ID
@@ -298,4 +305,63 @@ func (msg *Message) Follow() *Message {
 		return msg.ReferenceTo
 	}
 	return msg
+}
+
+// ApplyTrait applies a trait to the message.
+//
+//nolint:cyclop
+func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) {
+	// Check message is not nil
+	if msg == nil {
+		return
+	}
+
+	// Merge headers if present
+	if mt.Headers != nil {
+		msg.Headers.MergeWith(spec, *mt.Headers)
+	}
+
+	// Merge payload if present
+	if mt.Payload != nil {
+		msg.Payload.MergeWith(spec, *mt.Payload)
+	}
+
+	// Add correlation ID if present and not overriding
+	if msg.CorrelationID == nil && mt.CorrelationID != nil {
+		corelID := *mt.CorrelationID
+		msg.CorrelationID = &corelID
+	}
+
+	// Override content type if not set
+	if msg.ContentType == "" {
+		msg.ContentType = mt.ContentType
+	}
+
+	// Override title if not set
+	if msg.Title == "" {
+		msg.Title = mt.Title
+	}
+
+	// Override summary if not set
+	if msg.Summary == "" {
+		msg.Summary = mt.Summary
+	}
+
+	// Override description if not set
+	if msg.Description == "" {
+		msg.Description = mt.Description
+	}
+
+	// Merge tags
+	msg.Tags = append(msg.Tags, mt.Tags...)
+	msg.Tags = RemoveDuplicateTags(msg.Tags)
+
+	// Override external docs if not set
+	if msg.ExternalDocs == nil && mt.ExternalDocs != nil {
+		extDoc := *mt.ExternalDocs
+		msg.ExternalDocs = &extDoc
+	}
+
+	// Merge examples
+	msg.Examples = append(msg.Examples, mt.Examples...)
 }
