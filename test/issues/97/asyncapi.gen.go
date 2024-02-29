@@ -775,3 +775,19 @@ type ObjectSchema struct {
 
 // StringSchema is a schema from the AsyncAPI specification required in messages
 type StringSchema string
+
+const (
+	// ReferencePayloadArrayPath is the constant representing the 'ReferencePayloadArray' channel path.
+	ReferencePayloadArrayPath = "referencePayloadArray"
+	// ReferencePayloadObjectPath is the constant representing the 'ReferencePayloadObject' channel path.
+	ReferencePayloadObjectPath = "referencePayloadObject"
+	// ReferencePayloadStringPath is the constant representing the 'ReferencePayloadString' channel path.
+	ReferencePayloadStringPath = "referencePayloadString"
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+	ReferencePayloadArrayPath,
+	ReferencePayloadObjectPath,
+	ReferencePayloadStringPath,
+}

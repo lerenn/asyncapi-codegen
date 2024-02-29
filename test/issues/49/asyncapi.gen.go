@@ -777,3 +777,16 @@ func (msg StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 		Payload: payload,
 	}, nil
 }
+
+const (
+	// ChatPath is the constant representing the '/chat' channel path.
+	ChatPath = "/chat"
+	// StatusPath is the constant representing the '/status' channel path.
+	StatusPath = "/status"
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+	ChatPath,
+	StatusPath,
+}
