@@ -579,3 +579,16 @@ func (msg *PongMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	id := req.CorrelationID()
 	msg.Headers.CorrelationId = &id
 }
+
+const (
+	// PingPath is the constant representing the 'Ping' channel path.
+	PingPath = "ping"
+	// PongPath is the constant representing the 'Pong' channel path.
+	PongPath = "pong"
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+	PingPath,
+	PongPath,
+}

@@ -489,3 +489,13 @@ type TestSchemaSchema struct {
 		ReferenceId string `json:"reference_id"`
 	} `json:"obj1"`
 }
+
+const (
+	// TestChannelPath is the constant representing the 'TestChannel' channel path.
+	TestChannelPath = "testChannel"
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+	TestChannelPath,
+}

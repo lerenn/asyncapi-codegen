@@ -98,3 +98,13 @@ func (msg StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 		Payload: payload,
 	}, nil
 }
+
+const (
+	// StatusPath is the constant representing the '/status' channel path.
+	StatusPath = "/status"
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+	StatusPath,
+}
