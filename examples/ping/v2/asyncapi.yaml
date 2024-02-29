@@ -8,13 +8,13 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0
 
 channels:
-  ping:
+  ping.v2:
     publish:
       operationId: ping
       message:
         $ref : '#/components/messages/Ping'
 
-  pong:
+  pong.v2:
     subscribe:
       operationId: pong
       message:

@@ -6,12 +6,12 @@ info:
 
 channels:
   ping:
-    address: ping
+    address: ping.v3
     messages:
       ping:
         $ref: '#/components/messages/ping'
   pong:
-    address: pong
+    address: pong.v3
     messages:
       pong:
         $ref: '#/components/messages/pong'

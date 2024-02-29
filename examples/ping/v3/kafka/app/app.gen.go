@@ -138,7 +138,7 @@ func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
 	c.UnsubscribeFromPingRequestOperation(ctx)
 }
 
-// SubscribeToPingRequestOperation will receive 'Ping' messages from 'ping' channel
+// SubscribeToPingRequestOperation will receive 'Ping' messages from 'ping.v3' channel
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -148,7 +148,7 @@ func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
 // If you need support for other messages, please raise an issue.
 func (c *AppController) SubscribeToPingRequestOperation(ctx context.Context, fn func(ctx context.Context, msg Ping)) error {
 	// Get channel address
-	addr := "ping"
+	addr := "ping.v3"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -214,11 +214,11 @@ func (c *AppController) SubscribeToPingRequestOperation(ctx context.Context, fn 
 	return nil
 }
 
-// UnsubscribeFromPingRequestOperation will stop the reception of messages from 'ping' channel.
+// UnsubscribeFromPingRequestOperation will stop the reception of messages from 'ping.v3' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeFromPingRequestOperation(ctx context.Context) {
 	// Get channel address
-	addr := "ping"
+	addr := "ping.v3"
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -239,13 +239,13 @@ func (c *AppController) UnsubscribeFromPingRequestOperation(ctx context.Context)
 }
 
 // ReplyToPingRequestOperation should be used to reply to PingRequest messages by sending
-// 'Pong' messages to 'pong' channel.
+// 'Pong' messages to 'pong.v3' channel.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *AppController) ReplyToPingRequestOperation(ctx context.Context, msg Pong) error {
 	// Get channel address
-	addr := "pong"
+	addr := "pong.v3"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {

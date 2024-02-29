@@ -16,7 +16,7 @@ import (
 
 // UserSubscriber represents all handlers that are expecting messages for User
 type UserSubscriber interface {
-	// Pong subscribes to messages placed on the 'pong' channel
+	// Pong subscribes to messages placed on the 'pong.v2' channel
 	Pong(ctx context.Context, msg PongMessage)
 }
 
@@ -139,12 +139,12 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 	c.UnsubscribePong(ctx)
 }
 
-// SubscribePong will subscribe to new messages from 'pong' channel.
+// SubscribePong will subscribe to new messages from 'pong.v2' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.Context, msg PongMessage)) error {
 	// Get channel path
-	path := "pong"
+	path := "pong.v2"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -210,11 +210,11 @@ func (c *UserController) SubscribePong(ctx context.Context, fn func(ctx context.
 	return nil
 }
 
-// UnsubscribePong will unsubscribe messages from 'pong' channel.
+// UnsubscribePong will unsubscribe messages from 'pong.v2' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *UserController) UnsubscribePong(ctx context.Context) {
 	// Get channel path
-	path := "pong"
+	path := "pong.v2"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -234,10 +234,10 @@ func (c *UserController) UnsubscribePong(ctx context.Context) {
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// PublishPing will publish messages to 'ping' channel
+// PublishPing will publish messages to 'ping.v2' channel
 func (c *UserController) PublishPing(ctx context.Context, msg PingMessage) error {
 	// Get channel path
-	path := "ping"
+	path := "ping.v2"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
@@ -272,7 +272,7 @@ func (c *UserController) PublishPing(ctx context.Context, msg PingMessage) error
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *UserController) WaitForPong(ctx context.Context, publishMsg MessageWithCorrelationID, pub func(ctx context.Context) error) (PongMessage, error) {
 	// Get channel path
-	path := "pong"
+	path := "pong.v2"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)

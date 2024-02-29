@@ -110,14 +110,14 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishPingRequestOperation will send 'Ping' messages to 'ping' channel.
+// PublishPingRequestOperation will send 'Ping' messages to 'ping.v3' channel.
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *UserController) PublishPingRequestOperation(ctx context.Context, msg Ping) error {
 	// Get channel address
-	addr := "ping"
+	addr := "ping.v3"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
@@ -145,7 +145,7 @@ func (c *UserController) PublishPingRequestOperation(ctx context.Context, msg Pi
 }
 
 // RequestToPingRequestOperation will send a message and wait for the reply message
-// on channel 'pong'.
+// on channel 'pong.v3'.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
 // reply with the same correlation ID. Otherwise, it will returns the first
@@ -154,7 +154,7 @@ func (c *UserController) PublishPingRequestOperation(ctx context.Context, msg Pi
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *UserController) RequestToPingRequestOperation(ctx context.Context, msg Ping) (Pong, error) {
 	// Get receiving channel address
-	addr := "pong"
+	addr := "pong.v3"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)

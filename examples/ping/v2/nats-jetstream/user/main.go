@@ -14,10 +14,10 @@ func main() {
 	// Instantiate a NATS controller with a logger
 	logger := loggers.NewText()
 	broker, err := natsjetstream.NewController(
-		"nats://nats-jetstream:4222",       // Set URL to broker
-		natsjetstream.WithLogger(logger),   // Attach an internal logger
-		natsjetstream.WithStream("ping"),   // Set the stream used
-		natsjetstream.WithConsumer("ping"), // Create the corresponding consumer
+		"nats://nats-jetstream:4222",         // Set URL to broker
+		natsjetstream.WithLogger(logger),     // Attach an internal logger
+		natsjetstream.WithStream("pingv2"),   // Set the stream used
+		natsjetstream.WithConsumer("pingv2"), // Create the corresponding consumer
 	)
 	if err != nil {
 		panic(err)

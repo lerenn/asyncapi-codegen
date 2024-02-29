@@ -39,12 +39,12 @@ func main() {
 		"nats://nats-jetstream:4222",     // Set URL to broker
 		natsjetstream.WithLogger(logger), // Attach an internal logger
 		natsjetstream.WithStreamConfig(jetstream.StreamConfig{
-			Name: "ping",
+			Name: "pingv2",
 			Subjects: []string{
-				"ping", "pong",
+				"ping.v2", "pong.v2", //
 			},
 		}), // Create the stream "ping"
-		natsjetstream.WithConsumerConfig(jetstream.ConsumerConfig{Name: "ping"}), // Create the corresponding consumer
+		natsjetstream.WithConsumerConfig(jetstream.ConsumerConfig{Name: "pingv2"}), // Create the corresponding consumer
 	)
 	if err != nil {
 		panic(err)

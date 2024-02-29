@@ -16,7 +16,7 @@ import (
 
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
-	// Ping subscribes to messages placed on the 'ping' channel
+	// Ping subscribes to messages placed on the 'ping.v2' channel
 	Ping(ctx context.Context, msg PingMessage)
 }
 
@@ -139,12 +139,12 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 	c.UnsubscribePing(ctx)
 }
 
-// SubscribePing will subscribe to new messages from 'ping' channel.
+// SubscribePing will subscribe to new messages from 'ping.v2' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
 	// Get channel path
-	path := "ping"
+	path := "ping.v2"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -210,11 +210,11 @@ func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.C
 	return nil
 }
 
-// UnsubscribePing will unsubscribe messages from 'ping' channel.
+// UnsubscribePing will unsubscribe messages from 'ping.v2' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribePing(ctx context.Context) {
 	// Get channel path
-	path := "ping"
+	path := "ping.v2"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -234,10 +234,10 @@ func (c *AppController) UnsubscribePing(ctx context.Context) {
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// PublishPong will publish messages to 'pong' channel
+// PublishPong will publish messages to 'pong.v2' channel
 func (c *AppController) PublishPong(ctx context.Context, msg PongMessage) error {
 	// Get channel path
-	path := "pong"
+	path := "pong.v2"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
