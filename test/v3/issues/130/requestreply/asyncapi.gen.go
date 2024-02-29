@@ -13,6 +13,15 @@ import (
 	"github.com/google/uuid"
 )
 
+// AppSubscriber contains all handlers that are listening messages for App
+type AppSubscriber interface {
+	// PingRequest receive all messages for the 'pingRequest' operation.
+	PingRequestOperationReceived(ctx context.Context, msg Ping)
+
+	// PingRequestWithCorrelationID receive all messages for the 'pingRequestWithCorrelationID' operation.
+	PingRequestWithCorrelationIDOperationReceived(ctx context.Context, msg PingWithCorrelationID)
+}
+
 // AppController is the structure that provides sending capabilities to the
 // developer and and connect the broker with the App
 type AppController struct {
@@ -108,9 +117,35 @@ func addAppContextValues(ctx context.Context, addr string) context.Context {
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
+	c.UnsubscribeFromAllOperations(ctx)
+
+	c.logger.Info(ctx, "Closed app controller")
 }
 
-// ListenPingRequest will receive 'Ping' messages from 'issue130.ping' channel
+// SubscribeToAllOperations will receive from operations where channel has no parameter on which the app is expecting messages.
+// For channels with parameters, they should be received independently.
+func (c *AppController) SubscribeToAllOperations(ctx context.Context, as AppSubscriber) error {
+	if as == nil {
+		return extensions.ErrNilAppSubscriber
+	}
+
+	if err := c.SubscribeToPingRequestOperation(ctx, as.PingRequestOperationReceived); err != nil {
+		return err
+	}
+	if err := c.SubscribeToPingRequestWithCorrelationIDOperation(ctx, as.PingRequestWithCorrelationIDOperationReceived); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UnsubscribeFromAllOperations will stop the subscription of all remaining subscribed channels
+func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
+	c.UnsubscribeFromPingRequestOperation(ctx)
+	c.UnsubscribeFromPingRequestWithCorrelationIDOperation(ctx)
+}
+
+// SubscribeToPingRequestOperation will receive 'Ping' messages from 'issue130.ping' channel
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -118,7 +153,7 @@ func (c *AppController) Close(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) ListenPingRequest(ctx context.Context, fn func(ctx context.Context, msg Ping)) error {
+func (c *AppController) SubscribeToPingRequestOperation(ctx context.Context, fn func(ctx context.Context, msg Ping)) error {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -126,10 +161,10 @@ func (c *AppController) ListenPingRequest(ctx context.Context, fn func(ctx conte
 	ctx = addAppContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
-	// Check if the controller is already listening
+	// Check if the controller is already subscribed
 	_, exists := c.subscriptions[addr]
 	if exists {
-		err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
+		err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
@@ -140,7 +175,7 @@ func (c *AppController) ListenPingRequest(ctx context.Context, fn func(ctx conte
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
-	c.logger.Info(ctx, "Listening to channel")
+	c.logger.Info(ctx, "Subscribed to channel")
 
 	// Asynchronously listen to new messages and pass them to app receiver
 	go func() {
@@ -181,9 +216,9 @@ func (c *AppController) ListenPingRequest(ctx context.Context, fn func(ctx conte
 	return nil
 }
 
-// UnlistenPingRequest will stop the reception of messages from 'issue130.ping' channel.
+// UnsubscribeFromPingRequestOperation will stop the reception of messages from 'issue130.ping' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnlistenPingRequest(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingRequestOperation(ctx context.Context) {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -202,15 +237,15 @@ func (c *AppController) UnlistenPingRequest(ctx context.Context) {
 	// Remove if from the receivers
 	delete(c.subscriptions, addr)
 
-	c.logger.Info(ctx, "Unlistend from channel")
-} // ListenPingRequestWithCorrelationID will receive 'PingWithCorrelationID' messages from 'issue130.pingWithCorrelationID' channel
+	c.logger.Info(ctx, "Unsubscribed from channel")
+} // SubscribeToPingRequestWithCorrelationIDOperation will receive 'PingWithCorrelationID' messages from 'issue130.pingWithCorrelationID' channel
 // Callback function 'fn' will be called each time a new message is received.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) ListenPingRequestWithCorrelationID(ctx context.Context, fn func(ctx context.Context, msg PingWithCorrelationID)) error {
+func (c *AppController) SubscribeToPingRequestWithCorrelationIDOperation(ctx context.Context, fn func(ctx context.Context, msg PingWithCorrelationID)) error {
 	// Get channel address
 	addr := "issue130.pingWithCorrelationID"
 
@@ -218,10 +253,10 @@ func (c *AppController) ListenPingRequestWithCorrelationID(ctx context.Context, 
 	ctx = addAppContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
-	// Check if the controller is already listening
+	// Check if the controller is already subscribed
 	_, exists := c.subscriptions[addr]
 	if exists {
-		err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
+		err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
@@ -232,7 +267,7 @@ func (c *AppController) ListenPingRequestWithCorrelationID(ctx context.Context, 
 		c.logger.Error(ctx, err.Error())
 		return err
 	}
-	c.logger.Info(ctx, "Listening to channel")
+	c.logger.Info(ctx, "Subscribed to channel")
 
 	// Asynchronously listen to new messages and pass them to app receiver
 	go func() {
@@ -278,9 +313,9 @@ func (c *AppController) ListenPingRequestWithCorrelationID(ctx context.Context, 
 	return nil
 }
 
-// UnlistenPingRequestWithCorrelationID will stop the reception of messages from 'issue130.pingWithCorrelationID' channel.
+// UnsubscribeFromPingRequestWithCorrelationIDOperation will stop the reception of messages from 'issue130.pingWithCorrelationID' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnlistenPingRequestWithCorrelationID(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingRequestWithCorrelationIDOperation(ctx context.Context) {
 	// Get channel address
 	addr := "issue130.pingWithCorrelationID"
 
@@ -299,15 +334,15 @@ func (c *AppController) UnlistenPingRequestWithCorrelationID(ctx context.Context
 	// Remove if from the receivers
 	delete(c.subscriptions, addr)
 
-	c.logger.Info(ctx, "Unlistend from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// ReplyToPingRequest should be used to reply to PingRequest messages by sending
+// ReplyToPingRequestOperation should be used to reply to PingRequest messages by sending
 // 'Pong' messages to 'issue130.pong' channel.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) ReplyToPingRequest(ctx context.Context, msg Pong) error {
+func (c *AppController) ReplyToPingRequestOperation(ctx context.Context, msg Pong) error {
 	// Get channel address
 	addr := "issue130.pong"
 
@@ -330,12 +365,12 @@ func (c *AppController) ReplyToPingRequest(ctx context.Context, msg Pong) error 
 	})
 }
 
-// ReplyToPingRequestWithCorrelationID should be used to reply to PingRequestWithCorrelationID messages by sending
+// ReplyToPingRequestWithCorrelationIDOperation should be used to reply to PingRequestWithCorrelationID messages by sending
 // 'PongWithCorrelationID' messages to 'issue130.pongWithCorrelationID' channel.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) ReplyToPingRequestWithCorrelationID(ctx context.Context, msg PongWithCorrelationID) error {
+func (c *AppController) ReplyToPingRequestWithCorrelationIDOperation(ctx context.Context, msg PongWithCorrelationID) error {
 	// Get channel address
 	addr := "issue130.pongWithCorrelationID"
 
@@ -364,15 +399,6 @@ func (c *AppController) ReplyToPingRequestWithCorrelationID(ctx context.Context,
 	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 		return c.broker.Publish(ctx, addr, brokerMsg)
 	})
-}
-
-// UserListener represents all handlers that are listening messages for User
-type UserListener interface {
-	// PingRequest listen to messages placed on the 'pingRequest' channel
-	PingRequest(ctx context.Context, msg Ping)
-
-	// PingRequestWithCorrelationID listen to messages placed on the 'pingRequestWithCorrelationID' channel
-	PingRequestWithCorrelationID(ctx context.Context, msg PingWithCorrelationID)
 }
 
 // UserController is the structure that provides sending capabilities to the
@@ -470,31 +496,14 @@ func addUserContextValues(ctx context.Context, addr string) context.Context {
 // Close will clean up any existing resources on the controller
 func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.UnlistenAll(ctx)
-
-	c.logger.Info(ctx, "Closed user controller")
 }
 
-// ListenAll will receive to channels without parameters on which the app is expecting messages.
-// For channels with parameters, they should be received independently.
-func (c *UserController) ListenAll(ctx context.Context, as UserListener) error {
-	if as == nil {
-		return extensions.ErrNilUserListener
-	}
-
-	return nil
-}
-
-// UnlistenAll will stop the listening of all remaining listening channels
-func (c *UserController) UnlistenAll(ctx context.Context) {
-}
-
-// AsyncPingRequest will send 'Ping' messages to 'issue130.ping' channel.
+// PublishPingRequestOperation will send 'Ping' messages to 'issue130.ping' channel.
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) AsyncPingRequest(ctx context.Context, msg Ping) error {
+func (c *UserController) PublishPingRequestOperation(ctx context.Context, msg Ping) error {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -517,7 +526,7 @@ func (c *UserController) AsyncPingRequest(ctx context.Context, msg Ping) error {
 	})
 }
 
-// PingRequest will send a message and wait for the reply message
+// RequestToPingRequestOperation will send a message and wait for the reply message
 // on channel 'issue130.pong'.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -525,20 +534,20 @@ func (c *UserController) AsyncPingRequest(ctx context.Context, msg Ping) error {
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) PingRequest(ctx context.Context, msg Ping) (Pong, error) {
+func (c *UserController) RequestToPingRequestOperation(ctx context.Context, msg Ping) (Pong, error) {
 	// Get receiving channel address
 	addr := "issue130.pong"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
 
-	// Listening to broker channel
+	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return Pong{}, err
 	}
-	c.logger.Info(ctx, "Listening to channel")
+	c.logger.Info(ctx, "Subscribed to channel")
 
 	// Close receiver on leave
 	defer func() {
@@ -546,11 +555,11 @@ func (c *UserController) PingRequest(ctx context.Context, msg Ping) (Pong, error
 		sub.Cancel(ctx)
 
 		// Logging unsubscribing
-		c.logger.Info(ctx, "Unlistend from channel")
+		c.logger.Info(ctx, "Unsubscribed from channel")
 	}()
 
 	// Send the message
-	if err := c.AsyncPingRequest(ctx, msg); err != nil {
+	if err := c.PublishPingRequestOperation(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
 		return Pong{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
@@ -591,12 +600,12 @@ func (c *UserController) PingRequest(ctx context.Context, msg Ping) (Pong, error
 	}
 }
 
-// AsyncPingRequestWithCorrelationID will send 'PingWithCorrelationID' messages to 'issue130.pingWithCorrelationID' channel.
+// PublishPingRequestWithCorrelationIDOperation will send 'PingWithCorrelationID' messages to 'issue130.pingWithCorrelationID' channel.
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) AsyncPingRequestWithCorrelationID(ctx context.Context, msg PingWithCorrelationID) error {
+func (c *UserController) PublishPingRequestWithCorrelationIDOperation(ctx context.Context, msg PingWithCorrelationID) error {
 	// Get channel address
 	addr := "issue130.pingWithCorrelationID"
 
@@ -625,7 +634,7 @@ func (c *UserController) AsyncPingRequestWithCorrelationID(ctx context.Context, 
 	})
 }
 
-// PingRequestWithCorrelationID will send a message and wait for the reply message
+// RequestToPingRequestWithCorrelationIDOperation will send a message and wait for the reply message
 // on channel 'issue130.pongWithCorrelationID'.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -633,20 +642,20 @@ func (c *UserController) AsyncPingRequestWithCorrelationID(ctx context.Context, 
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) PingRequestWithCorrelationID(ctx context.Context, msg PingWithCorrelationID) (PongWithCorrelationID, error) {
+func (c *UserController) RequestToPingRequestWithCorrelationIDOperation(ctx context.Context, msg PingWithCorrelationID) (PongWithCorrelationID, error) {
 	// Get receiving channel address
 	addr := "issue130.pongWithCorrelationID"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
 
-	// Listening to broker channel
+	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
 		return PongWithCorrelationID{}, err
 	}
-	c.logger.Info(ctx, "Listening to channel")
+	c.logger.Info(ctx, "Subscribed to channel")
 
 	// Close receiver on leave
 	defer func() {
@@ -654,7 +663,7 @@ func (c *UserController) PingRequestWithCorrelationID(ctx context.Context, msg P
 		sub.Cancel(ctx)
 
 		// Logging unsubscribing
-		c.logger.Info(ctx, "Unlistend from channel")
+		c.logger.Info(ctx, "Unsubscribed from channel")
 	}()
 
 	// Set correlation ID if it does not exist
@@ -663,7 +672,7 @@ func (c *UserController) PingRequestWithCorrelationID(ctx context.Context, msg P
 	}
 
 	// Send the message
-	if err := c.AsyncPingRequestWithCorrelationID(ctx, msg); err != nil {
+	if err := c.PublishPingRequestWithCorrelationIDOperation(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
 		return PongWithCorrelationID{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
@@ -782,7 +791,7 @@ func (e *Error) Error() string {
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// Ping is the message expected for 'Ping' channel
+// Ping is the golang representation of the AsyncAPI message
 type Ping struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
@@ -830,7 +839,7 @@ func (msg Ping) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PingWithCorrelationID is the message expected for 'PingWithCorrelationID' channel
+// PingWithCorrelationID is the golang representation of the AsyncAPI message
 type PingWithCorrelationID struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
@@ -926,7 +935,7 @@ func (msg *PingWithCorrelationID) SetAsResponseFrom(req MessageWithCorrelationID
 	msg.Headers.CorrelationId = &id
 }
 
-// Pong is the message expected for 'Pong' channel
+// Pong is the golang representation of the AsyncAPI message
 type Pong struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
@@ -974,7 +983,7 @@ func (msg Pong) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PongWithCorrelationID is the message expected for 'PongWithCorrelationID' channel
+// PongWithCorrelationID is the golang representation of the AsyncAPI message
 type PongWithCorrelationID struct {
 	// Headers will be used to fill the message headers
 	Headers struct {

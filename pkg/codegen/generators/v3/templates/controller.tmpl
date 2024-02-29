@@ -93,24 +93,24 @@ func add{{ .Prefix }}ContextValues(ctx context.Context, addr string) context.Con
 // Close will clean up any existing resources on the controller
 func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
     // Unsubscribing remaining channels
-{{if .MethodCount -}}
-    c.UnlistenAll(ctx)
+{{if .ReceiveOperationsCount -}}
+    c.UnsubscribeFromAllOperations(ctx)
 
     c.logger.Info(ctx, "Closed {{ snakeCase .Prefix }} controller")
 {{end -}}
 }
 
-{{if .MethodCount -}}
-// ListenAll will receive to channels without parameters on which the app is expecting messages.
+{{if .ReceiveOperationsCount -}}
+// SubscribeToAllOperations will receive from operations where channel has no parameter on which the app is expecting messages.
 // For channels with parameters, they should be received independently.
-func (c *{{ .Prefix }}Controller) ListenAll(ctx context.Context, as {{ .Prefix }}Listener) error {
+func (c *{{ .Prefix }}Controller) SubscribeToAllOperations(ctx context.Context, as {{ .Prefix }}Subscriber) error {
     if as == nil {
-        return extensions.ErrNil{{ .Prefix }}Listener
+        return extensions.ErrNil{{ .Prefix }}Subscriber
     }
 
     {{range  $key, $value := .ReceiveOperations -}}
     {{- if not .Channel.Follow.Parameters }}
-    if err := c.Listen{{$value.Name}}(ctx, as.{{$value.Name}}); err != nil {
+    if err := c.SubscribeTo{{$value.Name}}Operation(ctx, as.{{$value.Name}}OperationReceived); err != nil {
         return err
     }
     {{- end}}
@@ -119,18 +119,18 @@ func (c *{{ .Prefix }}Controller) ListenAll(ctx context.Context, as {{ .Prefix }
     return nil
 }
 
-// UnlistenAll will stop the listening of all remaining listening channels
-func (c *{{ .Prefix }}Controller) UnlistenAll(ctx context.Context) {
+// UnsubscribeFromAllOperations will stop the subscription of all remaining subscribed channels
+func (c *{{ .Prefix }}Controller) UnsubscribeFromAllOperations(ctx context.Context) {
     {{- range  $key, $value := .ReceiveOperations}}
     {{- if not .Channel.Follow.Parameters}}
-    c.Unlisten{{$value.Name}}(ctx)
+    c.UnsubscribeFrom{{$value.Name}}Operation(ctx)
     {{- end}}
     {{- end}}
 }
 {{- end}}
 
 {{range $key, $value := .ReceiveOperations -}}
-// Listen{{$value.Name}} will receive '{{$value.GetMessage.Name}}' messages from '{{$value.Channel.Follow.Address}}' channel
+// SubscribeTo{{$value.Name}}Operation will receive '{{$value.GetMessage.Name}}' messages from '{{$value.Channel.Follow.Address}}' channel
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -139,9 +139,9 @@ func (c *{{ .Prefix }}Controller) UnlistenAll(ctx context.Context) {
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 {{- if .Channel.Follow.Parameters}}
-func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}Operation(ctx context.Context, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- end }}
     // Get channel address
     addr := {{ generateChannelAddrFromOp $value }}
@@ -150,10 +150,10 @@ func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, fn
     ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
     ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
-    // Check if the controller is already listening
+    // Check if the controller is already subscribed
     _, exists := c.subscriptions[addr]
     if exists {
-        err := fmt.Errorf("%w: controller is already listening on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
+        err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
         c.logger.Error(ctx, err.Error())
         return err
     }
@@ -164,7 +164,7 @@ func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, fn
         c.logger.Error(ctx, err.Error())
         return err
     }
-    c.logger.Info(ctx, "Listening to channel")
+    c.logger.Info(ctx, "Subscribed to channel")
 
     // Asynchronously listen to new messages and pass them to app receiver
     go func() {
@@ -212,12 +212,12 @@ func (c *{{ $.Prefix }}Controller) Listen{{$value.Name}}(ctx context.Context, fn
     return nil
 }
 
-// Unlisten{{$value.Name}} will stop the reception of messages from '{{$value.Channel.Follow.Address}}' channel.
+// UnsubscribeFrom{{$value.Name}}Operation will stop the reception of messages from '{{$value.Channel.Follow.Address}}' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Channel.Follow.Parameters}}
-func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $key}}Parameters) {
+func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $key}}Parameters) {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context) {
+func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{$value.Name}}Operation(ctx context.Context) {
 {{- end}}
     // Get channel address
     addr := {{ generateChannelAddrFromOp $value }}
@@ -237,26 +237,26 @@ func (c *{{ $.Prefix }}Controller) Unlisten{{$value.Name}}(ctx context.Context) 
     // Remove if from the receivers
     delete(c.subscriptions, addr)
 
-    c.logger.Info(ctx, "Unlistend from channel")
+    c.logger.Info(ctx, "Unsubscribed from channel")
 }
 {{- end}}
 
 {{- range  $key, $value := .SendOperations}}
 
 {{- if .IsReplyTo}}
-// {{$value.Name}} should be used to reply to {{.IsReplyTo.Name}} messages by sending
+// {{$value.Name}}Operation should be used to reply to {{.IsReplyTo.Name}} messages by sending
 // '{{$value.GetMessage.Name}}' messages to '{{$value.Channel.Follow.Address}}' channel.
 {{- else}}
-// {{if .Reply}}Async{{end}}{{$value.Name}} will send '{{$value.GetMessage.Name}}' messages to '{{$value.Channel.Follow.Address}}' channel.
+// Publish{{$value.Name}}Operation will send '{{$value.GetMessage.Name}}' messages to '{{$value.Channel.Follow.Address}}' channel.
 {{if .Reply}}// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.{{end}}
 {{- end}}
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 {{- if .Channel.Follow.Parameters }}
-func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) error {
+func (c *{{ $.Prefix }}Controller) {{- if not .IsReplyTo}}Publish{{end}}{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) error {
 {{- else }}
-func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) error {
+func (c *{{ $.Prefix }}Controller) {{- if not .IsReplyTo}}Publish{{end}}{{$value.Name}}Operation(ctx context.Context, msg {{operationToMessageTypeName $value}}) error {
 {{- end }}
     // Get channel address
     addr := {{ generateChannelAddrFromOp $value }}
@@ -298,7 +298,7 @@ func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx 
 
 {{if .Reply -}}
 
-// {{$value.Name}} will send a message and wait for the reply message
+// RequestTo{{$value.Name}}Operation will send a message and wait for the reply message
 // on channel '{{.Reply.Channel.Follow.Address}}'.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -307,9 +307,9 @@ func (c *{{ $.Prefix }}Controller) {{if .Reply}}Async{{end}}{{$value.Name}}(ctx 
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Channel.Follow.Parameters}}
-func (c *UserController) {{$value.Name}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
+func (c *{{ $.Prefix }}Controller) RequestTo{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
 {{- else}}
-func (c *UserController) {{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
+func (c *{{ $.Prefix }}Controller) RequestTo{{$value.Name}}Operation(ctx context.Context, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
 {{- end}}
     // Get receiving channel address
     addr := {{ generateChannelAddr .Reply.Channel }}
@@ -317,13 +317,13 @@ func (c *UserController) {{$value.Name}}(ctx context.Context, msg {{operationToM
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
 
-    // Listening to broker channel
+    // Subscribe to broker channel
     sub, err := c.broker.Subscribe(ctx, addr)
     if err != nil {
         c.logger.Error(ctx, err.Error())
         return {{channelToMessageTypeName .Reply.Channel}}{}, err
     }
-    c.logger.Info(ctx, "Listening to channel")
+    c.logger.Info(ctx, "Subscribed to channel")
 
     // Close receiver on leave
     defer func(){
@@ -331,7 +331,7 @@ func (c *UserController) {{$value.Name}}(ctx context.Context, msg {{operationToM
         sub.Cancel(ctx)
 
         // Logging unsubscribing
-        c.logger.Info(ctx, "Unlistend from channel")
+        c.logger.Info(ctx, "Unsubscribed from channel")
     } ()
 
     {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
@@ -342,7 +342,7 @@ func (c *UserController) {{$value.Name}}(ctx context.Context, msg {{operationToM
     {{- end}}
 
     // Send the message 
-    if err := c.Async{{$value.Name}}(ctx, {{- if .Channel.Follow.Parameters}}params,{{- end}} msg); err != nil {
+    if err := c.Publish{{$value.Name}}Operation(ctx, {{- if .Channel.Follow.Parameters}}params,{{- end}} msg); err != nil {
         c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
         return {{channelToMessageTypeName .Reply.Channel}}{}, fmt.Errorf("error happened when sending message: %w", err)
     }

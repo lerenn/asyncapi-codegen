@@ -1,9 +1,0 @@
-{{if .MethodCount -}}
-// {{ .Prefix }}Listener represents all handlers that are listening messages for {{ .Prefix }}
-type {{ .Prefix }}Listener interface {
-{{- range  $key, $value := .Operations}}
-    // {{$value.Name}} listen to messages placed on the '{{ $key }}' channel
-    {{$value.Name}}(ctx context.Context, msg {{operationToMessageTypeName $value}})
-{{end}}
-}
-{{- end}}

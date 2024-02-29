@@ -21,12 +21,6 @@ var (
 	// ErrNilUserSubscriber is raised when a nil user subscriber is used (asyncapiv2 only).
 	ErrNilUserSubscriber = fmt.Errorf("%w: nil user subscriber has been used", ErrAsyncAPI)
 
-	// ErrNilAppListener is raised when a nil app listener is used (asyncapiv3 only).
-	ErrNilAppListener = fmt.Errorf("%w: nil app listener has been used", ErrAsyncAPI)
-
-	// ErrNilUserListener is raised when a nil user listener is used (asyncapiv3 only).
-	ErrNilUserListener = fmt.Errorf("%w: nil user listener has been used", ErrAsyncAPI)
-
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
 	// or more without unsubscribing.
 	ErrAlreadySubscribedChannel = fmt.Errorf("%w: the channel has already been subscribed", ErrAsyncAPI)

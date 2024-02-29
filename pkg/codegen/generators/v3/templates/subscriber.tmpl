@@ -1,0 +1,9 @@
+{{if .ReceiveOperationsCount -}}
+// {{ .Prefix }}Subscriber contains all handlers that are listening messages for {{ .Prefix }}
+type {{ .Prefix }}Subscriber interface {
+{{- range $key, $value := .Operations}}
+    // {{$value.Name}} receive all messages for the '{{ $key }}' operation.
+    {{$value.Name}}OperationReceived(ctx context.Context, msg {{operationToMessageTypeName $value}})
+{{end}}
+}
+{{- end}}

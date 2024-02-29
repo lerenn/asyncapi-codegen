@@ -57,9 +57,9 @@ func (s *Specification) Process() {
 	s.Components.Process(*s)
 }
 
-// GetByActionCount gets the count of 'sending' operations and the count
+// GetOperationCountByAction gets the count of 'sending' operations and the count
 // of 'reception' operations inside the Specification.
-func (s Specification) GetByActionCount() (sendCount, receiveCount uint) {
+func (s Specification) GetOperationCountByAction() (sendCount, receiveCount uint) {
 	for _, op := range s.Operations {
 		// Check that the publish channel is present
 		if op.Action.IsSend() {

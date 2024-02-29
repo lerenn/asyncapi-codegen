@@ -70,7 +70,7 @@ func (g Generator) generateApp() (string, error) {
 	var content string
 
 	// Generate application listener
-	listener, err := NewListenerGenerator(
+	listener, err := NewSubscriberGenerator(
 		SideIsApplication,
 		g.Specification,
 	).Generate()
@@ -96,7 +96,7 @@ func (g Generator) generateUser() (string, error) {
 	var content string
 
 	// Generate user listener
-	listener, err := NewListenerGenerator(
+	listener, err := NewSubscriberGenerator(
 		SideIsUser,
 		g.Specification,
 	).Generate()

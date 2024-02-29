@@ -43,21 +43,21 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestRequestReply() {
 	// Listen for pings on the application
-	err := suite.app.ListenPingRequest(context.Background(), func(ctx context.Context, msg Ping) {
+	err := suite.app.SubscribeToPingRequestOperation(context.Background(), func(ctx context.Context, msg Ping) {
 		var respMsg Pong
 		respMsg.Payload.Event = msg.Payload.Event
-		err := suite.app.ReplyToPingRequest(ctx, respMsg)
+		err := suite.app.ReplyToPingRequestOperation(ctx, respMsg)
 		suite.Require().NoError(err)
 	})
 	suite.Require().NoError(err)
-	defer suite.app.UnlistenPingRequest(context.Background())
+	defer suite.app.UnsubscribeFromPingRequestOperation(context.Background())
 
 	// Set a new ping
 	var msg Ping
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.PingRequest(context.Background(), msg)
+	resp, err := suite.user.RequestToPingRequestOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Check response
@@ -66,7 +66,7 @@ func (suite *Suite) TestRequestReply() {
 
 func (suite *Suite) TestRequestReplyWithCorrelationID() {
 	// Listen to new pings
-	err := suite.app.ListenPingRequestWithCorrelationID(context.Background(),
+	err := suite.app.SubscribeToPingRequestWithCorrelationIDOperation(context.Background(),
 		func(ctx context.Context, msg PingWithCorrelationID) {
 			// Set response
 			var respMsg PongWithCorrelationID
@@ -74,18 +74,18 @@ func (suite *Suite) TestRequestReplyWithCorrelationID() {
 			respMsg.Payload.Event = msg.Payload.Event
 
 			// Send response
-			err := suite.app.ReplyToPingRequestWithCorrelationID(ctx, respMsg)
+			err := suite.app.ReplyToPingRequestWithCorrelationIDOperation(ctx, respMsg)
 			suite.Require().NoError(err)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnlistenPingRequestWithCorrelationID(context.Background())
+	defer suite.app.UnsubscribeFromPingRequestWithCorrelationIDOperation(context.Background())
 
 	// Set a new ping
 	var msg PingWithCorrelationID
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.PingRequestWithCorrelationID(context.Background(), msg)
+	resp, err := suite.user.RequestToPingRequestWithCorrelationIDOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Check response

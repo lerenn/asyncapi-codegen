@@ -9,23 +9,26 @@ import (
 // ControllerGenerator is a code generator for controllers that will turn an
 // asyncapi specification into controller golang code.
 type ControllerGenerator struct {
-	MethodCount       uint
-	ReceiveOperations map[string]*asyncapi.Operation
-	SendOperations    map[string]*asyncapi.Operation
-	Prefix            string
-	Version           string
+	SendOperationsCount    uint
+	ReceiveOperationsCount uint
+	ReceiveOperations      map[string]*asyncapi.Operation
+	SendOperations         map[string]*asyncapi.Operation
+	Prefix                 string
+	Version                string
 }
 
 // NewControllerGenerator will create a new controller code generator.
 func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGenerator {
 	var gen ControllerGenerator
 
-	// Get subscription methods count based on action count
-	sendCount, receiveCount := spec.GetByActionCount()
+	// Get action count based on action
+	sendCount, receiveCount := spec.GetOperationCountByAction()
 	if side == SideIsApplication {
-		gen.MethodCount = sendCount
+		gen.SendOperationsCount = sendCount
+		gen.ReceiveOperationsCount = receiveCount
 	} else {
-		gen.MethodCount = receiveCount
+		gen.SendOperationsCount = receiveCount
+		gen.ReceiveOperationsCount = sendCount
 	}
 
 	// Get channels based on send/receive
