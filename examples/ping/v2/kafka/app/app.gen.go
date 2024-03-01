@@ -503,14 +503,14 @@ func (msg *PongMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 }
 
 const (
-	// PingPath is the constant representing the 'Ping' channel path.
-	PingPath = "ping"
-	// PongPath is the constant representing the 'Pong' channel path.
-	PongPath = "pong"
+	// PingV2Path is the constant representing the 'Ping.v2' channel path.
+	PingV2Path = "ping.v2"
+	// PongV2Path is the constant representing the 'Pong.v2' channel path.
+	PongV2Path = "pong.v2"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	PingPath,
-	PongPath,
+	PingV2Path,
+	PongV2Path,
 }

@@ -95,4 +95,18 @@ func (t *{{namify $key}}Schema) UnmarshalJSON(data []byte) error {
     return nil
 }
 {{- end -}}
-{{end}}
+{{- end}}
+
+const(
+{{- range $key, $value := .Channels}}
+    // {{ namifyWithoutParam .Follow.Name }}Path is the constant representing the '{{ .Follow.Name }}' channel path.
+    {{ namifyWithoutParam .Follow.Name }}Path = "{{ .Follow.Address }}"
+{{- end}}
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+{{- range $key, $value := .Channels}}
+    {{ namifyWithoutParam .Follow.Name }}Path,
+{{- end}}
+}

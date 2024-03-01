@@ -779,14 +779,14 @@ func (msg Issue49StatusMessage) toBrokerMessage() (extensions.BrokerMessage, err
 }
 
 const (
-	// ChatPath is the constant representing the '/chat' channel path.
-	ChatPath = "/chat"
-	// StatusPath is the constant representing the '/status' channel path.
-	StatusPath = "/status"
+	// Issue49ChatPath is the constant representing the 'Issue49.chat' channel path.
+	Issue49ChatPath = "issue49.chat"
+	// Issue49StatusPath is the constant representing the 'Issue49.status' channel path.
+	Issue49StatusPath = "issue49.status"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	ChatPath,
-	StatusPath,
+	Issue49ChatPath,
+	Issue49StatusPath,
 }

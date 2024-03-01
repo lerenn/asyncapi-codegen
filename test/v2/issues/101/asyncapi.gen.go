@@ -437,11 +437,11 @@ func (msg Issue101TestMessage) toBrokerMessage() (extensions.BrokerMessage, erro
 }
 
 const (
-	// Test101Path is the constant representing the 'Test101' channel path.
-	Test101Path = "test101"
+	// Issue101TestPath is the constant representing the 'Issue101.test' channel path.
+	Issue101TestPath = "issue101.test"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	Test101Path,
+	Issue101TestPath,
 }

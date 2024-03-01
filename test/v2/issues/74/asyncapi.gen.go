@@ -491,11 +491,11 @@ type TestSchemaSchema struct {
 }
 
 const (
-	// TestChannelPath is the constant representing the 'TestChannel' channel path.
-	TestChannelPath = "testChannel"
+	// Issue74TestChannelPath is the constant representing the 'Issue74.testChannel' channel path.
+	Issue74TestChannelPath = "issue74.testChannel"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	TestChannelPath,
+	Issue74TestChannelPath,
 }

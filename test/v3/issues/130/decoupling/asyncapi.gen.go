@@ -452,3 +452,13 @@ func (msg UserMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 		Payload: payload,
 	}, nil
 }
+
+const (
+	// UserSignupPath is the constant representing the 'UserSignup' channel path.
+	UserSignupPath = "issue130.user.signedup"
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+	UserSignupPath,
+}

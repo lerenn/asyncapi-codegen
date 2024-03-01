@@ -777,17 +777,17 @@ type ObjectSchema struct {
 type StringSchema string
 
 const (
-	// ReferencePayloadArrayPath is the constant representing the 'ReferencePayloadArray' channel path.
-	ReferencePayloadArrayPath = "referencePayloadArray"
-	// ReferencePayloadObjectPath is the constant representing the 'ReferencePayloadObject' channel path.
-	ReferencePayloadObjectPath = "referencePayloadObject"
-	// ReferencePayloadStringPath is the constant representing the 'ReferencePayloadString' channel path.
-	ReferencePayloadStringPath = "referencePayloadString"
+	// Issue97ReferencePayloadArrayPath is the constant representing the 'Issue97.referencePayloadArray' channel path.
+	Issue97ReferencePayloadArrayPath = "issue97.referencePayloadArray"
+	// Issue97ReferencePayloadObjectPath is the constant representing the 'Issue97.referencePayloadObject' channel path.
+	Issue97ReferencePayloadObjectPath = "issue97.referencePayloadObject"
+	// Issue97ReferencePayloadStringPath is the constant representing the 'Issue97.referencePayloadString' channel path.
+	Issue97ReferencePayloadStringPath = "issue97.referencePayloadString"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	ReferencePayloadArrayPath,
-	ReferencePayloadObjectPath,
-	ReferencePayloadStringPath,
+	Issue97ReferencePayloadArrayPath,
+	Issue97ReferencePayloadObjectPath,
+	Issue97ReferencePayloadStringPath,
 }
