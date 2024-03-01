@@ -139,7 +139,7 @@ func (c *{{ .Prefix }}Controller) UnsubscribeFromAllOperations(ctx context.Conte
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 {{- if .Channel.Follow.Parameters}}
-func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- else}}
 func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}Operation(ctx context.Context, fn func (ctx context.Context, msg {{operationToMessageTypeName $value}})) error {
 {{- end }}
@@ -215,7 +215,7 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{$value.Name}}Operation(ctx conte
 // UnsubscribeFrom{{$value.Name}}Operation will stop the reception of messages from '{{$value.Channel.Follow.Address}}' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Channel.Follow.Parameters}}
-func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $key}}Parameters) {
+func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters) {
 {{- else}}
 func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{$value.Name}}Operation(ctx context.Context) {
 {{- end}}
@@ -254,7 +254,7 @@ func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{$value.Name}}Operation(ctx c
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 {{- if .Channel.Follow.Parameters }}
-func (c *{{ $.Prefix }}Controller) {{- if not .IsReplyTo}}Publish{{end}}{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) error {
+func (c *{{ $.Prefix }}Controller) {{- if not .IsReplyTo}}Publish{{end}}{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, msg {{operationToMessageTypeName $value}}) error {
 {{- else }}
 func (c *{{ $.Prefix }}Controller) {{- if not .IsReplyTo}}Publish{{end}}{{$value.Name}}Operation(ctx context.Context, msg {{operationToMessageTypeName $value}}) error {
 {{- end }}
@@ -307,7 +307,7 @@ func (c *{{ $.Prefix }}Controller) {{- if not .IsReplyTo}}Publish{{end}}{{$value
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Channel.Follow.Parameters}}
-func (c *{{ $.Prefix }}Controller) RequestTo{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Reference.Name}}Parameters, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
+func (c *{{ $.Prefix }}Controller) RequestTo{{$value.Name}}Operation(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
 {{- else}}
 func (c *{{ $.Prefix }}Controller) RequestTo{{$value.Name}}Operation(ctx context.Context, msg {{operationToMessageTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
 {{- end}}

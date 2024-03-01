@@ -53,7 +53,8 @@ func (e *Error) Error() string {
 // {{ namifyWithoutParam .Name }}Parameters represents {{ namify .Name }} channel parameters
 type {{ namifyWithoutParam .Name }}Parameters struct {
 {{- range $key, $value := .Parameters}}
-    {{- template "parameter" $value}}
+    // {{ namify $key }} is a channel parameter {{- if $value.Description}}: {{multiLineComment $value.Description}}{{else}}.{{- end}}
+    {{ namify $key }} string
 {{- end}}
 }
 {{end}}

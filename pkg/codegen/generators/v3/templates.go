@@ -19,7 +19,6 @@ const (
 	messageTemplatePath    = templatesDir + "/message.tmpl"
 	subscriberTemplatePath = templatesDir + "/subscriber.tmpl"
 	controllerTemplatePath = templatesDir + "/controller.tmpl"
-	parameterTemplatePath  = templatesDir + "/parameter.tmpl"
 )
 
 var (

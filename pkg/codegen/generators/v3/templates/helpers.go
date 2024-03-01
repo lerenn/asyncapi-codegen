@@ -81,7 +81,7 @@ func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	parameterRegexp := regexp.MustCompile("{[^{}]*}")
 
 	matches := parameterRegexp.FindAllString(ch.Address, -1)
-	format := parameterRegexp.ReplaceAllString(ch.Address, "%v")
+	format := parameterRegexp.ReplaceAllString(ch.Address, "%s")
 
 	sprint := fmt.Sprintf("fmt.Sprintf(%q, ", format)
 	for _, m := range matches {
