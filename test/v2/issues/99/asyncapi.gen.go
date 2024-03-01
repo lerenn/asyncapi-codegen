@@ -435,3 +435,13 @@ func (msg Issue99TestMessage) toBrokerMessage() (extensions.BrokerMessage, error
 		Payload: payload,
 	}, nil
 }
+
+const (
+	// Test99Path is the constant representing the 'Test99' channel path.
+	Test99Path = "test99"
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+	Test99Path,
+}

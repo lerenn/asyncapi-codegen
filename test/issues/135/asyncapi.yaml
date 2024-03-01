@@ -1,0 +1,36 @@
+# Issue: https://github.com/lerenn/asyncapi-codegen/issues/135
+
+# Channels path should be generated as constants
+
+# This test makes sure that it does.
+
+asyncapi: 2.6.0
+info:
+  title: Sample App
+  version: 1.2.3
+channels:
+  resource:
+    publish:
+      message:
+        payload:
+          type: string
+  info:
+    publish:
+      message:
+        payload:
+          type: string
+  status:
+    subscribe:
+      message:
+        payload:
+          type: string
+  project:
+    publish:
+      message:
+        payload:
+          type: string
+  group:
+    publish:
+      message:
+        payload:
+          type: string

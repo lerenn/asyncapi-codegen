@@ -435,3 +435,13 @@ func (msg Issue73HelloMessage) toBrokerMessage() (extensions.BrokerMessage, erro
 		Payload: payload,
 	}, nil
 }
+
+const (
+	// HelloPath is the constant representing the 'Hello' channel path.
+	HelloPath = "hello"
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+	HelloPath,
+}
