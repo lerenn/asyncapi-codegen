@@ -1,7 +1,7 @@
-{{if .ReceiveOperationsCount -}}
+{{if .Operations.ReceiveCount -}}
 // {{ .Prefix }}Subscriber contains all handlers that are listening messages for {{ .Prefix }}
 type {{ .Prefix }}Subscriber interface {
-{{- range $key, $value := .Operations}}
+{{- range $key, $value := .Operations.Receive}}
     // {{opToMsgTypeName $value}}ReceivedFrom{{opToChannelTypeName $value}} receive all {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
     {{opToMsgTypeName $value}}ReceivedFrom{{opToChannelTypeName $value}}(ctx context.Context, msg {{opToMsgTypeName $value}})
 {{end}}

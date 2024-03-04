@@ -144,7 +144,7 @@ func (c *UserController) PublishPingMessageOnPingChannel(ctx context.Context, ms
 	})
 }
 
-// RequestWithPingMessageOnPingChannel will send a Ping message on Ping channel
+// RequestPongMessageOnPongChannelWithPingMessageOnPingChannel will send a Ping message on Ping channel
 // and wait for a Pong message from Pong channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -152,7 +152,7 @@ func (c *UserController) PublishPingMessageOnPingChannel(ctx context.Context, ms
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestWithPingMessageOnPingChannel(ctx context.Context, msg PingMessage) (PongMessage, error) {
+func (c *UserController) RequestPongMessageOnPongChannelWithPingMessageOnPingChannel(ctx context.Context, msg PingMessage) (PongMessage, error) {
 	// Get receiving channel address
 	addr := "pong.v3"
 

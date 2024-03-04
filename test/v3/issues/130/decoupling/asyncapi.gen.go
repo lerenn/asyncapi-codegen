@@ -206,9 +206,7 @@ func (c *AppController) SubscribeToUserMessagesFromUserSignupChannel(ctx context
 	c.subscriptions[addr] = sub
 
 	return nil
-}
-
-// UnsubscribeFromUserMessagesFromUserSignupChannel will stop the reception of User messages from UserSignup channel.
+} // UnsubscribeFromUserMessagesFromUserSignupChannel will stop the reception of User messages from UserSignup channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeFromUserMessagesFromUserSignupChannel(ctx context.Context) {
 	// Get channel address

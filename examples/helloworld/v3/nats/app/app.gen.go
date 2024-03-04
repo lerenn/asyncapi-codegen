@@ -205,9 +205,7 @@ func (c *AppController) SubscribeToSayHelloMessagesFromHelloChannel(ctx context.
 	c.subscriptions[addr] = sub
 
 	return nil
-}
-
-// UnsubscribeFromSayHelloMessagesFromHelloChannel will stop the reception of SayHello messages from Hello channel.
+} // UnsubscribeFromSayHelloMessagesFromHelloChannel will stop the reception of SayHello messages from Hello channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeFromSayHelloMessagesFromHelloChannel(ctx context.Context) {
 	// Get channel address

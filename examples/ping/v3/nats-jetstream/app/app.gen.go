@@ -215,6 +215,20 @@ func (c *AppController) SubscribeToPingMessagesFromPingChannel(ctx context.Conte
 	return nil
 }
 
+// ReplyToPingMessageWithPongMessageOnPongChannel is a helper function to
+// reply to a Ping message with a Pong message on Pong channel.
+func (c *AppController) ReplyToPingMessageWithPongMessageOnPongChannel(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
+	// Create reply message
+	replyMsg := NewPongMessage()
+	replyMsg.SetAsResponseFrom(&recvMsg)
+
+	// Execute callback function
+	fn(&replyMsg)
+
+	// Publish reply
+	return c.PublishPongMessageOnPongChannel(ctx, replyMsg)
+}
+
 // UnsubscribeFromPingMessagesFromPingChannel will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeFromPingMessagesFromPingChannel(ctx context.Context) {

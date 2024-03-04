@@ -59,7 +59,7 @@ func (suite *Suite) TestRequestReply() {
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.RequestWithPingMessageOnPingChannel(context.Background(), msg)
+	resp, err := suite.user.RequestPongMessageOnPongChannelWithPingMessageOnPingChannel(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Check response
@@ -87,7 +87,10 @@ func (suite *Suite) TestRequestReplyWithID() {
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.RequestWithPingWithIDMessageOnPingWithIDChannel(context.Background(), msg)
+	resp, err := suite.user.RequestPongWithIDMessageOnPongWithIDChannelWithPingWithIDMessageOnPingWithIDChannel(
+		context.Background(),
+		msg,
+	)
 	suite.Require().NoError(err)
 
 	// Check response

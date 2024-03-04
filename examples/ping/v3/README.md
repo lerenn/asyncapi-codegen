@@ -28,20 +28,15 @@ type Subscriber struct {
   Controller *AppController
 }
 
-type ServerSubscriber struct {
-	Controller *AppController
-}
+func (s Subscriber) PingMessageReceivedFromPingChannel(ctx context.Context, ping PingMessage) {
+  // Publish the pong message, with the callback function to modify it
+  // Note: it will indefinitely wait to publish as context has no timeout
+  err := s.Controller.ReplyToPingMessageWithPongMessageOnPongChannel(ctx, ping, func(pong *PongMessage) {
+  	// Reply with the same event than the ping
+  	pong.Payload.Event = ping.Payload.Event
+  })
 
-func (s ServerSubscriber) PingMessageReceivedFromPingChannel(ctx context.Context, req PingMessage) {
-	// Generate a pong message, set as a response of the request
-	resp := NewPongMessage()
-	resp.SetAsResponseFrom(&req)
-	// -- You can modifiy the response here
-
-	// Publish the pong message
-	// Note: it will indefinitely wait to publish as context has no timeout
-	err := s.Controller.PublishPongMessageOnPongChannel(ctx, resp)
-	// -- Error management
+  // ...
 }
 
 func main() {
@@ -80,7 +75,7 @@ req := NewPingMessage()
 // ID, then it will return the first message on the reply channel.
 //
 // Note: it will indefinitely wait for messages as context has no timeout
-resp, err := ctrl.RequestWithPingMessageOnPingChannel(context.Background(), req)
+resp, err := ctrl.RequestPongMessageOnPongChannelWithPingMessageOnPingChannel(context.Background(), req)
 // -- Error management
 
 // Use the response

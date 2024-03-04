@@ -9,48 +9,17 @@ import (
 // ControllerGenerator is a code generator for controllers that will turn an
 // asyncapi specification into controller golang code.
 type ControllerGenerator struct {
-	SendOperationsCount    uint
-	ReceiveOperationsCount uint
-	ReceiveOperations      map[string]*asyncapi.Operation
-	SendOperations         map[string]*asyncapi.Operation
-	Prefix                 string
-	Version                string
+	Operations ActionOperations
+	Prefix     string
+	Version    string
 }
 
 // NewControllerGenerator will create a new controller code generator.
 func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGenerator {
 	var gen ControllerGenerator
 
-	// Get action count based on action
-	sendCount, receiveCount := spec.GetOperationCountByAction()
-	if side == SideIsApplication {
-		gen.SendOperationsCount = sendCount
-		gen.ReceiveOperationsCount = receiveCount
-	} else {
-		gen.SendOperationsCount = receiveCount
-		gen.ReceiveOperationsCount = sendCount
-	}
-
-	// Get channels based on send/receive
-	gen.ReceiveOperations = make(map[string]*asyncapi.Operation)
-	gen.SendOperations = make(map[string]*asyncapi.Operation)
-	for name, op := range spec.Operations {
-		// Add channel to receive channels based on operation action and side
-		if isControllerReceiveOperation(side, op) {
-			gen.ReceiveOperations[name] = op
-		}
-
-		// Add channel to send channels based on operation action and side
-		if isControllerSendOperation(side, op) {
-			gen.SendOperations[name] = op
-		}
-
-		// Add a artificial operation for reply if the controller should respond to a reply
-		if shouldControllerRespondToReply(side, op) {
-			ch := op.Reply.Channel.Follow()
-			gen.SendOperations[ch.Name] = op.ReplyIs
-		}
-	}
+	// Generate receive send operations
+	gen.Operations = NewActionOperations(side, spec)
 
 	// Set generation name
 	if side == SideIsApplication {
