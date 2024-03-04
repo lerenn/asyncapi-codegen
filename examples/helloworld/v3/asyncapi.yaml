@@ -6,7 +6,7 @@ channels:
   hello:
     address: 'hello'
     messages:
-      sayHelloMessage:
+      sayHello:
         payload:
           type: string
           pattern: '^hello .+$'

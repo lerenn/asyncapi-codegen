@@ -107,11 +107,11 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishReceiveHelloOperation will send 'SayHelloMessage' messages to 'hello' channel.
+// PublishSayHelloMessageOnHelloChannel will send a SayHello message on Hello channel.
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishReceiveHelloOperation(ctx context.Context, msg SayHelloMessage) error {
+func (c *UserController) PublishSayHelloMessageOnHelloChannel(ctx context.Context, msg SayHelloMessage) error {
 	// Get channel address
 	addr := "hello"
 
@@ -225,11 +225,11 @@ func (msg SayHelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 }
 
 const (
-	// HelloPath is the constant representing the 'Hello' channel path.
-	HelloPath = "hello"
+	// HelloChannelPath is the constant representing the 'HelloChannel' channel path.
+	HelloChannelPath = "hello"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	HelloPath,
+	HelloChannelPath,
 }

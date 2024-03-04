@@ -49,7 +49,7 @@ func (srv *Server) Process(name string, spec Specification) {
 
 	// Process variables
 	for n, s := range srv.Variables {
-		s.Process(n, spec)
+		s.Process(n+"Variable", spec)
 	}
 
 	// Process security

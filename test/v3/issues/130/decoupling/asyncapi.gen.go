@@ -13,8 +13,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// ConsumeUserSignup receive all messages for the 'ConsumeUserSignup' operation.
-	ConsumeUserSignupOperationReceived(ctx context.Context, msg UserMessage)
+	// UserMessageReceivedFromUserSignupChannel receive all User messages from UserSignup channel.
+	UserMessageReceivedFromUserSignupChannel(ctx context.Context, msg UserMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -112,31 +112,32 @@ func addAppContextValues(ctx context.Context, addr string) context.Context {
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.UnsubscribeFromAllOperations(ctx)
+	c.UnsubscribeFromAllChannels(ctx)
 
 	c.logger.Info(ctx, "Closed app controller")
 }
 
-// SubscribeToAllOperations will receive from operations where channel has no parameter on which the app is expecting messages.
-// For channels with parameters, they should be received independently.
-func (c *AppController) SubscribeToAllOperations(ctx context.Context, as AppSubscriber) error {
+// SubscribeToAllChannels will receive messages from channels where channel has
+// no parameter on which the app is expecting messages. For channels with parameters,
+// they should be subscribed independently.
+func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscriber) error {
 	if as == nil {
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToConsumeUserSignupOperation(ctx, as.ConsumeUserSignupOperationReceived); err != nil {
+	if err := c.SubscribeToUserMessagesFromUserSignupChannel(ctx, as.UserMessageReceivedFromUserSignupChannel); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// UnsubscribeFromAllOperations will stop the subscription of all remaining subscribed channels
-func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
-	c.UnsubscribeFromConsumeUserSignupOperation(ctx)
+// UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
+func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
+	c.UnsubscribeFromUserMessagesFromUserSignupChannel(ctx)
 }
 
-// SubscribeToConsumeUserSignupOperation will receive 'UserMessage' messages from 'issue130.user.signedup' channel
+// SubscribeToUserMessagesFromUserSignupChannel will receive User messages from UserSignup channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -144,7 +145,7 @@ func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToConsumeUserSignupOperation(ctx context.Context, fn func(ctx context.Context, msg UserMessage)) error {
+func (c *AppController) SubscribeToUserMessagesFromUserSignupChannel(ctx context.Context, fn func(ctx context.Context, msg UserMessage)) error {
 	// Get channel address
 	addr := "issue130.user.signedup"
 
@@ -207,9 +208,9 @@ func (c *AppController) SubscribeToConsumeUserSignupOperation(ctx context.Contex
 	return nil
 }
 
-// UnsubscribeFromConsumeUserSignupOperation will stop the reception of messages from 'issue130.user.signedup' channel.
+// UnsubscribeFromUserMessagesFromUserSignupChannel will stop the reception of User messages from UserSignup channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromConsumeUserSignupOperation(ctx context.Context) {
+func (c *AppController) UnsubscribeFromUserMessagesFromUserSignupChannel(ctx context.Context) {
 	// Get channel address
 	addr := "issue130.user.signedup"
 
@@ -328,11 +329,11 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishConsumeUserSignupOperation will send 'UserMessage' messages to 'issue130.user.signedup' channel.
+// PublishUserMessageOnUserSignupChannel will send a User message on UserSignup channel.
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishConsumeUserSignupOperation(ctx context.Context, msg UserMessage) error {
+func (c *UserController) PublishUserMessageOnUserSignupChannel(ctx context.Context, msg UserMessage) error {
 	// Get channel address
 	addr := "issue130.user.signedup"
 
@@ -454,11 +455,11 @@ func (msg UserMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 }
 
 const (
-	// UserSignupPath is the constant representing the 'UserSignup' channel path.
-	UserSignupPath = "issue130.user.signedup"
+	// UserSignupChannelPath is the constant representing the 'UserSignupChannel' channel path.
+	UserSignupChannelPath = "issue130.user.signedup"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	UserSignupPath,
+	UserSignupChannelPath,
 }

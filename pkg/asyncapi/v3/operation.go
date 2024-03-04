@@ -49,7 +49,8 @@ type Operation struct {
 	// --- Non AsyncAPI fields -------------------------------------------------
 
 	Name        string     `json:"-"`
-	IsReplyTo   *Operation `json:"-"`
+	ReplyIs     *Operation `json:"-"`
+	ReplyOf     *Operation `json:"-"`
 	ReferenceTo *Operation `json:"-"`
 }
 
@@ -69,7 +70,7 @@ func (op *Operation) Process(name string, spec Specification) {
 	}
 
 	// Process channel if there is one
-	op.Channel.Process(name+"Channel", spec)
+	op.Channel.Process(name+ChannelSuffix, spec)
 
 	// Process securities
 	for i, s := range op.Security {
@@ -87,11 +88,29 @@ func (op *Operation) Process(name string, spec Specification) {
 
 	// Process messages
 	for i, msg := range op.Messages {
-		msg.Process(fmt.Sprintf("%s%d", name, i), spec)
+		msg.Process(fmt.Sprintf("%sMessage%d", name, i), spec)
 	}
 
 	// Process reply if there is one
 	op.Reply.Process(name+"Reply", spec)
+
+	// Generate reply
+	op.generateReply()
+}
+
+func (op *Operation) generateReply() {
+	// Return if there is no reply
+	if op == nil || op.Reply == nil {
+		return
+	}
+
+	// Generate reply
+	ch := op.Reply.Channel.Follow()
+	op.ReplyIs = &Operation{
+		Name:    "ReplyTo" + op.Name,
+		Channel: ch,
+		ReplyOf: op,
+	}
 }
 
 // GetMessage will return the operation message.
@@ -144,4 +163,12 @@ func (op *Operation) ApplyTrait(ot *OperationTrait, spec Specification) {
 		bindings := *ot.Bindings
 		op.Bindings = &bindings
 	}
+}
+
+// Follow returns referenced operation if specified or the actual operation.
+func (op *Operation) Follow() *Operation {
+	if op.ReferenceTo != nil {
+		return op.ReferenceTo
+	}
+	return op
 }

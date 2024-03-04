@@ -48,11 +48,7 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 		// Add a artificial operation for reply if the controller should respond to a reply
 		if shouldControllerRespondToReply(side, op) {
 			ch := op.Reply.Channel.Follow()
-			gen.SendOperations[ch.Name] = &asyncapi.Operation{
-				Name:      "ReplyTo" + op.Name,
-				Channel:   ch,
-				IsReplyTo: op,
-			}
+			gen.SendOperations[ch.Name] = op.ReplyIs
 		}
 	}
 

@@ -16,15 +16,15 @@ type ServerSubscriber struct {
 	Controller *AppController
 }
 
-func (s ServerSubscriber) PingRequestOperationReceived(ctx context.Context, req Ping) {
+func (s ServerSubscriber) PingMessageReceivedFromPingChannel(ctx context.Context, req PingMessage) {
 	// Generate a pong message, set as a response of the request
-	resp := NewPong()
+	resp := NewPongMessage()
 	resp.SetAsResponseFrom(&req)
 	// -- You can modifiy the response here
 
 	// Publish the pong message
 	// Note: it will indefinitely wait to publish as context has no timeout
-	err := s.Controller.ReplyToPingRequestOperation(ctx, resp)
+	err := s.Controller.PublishPongMessageOnPongChannel(ctx, resp)
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +61,7 @@ func main() {
 
 	// Subscribe to all (we could also have just subscribed to the ping request operation)
 	sub := ServerSubscriber{Controller: ctrl}
-	if err := ctrl.SubscribeToAllOperations(context.Background(), sub); err != nil {
+	if err := ctrl.SubscribeToAllChannels(context.Background(), sub); err != nil {
 		panic(err)
 	}
 

@@ -34,7 +34,7 @@ func main() {
 	defer ctrl.Close(context.Background())
 
 	// Make a new ping message
-	req := NewPing()
+	req := NewPingMessage()
 	// -- you can modifiy the request here
 
 	// The following function will subscribe to the 'pong' channel (reply channel
@@ -43,7 +43,7 @@ func main() {
 	// ID, then it will return the first message on the reply channel.
 	//
 	// Note: it will indefinitely wait for messages as context has no timeout
-	_, err = ctrl.RequestToPingRequestOperation(context.Background(), req)
+	_, err = ctrl.RequestWithPingMessageOnPingChannel(context.Background(), req)
 	if err != nil {
 		panic(err)
 	}

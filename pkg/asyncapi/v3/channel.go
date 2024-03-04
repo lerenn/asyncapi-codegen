@@ -6,6 +6,11 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
 
+const (
+	// ChannelSuffix is the suffix added to the channels name.
+	ChannelSuffix = "Channel"
+)
+
 // Channel is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#channelObject
@@ -47,7 +52,7 @@ func (ch *Channel) Process(path string, spec Specification) {
 
 	// Process messages
 	for name, msg := range ch.Messages {
-		msg.Process(name, spec)
+		msg.Process(name+"Message", spec)
 	}
 
 	// Process servers
@@ -57,7 +62,7 @@ func (ch *Channel) Process(path string, spec Specification) {
 
 	// Process parameters
 	for name, parameter := range ch.Parameters {
-		parameter.Process(name, spec)
+		parameter.Process(name+"Parameter", spec)
 	}
 
 	// Process tags

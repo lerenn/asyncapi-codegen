@@ -15,11 +15,11 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// PingRequest receive all messages for the 'pingRequest' operation.
-	PingRequestOperationReceived(ctx context.Context, msg Ping)
+	// PingMessageReceivedFromPingChannel receive all Ping messages from Ping channel.
+	PingMessageReceivedFromPingChannel(ctx context.Context, msg PingMessage)
 
-	// PingRequestWithCorrelationID receive all messages for the 'pingRequestWithCorrelationID' operation.
-	PingRequestWithCorrelationIDOperationReceived(ctx context.Context, msg PingWithCorrelationID)
+	// PingWithIDMessageReceivedFromPingWithIDChannel receive all PingWithID messages from PingWithID channel.
+	PingWithIDMessageReceivedFromPingWithIDChannel(ctx context.Context, msg PingWithIDMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -117,35 +117,36 @@ func addAppContextValues(ctx context.Context, addr string) context.Context {
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.UnsubscribeFromAllOperations(ctx)
+	c.UnsubscribeFromAllChannels(ctx)
 
 	c.logger.Info(ctx, "Closed app controller")
 }
 
-// SubscribeToAllOperations will receive from operations where channel has no parameter on which the app is expecting messages.
-// For channels with parameters, they should be received independently.
-func (c *AppController) SubscribeToAllOperations(ctx context.Context, as AppSubscriber) error {
+// SubscribeToAllChannels will receive messages from channels where channel has
+// no parameter on which the app is expecting messages. For channels with parameters,
+// they should be subscribed independently.
+func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscriber) error {
 	if as == nil {
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToPingRequestOperation(ctx, as.PingRequestOperationReceived); err != nil {
+	if err := c.SubscribeToPingMessagesFromPingChannel(ctx, as.PingMessageReceivedFromPingChannel); err != nil {
 		return err
 	}
-	if err := c.SubscribeToPingRequestWithCorrelationIDOperation(ctx, as.PingRequestWithCorrelationIDOperationReceived); err != nil {
+	if err := c.SubscribeToPingWithIDMessagesFromPingWithIDChannel(ctx, as.PingWithIDMessageReceivedFromPingWithIDChannel); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// UnsubscribeFromAllOperations will stop the subscription of all remaining subscribed channels
-func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
-	c.UnsubscribeFromPingRequestOperation(ctx)
-	c.UnsubscribeFromPingRequestWithCorrelationIDOperation(ctx)
+// UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
+func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
+	c.UnsubscribeFromPingMessagesFromPingChannel(ctx)
+	c.UnsubscribeFromPingWithIDMessagesFromPingWithIDChannel(ctx)
 }
 
-// SubscribeToPingRequestOperation will receive 'Ping' messages from 'issue130.ping' channel
+// SubscribeToPingMessagesFromPingChannel will receive Ping messages from Ping channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -153,7 +154,7 @@ func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingRequestOperation(ctx context.Context, fn func(ctx context.Context, msg Ping)) error {
+func (c *AppController) SubscribeToPingMessagesFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -195,7 +196,7 @@ func (c *AppController) SubscribeToPingRequestOperation(ctx context.Context, fn 
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 				// Process message
-				msg, err := newPingFromBrokerMessage(brokerMsg)
+				msg, err := newPingMessageFromBrokerMessage(brokerMsg)
 				if err != nil {
 					return err
 				}
@@ -216,9 +217,9 @@ func (c *AppController) SubscribeToPingRequestOperation(ctx context.Context, fn 
 	return nil
 }
 
-// UnsubscribeFromPingRequestOperation will stop the reception of messages from 'issue130.ping' channel.
+// UnsubscribeFromPingMessagesFromPingChannel will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingRequestOperation(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingMessagesFromPingChannel(ctx context.Context) {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -238,16 +239,16 @@ func (c *AppController) UnsubscribeFromPingRequestOperation(ctx context.Context)
 	delete(c.subscriptions, addr)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
-} // SubscribeToPingRequestWithCorrelationIDOperation will receive 'PingWithCorrelationID' messages from 'issue130.pingWithCorrelationID' channel
+} // SubscribeToPingWithIDMessagesFromPingWithIDChannel will receive PingWithID messages from PingWithID channel.
 // Callback function 'fn' will be called each time a new message is received.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingRequestWithCorrelationIDOperation(ctx context.Context, fn func(ctx context.Context, msg PingWithCorrelationID)) error {
+func (c *AppController) SubscribeToPingWithIDMessagesFromPingWithIDChannel(ctx context.Context, fn func(ctx context.Context, msg PingWithIDMessage)) error {
 	// Get channel address
-	addr := "issue130.pingWithCorrelationID"
+	addr := "issue130.pingWithID"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -287,7 +288,7 @@ func (c *AppController) SubscribeToPingRequestWithCorrelationIDOperation(ctx con
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 				// Process message
-				msg, err := newPingWithCorrelationIDFromBrokerMessage(brokerMsg)
+				msg, err := newPingWithIDMessageFromBrokerMessage(brokerMsg)
 				if err != nil {
 					return err
 				}
@@ -313,11 +314,11 @@ func (c *AppController) SubscribeToPingRequestWithCorrelationIDOperation(ctx con
 	return nil
 }
 
-// UnsubscribeFromPingRequestWithCorrelationIDOperation will stop the reception of messages from 'issue130.pingWithCorrelationID' channel.
+// UnsubscribeFromPingWithIDMessagesFromPingWithIDChannel will stop the reception of PingWithID messages from PingWithID channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingRequestWithCorrelationIDOperation(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingWithIDMessagesFromPingWithIDChannel(ctx context.Context) {
 	// Get channel address
-	addr := "issue130.pingWithCorrelationID"
+	addr := "issue130.pingWithID"
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -337,12 +338,11 @@ func (c *AppController) UnsubscribeFromPingRequestWithCorrelationIDOperation(ctx
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// ReplyToPingRequestOperation should be used to reply to PingRequest messages by sending
-// 'Pong' messages to 'issue130.pong' channel.
-//
+// PublishPongMessageOnPongChannel will send a Pong message on Pong channel.
+
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) ReplyToPingRequestOperation(ctx context.Context, msg Pong) error {
+func (c *AppController) PublishPongMessageOnPongChannel(ctx context.Context, msg PongMessage) error {
 	// Get channel address
 	addr := "issue130.pong"
 
@@ -365,14 +365,13 @@ func (c *AppController) ReplyToPingRequestOperation(ctx context.Context, msg Pon
 	})
 }
 
-// ReplyToPingRequestWithCorrelationIDOperation should be used to reply to PingRequestWithCorrelationID messages by sending
-// 'PongWithCorrelationID' messages to 'issue130.pongWithCorrelationID' channel.
-//
+// PublishPongWithIDMessageOnPongWithIDChannel will send a PongWithID message on PongWithID channel.
+
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) ReplyToPingRequestWithCorrelationIDOperation(ctx context.Context, msg PongWithCorrelationID) error {
+func (c *AppController) PublishPongWithIDMessageOnPongWithIDChannel(ctx context.Context, msg PongWithIDMessage) error {
 	// Get channel address
-	addr := "issue130.pongWithCorrelationID"
+	addr := "issue130.pongWithID"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
@@ -498,12 +497,12 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishPingRequestOperation will send 'Ping' messages to 'issue130.ping' channel.
+// PublishPingMessageOnPingChannel will send a Ping message on Ping channel.
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingRequestOperation(ctx context.Context, msg Ping) error {
+func (c *UserController) PublishPingMessageOnPingChannel(ctx context.Context, msg PingMessage) error {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -526,15 +525,15 @@ func (c *UserController) PublishPingRequestOperation(ctx context.Context, msg Pi
 	})
 }
 
-// RequestToPingRequestOperation will send a message and wait for the reply message
-// on channel 'issue130.pong'.
+// RequestWithPingMessageOnPingChannel will send a Ping message on Ping channel
+// and wait for a Pong message from Pong channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
 // reply with the same correlation ID. Otherwise, it will returns the first
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestToPingRequestOperation(ctx context.Context, msg Ping) (Pong, error) {
+func (c *UserController) RequestWithPingMessageOnPingChannel(ctx context.Context, msg PingMessage) (PongMessage, error) {
 	// Get receiving channel address
 	addr := "issue130.pong"
 
@@ -545,7 +544,7 @@ func (c *UserController) RequestToPingRequestOperation(ctx context.Context, msg 
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
-		return Pong{}, err
+		return PongMessage{}, err
 	}
 	c.logger.Info(ctx, "Subscribed to channel")
 
@@ -559,9 +558,9 @@ func (c *UserController) RequestToPingRequestOperation(ctx context.Context, msg 
 	}()
 
 	// Send the message
-	if err := c.PublishPingRequestOperation(ctx, msg); err != nil {
+	if err := c.PublishPingMessageOnPingChannel(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
-		return Pong{}, fmt.Errorf("error happened when sending message: %w", err)
+		return PongMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
 
 	// Wait for corresponding response
@@ -573,7 +572,7 @@ func (c *UserController) RequestToPingRequestOperation(ctx context.Context, msg 
 			// receiving the expected message
 			if !open && brokerMsg.IsUninitialized() {
 				c.logger.Error(ctx, "Channel closed before getting message")
-				return Pong{}, extensions.ErrSubscriptionCanceled
+				return PongMessage{}, extensions.ErrSubscriptionCanceled
 			}
 
 			// There is correlation no ID, so it will automatically return at
@@ -585,29 +584,29 @@ func (c *UserController) RequestToPingRequestOperation(ctx context.Context, msg 
 
 			// Execute middlewares before returning
 			if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
-				return Pong{}, err
+				return PongMessage{}, err
 			}
 
 			// Return the message to the caller
 			//
 			// NOTE: it is transformed from the broker again, as it could have
 			// been modified by middlewares
-			return newPongFromBrokerMessage(brokerMsg)
+			return newPongMessageFromBrokerMessage(brokerMsg)
 		case <-ctx.Done(): // Set corrsponding error if context is done
 			c.logger.Error(ctx, "Context done before getting message")
-			return Pong{}, extensions.ErrContextCanceled
+			return PongMessage{}, extensions.ErrContextCanceled
 		}
 	}
 }
 
-// PublishPingRequestWithCorrelationIDOperation will send 'PingWithCorrelationID' messages to 'issue130.pingWithCorrelationID' channel.
+// PublishPingWithIDMessageOnPingWithIDChannel will send a PingWithID message on PingWithID channel.
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingRequestWithCorrelationIDOperation(ctx context.Context, msg PingWithCorrelationID) error {
+func (c *UserController) PublishPingWithIDMessageOnPingWithIDChannel(ctx context.Context, msg PingWithIDMessage) error {
 	// Get channel address
-	addr := "issue130.pingWithCorrelationID"
+	addr := "issue130.pingWithID"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
@@ -634,17 +633,17 @@ func (c *UserController) PublishPingRequestWithCorrelationIDOperation(ctx contex
 	})
 }
 
-// RequestToPingRequestWithCorrelationIDOperation will send a message and wait for the reply message
-// on channel 'issue130.pongWithCorrelationID'.
+// RequestWithPingWithIDMessageOnPingWithIDChannel will send a PingWithID message on PingWithID channel
+// and wait for a PongWithID message from PongWithID channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
 // reply with the same correlation ID. Otherwise, it will returns the first
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestToPingRequestWithCorrelationIDOperation(ctx context.Context, msg PingWithCorrelationID) (PongWithCorrelationID, error) {
+func (c *UserController) RequestWithPingWithIDMessageOnPingWithIDChannel(ctx context.Context, msg PingWithIDMessage) (PongWithIDMessage, error) {
 	// Get receiving channel address
-	addr := "issue130.pongWithCorrelationID"
+	addr := "issue130.pongWithID"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -653,7 +652,7 @@ func (c *UserController) RequestToPingRequestWithCorrelationIDOperation(ctx cont
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
-		return PongWithCorrelationID{}, err
+		return PongWithIDMessage{}, err
 	}
 	c.logger.Info(ctx, "Subscribed to channel")
 
@@ -672,9 +671,9 @@ func (c *UserController) RequestToPingRequestWithCorrelationIDOperation(ctx cont
 	}
 
 	// Send the message
-	if err := c.PublishPingRequestWithCorrelationIDOperation(ctx, msg); err != nil {
+	if err := c.PublishPingWithIDMessageOnPingWithIDChannel(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
-		return PongWithCorrelationID{}, fmt.Errorf("error happened when sending message: %w", err)
+		return PongWithIDMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
 
 	// Wait for corresponding response
@@ -686,11 +685,11 @@ func (c *UserController) RequestToPingRequestWithCorrelationIDOperation(ctx cont
 			// receiving the expected message
 			if !open && brokerMsg.IsUninitialized() {
 				c.logger.Error(ctx, "Channel closed before getting message")
-				return PongWithCorrelationID{}, extensions.ErrSubscriptionCanceled
+				return PongWithIDMessage{}, extensions.ErrSubscriptionCanceled
 			}
 
 			// Get new message
-			rmsg, err := newPongWithCorrelationIDFromBrokerMessage(brokerMsg)
+			rmsg, err := newPongWithIDMessageFromBrokerMessage(brokerMsg)
 			if err != nil {
 				c.logger.Error(ctx, err.Error())
 			}
@@ -707,17 +706,17 @@ func (c *UserController) RequestToPingRequestWithCorrelationIDOperation(ctx cont
 
 			// Execute middlewares before returning
 			if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
-				return PongWithCorrelationID{}, err
+				return PongWithIDMessage{}, err
 			}
 
 			// Return the message to the caller
 			//
 			// NOTE: it is transformed from the broker again, as it could have
 			// been modified by middlewares
-			return newPongWithCorrelationIDFromBrokerMessage(brokerMsg)
+			return newPongWithIDMessageFromBrokerMessage(brokerMsg)
 		case <-ctx.Done(): // Set corrsponding error if context is done
 			c.logger.Error(ctx, "Context done before getting message")
-			return PongWithCorrelationID{}, extensions.ErrContextCanceled
+			return PongWithIDMessage{}, extensions.ErrContextCanceled
 		}
 	}
 }
@@ -771,43 +770,43 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Message 'Ping' reference another one at '#/components/messages/ping'.
+// Message 'PingMessage' reference another one at '#/components/messages/ping'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// Message 'Ping' reference another one at '#/components/messages/pingWithCorrelationID'.
+// Message 'PingMessage' reference another one at '#/components/messages/pingWithID'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// Message 'Pong' reference another one at '#/components/messages/pong'.
+// Message 'PongMessage' reference another one at '#/components/messages/pong'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// Message 'Pong' reference another one at '#/components/messages/pongWithCorrelationID'.
+// Message 'PongMessage' reference another one at '#/components/messages/pongWithID'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// Ping is the golang representation of the AsyncAPI message
-type Ping struct {
+// PingMessage is the golang representation of the AsyncAPI message
+type PingMessage struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
 		Event *string `json:"event"`
 	}
 }
 
-func NewPing() Ping {
-	var msg Ping
+func NewPingMessage() PingMessage {
+	var msg PingMessage
 
 	return msg
 }
 
-// newPingFromBrokerMessage will fill a new Ping with data from generic broker message
-func newPingFromBrokerMessage(bMsg extensions.BrokerMessage) (Ping, error) {
-	var msg Ping
+// newPingMessageFromBrokerMessage will fill a new PingMessage with data from generic broker message
+func newPingMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PingMessage, error) {
+	var msg PingMessage
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -820,8 +819,8 @@ func newPingFromBrokerMessage(bMsg extensions.BrokerMessage) (Ping, error) {
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Ping data
-func (msg Ping) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from PingMessage data
+func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -839,8 +838,8 @@ func (msg Ping) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PingWithCorrelationID is the golang representation of the AsyncAPI message
-type PingWithCorrelationID struct {
+// PingWithIDMessage is the golang representation of the AsyncAPI message
+type PingWithIDMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
 		// Description: Correlation ID set by user
@@ -853,8 +852,8 @@ type PingWithCorrelationID struct {
 	}
 }
 
-func NewPingWithCorrelationID() PingWithCorrelationID {
-	var msg PingWithCorrelationID
+func NewPingWithIDMessage() PingWithIDMessage {
+	var msg PingWithIDMessage
 
 	// Set correlation ID
 	u := uuid.New().String()
@@ -863,9 +862,9 @@ func NewPingWithCorrelationID() PingWithCorrelationID {
 	return msg
 }
 
-// newPingWithCorrelationIDFromBrokerMessage will fill a new PingWithCorrelationID with data from generic broker message
-func newPingWithCorrelationIDFromBrokerMessage(bMsg extensions.BrokerMessage) (PingWithCorrelationID, error) {
-	var msg PingWithCorrelationID
+// newPingWithIDMessageFromBrokerMessage will fill a new PingWithIDMessage with data from generic broker message
+func newPingWithIDMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PingWithIDMessage, error) {
+	var msg PingWithIDMessage
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -889,8 +888,8 @@ func newPingWithCorrelationIDFromBrokerMessage(bMsg extensions.BrokerMessage) (P
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from PingWithCorrelationID data
-func (msg PingWithCorrelationID) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from PingWithIDMessage data
+func (msg PingWithIDMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -914,7 +913,7 @@ func (msg PingWithCorrelationID) toBrokerMessage() (extensions.BrokerMessage, er
 }
 
 // CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
-func (msg PingWithCorrelationID) CorrelationID() string {
+func (msg PingWithIDMessage) CorrelationID() string {
 	if msg.Headers.CorrelationId != nil {
 		return *msg.Headers.CorrelationId
 	}
@@ -923,35 +922,35 @@ func (msg PingWithCorrelationID) CorrelationID() string {
 }
 
 // SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
-func (msg *PingWithCorrelationID) SetCorrelationID(id string) {
+func (msg *PingWithIDMessage) SetCorrelationID(id string) {
 	msg.Headers.CorrelationId = &id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.
 // It will assign the 'req' message correlation ID to the message correlation ID,
 // both specified in AsyncAPI spec.
-func (msg *PingWithCorrelationID) SetAsResponseFrom(req MessageWithCorrelationID) {
+func (msg *PingWithIDMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	id := req.CorrelationID()
 	msg.Headers.CorrelationId = &id
 }
 
-// Pong is the golang representation of the AsyncAPI message
-type Pong struct {
+// PongMessage is the golang representation of the AsyncAPI message
+type PongMessage struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
 		Event *string `json:"event"`
 	}
 }
 
-func NewPong() Pong {
-	var msg Pong
+func NewPongMessage() PongMessage {
+	var msg PongMessage
 
 	return msg
 }
 
-// newPongFromBrokerMessage will fill a new Pong with data from generic broker message
-func newPongFromBrokerMessage(bMsg extensions.BrokerMessage) (Pong, error) {
-	var msg Pong
+// newPongMessageFromBrokerMessage will fill a new PongMessage with data from generic broker message
+func newPongMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PongMessage, error) {
+	var msg PongMessage
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -964,8 +963,8 @@ func newPongFromBrokerMessage(bMsg extensions.BrokerMessage) (Pong, error) {
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Pong data
-func (msg Pong) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from PongMessage data
+func (msg PongMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -983,8 +982,8 @@ func (msg Pong) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PongWithCorrelationID is the golang representation of the AsyncAPI message
-type PongWithCorrelationID struct {
+// PongWithIDMessage is the golang representation of the AsyncAPI message
+type PongWithIDMessage struct {
 	// Headers will be used to fill the message headers
 	Headers struct {
 		// Description: Correlation ID set by user
@@ -997,8 +996,8 @@ type PongWithCorrelationID struct {
 	}
 }
 
-func NewPongWithCorrelationID() PongWithCorrelationID {
-	var msg PongWithCorrelationID
+func NewPongWithIDMessage() PongWithIDMessage {
+	var msg PongWithIDMessage
 
 	// Set correlation ID
 	u := uuid.New().String()
@@ -1007,9 +1006,9 @@ func NewPongWithCorrelationID() PongWithCorrelationID {
 	return msg
 }
 
-// newPongWithCorrelationIDFromBrokerMessage will fill a new PongWithCorrelationID with data from generic broker message
-func newPongWithCorrelationIDFromBrokerMessage(bMsg extensions.BrokerMessage) (PongWithCorrelationID, error) {
-	var msg PongWithCorrelationID
+// newPongWithIDMessageFromBrokerMessage will fill a new PongWithIDMessage with data from generic broker message
+func newPongWithIDMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PongWithIDMessage, error) {
+	var msg PongWithIDMessage
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -1033,8 +1032,8 @@ func newPongWithCorrelationIDFromBrokerMessage(bMsg extensions.BrokerMessage) (P
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from PongWithCorrelationID data
-func (msg PongWithCorrelationID) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from PongWithIDMessage data
+func (msg PongWithIDMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -1058,7 +1057,7 @@ func (msg PongWithCorrelationID) toBrokerMessage() (extensions.BrokerMessage, er
 }
 
 // CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
-func (msg PongWithCorrelationID) CorrelationID() string {
+func (msg PongWithIDMessage) CorrelationID() string {
 	if msg.Headers.CorrelationId != nil {
 		return *msg.Headers.CorrelationId
 	}
@@ -1067,33 +1066,33 @@ func (msg PongWithCorrelationID) CorrelationID() string {
 }
 
 // SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
-func (msg *PongWithCorrelationID) SetCorrelationID(id string) {
+func (msg *PongWithIDMessage) SetCorrelationID(id string) {
 	msg.Headers.CorrelationId = &id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.
 // It will assign the 'req' message correlation ID to the message correlation ID,
 // both specified in AsyncAPI spec.
-func (msg *PongWithCorrelationID) SetAsResponseFrom(req MessageWithCorrelationID) {
+func (msg *PongWithIDMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	id := req.CorrelationID()
 	msg.Headers.CorrelationId = &id
 }
 
 const (
-	// PingPath is the constant representing the 'Ping' channel path.
-	PingPath = "issue130.ping"
-	// PingWithCorrelationIDPath is the constant representing the 'PingWithCorrelationID' channel path.
-	PingWithCorrelationIDPath = "issue130.pingWithCorrelationID"
-	// PongPath is the constant representing the 'Pong' channel path.
-	PongPath = "issue130.pong"
-	// PongWithCorrelationIDPath is the constant representing the 'PongWithCorrelationID' channel path.
-	PongWithCorrelationIDPath = "issue130.pongWithCorrelationID"
+	// PingChannelPath is the constant representing the 'PingChannel' channel path.
+	PingChannelPath = "issue130.ping"
+	// PingWithIDChannelPath is the constant representing the 'PingWithIDChannel' channel path.
+	PingWithIDChannelPath = "issue130.pingWithID"
+	// PongChannelPath is the constant representing the 'PongChannel' channel path.
+	PongChannelPath = "issue130.pong"
+	// PongWithIDChannelPath is the constant representing the 'PongWithIDChannel' channel path.
+	PongWithIDChannelPath = "issue130.pongWithID"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	PingPath,
-	PingWithCorrelationIDPath,
-	PongPath,
-	PongWithCorrelationIDPath,
+	PingChannelPath,
+	PingWithIDChannelPath,
+	PongChannelPath,
+	PongWithIDChannelPath,
 }

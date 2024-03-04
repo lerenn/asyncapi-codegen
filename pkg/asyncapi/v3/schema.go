@@ -91,17 +91,17 @@ func (s *Schema) Process(name string, spec Specification, isRequired bool) {
 
 	// Process Properties
 	for n, p := range s.Properties {
-		p.Process(n, spec, utils.IsInSlice(s.Required, n))
+		p.Process(n+"Property", spec, utils.IsInSlice(s.Required, n))
 	}
 
 	// Process Pattern Properties
 	for n, p := range s.PatternProperties {
-		p.Process(n, spec, utils.IsInSlice(s.Required, n))
+		p.Process(n+"PatternProperty", spec, utils.IsInSlice(s.Required, n))
 	}
 
 	// Process Additional Properties
 	for n, p := range s.AdditionalProperties {
-		p.Process(n, spec, utils.IsInSlice(s.Required, n))
+		p.Process(n+"AdditionalProperties", spec, utils.IsInSlice(s.Required, n))
 	}
 
 	// Process Additional Items

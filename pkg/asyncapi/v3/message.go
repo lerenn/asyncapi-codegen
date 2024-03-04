@@ -2,7 +2,6 @@ package asyncapiv3
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
@@ -103,9 +102,9 @@ func (msg *Message) Process(name string, spec Specification) {
 	msg.Payload.Process(name+"Payload", spec, false)
 
 	// Process OneOf
-	for k, v := range msg.OneOf {
+	for i, v := range msg.OneOf {
 		// Process the OneOf
-		v.Process(name+strconv.Itoa(k), spec)
+		v.Process(fmt.Sprintf("%sOneOf%d", name, i), spec)
 
 		// Merge the OneOf as one payload
 		msg.MergeWith(spec, *v)

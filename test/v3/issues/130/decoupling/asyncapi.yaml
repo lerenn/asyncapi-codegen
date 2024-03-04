@@ -3,7 +3,7 @@ channels:
   UserSignup:
     address: issue130.user.signedup
     messages: 
-      UserMessage: 
+      User: 
         payload:
           type: object
           properties:

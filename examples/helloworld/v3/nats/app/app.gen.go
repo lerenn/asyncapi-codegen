@@ -12,8 +12,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// ReceiveHello receive all messages for the 'receiveHello' operation.
-	ReceiveHelloOperationReceived(ctx context.Context, msg SayHelloMessage)
+	// SayHelloMessageReceivedFromHelloChannel receive all SayHello messages from Hello channel.
+	SayHelloMessageReceivedFromHelloChannel(ctx context.Context, msg SayHelloMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -111,31 +111,32 @@ func addAppContextValues(ctx context.Context, addr string) context.Context {
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.UnsubscribeFromAllOperations(ctx)
+	c.UnsubscribeFromAllChannels(ctx)
 
 	c.logger.Info(ctx, "Closed app controller")
 }
 
-// SubscribeToAllOperations will receive from operations where channel has no parameter on which the app is expecting messages.
-// For channels with parameters, they should be received independently.
-func (c *AppController) SubscribeToAllOperations(ctx context.Context, as AppSubscriber) error {
+// SubscribeToAllChannels will receive messages from channels where channel has
+// no parameter on which the app is expecting messages. For channels with parameters,
+// they should be subscribed independently.
+func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscriber) error {
 	if as == nil {
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToReceiveHelloOperation(ctx, as.ReceiveHelloOperationReceived); err != nil {
+	if err := c.SubscribeToSayHelloMessagesFromHelloChannel(ctx, as.SayHelloMessageReceivedFromHelloChannel); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// UnsubscribeFromAllOperations will stop the subscription of all remaining subscribed channels
-func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
-	c.UnsubscribeFromReceiveHelloOperation(ctx)
+// UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
+func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
+	c.UnsubscribeFromSayHelloMessagesFromHelloChannel(ctx)
 }
 
-// SubscribeToReceiveHelloOperation will receive 'SayHelloMessage' messages from 'hello' channel
+// SubscribeToSayHelloMessagesFromHelloChannel will receive SayHello messages from Hello channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -143,7 +144,7 @@ func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToReceiveHelloOperation(ctx context.Context, fn func(ctx context.Context, msg SayHelloMessage)) error {
+func (c *AppController) SubscribeToSayHelloMessagesFromHelloChannel(ctx context.Context, fn func(ctx context.Context, msg SayHelloMessage)) error {
 	// Get channel address
 	addr := "hello"
 
@@ -206,9 +207,9 @@ func (c *AppController) SubscribeToReceiveHelloOperation(ctx context.Context, fn
 	return nil
 }
 
-// UnsubscribeFromReceiveHelloOperation will stop the reception of messages from 'hello' channel.
+// UnsubscribeFromSayHelloMessagesFromHelloChannel will stop the reception of SayHello messages from Hello channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromReceiveHelloOperation(ctx context.Context) {
+func (c *AppController) UnsubscribeFromSayHelloMessagesFromHelloChannel(ctx context.Context) {
 	// Get channel address
 	addr := "hello"
 
@@ -321,11 +322,11 @@ func (msg SayHelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 }
 
 const (
-	// HelloPath is the constant representing the 'Hello' channel path.
-	HelloPath = "hello"
+	// HelloChannelPath is the constant representing the 'HelloChannel' channel path.
+	HelloChannelPath = "hello"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	HelloPath,
+	HelloChannelPath,
 }

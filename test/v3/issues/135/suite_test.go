@@ -18,20 +18,20 @@ type Suite struct {
 
 func (suite *Suite) TestCheckPaths() {
 	// Check path contents
-	suite.Require().Equal("group", GroupPath)
-	suite.Require().Equal("info", InfoPath)
-	suite.Require().Equal("project", ProjectPath)
-	suite.Require().Equal("resource", ResourcePath)
-	suite.Require().Equal("status", StatusPath)
+	suite.Require().Equal("group", GroupChannelPath)
+	suite.Require().Equal("info", InfoChannelPath)
+	suite.Require().Equal("project", ProjectChannelPath)
+	suite.Require().Equal("resource", ResourceChannelPath)
+	suite.Require().Equal("status", StatusChannelPath)
 
 	// Check path list
 	for _, p := range ChannelsPaths {
 		switch p {
-		case GroupPath:
-		case InfoPath:
-		case ProjectPath:
-		case ResourcePath:
-		case StatusPath:
+		case GroupChannelPath:
+		case InfoChannelPath:
+		case ProjectChannelPath:
+		case ResourceChannelPath:
+		case StatusChannelPath:
 		default:
 			suite.Require().Fail("unknown channel path", p)
 		}

@@ -18,20 +18,20 @@ channels:
         $ref: '#/components/messages/pong'
 
     # With correlation ID
-  pingWithCorrelationID:
-    address: issue130.pingWithCorrelationID
+  pingWithID:
+    address: issue130.pingWithID
     messages:
       ping:
-        $ref: '#/components/messages/pingWithCorrelationID'
-  pongWithCorrelationID:
-    address: issue130.pongWithCorrelationID
+        $ref: '#/components/messages/pingWithID'
+  pongWithID:
+    address: issue130.pongWithID
     messages:
       pong:
-        $ref: '#/components/messages/pongWithCorrelationID'
+        $ref: '#/components/messages/pongWithID'
 
 operations:
     # Without correlation ID
-  pingRequest:
+  ping:
     action: receive
     channel: 
       $ref: '#/channels/ping'
@@ -40,13 +40,13 @@ operations:
         $ref: '#/channels/pong'
 
   # With correlation ID
-  pingRequestWithCorrelationID:
+  pingWithID:
     action: receive
     channel: 
-      $ref: '#/channels/pingWithCorrelationID'
+      $ref: '#/channels/pingWithID'
     reply:
       channel: 
-        $ref: '#/channels/pongWithCorrelationID'
+        $ref: '#/channels/pongWithID'
 
 components: 
   messages:
@@ -67,7 +67,7 @@ components:
             const: pong
 
     # With correlation ID
-    pingWithCorrelationID:
+    pingWithID:
       headers:
         type: object
         properties:
@@ -83,7 +83,7 @@ components:
       correlationId:
         description: Default Correlation ID
         location: $message.header#/correlationId
-    pongWithCorrelationID:
+    pongWithID:
       headers:
         type: object
         properties:

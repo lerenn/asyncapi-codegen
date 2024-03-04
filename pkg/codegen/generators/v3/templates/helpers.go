@@ -43,11 +43,18 @@ func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 	return templateutil.Namify(msg.Name)
 }
 
-// OperationToMessageTypeName will convert an operation to a message type name in the
+// OpToMsgTypeName will convert an operation to a message type name in the
 // form of golang conventional type names.
-func OperationToMessageTypeName(op asyncapi.Operation) string {
-	msg := op.GetMessage()
+func OpToMsgTypeName(op asyncapi.Operation) string {
+	msg := op.Follow().GetMessage().Follow()
 	return templateutil.Namify(msg.Name)
+}
+
+// OpToChannelTypeName will convert an operation to a channel type name in the
+// form of golang conventional type names.
+func OpToChannelTypeName(op asyncapi.Operation) string {
+	ch := op.Channel.Follow()
+	return templateutil.Namify(ch.Name)
 }
 
 // IsRequired will check if a field is required in a asyncapi struct.
@@ -96,7 +103,8 @@ func GenerateChannelAddr(ch *asyncapi.Channel) string {
 func HelpersFunctions() template.FuncMap {
 	return template.FuncMap{
 		"channelToMessageTypeName":       ChannelToMessageTypeName,
-		"operationToMessageTypeName":     OperationToMessageTypeName,
+		"opToMsgTypeName":                OpToMsgTypeName,
+		"opToChannelTypeName":            OpToChannelTypeName,
 		"isRequired":                     IsRequired,
 		"generateChannelAddr":            GenerateChannelAddr,
 		"generateChannelAddrFromOp":      GenerateChannelAddrFromOp,

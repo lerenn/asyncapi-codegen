@@ -43,49 +43,51 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestRequestReply() {
 	// Listen for pings on the application
-	err := suite.app.SubscribeToPingRequestOperation(context.Background(), func(ctx context.Context, msg Ping) {
-		var respMsg Pong
-		respMsg.Payload.Event = msg.Payload.Event
-		err := suite.app.ReplyToPingRequestOperation(ctx, respMsg)
-		suite.Require().NoError(err)
-	})
+	err := suite.app.SubscribeToPingMessagesFromPingChannel(
+		context.Background(),
+		func(ctx context.Context, msg PingMessage) {
+			var respMsg PongMessage
+			respMsg.Payload.Event = msg.Payload.Event
+			err := suite.app.PublishPongMessageOnPongChannel(ctx, respMsg)
+			suite.Require().NoError(err)
+		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingRequestOperation(context.Background())
+	defer suite.app.UnsubscribeFromPingMessagesFromPingChannel(context.Background())
 
 	// Set a new ping
-	var msg Ping
+	var msg PingMessage
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.RequestToPingRequestOperation(context.Background(), msg)
+	resp, err := suite.user.RequestWithPingMessageOnPingChannel(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Check response
 	suite.Require().Equal(*msg.Payload.Event, *resp.Payload.Event)
 }
 
-func (suite *Suite) TestRequestReplyWithCorrelationID() {
+func (suite *Suite) TestRequestReplyWithID() {
 	// Listen to new pings
-	err := suite.app.SubscribeToPingRequestWithCorrelationIDOperation(context.Background(),
-		func(ctx context.Context, msg PingWithCorrelationID) {
+	err := suite.app.SubscribeToPingWithIDMessagesFromPingWithIDChannel(context.Background(),
+		func(ctx context.Context, msg PingWithIDMessage) {
 			// Set response
-			var respMsg PongWithCorrelationID
+			var respMsg PongWithIDMessage
 			respMsg.SetAsResponseFrom(&msg)
 			respMsg.Payload.Event = msg.Payload.Event
 
 			// Send response
-			err := suite.app.ReplyToPingRequestWithCorrelationIDOperation(ctx, respMsg)
+			err := suite.app.PublishPongWithIDMessageOnPongWithIDChannel(ctx, respMsg)
 			suite.Require().NoError(err)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingRequestWithCorrelationIDOperation(context.Background())
+	defer suite.app.UnsubscribeFromPingWithIDMessagesFromPingWithIDChannel(context.Background())
 
 	// Set a new ping
-	var msg PingWithCorrelationID
+	var msg PingWithIDMessage
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.RequestToPingRequestWithCorrelationIDOperation(context.Background(), msg)
+	resp, err := suite.user.RequestWithPingWithIDMessageOnPingWithIDChannel(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Check response

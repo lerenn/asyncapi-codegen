@@ -44,13 +44,13 @@ func (s *Specification) Process() {
 	}
 
 	// Process channels
-	for path, ch := range s.Channels {
-		ch.Process(path, *s)
+	for name, ch := range s.Channels {
+		ch.Process(name+ChannelSuffix, *s)
 	}
 
 	// Process operations
-	for path, op := range s.Operations {
-		op.Process(path, *s)
+	for name, op := range s.Operations {
+		op.Process(name+"Operation", *s)
 	}
 
 	// Process components

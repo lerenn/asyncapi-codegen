@@ -13,8 +13,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// ReceiveUserSignedUp receive all messages for the 'ReceiveUserSignedUp' operation.
-	ReceiveUserSignedUpOperationReceived(ctx context.Context, msg User)
+	// UserMessageReceivedFromUserSignupChannel receive all User messages from UserSignup channel.
+	UserMessageReceivedFromUserSignupChannel(ctx context.Context, msg UserMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -112,14 +112,15 @@ func addAppContextValues(ctx context.Context, addr string) context.Context {
 // Close will clean up any existing resources on the controller
 func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.UnsubscribeFromAllOperations(ctx)
+	c.UnsubscribeFromAllChannels(ctx)
 
 	c.logger.Info(ctx, "Closed app controller")
 }
 
-// SubscribeToAllOperations will receive from operations where channel has no parameter on which the app is expecting messages.
-// For channels with parameters, they should be received independently.
-func (c *AppController) SubscribeToAllOperations(ctx context.Context, as AppSubscriber) error {
+// SubscribeToAllChannels will receive messages from channels where channel has
+// no parameter on which the app is expecting messages. For channels with parameters,
+// they should be subscribed independently.
+func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscriber) error {
 	if as == nil {
 		return extensions.ErrNilAppSubscriber
 	}
@@ -127,11 +128,11 @@ func (c *AppController) SubscribeToAllOperations(ctx context.Context, as AppSubs
 	return nil
 }
 
-// UnsubscribeFromAllOperations will stop the subscription of all remaining subscribed channels
-func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
+// UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
+func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 }
 
-// SubscribeToReceiveUserSignedUpOperation will receive 'User' messages from 'issue130.user.{userId}.signedup' channel
+// SubscribeToUserMessagesFromUserSignupChannel will receive User messages from UserSignup channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -139,7 +140,7 @@ func (c *AppController) UnsubscribeFromAllOperations(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToReceiveUserSignedUpOperation(ctx context.Context, params UserSignupParameters, fn func(ctx context.Context, msg User)) error {
+func (c *AppController) SubscribeToUserMessagesFromUserSignupChannel(ctx context.Context, params UserSignupChannelParameters, fn func(ctx context.Context, msg UserMessage)) error {
 	// Get channel address
 	addr := fmt.Sprintf("issue130.user.%s.signedup", params.UserId)
 
@@ -181,7 +182,7 @@ func (c *AppController) SubscribeToReceiveUserSignedUpOperation(ctx context.Cont
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
 				// Process message
-				msg, err := newUserFromBrokerMessage(brokerMsg)
+				msg, err := newUserMessageFromBrokerMessage(brokerMsg)
 				if err != nil {
 					return err
 				}
@@ -202,9 +203,9 @@ func (c *AppController) SubscribeToReceiveUserSignedUpOperation(ctx context.Cont
 	return nil
 }
 
-// UnsubscribeFromReceiveUserSignedUpOperation will stop the reception of messages from 'issue130.user.{userId}.signedup' channel.
+// UnsubscribeFromUserMessagesFromUserSignupChannel will stop the reception of User messages from UserSignup channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromReceiveUserSignedUpOperation(ctx context.Context, params UserSignupParameters) {
+func (c *AppController) UnsubscribeFromUserMessagesFromUserSignupChannel(ctx context.Context, params UserSignupChannelParameters) {
 	// Get channel address
 	addr := fmt.Sprintf("issue130.user.%s.signedup", params.UserId)
 
@@ -323,11 +324,11 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishReceiveUserSignedUpOperation will send 'User' messages to 'issue130.user.{userId}.signedup' channel.
+// PublishUserMessageOnUserSignupChannel will send a User message on UserSignup channel.
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishReceiveUserSignedUpOperation(ctx context.Context, params UserSignupParameters, msg User) error {
+func (c *UserController) PublishUserMessageOnUserSignupChannel(ctx context.Context, params UserSignupChannelParameters, msg UserMessage) error {
 	// Get channel address
 	addr := fmt.Sprintf("issue130.user.%s.signedup", params.UserId)
 
@@ -399,29 +400,29 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// UserSignupParameters represents UserSignup channel parameters
-type UserSignupParameters struct {
+// UserSignupChannelParameters represents UserSignupChannel channel parameters
+type UserSignupChannelParameters struct {
 	// UserId is a channel parameter: Id of the user.
 	UserId string
 }
 
-// User is the golang representation of the AsyncAPI message
-type User struct {
+// UserMessage is the golang representation of the AsyncAPI message
+type UserMessage struct {
 	// Payload will be inserted in the message payload
 	Payload struct {
 		Name *string `json:"name"`
 	}
 }
 
-func NewUser() User {
-	var msg User
+func NewUserMessage() UserMessage {
+	var msg UserMessage
 
 	return msg
 }
 
-// newUserFromBrokerMessage will fill a new User with data from generic broker message
-func newUserFromBrokerMessage(bMsg extensions.BrokerMessage) (User, error) {
-	var msg User
+// newUserMessageFromBrokerMessage will fill a new UserMessage with data from generic broker message
+func newUserMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (UserMessage, error) {
+	var msg UserMessage
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -434,8 +435,8 @@ func newUserFromBrokerMessage(bMsg extensions.BrokerMessage) (User, error) {
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from User data
-func (msg User) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from UserMessage data
+func (msg UserMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -454,11 +455,11 @@ func (msg User) toBrokerMessage() (extensions.BrokerMessage, error) {
 }
 
 const (
-	// UserSignupPath is the constant representing the 'UserSignup' channel path.
-	UserSignupPath = "issue130.user.{userId}.signedup"
+	// UserSignupChannelPath is the constant representing the 'UserSignupChannel' channel path.
+	UserSignupChannelPath = "issue130.user.{userId}.signedup"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	UserSignupPath,
+	UserSignupChannelPath,
 }

@@ -39,7 +39,7 @@ func (or *OperationReply) Process(name string, spec Specification) {
 	}
 
 	// Process channel if there is one
-	or.Channel.Process(name+"Channel", spec)
+	or.Channel.Process(name+ChannelSuffix, spec)
 
 	// Process messages
 	for i, msg := range or.Messages {

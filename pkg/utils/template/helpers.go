@@ -91,6 +91,12 @@ func Args(vs ...any) []any {
 	return vs
 }
 
+// CutSuffix is a function used to remove a suffix to a string.
+func CutSuffix(s, suffix string) string {
+	s, _ = strings.CutSuffix(s, suffix)
+	return s
+}
+
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
@@ -101,6 +107,7 @@ func HelpersFunctions() template.FuncMap {
 		"hasField":           HasField,
 		"describeStruct":     DescribeStruct,
 		"multiLineComment":   MultiLineComment,
+		"cutSuffix":          CutSuffix,
 		"args":               Args,
 	}
 }
