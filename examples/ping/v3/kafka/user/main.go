@@ -42,7 +42,7 @@ func main() {
 	// ID, then it will return the first message on the reply channel.
 	//
 	// Note: it will indefinitely wait for messages as context has no timeout
-	_, err = ctrl.RequestPongMessageOnPongChannelWithPingMessageOnPingChannel(context.Background(), req)
+	_, err = ctrl.RequestPongOnPongChannelWithPingOnPingChannel(context.Background(), req)
 	if err != nil {
 		panic(err)
 	}

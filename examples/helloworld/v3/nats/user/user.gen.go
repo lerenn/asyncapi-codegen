@@ -107,11 +107,11 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishSayHelloMessageOnHelloChannel will send a SayHello message on Hello channel.
+// PublishSayHelloOnHelloChannel will send a SayHello message on Hello channel.
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishSayHelloMessageOnHelloChannel(ctx context.Context, msg SayHelloMessage) error {
+func (c *UserController) PublishSayHelloOnHelloChannel(ctx context.Context, msg SayHelloMessage) error {
 	// Get channel address
 	addr := "hello"
 

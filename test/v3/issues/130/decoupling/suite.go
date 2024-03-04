@@ -46,7 +46,7 @@ func (suite *Suite) TestSendReceive() {
 	var wg sync.WaitGroup
 
 	// Listen to new messages
-	err := suite.app.SubscribeToUserMessagesFromUserSignupChannel(
+	err := suite.app.SubscribeToUsersFromUserSignupChannel(
 		context.Background(),
 		func(ctx context.Context, msg UserMessage) {
 			suite.Require().NotNil(msg.Payload.DisplayName)
@@ -54,7 +54,7 @@ func (suite *Suite) TestSendReceive() {
 			wg.Done()
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromUserMessagesFromUserSignupChannel(context.Background())
+	defer suite.app.UnsubscribeFromUsersFromUserSignupChannel(context.Background())
 	wg.Add(1)
 
 	// Set a new message
@@ -62,7 +62,7 @@ func (suite *Suite) TestSendReceive() {
 	msg.Payload.DisplayName = utils.ToPointer("testing")
 
 	// Send the new message
-	err = suite.user.PublishUserMessageOnUserSignupChannel(context.Background(), msg)
+	err = suite.user.PublishUserOnUserSignupChannel(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	wg.Wait()

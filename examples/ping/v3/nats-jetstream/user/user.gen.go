@@ -110,12 +110,12 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishPingMessageOnPingChannel will send a Ping message on Ping channel.
+// PublishPingOnPingChannel will send a Ping message on Ping channel.
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingMessageOnPingChannel(ctx context.Context, msg PingMessage) error {
+func (c *UserController) PublishPingOnPingChannel(ctx context.Context, msg PingMessage) error {
 	// Get channel address
 	addr := "ping.v3"
 
@@ -144,7 +144,7 @@ func (c *UserController) PublishPingMessageOnPingChannel(ctx context.Context, ms
 	})
 }
 
-// RequestPongMessageOnPongChannelWithPingMessageOnPingChannel will send a Ping message on Ping channel
+// RequestPongOnPongChannelWithPingOnPingChannel will send a Ping message on Ping channel
 // and wait for a Pong message from Pong channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -152,7 +152,7 @@ func (c *UserController) PublishPingMessageOnPingChannel(ctx context.Context, ms
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestPongMessageOnPongChannelWithPingMessageOnPingChannel(ctx context.Context, msg PingMessage) (PongMessage, error) {
+func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(ctx context.Context, msg PingMessage) (PongMessage, error) {
 	// Get receiving channel address
 	addr := "pong.v3"
 
@@ -182,7 +182,7 @@ func (c *UserController) RequestPongMessageOnPongChannelWithPingMessageOnPingCha
 	}
 
 	// Send the message
-	if err := c.PublishPingMessageOnPingChannel(ctx, msg); err != nil {
+	if err := c.PublishPingOnPingChannel(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
 		return PongMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}

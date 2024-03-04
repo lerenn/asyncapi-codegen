@@ -43,23 +43,23 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestRequestReply() {
 	// Listen for pings on the application
-	err := suite.app.SubscribeToPingMessagesFromPingChannel(
+	err := suite.app.SubscribeToPingsFromPingChannel(
 		context.Background(),
 		func(ctx context.Context, msg PingMessage) {
 			var respMsg PongMessage
 			respMsg.Payload.Event = msg.Payload.Event
-			err := suite.app.PublishPongMessageOnPongChannel(ctx, respMsg)
+			err := suite.app.PublishPongOnPongChannel(ctx, respMsg)
 			suite.Require().NoError(err)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingMessagesFromPingChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingsFromPingChannel(context.Background())
 
 	// Set a new ping
 	var msg PingMessage
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.RequestPongMessageOnPongChannelWithPingMessageOnPingChannel(context.Background(), msg)
+	resp, err := suite.user.RequestPongOnPongChannelWithPingOnPingChannel(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Check response
@@ -68,7 +68,7 @@ func (suite *Suite) TestRequestReply() {
 
 func (suite *Suite) TestRequestReplyWithID() {
 	// Listen to new pings
-	err := suite.app.SubscribeToPingWithIDMessagesFromPingWithIDChannel(context.Background(),
+	err := suite.app.SubscribeToPingWithIDsFromPingWithIDChannel(context.Background(),
 		func(ctx context.Context, msg PingWithIDMessage) {
 			// Set response
 			var respMsg PongWithIDMessage
@@ -76,18 +76,18 @@ func (suite *Suite) TestRequestReplyWithID() {
 			respMsg.Payload.Event = msg.Payload.Event
 
 			// Send response
-			err := suite.app.PublishPongWithIDMessageOnPongWithIDChannel(ctx, respMsg)
+			err := suite.app.PublishPongWithIDOnPongWithIDChannel(ctx, respMsg)
 			suite.Require().NoError(err)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingWithIDMessagesFromPingWithIDChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingWithIDsFromPingWithIDChannel(context.Background())
 
 	// Set a new ping
 	var msg PingWithIDMessage
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.RequestPongWithIDMessageOnPongWithIDChannelWithPingWithIDMessageOnPingWithIDChannel(
+	resp, err := suite.user.RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel(
 		context.Background(),
 		msg,
 	)

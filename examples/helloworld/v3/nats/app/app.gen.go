@@ -12,8 +12,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// SayHelloMessageReceivedFromHelloChannel receive all SayHello messages from Hello channel.
-	SayHelloMessageReceivedFromHelloChannel(ctx context.Context, msg SayHelloMessage)
+	// SayHelloReceivedFromHelloChannel receive all SayHello messages from Hello channel.
+	SayHelloReceivedFromHelloChannel(ctx context.Context, msg SayHelloMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -124,7 +124,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToSayHelloMessagesFromHelloChannel(ctx, as.SayHelloMessageReceivedFromHelloChannel); err != nil {
+	if err := c.SubscribeToSayHellosFromHelloChannel(ctx, as.SayHelloReceivedFromHelloChannel); err != nil {
 		return err
 	}
 
@@ -133,10 +133,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromSayHelloMessagesFromHelloChannel(ctx)
+	c.UnsubscribeFromSayHellosFromHelloChannel(ctx)
 }
 
-// SubscribeToSayHelloMessagesFromHelloChannel will receive SayHello messages from Hello channel.
+// SubscribeToSayHellosFromHelloChannel will receive SayHello messages from Hello channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -144,7 +144,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToSayHelloMessagesFromHelloChannel(ctx context.Context, fn func(ctx context.Context, msg SayHelloMessage)) error {
+func (c *AppController) SubscribeToSayHellosFromHelloChannel(ctx context.Context, fn func(ctx context.Context, msg SayHelloMessage)) error {
 	// Get channel address
 	addr := "hello"
 
@@ -205,9 +205,9 @@ func (c *AppController) SubscribeToSayHelloMessagesFromHelloChannel(ctx context.
 	c.subscriptions[addr] = sub
 
 	return nil
-} // UnsubscribeFromSayHelloMessagesFromHelloChannel will stop the reception of SayHello messages from Hello channel.
+} // UnsubscribeFromSayHellosFromHelloChannel will stop the reception of SayHello messages from Hello channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromSayHelloMessagesFromHelloChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromSayHellosFromHelloChannel(ctx context.Context) {
 	// Get channel address
 	addr := "hello"
 

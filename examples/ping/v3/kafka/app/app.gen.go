@@ -15,8 +15,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// PingMessageReceivedFromPingChannel receive all Ping messages from Ping channel.
-	PingMessageReceivedFromPingChannel(ctx context.Context, msg PingMessage)
+	// PingReceivedFromPingChannel receive all Ping messages from Ping channel.
+	PingReceivedFromPingChannel(ctx context.Context, msg PingMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -127,7 +127,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToPingMessagesFromPingChannel(ctx, as.PingMessageReceivedFromPingChannel); err != nil {
+	if err := c.SubscribeToPingsFromPingChannel(ctx, as.PingReceivedFromPingChannel); err != nil {
 		return err
 	}
 
@@ -136,10 +136,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromPingMessagesFromPingChannel(ctx)
+	c.UnsubscribeFromPingsFromPingChannel(ctx)
 }
 
-// SubscribeToPingMessagesFromPingChannel will receive Ping messages from Ping channel.
+// SubscribeToPingsFromPingChannel will receive Ping messages from Ping channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -147,7 +147,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingMessagesFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
+func (c *AppController) SubscribeToPingsFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
 	// Get channel address
 	addr := "ping.v3"
 
@@ -215,9 +215,9 @@ func (c *AppController) SubscribeToPingMessagesFromPingChannel(ctx context.Conte
 	return nil
 }
 
-// ReplyToPingMessageWithPongMessageOnPongChannel is a helper function to
+// ReplyToPingWithPongOnPongChannel is a helper function to
 // reply to a Ping message with a Pong message on Pong channel.
-func (c *AppController) ReplyToPingMessageWithPongMessageOnPongChannel(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
+func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
 	// Create reply message
 	replyMsg := NewPongMessage()
 	replyMsg.SetAsResponseFrom(&recvMsg)
@@ -226,12 +226,12 @@ func (c *AppController) ReplyToPingMessageWithPongMessageOnPongChannel(ctx conte
 	fn(&replyMsg)
 
 	// Publish reply
-	return c.PublishPongMessageOnPongChannel(ctx, replyMsg)
+	return c.PublishPongOnPongChannel(ctx, replyMsg)
 }
 
-// UnsubscribeFromPingMessagesFromPingChannel will stop the reception of Ping messages from Ping channel.
+// UnsubscribeFromPingsFromPingChannel will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingMessagesFromPingChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingsFromPingChannel(ctx context.Context) {
 	// Get channel address
 	addr := "ping.v3"
 
@@ -253,11 +253,11 @@ func (c *AppController) UnsubscribeFromPingMessagesFromPingChannel(ctx context.C
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// PublishPongMessageOnPongChannel will send a Pong message on Pong channel.
+// PublishPongOnPongChannel will send a Pong message on Pong channel.
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongMessageOnPongChannel(ctx context.Context, msg PongMessage) error {
+func (c *AppController) PublishPongOnPongChannel(ctx context.Context, msg PongMessage) error {
 	// Get channel address
 	addr := "pong.v3"
 
