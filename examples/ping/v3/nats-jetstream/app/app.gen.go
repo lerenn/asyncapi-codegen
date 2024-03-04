@@ -127,7 +127,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToPingsFromPingChannel(ctx, as.PingReceivedFromPingChannel); err != nil {
+	if err := c.SubscribeToPingFromPingChannel(ctx, as.PingReceivedFromPingChannel); err != nil {
 		return err
 	}
 
@@ -136,10 +136,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromPingsFromPingChannel(ctx)
+	c.UnsubscribeFromPingFromPingChannel(ctx)
 }
 
-// SubscribeToPingsFromPingChannel will receive Ping messages from Ping channel.
+// SubscribeToPingFromPingChannel will receive Ping messages from Ping channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -147,7 +147,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingsFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
+func (c *AppController) SubscribeToPingFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
 	// Get channel address
 	addr := "ping.v3"
 
@@ -229,9 +229,9 @@ func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, re
 	return c.PublishPongOnPongChannel(ctx, replyMsg)
 }
 
-// UnsubscribeFromPingsFromPingChannel will stop the reception of Ping messages from Ping channel.
+// UnsubscribeFromPingFromPingChannel will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingsFromPingChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) {
 	// Get channel address
 	addr := "ping.v3"
 

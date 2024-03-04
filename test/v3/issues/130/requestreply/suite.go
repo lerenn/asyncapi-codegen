@@ -43,7 +43,7 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestRequestReply() {
 	// Listen for pings on the application
-	err := suite.app.SubscribeToPingsFromPingChannel(
+	err := suite.app.SubscribeToPingFromPingChannel(
 		context.Background(),
 		func(ctx context.Context, msg PingMessage) {
 			var respMsg PongMessage
@@ -52,7 +52,7 @@ func (suite *Suite) TestRequestReply() {
 			suite.Require().NoError(err)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingsFromPingChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingFromPingChannel(context.Background())
 
 	// Set a new ping
 	var msg PingMessage
@@ -68,7 +68,7 @@ func (suite *Suite) TestRequestReply() {
 
 func (suite *Suite) TestRequestReplyWithID() {
 	// Listen to new pings
-	err := suite.app.SubscribeToPingWithIDsFromPingWithIDChannel(context.Background(),
+	err := suite.app.SubscribeToPingWithIDFromPingWithIDChannel(context.Background(),
 		func(ctx context.Context, msg PingWithIDMessage) {
 			// Set response
 			var respMsg PongWithIDMessage
@@ -80,7 +80,7 @@ func (suite *Suite) TestRequestReplyWithID() {
 			suite.Require().NoError(err)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingWithIDsFromPingWithIDChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingWithIDFromPingWithIDChannel(context.Background())
 
 	// Set a new ping
 	var msg PingWithIDMessage

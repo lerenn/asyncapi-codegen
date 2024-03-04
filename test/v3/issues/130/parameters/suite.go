@@ -51,7 +51,7 @@ func (suite *Suite) TestParameter() {
 	}
 
 	// Listen to new messages
-	err := suite.app.SubscribeToUsersFromUserSignupChannel(
+	err := suite.app.SubscribeToUserFromUserSignupChannel(
 		context.Background(),
 		params,
 		func(ctx context.Context, msg UserMessage) {
@@ -60,7 +60,7 @@ func (suite *Suite) TestParameter() {
 			wg.Done()
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromUsersFromUserSignupChannel(context.Background(), params)
+	defer suite.app.UnsubscribeFromUserFromUserSignupChannel(context.Background(), params)
 	wg.Add(1)
 
 	// Set a new message

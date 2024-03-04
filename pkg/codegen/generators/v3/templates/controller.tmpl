@@ -111,7 +111,7 @@ func (c *{{ .Prefix }}Controller) SubscribeToAllChannels(ctx context.Context, as
 
     {{range  $key, $value := .Operations.Receive -}}
     {{- if not .Channel.Follow.Parameters }}
-    if err := c.SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}sFrom{{opToChannelTypeName $value}}(ctx, as.{{cutSuffix (opToMsgTypeName $value) "Message" }}ReceivedFrom{{opToChannelTypeName $value}}); err != nil {
+    if err := c.SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx, as.{{cutSuffix (opToMsgTypeName $value) "Message" }}ReceivedFrom{{opToChannelTypeName $value}}); err != nil {
         return err
     }
     {{- end}}
@@ -124,14 +124,14 @@ func (c *{{ .Prefix }}Controller) SubscribeToAllChannels(ctx context.Context, as
 func (c *{{ .Prefix }}Controller) UnsubscribeFromAllChannels(ctx context.Context) {
     {{- range  $key, $value := .Operations.Receive}}
     {{- if not .Channel.Follow.Parameters}}
-    c.UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}sFrom{{opToChannelTypeName $value}}(ctx)
+    c.UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx)
     {{- end}}
     {{- end}}
 }
 {{- end}}
 
 {{range $key, $value := .Operations.Receive -}}
-// SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}sFrom{{opToChannelTypeName $value}} will receive {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+// SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}} will receive {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -140,9 +140,9 @@ func (c *{{ .Prefix }}Controller) UnsubscribeFromAllChannels(ctx context.Context
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 {{- if .Channel.Follow.Parameters}}
-func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}sFrom{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, fn func (ctx context.Context, msg {{opToMsgTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, fn func (ctx context.Context, msg {{opToMsgTypeName $value}})) error {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}sFrom{{opToChannelTypeName $value}}(ctx context.Context, fn func (ctx context.Context, msg {{opToMsgTypeName $value}})) error {
+func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context, fn func (ctx context.Context, msg {{opToMsgTypeName $value}})) error {
 {{- end }}
     // Get channel address
     addr := {{ generateChannelAddrFromOp $value }}
@@ -232,12 +232,12 @@ func (c *{{ $.Prefix }}Controller) ReplyTo{{cutSuffix (opToMsgTypeName $value) "
 
 {{end -}}
 
-// UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}sFrom{{opToChannelTypeName $value}} will stop the reception of {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+// UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}} will stop the reception of {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 {{- if .Channel.Follow.Parameters}}
-func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}sFrom{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters) {
+func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters) {
 {{- else}}
-func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}sFrom{{opToChannelTypeName $value}}(ctx context.Context) {
+func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context) {
 {{- end}}
     // Get channel address
     addr := {{ generateChannelAddrFromOp $value }}
