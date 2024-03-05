@@ -41,7 +41,7 @@ func NewAppController(bs BrokerController, options ...ControllerOption) *AppCont
 // with a `defer`
 func (ac *AppController) Close(ctx context.Context)
 
-// SubscribeToAllChannels will subscribe to all operation that the application should listen to.
+// SubscribeToAllChannels will subscribe to all channels that the application should listen to.
 //
 // In order to use it, you'll have to implement the AppSubscriber interface and
 // pass it as an argument to this function. Thus, the subscription will automatically
@@ -51,10 +51,6 @@ func (ac *AppController) Close(ctx context.Context)
 // making it a bit overkill. You can directly use the SubscribeToSayHelloFromHelloChannel
 // method.
 func (ac *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscriber) error
-
-// SubscribeFromAllOperations will unsubscribe all operations that have subscribed to through
-// SubscribeToAllChannels or SubscribeToXXXOperation where XXX correspond to the operation name.
-func (ac *AppController) SubscribeFromAllOperations(ctx context.Context)
 
 // SubscribeToSayHelloFromHelloChannel will subscribe to new messages on the "hello"
 // channel, specified in the "ReceiveHello" operation.
@@ -100,8 +96,8 @@ func main() {
   // Note: it will indefinitely wait for messages as context has no timeout
   log.Println("Subscribe to hello world...")
   ctrl.SubscribeToSayHelloFromHelloChannel(context.Background(), func(_ context.Context, msg SayHelloMessage) {
-		log.Println("Received message:", msg.Payload)
-	})
+    log.Println("Received message:", msg.Payload)
+  })
 
   // Process messages until interruption signal
   // ...
@@ -152,13 +148,13 @@ func main() {
   defer ctrl.Close(context.Background())
 
   // Send HelloWorld
-	// Note: it will indefinitely wait to publish as context has no timeout
-	log.Println("Publishing 'hello world' message")
-	if err := ctrl.PublishSayHelloOnHelloChannel(context.Background(), SayHelloMessage{
-		Payload: "HelloWorld!",
-	}); err != nil {
-		panic(err)
-	}
+  // Note: it will indefinitely wait to publish as context has no timeout
+  log.Println("Publishing 'hello world' message")
+  if err := ctrl.PublishSayHelloOnHelloChannel(context.Background(), SayHelloMessage{
+    Payload: "HelloWorld!",
+  }); err != nil {
+    panic(err)
+  }
 
   // ...
 }
@@ -172,7 +168,7 @@ be  Here is the ones generated for the HelloWorld example:
 ```go
 // SayHelloMessage is the message expected for 'ReceiveHello' operation
 type SayHelloMessage struct {
-	// Payload will be inserted in the message payload
-	Payload string
+  // Payload will be inserted in the message payload
+  Payload string
 }
 ```
