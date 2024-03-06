@@ -68,6 +68,14 @@ at the beginning of your file:
 //go:generate go run github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@<version> -i ./asyncapi.yaml -p <your-package> -o ./asyncapi.gen.go
 ```
 
+### Docker image
+
+You can also use the dockerized version of this tool:
+
+```bash
+docker run -v .:/code -w /code lerenn/asyncapi-codegen asyncapi-codegen -i ./asyncapi.yaml -p <your-package> -o ./asyncapi.gen.go
+```
+
 ## Concepts
 
 ![basic schema](assets/basic-schema.svg)

@@ -8,6 +8,10 @@ ifndef TEST
 	TEST=""
 endif
 
+ifndef TAG
+	TAG=""
+endif
+
 .PHONY: ci
 ci: ## Run the CI
 	@${DAGGER_COMMAND} all
@@ -27,6 +31,10 @@ test: ## Perform tests
 .PHONY: generate
 generate: ## Generate files
 	@${DAGGER_COMMAND} generator
+
+.PHONY: publish
+publish: ## Publish with tag on git, docker hub, etc.
+	@${DAGGER_COMMAND} publish --tag ${TAG}
 
 .PHONY: help
 help: ## Display this help message

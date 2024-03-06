@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"dagger.io/dagger"
-	"github.com/lerenn/asyncapi-codegen/pkg/pipeline"
+	"github.com/lerenn/asyncapi-codegen/pkg/ci"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	"github.com/spf13/cobra"
 )
@@ -18,6 +18,7 @@ var (
 	client *dagger.Client
 
 	exampleFlag string
+	tagFlag     string
 	testFlag    string
 
 	brokers map[string]*dagger.Service
@@ -40,13 +41,13 @@ var rootCmd = &cobra.Command{
 		defer client.Close()
 
 		// Create services
-		brokers = pipeline.Brokers(client)
+		brokers = ci.Brokers(client)
 
 		// Create containers
-		generator = pipeline.Generator(client)
-		linter = pipeline.Linter(client)
-		examples = pipeline.Examples(client, brokers)
-		tests = pipeline.Tests(client, brokers)
+		generator = ci.Generator(client)
+		linter = ci.Linter(client)
+		examples = ci.Examples(client, brokers)
+		tests = ci.Tests(client, brokers)
 
 		return nil
 	},
@@ -98,6 +99,15 @@ var linterCmd = &cobra.Command{
 	},
 }
 
+var publishCmd = &cobra.Command{
+	Use:     "publish",
+	Aliases: []string{"p"},
+	Short:   "Tag and publish to different repositories.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return ci.Publish(context.Background(), client, "0.0.0")
+	},
+}
+
 var testCmd = &cobra.Command{
 	Use:     "test",
 	Aliases: []string{"g"},
@@ -117,12 +127,19 @@ var testCmd = &cobra.Command{
 
 func main() {
 	rootCmd.AddCommand(allCmd)
-	rootCmd.AddCommand(examplesCmd)
+
 	examplesCmd.Flags().StringVarP(&exampleFlag, "example", "e", "", "Example to execute")
+	rootCmd.AddCommand(examplesCmd)
+
 	rootCmd.AddCommand(generatorCmd)
+
 	rootCmd.AddCommand(linterCmd)
-	rootCmd.AddCommand(testCmd)
+
+	publishCmd.Flags().StringVarP(&tagFlag, "tag", "t", "", "Tag used to tag this version")
+	rootCmd.AddCommand(publishCmd)
+
 	testCmd.Flags().StringVarP(&testFlag, "test", "t", "", "Test to execute")
+	rootCmd.AddCommand(testCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)

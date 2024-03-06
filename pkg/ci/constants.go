@@ -1,4 +1,4 @@
-package pipeline
+package ci
 
 const (
 	// KafkaImage is the image used for kafka.
