@@ -5,6 +5,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
+// TagCommit tags the last commit on the actual branch.
 func TagCommit(path, tag string) error {
 	// Open git repository
 	repo, err := git.PlainOpen(path)
@@ -23,6 +24,7 @@ func TagCommit(path, tag string) error {
 	return err
 }
 
+// GetLastCommitHash returns the hash of the last commit on the actual branch.
 func GetLastCommitHash(path string) (string, error) {
 	commit, err := lastCommit(path)
 	if err != nil {
@@ -45,7 +47,7 @@ func lastCommit(path string) (*object.Commit, error) {
 		return nil, err
 	}
 
-	var commit *object.Commit = &object.Commit{}
+	var commit = &object.Commit{}
 	if err := commitIter.ForEach(func(c *object.Commit) error {
 		if c.Author.When.After(commit.Author.When) {
 			commit = c
@@ -58,6 +60,7 @@ func lastCommit(path string) (*object.Commit, error) {
 	return commit, nil
 }
 
+// ActualBranchName returns the name of the actual git branch.
 func ActualBranchName(path string) (string, error) {
 	// Open git repository
 	repo, err := git.PlainOpen(path)
@@ -73,6 +76,7 @@ func ActualBranchName(path string) (string, error) {
 	return ref.Name().Short(), nil
 }
 
+// Push will execute a git push.
 func Push(path string) error {
 	// Open git repository
 	repo, err := git.PlainOpen(path)

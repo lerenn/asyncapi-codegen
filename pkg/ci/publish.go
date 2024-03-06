@@ -8,10 +8,13 @@ import (
 )
 
 const (
-	// DockerImageName is the name of the docker image
+	// DockerImageName is the name of the docker image.
 	DockerImageName = "lerenn/asyncapi-codegen"
 )
 
+// Publish should publish tag on git repository and docker image(s) on Docker Hub
+// Note: if this is not 'main' branch, then it will just push docker image with
+// git tag.
 func Publish(ctx context.Context, client *dagger.Client, tag string) error {
 	if err := tagAndPush(tag); err != nil {
 		return err
