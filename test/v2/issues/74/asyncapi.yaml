@@ -1,0 +1,56 @@
+# Issue: https://github.com/lerenn/asyncapi-codegen/issues/74
+
+# It was failing when headers properties were defined as a reference to a schema
+# instead of a plain list of properties.
+
+asyncapi: 2.6.0
+info:
+  title: test
+  version: 1.0.0
+  description: test
+channels:
+  issue74.testChannel:
+    description: test channel
+    publish:
+      message:
+        $ref: '#/components/messages/Test'
+components:
+  messages:
+    Test:
+      description: test message
+      headers:
+        $ref: '#/components/schemas/Header'
+      payload:
+        oneOf:
+          - $ref: '#/components/schemas/TestSchema'
+  schemas:
+    Header:
+      type: object
+      description: header
+      required:
+        - version
+        - dateTime
+      properties:
+        version:
+          description: Schema version
+          type: string
+          example: '1.0.1'
+        dateTime:
+            description: Date in UTC format "YYYY-MM-DDThh:mm:ss.sZ".
+            example: '2023-09-15T20:15:58.0Z'
+            type: string
+            format: date-time
+    TestSchema:
+      type: object
+      required:
+        - obj1
+      properties:
+        obj1:
+          type: object
+          required:
+            - referenceId
+          properties:
+            referenceId:
+              description: reference ID.
+              type: string
+              example: "1234567890123456"

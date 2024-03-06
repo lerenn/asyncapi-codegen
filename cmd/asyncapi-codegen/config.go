@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/codegen"
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
 )
 
 var (
@@ -53,8 +53,8 @@ func ProcessFlags() Flags {
 }
 
 // ToCodegenOptions processes command line flags structure to code generation tool options.
-func (f Flags) ToCodegenOptions() (codegen.Options, error) {
-	opt := codegen.Options{
+func (f Flags) ToCodegenOptions() (options.Options, error) {
+	opt := options.Options{
 		OutputPath:        f.OutputPath,
 		PackageName:       f.PackageName,
 		DisableFormatting: f.DisableFormatting,

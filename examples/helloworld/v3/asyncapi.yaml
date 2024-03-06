@@ -1,0 +1,17 @@
+asyncapi: 3.0.0
+info:
+  title: Hello world application
+  version: '0.1.0'
+channels:
+  hello:
+    address: 'hello'
+    messages:
+      sayHello:
+        payload:
+          type: string
+          pattern: '^hello .+$'
+operations:
+  receiveHello:
+    action: 'receive'
+    channel:
+      $ref: '#/channels/hello'

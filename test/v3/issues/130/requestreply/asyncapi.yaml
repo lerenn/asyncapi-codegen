@@ -1,0 +1,101 @@
+asyncapi: 3.0.0
+info:
+  title: Ping/pong example with static reply channel
+  version: 1.0.0
+  description: Requester example that initiates the request/reply pattern on a different channel than the reply is using
+
+channels:
+    # Without correlation ID
+  ping:
+    address: issue130.ping
+    messages:
+      ping:
+        $ref: '#/components/messages/ping'
+  pong:
+    address: issue130.pong
+    messages:
+      pong:
+        $ref: '#/components/messages/pong'
+
+    # With correlation ID
+  pingWithID:
+    address: issue130.pingWithID
+    messages:
+      ping:
+        $ref: '#/components/messages/pingWithID'
+  pongWithID:
+    address: issue130.pongWithID
+    messages:
+      pong:
+        $ref: '#/components/messages/pongWithID'
+
+operations:
+    # Without correlation ID
+  ping:
+    action: receive
+    channel: 
+      $ref: '#/channels/ping'
+    reply:
+      channel: 
+        $ref: '#/channels/pong'
+
+  # With correlation ID
+  pingWithID:
+    action: receive
+    channel: 
+      $ref: '#/channels/pingWithID'
+    reply:
+      channel: 
+        $ref: '#/channels/pongWithID'
+
+components: 
+  messages:
+    # Without correlation ID
+    ping:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: ping
+    pong:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: pong
+
+    # With correlation ID
+    pingWithID:
+      headers:
+        type: object
+        properties:
+          correlationId:
+            description: Correlation ID set by user
+            type: string
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: ping
+      correlationId:
+        description: Default Correlation ID
+        location: $message.header#/correlationId
+    pongWithID:
+      headers:
+        type: object
+        properties:
+          correlationId:
+            description: Correlation ID set by user
+            type: string
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: pong
+      correlationId:
+        description: Default Correlation ID
+        location: $message.header#/correlationId

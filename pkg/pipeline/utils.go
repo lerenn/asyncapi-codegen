@@ -1,6 +1,8 @@
 package pipeline
 
 import (
+	"os"
+
 	"dagger.io/dagger"
 )
 
@@ -20,4 +22,35 @@ func sourceAsWorkdir(client *dagger.Client) func(r *dagger.Container) *dagger.Co
 			// Add workdir
 			WithWorkdir(containerDir)
 	}
+}
+
+func directoriesAtSublevel(sublevel int, path string) []string {
+	paths := make([]string, 0)
+
+	tests, err := os.ReadDir(path)
+	if err != nil {
+		panic(err)
+	}
+
+	if sublevel == 0 {
+		for _, t := range tests {
+			if !t.Type().IsDir() {
+				continue
+			}
+
+			paths = append(paths, path+"/"+t.Name())
+		}
+
+		return paths
+	}
+
+	for _, t := range tests {
+		if !t.Type().IsDir() {
+			continue
+		}
+
+		paths = append(paths, directoriesAtSublevel(sublevel-1, path+"/"+t.Name())...)
+	}
+
+	return paths
 }
