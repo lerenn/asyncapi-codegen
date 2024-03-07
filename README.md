@@ -5,7 +5,7 @@ to the application/user. Just plug your application to your favorite message bro
 
 ![AsyncAPI Codegen Preview](./assets/codegen-preview.svg)
 
-**⚠️ We do our best to progressively satisfy the entire AsyncAPI specification,
+**⚠️ We do our best to progressively satisfy the entire AsyncAPI specification,**
 **but some features may still be missing: please raise an issue on any bug or**
 **missing feature.**
 
