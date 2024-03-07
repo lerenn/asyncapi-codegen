@@ -1,0 +1,20 @@
+asyncapi: 3.0.0
+channels: 
+  userSignup:
+    address: issue130.user.{userId}.signedup
+    parameters:
+      userId:
+        description: Id of the user.
+    messages:
+      user:
+        payload:
+          type: object
+          properties:
+            name:
+              type: string
+
+operations:
+  ReceiveUserSignedUp:
+    action: receive
+    channel: 
+      $ref: '#/channels/userSignup'

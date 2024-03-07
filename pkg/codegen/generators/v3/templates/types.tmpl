@@ -1,0 +1,113 @@
+// AsyncAPIVersion is the version of the used AsyncAPI document
+const AsyncAPIVersion = "{{ .Info.Version }}"
+
+// controller is the controller that will be used to communicate with the broker
+// It will be used internally by AppController and UserController
+type controller struct {
+    // broker is the broker controller that will be used to communicate
+    broker extensions.BrokerController
+    // subscriptions is a map of all subscriptions
+    subscriptions map[string]extensions.BrokerChannelSubscription
+    // logger is the logger that will be used² to log operations on controller
+    logger           extensions.Logger
+    // middlewares are the middlewares that will be executed when sending or
+    // receiving messages
+    middlewares      []extensions.Middleware
+}
+
+// ControllerOption is the type of the options that can be passed
+// when creating a new Controller
+type ControllerOption func(controller *controller)
+
+// WithLogger attaches a logger to the controller
+func WithLogger(logger extensions.Logger) ControllerOption {
+    return func(controller *controller) {
+		controller.logger = logger
+	}
+}
+
+// WithMiddlewares attaches middlewares that will be executed when sending or receiving messages
+func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
+    return func(controller *controller) {
+		controller.middlewares = middlewares
+	}
+}
+
+type MessageWithCorrelationID interface {
+    CorrelationID() string
+    SetCorrelationID(id string)
+}
+
+type Error struct {
+    Channel string
+    Err     error
+}
+
+func (e *Error) Error() string {
+    return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
+}
+
+{{range $key, $value := .Channels -}}
+
+{{- if $value.Parameters -}}
+// {{ namifyWithoutParam .Name }}Parameters represents {{ namify .Name }} channel parameters
+type {{ namifyWithoutParam .Name }}Parameters struct {
+{{- range $key, $value := .Parameters}}
+    // {{ namify $key }} is a channel parameter {{- if $value.Description}}: {{multiLineComment $value.Description}}{{else}}.{{- end}}
+    {{ namify $key }} string
+{{- end}}
+}
+{{end}}
+
+{{- range $key, $value := $value.Messages}}
+{{template "message" $value}}
+{{end -}}
+
+{{- end}}
+
+{{/* NOTE: No need to generate messages from operation as they are only references */}}
+
+{{range $key, $value := .Components.Messages}}
+{{template "message" $value}}
+{{end}}
+
+{{range $key, $value := .Components.Schemas}}
+// {{namify $key}}Schema is a schema from the AsyncAPI specification required in messages
+{{if $value.Description -}}
+// Description: {{multiLineComment $value.Description}}
+{{end -}}
+type {{namify $key}}Schema {{template "schema" $value}}
+
+{{/* Create specific marshaling for time */ -}}
+{{- if or (eq $value.Format "date") (eq $value.Format "date-time") -}}
+// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
+func (t {{namify $key}}Schema) MarshalJSON() ([]byte, error) {
+    return json.Marshal(time.Time(t))
+}
+
+// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
+func (t *{{namify $key}}Schema) UnmarshalJSON(data []byte) error {
+    var timeFormat time.Time
+    if err := json.Unmarshal(data, &timeFormat);  err != nil {
+        return err
+    }
+
+    *t = {{namify $key}}Schema(timeFormat)
+    return nil
+}
+{{- end -}}
+{{- end}}
+
+const(
+{{- range $key, $value := .Channels}}
+    // {{ namifyWithoutParam .Follow.Name }}Path is the constant representing the '{{ .Follow.Name }}' channel path.
+    {{ namifyWithoutParam .Follow.Name }}Path = "{{ .Follow.Address }}"
+{{- end}}
+)
+
+// ChannelsPaths is an array of all channels paths
+var ChannelsPaths = []string{
+{{- range $key, $value := .Channels}}
+    {{ namifyWithoutParam .Follow.Name }}Path,
+{{- end}}
+}

@@ -1,0 +1,9 @@
+{{if .Operations.ReceiveCount -}}
+// {{ .Prefix }}Subscriber contains all handlers that are listening messages for {{ .Prefix }}
+type {{ .Prefix }}Subscriber interface {
+{{- range $key, $value := .Operations.Receive}}
+    // {{cutSuffix (opToMsgTypeName $value) "Message" }}ReceivedFrom{{opToChannelTypeName $value}} receive all {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+    {{cutSuffix (opToMsgTypeName $value) "Message" }}ReceivedFrom{{opToChannelTypeName $value}}(ctx context.Context, msg {{opToMsgTypeName $value}})
+{{end}}
+}
+{{- end}}

@@ -1,0 +1,15 @@
+asyncapi: 3.0.0
+info:
+  title: Trait example
+  version: 1.0.0
+components: 
+  messages:
+    UserSignup:
+      description: A longer description.
+      payload:
+        $ref: '#/components/schemas/userSignupPayload'
+      traits:
+        - name: UserSignup
+          title: User signup
+          summary: Action to sign a user up.
+          description: Description from trait.

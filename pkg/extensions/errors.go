@@ -15,10 +15,10 @@ var (
 	// ErrNilBrokerController is raised when a nil broker controller is user.
 	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
 
-	// ErrNilAppSubscriber is raised when a nil app subscriber is user.
+	// ErrNilAppSubscriber is raised when a nil app subscriber is used (asyncapiv2 only).
 	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
 
-	// ErrNilUserSubscriber is raised when a nil user subscriber is user.
+	// ErrNilUserSubscriber is raised when a nil user subscriber is used (asyncapiv2 only).
 	ErrNilUserSubscriber = fmt.Errorf("%w: nil user subscriber has been used", ErrAsyncAPI)
 
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
@@ -27,4 +27,7 @@ var (
 
 	// ErrSubscriptionCanceled is raised when expecting something and the subscription has been canceled before it happens.
 	ErrSubscriptionCanceled = fmt.Errorf("%w: the subscription has been canceled", ErrAsyncAPI)
+
+	// ErrNoCorrelationIDSet is raise when a correlation ID is expected, but none is detected.
+	ErrNoCorrelationIDSet = fmt.Errorf("%w: no correlation ID but one is expected", ErrAsyncAPI)
 )

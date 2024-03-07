@@ -1,0 +1,10 @@
+asyncapi: 2.6.0
+info:
+  title: Hello world application V1
+  version: '1.0.0'
+channels:
+  issue73.hello:
+    publish:
+      message:
+        payload:
+          type: string

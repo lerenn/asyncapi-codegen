@@ -1,0 +1,419 @@
+// {{ .Prefix }}Controller is the structure that provides sending capabilities to the
+// developer and and connect the broker with the {{ .Prefix }}
+type {{ .Prefix }}Controller struct {
+    controller
+}
+
+// New{{ .Prefix }}Controller links the {{ .Prefix }} to the broker
+func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...ControllerOption) (*{{ .Prefix }}Controller, error) {
+    // Check if broker controller has been provided
+    if bc == nil {
+        return nil, extensions.ErrNilBrokerController
+    }
+
+    // Create default controller
+    controller := controller{
+        broker:         bc,
+        subscriptions:  make(map[string]extensions.BrokerChannelSubscription),
+        logger:         extensions.DummyLogger{},
+        middlewares:    make([]extensions.Middleware, 0),
+    }
+
+    // Apply options
+    for _, option := range options {
+        option(&controller)
+    }
+
+    return &{{ .Prefix }}Controller{controller: controller}, nil
+}
+
+func (c {{ .Prefix }}Controller) wrapMiddlewares(
+    middlewares []extensions.Middleware,
+    callback extensions.NextMiddleware,
+) func(ctx context.Context, msg *extensions.BrokerMessage) error {
+    var called bool
+
+    // If there is no more middleware
+    if len(middlewares) == 0 {
+        return func(ctx context.Context, msg *extensions.BrokerMessage) error {
+            // Call the callback if it exists and it has not been called already
+            if callback != nil && !called {
+                called = true
+                return callback(ctx)
+            }
+
+            // Nil can be returned, as the callback has already been called
+            return nil
+        }
+    }
+
+    // Get the next function to call from next middlewares or callback
+    next := c.wrapMiddlewares(middlewares[1:], callback)
+
+    // Wrap middleware into a check function that will call execute the middleware
+    // and call the next wrapped middleware if the returned function has not been
+    // called already
+    return func(ctx context.Context, msg *extensions.BrokerMessage) error {
+        // Call the middleware and the following if it has not been done already
+        if !called {
+            // Create the next call with the context and the message
+            nextWithArgs := func(ctx context.Context) error {
+                return next(ctx, msg)
+            }
+
+            // Call the middleware and register it as already called
+            called = true
+            if err := middlewares[0](ctx, msg, nextWithArgs); err != nil {
+                return err
+            }
+
+            // If next has already been called in middleware, it should not be executed again
+            return nextWithArgs(ctx)
+        }
+
+        // Nil can be returned, as the next middleware has already been called
+        return nil
+    }
+}
+
+func (c {{ .Prefix }}Controller) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+    // Wrap middleware to have 'next' function when calling them
+    wrapped := c.wrapMiddlewares(c.middlewares, callback)
+
+    // Execute wrapped middlewares
+    return wrapped(ctx, msg)
+}
+
+func add{{ .Prefix }}ContextValues(ctx context.Context, addr string) context.Context {
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "{{ .Version }}")
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "{{ snakeCase .Prefix }}")
+    return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
+}
+
+// Close will clean up any existing resources on the controller
+func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
+    // Unsubscribing remaining channels
+{{if .Operations.ReceiveCount -}}
+    c.UnsubscribeFromAllChannels(ctx)
+
+    c.logger.Info(ctx, "Closed {{ snakeCase .Prefix }} controller")
+{{end -}}
+}
+
+{{if .Operations.ReceiveCount -}}
+// SubscribeToAllChannels will receive messages from channels where channel has
+// no parameter on which the app is expecting messages. For channels with parameters,
+// they should be subscribed independently.
+func (c *{{ .Prefix }}Controller) SubscribeToAllChannels(ctx context.Context, as {{ .Prefix }}Subscriber) error {
+    if as == nil {
+        return extensions.ErrNil{{ .Prefix }}Subscriber
+    }
+
+    {{range  $key, $value := .Operations.Receive -}}
+    {{- if not .Channel.Follow.Parameters }}
+    if err := c.SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx, as.{{cutSuffix (opToMsgTypeName $value) "Message" }}ReceivedFrom{{opToChannelTypeName $value}}); err != nil {
+        return err
+    }
+    {{- end}}
+    {{- end}}
+
+    return nil
+}
+
+// UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
+func (c *{{ .Prefix }}Controller) UnsubscribeFromAllChannels(ctx context.Context) {
+    {{- range  $key, $value := .Operations.Receive}}
+    {{- if not .Channel.Follow.Parameters}}
+    c.UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx)
+    {{- end}}
+    {{- end}}
+}
+{{- end}}
+
+{{range $key, $value := .Operations.Receive -}}
+// SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}} will receive {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+//
+// Callback function 'fn' will be called each time a new message is received.
+//
+// NOTE: for now, this only support the first message from AsyncAPI list.
+//
+// NOTE: for now, this only support the first message from AsyncAPI list.
+// If you need support for other messages, please raise an issue.
+{{- if .Channel.Follow.Parameters}}
+func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, fn func (ctx context.Context, msg {{opToMsgTypeName $value}})) error {
+{{- else}}
+func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context, fn func (ctx context.Context, msg {{opToMsgTypeName $value}})) error {
+{{- end }}
+    // Get channel address
+    addr := {{ generateChannelAddrFromOp $value }}
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
+
+    // Check if the controller is already subscribed
+    _, exists := c.subscriptions[addr]
+    if exists {
+        err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
+        c.logger.Error(ctx, err.Error())
+        return err
+    }
+
+    // Subscribe to broker channel
+    sub, err := c.broker.Subscribe(ctx, addr)
+    if err != nil {
+        c.logger.Error(ctx, err.Error())
+        return err
+    }
+    c.logger.Info(ctx, "Subscribed to channel")
+
+    // Asynchronously listen to new messages and pass them to app receiver
+    go func() {
+        for {
+            // Wait for next message
+            brokerMsg, open := <-sub.MessagesChannel()
+
+            // If subscription is closed and there is no more message
+            // (i.e. uninitialized message), then exit the function
+            if !open && brokerMsg.IsUninitialized() {
+                return
+            }
+
+            // Set broker message to context
+            ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+
+            // Execute middlewares before handling the message
+            if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+                // Process message
+                msg, err := new{{opToMsgTypeName $value}}FromBrokerMessage(brokerMsg)
+                if err != nil {
+                    return err
+                }
+
+                {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+                    // Add correlation ID to context if it exists
+                    if id := msg.CorrelationID(); id != "" {
+                        ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
+                    }
+                {{- end}}
+
+                // Execute the subscription function
+                fn(ctx, msg)
+
+                return nil
+            }); err != nil {
+                c.logger.Error(ctx, err.Error())
+            }
+        }
+    } ()
+
+    // Add the cancel channel to the inside map
+    c.subscriptions[addr] = sub
+
+    return nil
+}
+
+{{- if .Reply }}
+// ReplyTo{{cutSuffix (opToMsgTypeName $value) "Message" }}With{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}} is a helper function to
+// reply to a {{cutSuffix (opToMsgTypeName $value) "Message"}} message with a {{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message"}} message on {{cutSuffix (opToChannelTypeName $value.ReplyIs) "Channel"}} channel.
+func (c *{{ $.Prefix }}Controller) ReplyTo{{cutSuffix (opToMsgTypeName $value) "Message" }}With{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}(ctx context.Context, recvMsg {{opToMsgTypeName $value}}, fn func(replyMsg *{{opToMsgTypeName $value.ReplyIs}})) error {
+    // Create reply message
+    replyMsg := New{{opToMsgTypeName $value.ReplyIs }}()
+    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+	replyMsg.SetAsResponseFrom(&recvMsg)
+    {{- end}}
+
+    // Execute callback function 
+    fn(&replyMsg)
+
+    // Publish reply
+    return c.Publish{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}(ctx, replyMsg)
+}
+
+{{end -}}
+
+// UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}} will stop the reception of {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+// A timeout can be set in context to avoid blocking operation, if needed.
+{{- if .Channel.Follow.Parameters}}
+func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters) {
+{{- else}}
+func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context) {
+{{- end}}
+    // Get channel address
+    addr := {{ generateChannelAddrFromOp $value }}
+
+    // Check if there receivers for this channel
+    sub, exists := c.subscriptions[addr]
+    if !exists {
+        return
+    }
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
+
+    // Stop the subscription
+    sub.Cancel(ctx)
+
+    // Remove if from the receivers
+    delete(c.subscriptions, addr)
+
+    c.logger.Info(ctx, "Unsubscribed from channel")
+}
+{{- end}}
+
+{{- range  $key, $value := .Operations.Send}}
+
+// Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+{{if .Reply}}// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.{{end}}
+//
+// NOTE: for now, this only support the first message from AsyncAPI list.
+// If you need support for other messages, please raise an issue.
+{{- if .Channel.Follow.Parameters }}
+func (c *{{ $.Prefix }}Controller) Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, msg {{opToMsgTypeName $value}}) error {
+{{- else }}
+func (c *{{ $.Prefix }}Controller) Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx context.Context, msg {{opToMsgTypeName $value}}) error {
+{{- end }}
+    // Get channel address
+    addr := {{ generateChannelAddrFromOp $value }}
+
+    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+    // Set correlation ID if it does not exist
+    if id := msg.CorrelationID(); id == "" {
+        {{if .ReplyOf -}}
+        c.logger.Error(ctx, extensions.ErrNoCorrelationIDSet.Error())
+        return extensions.ErrNoCorrelationIDSet
+        {{else -}}
+        msg.SetCorrelationID(uuid.New().String())
+        {{- end}}
+    }
+    {{- end}}
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
+    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
+    {{- end}}
+
+    // Convert to BrokerMessage
+    brokerMsg, err := msg.toBrokerMessage()
+    if err != nil  {
+        return err
+    }
+
+    // Set broker message to context
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+
+    // Send the message on event-broker through middlewares
+    return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+        return c.broker.Publish(ctx, addr, brokerMsg)
+    })
+}
+
+
+{{if .Reply -}}
+
+// Request{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}With{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel
+// and wait for a {{ cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }} message from {{ cutSuffix (opToChannelTypeName $value.ReplyIs) "Channel" }} channel.
+//
+// If a correlation ID is set in the AsyncAPI, then this will wait for the
+// reply with the same correlation ID. Otherwise, it will returns the first
+// message on the reply channel.
+//
+// A timeout can be set in context to avoid blocking operation, if needed.
+{{- if .Channel.Follow.Parameters}}
+func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}With{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, msg {{opToMsgTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
+{{- else}}
+func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}With{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx context.Context, msg {{opToMsgTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
+{{- end}}
+    // Get receiving channel address
+    addr := {{ generateChannelAddr .Reply.Channel }}
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
+
+    // Subscribe to broker channel
+    sub, err := c.broker.Subscribe(ctx, addr)
+    if err != nil {
+        c.logger.Error(ctx, err.Error())
+        return {{channelToMessageTypeName .Reply.Channel}}{}, err
+    }
+    c.logger.Info(ctx, "Subscribed to channel")
+
+    // Close receiver on leave
+    defer func(){
+        // Stop the subscription
+        sub.Cancel(ctx)
+
+        // Logging unsubscribing
+        c.logger.Info(ctx, "Unsubscribed from channel")
+    } ()
+
+    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+    // Set correlation ID if it does not exist
+    if id := msg.CorrelationID(); id == "" {
+        msg.SetCorrelationID(uuid.New().String())
+    }
+    {{- end}}
+
+    // Send the message 
+    if err := c.Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx, {{- if .Channel.Follow.Parameters}}params,{{- end}} msg); err != nil {
+        c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
+        return {{channelToMessageTypeName .Reply.Channel}}{}, fmt.Errorf("error happened when sending message: %w", err)
+    }
+
+    // Wait for corresponding response
+    for {
+        select {
+        case brokerMsg, open := <-sub.MessagesChannel():
+            // If subscription is closed and there is no more message
+            // (i.e. uninitialized message), then the subscription ended before
+            // receiving the expected message
+            if !open && brokerMsg.IsUninitialized() {
+                c.logger.Error(ctx, "Channel closed before getting message")
+                return {{channelToMessageTypeName .Reply.Channel}}{}, extensions.ErrSubscriptionCanceled
+            }
+
+            {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+            // Get new message
+            rmsg, err := new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(brokerMsg)
+            if err != nil {
+                c.logger.Error(ctx, err.Error())
+            }
+
+            // If message doesn't have corresponding correlation ID, then ingore and continue
+            if msg.CorrelationID() != rmsg.CorrelationID() {
+                continue
+            }
+            {{- else}}
+            // There is correlation no ID, so it will automatically return at
+            // the first received message.
+            {{- end}}
+
+            // Set context with received values as it is the expected message
+            msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
+            {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+            msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
+            {{- end}}
+
+            // Execute middlewares before returning
+            if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
+                return {{channelToMessageTypeName .Reply.Channel}}{}, err
+            }
+
+            // Return the message to the caller
+            //
+            // NOTE: it is transformed from the broker again, as it could have
+            // been modified by middlewares
+            return new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(brokerMsg)
+        case <-ctx.Done(): // Set corrsponding error if context is done
+            c.logger.Error(ctx, "Context done before getting message")
+            return {{channelToMessageTypeName .Reply.Channel}}{}, extensions.ErrContextCanceled
+        }
+    }
+}
+
+{{- end}}
+
+{{- end}}
