@@ -5,7 +5,7 @@ to the application/user. Just plug your application to your favorite message bro
 
 ![AsyncAPI Codegen Preview](./assets/codegen-preview.svg)
 
-**⚠️ We do our best to progressively satisfy the entire AsyncAPI specification,
+**⚠️ We do our best to progressively satisfy the entire AsyncAPI specification,**
 **but some features may still be missing: please raise an issue on any bug or**
 **missing feature.**
 
@@ -70,6 +70,14 @@ at the beginning of your file:
 
 ```golang
 //go:generate go run github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@<version> -i ./asyncapi.yaml -p <your-package> -o ./asyncapi.gen.go
+```
+
+### Docker image
+
+You can also use the dockerized version of this tool:
+
+```bash
+docker run -v .:/code -w /code lerenn/asyncapi-codegen asyncapi-codegen -i ./asyncapi.yaml -p <your-package> -o ./asyncapi.gen.go
 ```
 
 ## Concepts

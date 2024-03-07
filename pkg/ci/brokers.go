@@ -1,4 +1,4 @@
-package pipeline
+package ci
 
 import "dagger.io/dagger"
 
