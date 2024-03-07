@@ -104,7 +104,7 @@ var publishCmd = &cobra.Command{
 	Aliases: []string{"p"},
 	Short:   "Tag and publish to different repositories.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return ci.Publish(context.Background(), client, "0.0.0")
+		return ci.Publish(context.Background(), client, tagFlag)
 	},
 }
 
