@@ -2,6 +2,7 @@ package git
 
 import (
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
@@ -76,13 +77,18 @@ func ActualBranchName(path string) (string, error) {
 	return ref.Name().Short(), nil
 }
 
-// Push will execute a git push.
-func Push(path string) error {
+// PushTags will execute a git push with tags.
+func PushTags(path, tag string) error {
 	// Open git repository
 	repo, err := git.PlainOpen(path)
 	if err != nil {
 		return err
 	}
 
-	return repo.Push(&git.PushOptions{})
+	return repo.Push(&git.PushOptions{
+		RemoteName: "origin",
+		RefSpecs: []config.RefSpec{
+			config.RefSpec("+refs/tags/" + tag + ":refs/tags/" + tag),
+		},
+	})
 }

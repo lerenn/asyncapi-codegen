@@ -41,7 +41,7 @@ func tagAndPush(tag string) error {
 	}
 
 	// Push the result
-	return git.Push(".")
+	return git.PushTags(".", tag)
 }
 
 func publishDocker(ctx context.Context, client *dagger.Client, tag string) error {
