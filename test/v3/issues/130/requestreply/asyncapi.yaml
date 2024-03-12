@@ -1,8 +1,6 @@
 asyncapi: 3.0.0
 info:
-  title: Ping/pong example with static reply channel
-  version: 1.0.0
-  description: Requester example that initiates the request/reply pattern on a different channel than the reply is using
+  title: Request Reply
 
 channels:
     # Without correlation ID

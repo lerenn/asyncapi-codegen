@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"dagger.io/dagger"
@@ -114,9 +115,13 @@ var testCmd = &cobra.Command{
 	Short:   "Execute tests step of the CI",
 	Run: func(cmd *cobra.Command, args []string) {
 		if testFlag != "" {
+			if !strings.HasPrefix(testFlag, "./") {
+				testFlag = "./" + testFlag
+			}
+
 			_, exists := tests[testFlag]
 			if !exists {
-				panic(fmt.Errorf("test %q doesn't exist", testFlag))
+				panic(fmt.Errorf("test %q doesn't exist in %+v", testFlag, tests))
 			}
 			executeContainers(context.Background(), []*dagger.Container{tests[testFlag]})
 		} else {
