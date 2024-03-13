@@ -228,7 +228,6 @@ func (c *{{ $.Prefix }}Controller) ReplyTo{{cutSuffix (opToMsgTypeName $value) "
 
     // Publish reply
     {{- /* Use reply address if needed */}}
-    // "{{ .Reply.Address }}" and "{{ .Reply.Channel.Address }}" 
     {{- if and .Reply.Address (eq .Reply.Channel.Address "") }}
         {{- if .Reply.Address.LocationRequired }}
             chanAddr := recvMsg.{{referenceToStructAttributePath .Reply.Address.Location}}

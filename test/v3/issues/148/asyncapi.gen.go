@@ -217,7 +217,6 @@ func (c *AppController) ReplyToRequestWithReplyOnReplyChannel(ctx context.Contex
 	fn(&replyMsg)
 
 	// Publish reply
-	// "{ $message.header#/replyTo  GetServiceInfoOperationReplyAddress <nil> <nil> false}" and ""
 	if recvMsg.Headers.ReplyTo == nil {
 		return fmt.Errorf("%w: $message.header#/replyTo is empty", extensions.ErrChannelAddressEmpty)
 	}
