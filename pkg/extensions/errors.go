@@ -32,6 +32,6 @@ var (
 	ErrNoCorrelationIDSet = fmt.Errorf("%w: no correlation ID but one is expected", ErrAsyncAPI)
 
 	// ErrChannelAddressEmpty is raised when a given channel address is empty,
-	// when dynamicaly set from message.
+	// when dynamically set from message.
 	ErrChannelAddressEmpty = fmt.Errorf("%w: channel address empty", ErrAsyncAPI)
 )

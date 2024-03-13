@@ -350,6 +350,7 @@ func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) {
 	msg.Examples = append(msg.Examples, mt.Examples...)
 }
 
+// HaveCorrelationID check that the message have a correlation ID.
 func (msg Message) HaveCorrelationID() bool {
 	return msg.Follow().CorrelationID.Exists()
 }

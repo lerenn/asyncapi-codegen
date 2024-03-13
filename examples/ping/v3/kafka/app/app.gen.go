@@ -257,8 +257,11 @@ func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) 
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongOnPongChannel(ctx context.Context, msg PongMessage) error {
-	// Get channel address
+func (c *AppController) PublishPongOnPongChannel(
+	ctx context.Context,
+	msg PongMessage,
+) error {
+	// Set channel address
 	addr := "pong.v3"
 
 	// Set correlation ID if it does not exist

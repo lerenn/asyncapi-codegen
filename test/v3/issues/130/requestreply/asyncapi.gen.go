@@ -373,7 +373,7 @@ func (c *AppController) PublishPongOnPongChannel(
 	ctx context.Context,
 	msg PongMessage,
 ) error {
-	// Get channel address
+	// Set channel address
 	addr := "issue130.pong"
 
 	// Set context
@@ -403,7 +403,7 @@ func (c *AppController) PublishPongWithIDOnPongWithIDChannel(
 	ctx context.Context,
 	msg PongWithIDMessage,
 ) error {
-	// Get channel address
+	// Set channel address
 	addr := "issue130.pongWithID"
 
 	// Set correlation ID if it does not exist
@@ -539,7 +539,7 @@ func (c *UserController) PublishPingOnPingChannel(
 	ctx context.Context,
 	msg PingMessage,
 ) error {
-	// Get channel address
+	// Set channel address
 	addr := "issue130.ping"
 
 	// Set context
@@ -569,7 +569,11 @@ func (c *UserController) PublishPingOnPingChannel(
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(ctx context.Context, msg PingMessage) (PongMessage, error) {
+
+func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
+	ctx context.Context,
+	msg PingMessage,
+) (PongMessage, error) {
 	// Get receiving channel address
 	addr := "issue130.pong"
 
@@ -644,7 +648,7 @@ func (c *UserController) PublishPingWithIDOnPingWithIDChannel(
 	ctx context.Context,
 	msg PingWithIDMessage,
 ) error {
-	// Get channel address
+	// Set channel address
 	addr := "issue130.pingWithID"
 
 	// Set correlation ID if it does not exist
@@ -680,7 +684,11 @@ func (c *UserController) PublishPingWithIDOnPingWithIDChannel(
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel(ctx context.Context, msg PingWithIDMessage) (PongWithIDMessage, error) {
+
+func (c *UserController) RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel(
+	ctx context.Context,
+	msg PingWithIDMessage,
+) (PongWithIDMessage, error) {
 	// Get receiving channel address
 	addr := "issue130.pongWithID"
 

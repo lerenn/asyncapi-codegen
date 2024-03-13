@@ -115,8 +115,11 @@ func (c *UserController) Close(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingOnPingChannel(ctx context.Context, msg PingMessage) error {
-	// Get channel address
+func (c *UserController) PublishPingOnPingChannel(
+	ctx context.Context,
+	msg PingMessage,
+) error {
+	// Set channel address
 	addr := "ping.v3"
 
 	// Set correlation ID if it does not exist
@@ -152,7 +155,11 @@ func (c *UserController) PublishPingOnPingChannel(ctx context.Context, msg PingM
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(ctx context.Context, msg PingMessage) (PongMessage, error) {
+
+func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
+	ctx context.Context,
+	msg PingMessage,
+) (PongMessage, error) {
 	// Get receiving channel address
 	addr := "pong.v3"
 

@@ -34,6 +34,7 @@ func (c *CorrelationID) Process(path string, spec Specification) {
 	}
 }
 
+// Exists checks that the correlation exists (and that the location is set).
 func (c *CorrelationID) Exists() bool {
 	return c != nil && c.Location != ""
 }

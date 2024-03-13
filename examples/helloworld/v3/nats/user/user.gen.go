@@ -111,8 +111,11 @@ func (c *UserController) Close(ctx context.Context) {
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishSayHelloOnHelloChannel(ctx context.Context, msg SayHelloMessage) error {
-	// Get channel address
+func (c *UserController) PublishSayHelloOnHelloChannel(
+	ctx context.Context,
+	msg SayHelloMessage,
+) error {
+	// Set channel address
 	addr := "hello"
 
 	// Set context
