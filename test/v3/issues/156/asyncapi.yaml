@@ -1,0 +1,16 @@
+asyncapi: 3.0.0
+
+components:
+  messages:
+    Testing:
+      payload:
+        $ref: "#/components/schemas/Test"
+  schemas:
+    Test:
+      type: object
+      properties:
+        subtest:
+          $ref: "#/components/schemas/SubTest"
+
+    SubTest:
+      type: string

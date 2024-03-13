@@ -68,13 +68,6 @@ func GenerateChannelAddrFromOp(op asyncapi.Operation) string {
 	return GenerateChannelAddr(ch)
 }
 
-// ReferenceToTypeName will convert a reference to a type name in the form of
-// golang conventional type names.
-func ReferenceToTypeName(ref string) string {
-	parts := strings.Split(ref, "/")
-	return templateutil.Namify(parts[3])
-}
-
 // GenerateChannelAddr will generate a channel path with the given channel.
 func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	// Be sure this is the final channel, not a proxy
@@ -109,6 +102,5 @@ func HelpersFunctions() template.FuncMap {
 		"generateChannelAddr":            GenerateChannelAddr,
 		"generateChannelAddrFromOp":      GenerateChannelAddrFromOp,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
-		"referenceToTypeName":            ReferenceToTypeName,
 	}
 }
