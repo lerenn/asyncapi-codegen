@@ -58,3 +58,11 @@ func (ot *OperationTrait) Process(name string, spec Specification) {
 	// Process bindings if there is one
 	ot.Bindings.Process(name+BindingsSuffix, spec)
 }
+
+// Follow returns referenced MessageTrait if specified or the actual MessageTrait.
+func (ot *OperationTrait) Follow() *OperationTrait {
+	if ot.ReferenceTo != nil {
+		return ot.ReferenceTo
+	}
+	return ot
+}

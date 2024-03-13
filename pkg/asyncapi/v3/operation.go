@@ -41,7 +41,7 @@ type Operation struct {
 	Tags         []*Tag                 `json:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs"`
 	Bindings     *OperationBindings     `json:"bindings"`
-	Traits       *OperationTrait        `json:"traits"`
+	Traits       []*OperationTrait      `json:"traits"`
 	Messages     []*Message             `json:"messages"` // References only
 	Reply        *OperationReply        `json:"reply"`
 	Reference    string                 `json:"$ref"`
@@ -83,8 +83,11 @@ func (op *Operation) Process(name string, spec Specification) {
 	// Process bindings if there is one
 	op.Bindings.Process(name+BindingsSuffix, spec)
 
-	// Process traits if there is one
-	op.Traits.Process(name+"Traits", spec)
+	// Process traits and apply them
+	for i, t := range op.Traits {
+		t.Process(fmt.Sprintf("%sTrait%d", op.Name, i), spec)
+		op.ApplyTrait(t.Follow(), spec)
+	}
 
 	// Process messages
 	for i, msg := range op.Messages {
