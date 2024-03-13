@@ -1,0 +1,7 @@
+asyncapi: 3.0.0
+
+components:
+  schemas:
+    Testing:
+      type: integer
+      default: 10
