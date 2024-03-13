@@ -30,7 +30,7 @@ type Schema struct {
 	MinProperties        uint               `json:"minProperties"`
 	Enum                 []any              `json:"enum"`
 	Const                any                `json:"const"`
-	Examples             map[string]any     `json:"examples"`
+	Examples             []any              `json:"examples"`
 	ReadOnly             bool               `json:"readOnly"`
 	WriteOnly            bool               `json:"writeOnly"`
 	Properties           map[string]*Schema `json:"properties"`
