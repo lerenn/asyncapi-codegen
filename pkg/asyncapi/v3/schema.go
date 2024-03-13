@@ -49,7 +49,7 @@ type Schema struct {
 
 	Description string `json:"description"`
 	Format      string `json:"format"`
-	Default     string `json:"default"`
+	Default     any    `json:"default"`
 
 	Reference string `json:"$ref"`
 
