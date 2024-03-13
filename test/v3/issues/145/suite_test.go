@@ -4,6 +4,7 @@ package issue145
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
@@ -56,10 +57,10 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 	err := suite.app.SubscribeToPingFromPingChannel(
 		context.Background(),
 		func(ctx context.Context, ping PingMessage) {
-			err := suite.app.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
+			callbackErr := suite.app.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
 				pong.Payload.Event = ping.Payload.Event
 			})
-			suite.Require().NoError(err)
+			suite.Require().NoError(callbackErr)
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromPingFromPingChannel(context.Background())
@@ -67,7 +68,7 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 	// Set a new ping
 	var msg PingMessage
 	msg.Payload.Event = utils.ToPointer("testing")
-	msg.Headers.ReplyTo = utils.ToPointer("pong.1234")
+	msg.Headers.ReplyTo = utils.ToPointer("issue145.pong.1234")
 
 	// Send a request
 	resp, err := suite.user.RequestPongOnPongChannelWithPingOnPingChannel(context.Background(), msg)
@@ -77,10 +78,45 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 	suite.Require().Equal(*msg.Payload.Event, *resp.Payload.Event)
 }
 
-func (suite *Suite) TestRequestReplyWithManualReply() {
-	// TODO
-}
-
 func (suite *Suite) TestRequestReplyOnRawChannel() {
-	// TODO
+	// Listen for pings on the application
+	err := suite.app.SubscribeToPingFromPingChannel(
+		context.Background(),
+		func(ctx context.Context, ping PingMessage) {
+			callbackErr := suite.app.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
+				pong.Payload.Event = ping.Payload.Event
+			})
+			suite.Require().NoError(callbackErr)
+		})
+	suite.Require().NoError(err)
+	defer suite.app.UnsubscribeFromPingFromPingChannel(context.Background())
+
+	// Listen directly for reply from the broker
+	sub, err := suite.broker.Subscribe(context.Background(), "issue145.pong.2345")
+	suite.Require().NoError(err)
+	defer sub.Cancel(context.Background())
+
+	var wg sync.WaitGroup
+	go func() {
+		rawReply := <-sub.MessagesChannel()
+		reply, err := newPongMessageFromBrokerMessage(rawReply)
+		suite.Require().NoError(err)
+		suite.Require().NotNil(reply.Payload.Event)
+		suite.Require().Equal("testing.2345", *reply.Payload.Event)
+
+		wg.Done()
+	}()
+	wg.Add(1)
+
+	// Set a new ping
+	var msg PingMessage
+	msg.Payload.Event = utils.ToPointer("testing.2345")
+	msg.Headers.ReplyTo = utils.ToPointer("issue145.pong.2345")
+
+	// Send a request
+	err = suite.user.PublishPingOnPingChannel(context.Background(), msg)
+	suite.Require().NoError(err)
+
+	// Wait for the end
+	wg.Wait()
 }

@@ -50,8 +50,6 @@ func (c *Components) Process(spec Specification) {
 	processMap(spec, c.ServerVariables, "ServerVariable")
 	processMap(spec, c.Parameters, "Parameter")
 	processMap(spec, c.CorrelationIDs, "CorrelationID")
-	processMap(spec, c.Replies, "Reply")
-	processMap(spec, c.ReplyAddresses, "ReplyAddress")
 	processMap(spec, c.ExternalDocs, ExternalDocsNameSuffix)
 	processMap(spec, c.Tags, "Tag")
 	processMap(spec, c.OperationTraits, "OperationTrait")
@@ -60,4 +58,12 @@ func (c *Components) Process(spec Specification) {
 	processMap(spec, c.ChannelBindings, "ChannelBinding")
 	processMap(spec, c.OperationBindings, "OperationBinding")
 	processMap(spec, c.MessageBindings, "MessageBinding")
+
+	for name, reply := range c.Replies {
+		reply.Process(name+"Reply", &Operation{}, spec)
+	}
+
+	for name, repAddr := range c.ReplyAddresses {
+		repAddr.Process(name+"ReplyAddress", &Operation{}, spec)
+	}
 }

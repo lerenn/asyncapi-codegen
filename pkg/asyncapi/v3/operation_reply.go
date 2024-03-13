@@ -24,7 +24,7 @@ type OperationReply struct {
 }
 
 // Process processes the OperationReply to make it ready for code generation.
-func (or *OperationReply) Process(name string, spec Specification) {
+func (or *OperationReply) Process(name string, op *Operation, spec Specification) {
 	// Prevent modification if nil
 	if or == nil {
 		return
@@ -45,4 +45,7 @@ func (or *OperationReply) Process(name string, spec Specification) {
 	for i, msg := range or.Messages {
 		msg.Process(fmt.Sprintf("%s%d", name, i), spec)
 	}
+
+	// Process address
+	or.Address.Process(name+"Address", op, spec)
 }

@@ -33,3 +33,7 @@ func (c *CorrelationID) Process(path string, spec Specification) {
 		c.ReferenceTo = spec.ReferenceChannel(c.Reference)
 	}
 }
+
+func (c *CorrelationID) Exists() bool {
+	return c != nil && c.Location != ""
+}

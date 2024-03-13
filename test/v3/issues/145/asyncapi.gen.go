@@ -147,7 +147,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 // If you need support for other messages, please raise an issue.
 func (c *AppController) SubscribeToPingFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
 	// Get channel address
-	addr := "/ping"
+	addr := "ping"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -218,14 +218,19 @@ func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, re
 	fn(&replyMsg)
 
 	// Publish reply
-	return c.PublishPongOnPongChannel(ctx, replyMsg)
+	if recvMsg.Headers.ReplyTo == nil {
+		return fmt.Errorf("%w: $message.header#/replyTo is empty", extensions.ErrChannelAddressEmpty)
+	}
+	chanAddr := *recvMsg.Headers.ReplyTo
+
+	return c.PublishPongOnPongChannel(ctx, chanAddr, replyMsg)
 }
 
 // UnsubscribeFromPingFromPingChannel will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) {
 	// Get channel address
-	addr := "/ping"
+	addr := "ping"
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -249,9 +254,13 @@ func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) 
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongOnPongChannel(ctx context.Context, msg PongMessage) error {
-	// Get channel address
-	addr := ""
+func (c *AppController) PublishPongOnPongChannel(
+	ctx context.Context,
+	chanAddr string,
+	msg PongMessage,
+) error {
+	// Set channel address
+	addr := chanAddr
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -374,9 +383,12 @@ func (c *UserController) Close(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingOnPingChannel(ctx context.Context, msg PingMessage) error {
-	// Get channel address
-	addr := "/ping"
+func (c *UserController) PublishPingOnPingChannel(
+	ctx context.Context,
+	msg PingMessage,
+) error {
+	// Set channel address
+	addr := "ping"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -405,9 +417,16 @@ func (c *UserController) PublishPingOnPingChannel(ctx context.Context, msg PingM
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(ctx context.Context, msg PingMessage) (PongMessage, error) {
+
+func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
+	ctx context.Context,
+	msg PingMessage,
+) (PongMessage, error) {
 	// Get receiving channel address
-	addr := ""
+	if msg.Headers.ReplyTo == nil {
+		return PongMessage{}, fmt.Errorf("%w: $message.header#/replyTo is empty", extensions.ErrChannelAddressEmpty)
+	}
+	addr := *msg.Headers.ReplyTo
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -681,7 +700,7 @@ func (msg PongMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 
 const (
 	// PingChannelPath is the constant representing the 'PingChannel' channel path.
-	PingChannelPath = "/ping"
+	PingChannelPath = "ping"
 	// PongChannelPath is the constant representing the 'PongChannel' channel path.
 	PongChannelPath = ""
 )

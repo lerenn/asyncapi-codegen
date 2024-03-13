@@ -76,8 +76,8 @@ func (suite *Suite) TestRequestReplyWithID() {
 			respMsg.Payload.Event = msg.Payload.Event
 
 			// Send response
-			err := suite.app.PublishPongWithIDOnPongWithIDChannel(ctx, respMsg)
-			suite.Require().NoError(err)
+			callbackErr := suite.app.PublishPongWithIDOnPongWithIDChannel(ctx, respMsg)
+			suite.Require().NoError(callbackErr)
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromPingWithIDFromPingWithIDChannel(context.Background())

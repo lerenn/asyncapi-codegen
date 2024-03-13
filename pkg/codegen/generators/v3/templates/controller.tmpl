@@ -190,7 +190,7 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $valu
                     return err
                 }
 
-                {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+                {{if $value.GetMessage.HaveCorrelationID -}}
                     // Add correlation ID to context if it exists
                     if id := msg.CorrelationID(); id != "" {
                         ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, id)
@@ -219,7 +219,7 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $valu
 func (c *{{ $.Prefix }}Controller) ReplyTo{{cutSuffix (opToMsgTypeName $value) "Message" }}With{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}(ctx context.Context, recvMsg {{opToMsgTypeName $value}}, fn func(replyMsg *{{opToMsgTypeName $value.ReplyIs}})) error {
     // Create reply message
     replyMsg := New{{opToMsgTypeName $value.ReplyIs }}()
-    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+    {{if $value.GetMessage.HaveCorrelationID -}}
 	replyMsg.SetAsResponseFrom(&recvMsg)
     {{- end}}
 
@@ -227,7 +227,21 @@ func (c *{{ $.Prefix }}Controller) ReplyTo{{cutSuffix (opToMsgTypeName $value) "
     fn(&replyMsg)
 
     // Publish reply
-    return c.Publish{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}(ctx, replyMsg)
+    {{- /* Use reply address if needed */}}
+    {{- if and .Reply.Address (eq .Reply.Channel.Address "") }}
+        {{- if .Reply.Address.LocationRequired }}
+            chanAddr := recvMsg.{{referenceToStructAttributePath .Reply.Address.Location}}
+        {{- else }}
+            if recvMsg.{{referenceToStructAttributePath .Reply.Address.Location}} == nil {
+                return fmt.Errorf("%w: {{.Reply.Address.Location}} is empty", extensions.ErrChannelAddressEmpty)
+            }
+            chanAddr := *recvMsg.{{referenceToStructAttributePath .Reply.Address.Location}}
+        {{- end }}
+
+        return c.Publish{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}(ctx, chanAddr, replyMsg)
+    {{- else }}
+        return c.Publish{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}(ctx, replyMsg)
+    {{- end }}
 }
 
 {{end -}}
@@ -268,15 +282,24 @@ func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{cutSuffix (opToMsgTypeName $
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-{{- if .Channel.Follow.Parameters }}
-func (c *{{ $.Prefix }}Controller) Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, msg {{opToMsgTypeName $value}}) error {
-{{- else }}
-func (c *{{ $.Prefix }}Controller) Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx context.Context, msg {{opToMsgTypeName $value}}) error {
-{{- end }}
-    // Get channel address
-    addr := {{ generateChannelAddrFromOp $value }}
+func (c *{{ $.Prefix }}Controller) Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(
+    ctx context.Context,
+    {{- if .Channel.Follow.Parameters }}
+        params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
+    {{- end}}
+    {{- if eq .Channel.Follow.Address "" }}
+        chanAddr string,
+    {{- end}}
+    msg {{opToMsgTypeName $value}},
+) error {
+    // Set channel address
+    {{- if eq .Channel.Follow.Address "" }}
+        addr := chanAddr
+    {{- else }}
+        addr := {{ generateChannelAddrFromOp $value }}
+    {{- end }}
 
-    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+    {{if $value.GetMessage.HaveCorrelationID -}}
     // Set correlation ID if it does not exist
     if id := msg.CorrelationID(); id == "" {
         {{if .ReplyOf -}}
@@ -291,7 +314,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{cutSuffix (opToMsgTypeName $value) "
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
     ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
-    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+    {{if $value.GetMessage.HaveCorrelationID -}}
     ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
     {{- end}}
 
@@ -321,13 +344,27 @@ func (c *{{ $.Prefix }}Controller) Publish{{cutSuffix (opToMsgTypeName $value) "
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-{{- if .Channel.Follow.Parameters}}
-func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}With{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, msg {{opToMsgTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
-{{- else}}
-func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}With{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx context.Context, msg {{opToMsgTypeName $value}}) ({{channelToMessageTypeName .Reply.Channel}}, error) {
-{{- end}}
+
+func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}With{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(
+    ctx context.Context,
+    {{- if .Channel.Follow.Parameters}}
+    params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
+    {{- end}}
+    msg {{opToMsgTypeName $value}},
+) ({{channelToMessageTypeName .Reply.Channel}}, error) {
     // Get receiving channel address
-    addr := {{ generateChannelAddr .Reply.Channel }}
+    {{- if and .Reply.Address (eq .Reply.Channel.Address "") }}
+        {{- if .Reply.Address.LocationRequired }}
+            addr := msg.{{referenceToStructAttributePath .Reply.Address.Location}}
+        {{- else }}
+            if msg.{{referenceToStructAttributePath .Reply.Address.Location}} == nil {
+                return {{channelToMessageTypeName .Reply.Channel}}{}, fmt.Errorf("%w: {{.Reply.Address.Location}} is empty", extensions.ErrChannelAddressEmpty)
+            }
+            addr := *msg.{{referenceToStructAttributePath .Reply.Address.Location}}
+        {{- end }}
+    {{- else }}
+        addr := {{ generateChannelAddr .Reply.Channel }}
+    {{- end }}
 
     // Set context
     ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
@@ -349,7 +386,7 @@ func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.Re
         c.logger.Info(ctx, "Unsubscribed from channel")
     } ()
 
-    {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+    {{if $value.GetMessage.HaveCorrelationID -}}
     // Set correlation ID if it does not exist
     if id := msg.CorrelationID(); id == "" {
         msg.SetCorrelationID(uuid.New().String())
@@ -374,7 +411,7 @@ func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.Re
                 return {{channelToMessageTypeName .Reply.Channel}}{}, extensions.ErrSubscriptionCanceled
             }
 
-            {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+            {{if $value.GetMessage.HaveCorrelationID -}}
             // Get new message
             rmsg, err := new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(brokerMsg)
             if err != nil {
@@ -393,7 +430,7 @@ func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.Re
             // Set context with received values as it is the expected message
             msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
             msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
-            {{if ne $value.GetMessage.CorrelationIDLocation "" -}}
+            {{if $value.GetMessage.HaveCorrelationID -}}
             msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
             {{- end}}
 
