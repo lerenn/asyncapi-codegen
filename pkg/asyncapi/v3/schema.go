@@ -47,9 +47,9 @@ type Schema struct {
 
 	// --- AsyncAPI specific ---------------------------------------------------
 
-	Description string   `json:"description"`
-	Format      string   `json:"format"`
-	Default     []string `json:"default"`
+	Description string `json:"description"`
+	Format      string `json:"format"`
+	Default     string `json:"default"`
 
 	Reference string `json:"$ref"`
 
