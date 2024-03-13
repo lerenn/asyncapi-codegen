@@ -74,8 +74,7 @@ type Message struct {
 
 	// CorrelationIDLocation will indicate where the correlation id is
 	// According to: https://www.asyncapi.com/docs/reference/specification/v3.0.0#correlationIdObject
-	CorrelationIDLocation string `json:"-"`
-	CorrelationIDRequired bool   `json:"-"`
+	CorrelationIDRequired bool `json:"-"`
 }
 
 // Process processes the Message to make it ready for code generation.
@@ -134,25 +133,7 @@ func (msg *Message) Process(name string, spec Specification) {
 
 	// Process correlation ID
 	msg.createCorrelationIDFieldIfMissing()
-	msg.CorrelationIDLocation = msg.getCorrelationIDLocation(spec)
 	msg.CorrelationIDRequired = msg.isCorrelationIDRequired()
-}
-
-func (msg Message) getCorrelationIDLocation(spec Specification) string {
-	// Let's check the message before the reference
-	if msg.CorrelationID != nil {
-		return msg.CorrelationID.Location
-	}
-
-	// If there is a reference, check it
-	if msg.Reference != "" {
-		correlationID := spec.ReferenceMessage(msg.Reference).CorrelationID
-		if correlationID != nil {
-			return correlationID.Location
-		}
-	}
-
-	return ""
 }
 
 func (msg Message) isCorrelationIDRequired() bool {
@@ -160,36 +141,40 @@ func (msg Message) isCorrelationIDRequired() bool {
 		return false
 	}
 
-	correlationIDParent := msg.createTreeUntilCorrelationID()
+	correlationIDParent := msg.createTreeUntilLocation(msg.CorrelationID.Location)
 	path := strings.Split(msg.CorrelationID.Location, "/")
 	return correlationIDParent.IsFieldRequired(path[len(path)-1])
 }
 
 func (msg *Message) createCorrelationIDFieldIfMissing() {
-	_ = msg.createTreeUntilCorrelationID()
+	if msg.CorrelationID == nil {
+		return
+	}
+
+	_ = msg.createTreeUntilLocation(msg.CorrelationID.Location)
 }
 
-func (msg *Message) createTreeUntilCorrelationID() (correlationIDParent *Schema) {
-	// Check that correlationID exists
-	if msg.CorrelationID == nil || msg.CorrelationID.Location == "" {
+func (msg *Message) createTreeUntilLocation(location string) (locationParent *Schema) {
+	// Check location
+	if location == "" {
 		return utils.ToPointer(NewSchema())
 	}
 
 	// Check that the correlation ID is in header
-	if strings.HasPrefix(msg.CorrelationID.Location, "$message.header#") {
-		return msg.createTreeUntilCorrelationIDFromMessageType(MessageTypeIsHeader)
+	if strings.HasPrefix(location, "$message.header#") {
+		return msg.createTreeUntilLocationFromMessageType(MessageTypeIsHeader, location)
 	}
 
 	// Check that the correlation ID is in payload
-	if strings.HasPrefix(msg.CorrelationID.Location, "$message.payload#") {
-		return msg.createTreeUntilCorrelationIDFromMessageType(MessageTypeIsPayload)
+	if strings.HasPrefix(location, "$message.payload#") {
+		return msg.createTreeUntilLocationFromMessageType(MessageTypeIsPayload, location)
 	}
 
 	// Default to nothing
 	return utils.ToPointer(NewSchema())
 }
 
-func (msg *Message) createTreeUntilCorrelationIDFromMessageType(t MessageType) (correlationIDParent *Schema) {
+func (msg *Message) createTreeUntilLocationFromMessageType(t MessageType, location string) (locationParent *Schema) {
 	// Get correct top level placeholder
 	var placeholder **Schema
 	if t == MessageTypeIsHeader {
@@ -215,19 +200,19 @@ func (msg *Message) createTreeUntilCorrelationIDFromMessageType(t MessageType) (
 	}
 
 	// Go down the path to correlation ID
-	return msg.downToCorrelationID(child)
+	return msg.downToLocation(child, location)
 }
 
-func (msg Message) downToCorrelationID(child *Schema) (correlationIDParent *Schema) {
+func (msg Message) downToLocation(child *Schema, location string) (locationParent *Schema) {
 	var exists bool
 
-	path := strings.Split(msg.CorrelationID.Location, "/")
+	path := strings.Split(location, "/")
 	for i, v := range path[1:] {
 		// Keep the parent
-		correlationIDParent = child
+		locationParent = child
 
 		// Get the corresponding child
-		child, exists = correlationIDParent.Properties[v]
+		child, exists = locationParent.Properties[v]
 		if !exists { // If it doesn't exist
 			// Create child
 			child = utils.ToPointer(NewSchema())
@@ -239,14 +224,14 @@ func (msg Message) downToCorrelationID(child *Schema) (correlationIDParent *Sche
 			}
 
 			// Add it to parent
-			if correlationIDParent.Properties == nil {
-				correlationIDParent.Properties = make(map[string]*Schema)
+			if locationParent.Properties == nil {
+				locationParent.Properties = make(map[string]*Schema)
 			}
-			correlationIDParent.Properties[v] = child
+			locationParent.Properties[v] = child
 		}
 	}
 
-	return correlationIDParent
+	return locationParent
 }
 
 func (msg *Message) referenceFrom(ref []string) any {
@@ -363,4 +348,9 @@ func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) {
 
 	// Merge examples
 	msg.Examples = append(msg.Examples, mt.Examples...)
+}
+
+// HaveCorrelationID check that the message have a correlation ID.
+func (msg Message) HaveCorrelationID() bool {
+	return msg.Follow().CorrelationID.Exists()
 }

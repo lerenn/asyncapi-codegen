@@ -109,7 +109,7 @@ func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.B
 }
 
 func addAppContextValues(ctx context.Context, addr string) context.Context {
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "app")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
@@ -369,8 +369,11 @@ func (c *AppController) UnsubscribeFromPingWithIDFromPingWithIDChannel(ctx conte
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongOnPongChannel(ctx context.Context, msg PongMessage) error {
-	// Get channel address
+func (c *AppController) PublishPongOnPongChannel(
+	ctx context.Context,
+	msg PongMessage,
+) error {
+	// Set channel address
 	addr := "issue130.pong"
 
 	// Set context
@@ -396,8 +399,11 @@ func (c *AppController) PublishPongOnPongChannel(ctx context.Context, msg PongMe
 
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongWithIDOnPongWithIDChannel(ctx context.Context, msg PongWithIDMessage) error {
-	// Get channel address
+func (c *AppController) PublishPongWithIDOnPongWithIDChannel(
+	ctx context.Context,
+	msg PongWithIDMessage,
+) error {
+	// Set channel address
 	addr := "issue130.pongWithID"
 
 	// Set correlation ID if it does not exist
@@ -514,7 +520,7 @@ func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.
 }
 
 func addUserContextValues(ctx context.Context, addr string) context.Context {
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
@@ -529,8 +535,11 @@ func (c *UserController) Close(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingOnPingChannel(ctx context.Context, msg PingMessage) error {
-	// Get channel address
+func (c *UserController) PublishPingOnPingChannel(
+	ctx context.Context,
+	msg PingMessage,
+) error {
+	// Set channel address
 	addr := "issue130.ping"
 
 	// Set context
@@ -560,7 +569,11 @@ func (c *UserController) PublishPingOnPingChannel(ctx context.Context, msg PingM
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(ctx context.Context, msg PingMessage) (PongMessage, error) {
+
+func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
+	ctx context.Context,
+	msg PingMessage,
+) (PongMessage, error) {
 	// Get receiving channel address
 	addr := "issue130.pong"
 
@@ -631,8 +644,11 @@ func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(ctx conte
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingWithIDOnPingWithIDChannel(ctx context.Context, msg PingWithIDMessage) error {
-	// Get channel address
+func (c *UserController) PublishPingWithIDOnPingWithIDChannel(
+	ctx context.Context,
+	msg PingWithIDMessage,
+) error {
+	// Set channel address
 	addr := "issue130.pingWithID"
 
 	// Set correlation ID if it does not exist
@@ -668,7 +684,11 @@ func (c *UserController) PublishPingWithIDOnPingWithIDChannel(ctx context.Contex
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel(ctx context.Context, msg PingWithIDMessage) (PongWithIDMessage, error) {
+
+func (c *UserController) RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel(
+	ctx context.Context,
+	msg PingWithIDMessage,
+) (PongWithIDMessage, error) {
 	// Get receiving channel address
 	addr := "issue130.pongWithID"
 
@@ -749,7 +769,7 @@ func (c *UserController) RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPin
 }
 
 // AsyncAPIVersion is the version of the used AsyncAPI document
-const AsyncAPIVersion = "1.0.0"
+const AsyncAPIVersion = ""
 
 // controller is the controller that will be used to communicate with the broker
 // It will be used internally by AppController and UserController

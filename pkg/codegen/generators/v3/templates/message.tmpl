@@ -30,10 +30,10 @@ Payload {{template "schema" .Payload}}
 func New{{namify .Name}}() {{namify .Name}} {
     var msg {{namify .Name}}
 
-    {{if ne $.CorrelationIDLocation "" -}}
+    {{if $.HaveCorrelationID -}}
     // Set correlation ID
     u := uuid.New().String()
-    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired}}&{{end}}u
+    msg.{{referenceToStructAttributePath $.Follow.CorrelationID.Location}} = {{if not $.CorrelationIDRequired}}&{{end}}u
     {{- end}}
 
     return msg
@@ -248,14 +248,14 @@ func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) 
     }, nil
 }
 
-{{if ne $.CorrelationIDLocation "" -}}
+{{if $.HaveCorrelationID -}}
 // CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
 func (msg {{namify .Name}}) CorrelationID() string {
     {{if $.CorrelationIDRequired -}}
-        return msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
+        return msg.{{referenceToStructAttributePath $.Follow.CorrelationID.Location}}
     {{- else -}}
-    if msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} != nil{
-        return *msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
+    if msg.{{referenceToStructAttributePath $.Follow.CorrelationID.Location}} != nil{
+        return *msg.{{referenceToStructAttributePath $.Follow.CorrelationID.Location}}
     }
 
     return ""
@@ -264,7 +264,7 @@ func (msg {{namify .Name}}) CorrelationID() string {
 
 // SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
 func (msg *{{namify .Name}}) SetCorrelationID(id string) {
-    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
+    msg.{{referenceToStructAttributePath $.Follow.CorrelationID.Location}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.
@@ -272,7 +272,7 @@ func (msg *{{namify .Name}}) SetCorrelationID(id string) {
 // both specified in AsyncAPI spec.
 func (msg *{{namify .Name}}) SetAsResponseFrom(req MessageWithCorrelationID) {
     id := req.CorrelationID()
-    msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
+    msg.{{referenceToStructAttributePath $.Follow.CorrelationID.Location}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
 }
 {{- end -}}
 

@@ -92,7 +92,7 @@ func (op *Operation) Process(name string, spec Specification) {
 	}
 
 	// Process reply if there is one
-	op.Reply.Process(name+"Reply", spec)
+	op.Reply.Process(name+"Reply", op, spec)
 
 	// Generate reply
 	op.generateReply()
