@@ -65,17 +65,17 @@ struct {
     {{ end }}
 
 {{- range  $key, $value := $xxxOf}}
-    // {{ if $value.Reference}}{{ referenceToTypeName .Reference }}{{else}}AnyOf{{$key}}{{end}}
+    // {{ if $value.Reference}}{{ namify .Follow.Name }}{{else}}AnyOf{{$key}}{{end}}
 {{- if $value.Description}}
     // Description: {{multiLineComment $value.Description}}
 {{- end}}
-    {{ if $value.Reference}}{{ referenceToTypeName .Reference }}{{else}}AnyOf{{$key}}{{end}} *{{template "schema" $value}}
+    {{ if $value.Reference}}{{ namify .Follow.Name }}{{else}}AnyOf{{$key}}{{end}} *{{template "schema" $value}}
 {{end -}}
 }
 
 {{- /* If no know type but reference a component */ -}}
 {{- else if .Reference -}}
-{{ referenceToTypeName .Reference }}
+{{ namify .Follow.Name }}
 
 {{- /* Should not get to this point */ -}}
 {{- else -}}

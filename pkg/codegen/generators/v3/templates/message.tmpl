@@ -87,7 +87,7 @@ func new{{namify .Name}}FromBrokerMessage(bMsg extensions.BrokerMessage) ({{nami
     {{- if or (eq $payload.Type "string") (eq $payload.Type "integer") (eq $payload.Type "numeric")}}
         {{- /* If that's a reference, then there will be a conversion to struct to add */}}
         {{- if .Payload.Reference}}
-            msg.Payload = {{referenceToTypeName .Payload.Reference}}(payload)
+            msg.Payload = {{namify .Payload.Name}}(payload)
         {{- else}}
             msg.Payload = payload // No need for type conversion to reference
         {{- end}}

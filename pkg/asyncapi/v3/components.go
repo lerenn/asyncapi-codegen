@@ -38,7 +38,7 @@ func (c *Components) Process(spec Specification) {
 
 	// Process schemas
 	for name, schema := range c.Schemas {
-		schema.Process(name, spec, false)
+		schema.Process(name+"Schema", spec, false)
 	}
 
 	// Process mapped structured

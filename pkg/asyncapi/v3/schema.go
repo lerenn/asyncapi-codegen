@@ -214,3 +214,11 @@ func (s *Schema) MergeWith(spec Specification, s2 Schema) {
 	s.Required = append(s.Required, s2.Required...)
 	s.Required = utils.RemoveDuplicateFromSlice(s.Required)
 }
+
+// Follow returns referenced schema if specified or the actual schema.
+func (s *Schema) Follow() *Schema {
+	if s.ReferenceTo != nil {
+		return s.ReferenceTo
+	}
+	return s
+}
