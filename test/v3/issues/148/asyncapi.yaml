@@ -1,0 +1,33 @@
+asyncapi: 3.0.0
+
+channels:
+  reception:
+    address: issue148.reception
+    messages:
+      request:
+        payload:
+          type: string
+  reply:
+    address: null
+    messages:
+      reply:
+        payload:
+          type: string
+
+operations:
+  GetServiceInfo:
+    action: receive
+    channel: 
+      $ref: "#/channels/reception"
+    reply:
+      address:
+        location: "$message.header#/replyTo"
+      channel:
+        $ref: '#/channels/reply'
+    traits:
+      - $ref: '#/components/operationTraits/withReplyTo'
+
+components:
+  operationTraits:
+    withGenericDescription:
+      description: this is a generic description
