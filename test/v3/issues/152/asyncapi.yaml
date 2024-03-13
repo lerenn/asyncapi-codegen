@@ -1,0 +1,8 @@
+asyncapi: 3.0.0
+
+components:
+  schemas:
+    Testing:
+      type: string
+      examples:
+        - "hello test"
