@@ -111,7 +111,7 @@ func (c *{{ .Prefix }}Controller) SubscribeToAllChannels(ctx context.Context, as
 
     {{range  $key, $value := .Operations.Receive -}}
     {{- if not .Channel.Follow.Parameters }}
-    if err := c.SubscribeTo{{ namify $value.Follow.Name }}(ctx, as.{{cutSuffix (opToMsgTypeName $value) "Message" }}ReceivedFrom{{opToChannelTypeName $value}}); err != nil {
+    if err := c.SubscribeTo{{ namify $value.Follow.Name }}(ctx, as.{{ namify $value.Follow.Name }}Received); err != nil {
         return err
     }
     {{- end}}

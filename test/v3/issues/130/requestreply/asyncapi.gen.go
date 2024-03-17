@@ -15,11 +15,11 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// PingReceivedFromPingChannel receive all Ping messages from Ping channel.
-	PingReceivedFromPingChannel(ctx context.Context, msg PingMessage)
+	// PingOperationReceived receive all Ping messages from Ping channel.
+	PingOperationReceived(ctx context.Context, msg PingMessage)
 
-	// PingWithIDReceivedFromPingWithIDChannel receive all PingWithID messages from PingWithID channel.
-	PingWithIDReceivedFromPingWithIDChannel(ctx context.Context, msg PingWithIDMessage)
+	// PingWithIDOperationReceived receive all PingWithID messages from PingWithID channel.
+	PingWithIDOperationReceived(ctx context.Context, msg PingWithIDMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -130,10 +130,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToPingOperation(ctx, as.PingReceivedFromPingChannel); err != nil {
+	if err := c.SubscribeToPingOperation(ctx, as.PingOperationReceived); err != nil {
 		return err
 	}
-	if err := c.SubscribeToPingWithIDOperation(ctx, as.PingWithIDReceivedFromPingWithIDChannel); err != nil {
+	if err := c.SubscribeToPingWithIDOperation(ctx, as.PingWithIDOperationReceived); err != nil {
 		return err
 	}
 

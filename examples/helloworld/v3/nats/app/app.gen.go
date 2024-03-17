@@ -12,8 +12,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// SayHelloReceivedFromHelloChannel receive all SayHello messages from Hello channel.
-	SayHelloReceivedFromHelloChannel(ctx context.Context, msg SayHelloMessage)
+	// ReceiveHelloOperationReceived receive all SayHello messages from Hello channel.
+	ReceiveHelloOperationReceived(ctx context.Context, msg SayHelloMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -124,7 +124,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToReceiveHelloOperation(ctx, as.SayHelloReceivedFromHelloChannel); err != nil {
+	if err := c.SubscribeToReceiveHelloOperation(ctx, as.ReceiveHelloOperationReceived); err != nil {
 		return err
 	}
 

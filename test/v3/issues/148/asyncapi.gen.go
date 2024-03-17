@@ -12,8 +12,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// RequestReceivedFromReceptionChannel receive all Request messages from Reception channel.
-	RequestReceivedFromReceptionChannel(ctx context.Context, msg RequestMessage)
+	// GetServiceInfoOperationReceived receive all Request messages from Reception channel.
+	GetServiceInfoOperationReceived(ctx context.Context, msg RequestMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -124,7 +124,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToGetServiceInfoOperation(ctx, as.RequestReceivedFromReceptionChannel); err != nil {
+	if err := c.SubscribeToGetServiceInfoOperation(ctx, as.GetServiceInfoOperationReceived); err != nil {
 		return err
 	}
 

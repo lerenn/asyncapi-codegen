@@ -13,8 +13,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// UserReceivedFromUserSignupChannel receive all User messages from UserSignup channel.
-	UserReceivedFromUserSignupChannel(ctx context.Context, msg UserMessage)
+	// ConsumeUserSignupOperationReceived receive all User messages from UserSignup channel.
+	ConsumeUserSignupOperationReceived(ctx context.Context, msg UserMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -125,7 +125,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToConsumeUserSignupOperation(ctx, as.UserReceivedFromUserSignupChannel); err != nil {
+	if err := c.SubscribeToConsumeUserSignupOperation(ctx, as.ConsumeUserSignupOperationReceived); err != nil {
 		return err
 	}
 

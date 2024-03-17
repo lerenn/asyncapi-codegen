@@ -13,8 +13,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// UserReceivedFromUserSignupChannel receive all User messages from UserSignup channel.
-	UserReceivedFromUserSignupChannel(ctx context.Context, msg UserMessage)
+	// ReceiveUserSignedUpOperationReceived receive all User messages from UserSignup channel.
+	ReceiveUserSignedUpOperationReceived(ctx context.Context, msg UserMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
