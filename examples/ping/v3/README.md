@@ -51,6 +51,7 @@ func main() {
 	if err := ctrl.SubscribeToAllChannels(context.Background(), sub); err != nil {
 	  // -- Error management
 	}
+	defer ctrl.UnsubscribeFromAllChannels(context.Background())
 
   // Process messages until interruption signal
   // ...

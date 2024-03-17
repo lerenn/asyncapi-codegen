@@ -124,7 +124,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToRequestFromReceptionChannel(ctx, as.RequestReceivedFromReceptionChannel); err != nil {
+	if err := c.SubscribeToGetServiceInfoOperation(ctx, as.RequestReceivedFromReceptionChannel); err != nil {
 		return err
 	}
 
@@ -133,10 +133,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromRequestFromReceptionChannel(ctx)
+	c.UnsubscribeFromGetServiceInfoOperation(ctx)
 }
 
-// SubscribeToRequestFromReceptionChannel will receive Request messages from Reception channel.
+// SubscribeToGetServiceInfoOperation will receive Request messages from Reception channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -144,7 +144,10 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToRequestFromReceptionChannel(ctx context.Context, fn func(ctx context.Context, msg RequestMessage)) error {
+func (c *AppController) SubscribeToGetServiceInfoOperation(
+	ctx context.Context,
+	fn func(ctx context.Context, msg RequestMessage),
+) error {
 	// Get channel address
 	addr := "issue148.reception"
 
@@ -225,9 +228,11 @@ func (c *AppController) ReplyToRequestWithReplyOnReplyChannel(ctx context.Contex
 	return c.SendAsReplyToGetServiceInfoOperation(ctx, chanAddr, replyMsg)
 }
 
-// UnsubscribeFromRequestFromReceptionChannel will stop the reception of Request messages from Reception channel.
+// UnsubscribeFromGetServiceInfoOperation will stop the reception of Request messages from Reception channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromRequestFromReceptionChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromGetServiceInfoOperation(
+	ctx context.Context,
+) {
 	// Get channel address
 	addr := "issue148.reception"
 

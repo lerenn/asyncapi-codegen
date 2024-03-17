@@ -28,9 +28,10 @@ func main() {
 	// Subscribe to SayHelloMessage messages
 	// Note: it will indefinitely wait for messages as context has no timeout
 	log.Println("Subscribe to hello world...")
-	ctrl.SubscribeToSayHelloFromHelloChannel(context.Background(), func(_ context.Context, msg SayHelloMessage) {
+	ctrl.SubscribeToReceiveHelloOperation(context.Background(), func(_ context.Context, msg SayHelloMessage) {
 		log.Println("Received message:", msg.Payload)
 	})
+	defer ctrl.UnsubscribeFromReceiveHelloOperation(context.Background())
 
 	// Listen on port to let know that app is ready
 	examples.ListenLocalPort(1234)

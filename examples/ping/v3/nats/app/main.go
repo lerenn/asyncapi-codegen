@@ -57,6 +57,7 @@ func main() {
 	if err := ctrl.SubscribeToAllChannels(context.Background(), sub); err != nil {
 		panic(err)
 	}
+	defer ctrl.UnsubscribeFromAllChannels(context.Background())
 
 	// Listen on port to let know that app is ready
 	examples.ListenLocalPort(1234)

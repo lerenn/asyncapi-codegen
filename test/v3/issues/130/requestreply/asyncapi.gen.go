@@ -130,10 +130,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToPingFromPingChannel(ctx, as.PingReceivedFromPingChannel); err != nil {
+	if err := c.SubscribeToPingOperation(ctx, as.PingReceivedFromPingChannel); err != nil {
 		return err
 	}
-	if err := c.SubscribeToPingWithIDFromPingWithIDChannel(ctx, as.PingWithIDReceivedFromPingWithIDChannel); err != nil {
+	if err := c.SubscribeToPingWithIDOperation(ctx, as.PingWithIDReceivedFromPingWithIDChannel); err != nil {
 		return err
 	}
 
@@ -142,11 +142,11 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromPingFromPingChannel(ctx)
-	c.UnsubscribeFromPingWithIDFromPingWithIDChannel(ctx)
+	c.UnsubscribeFromPingOperation(ctx)
+	c.UnsubscribeFromPingWithIDOperation(ctx)
 }
 
-// SubscribeToPingFromPingChannel will receive Ping messages from Ping channel.
+// SubscribeToPingOperation will receive Ping messages from Ping channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -154,7 +154,10 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
+func (c *AppController) SubscribeToPingOperation(
+	ctx context.Context,
+	fn func(ctx context.Context, msg PingMessage),
+) error {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -230,9 +233,11 @@ func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, re
 	return c.SendAsReplyToPingOperation(ctx, replyMsg)
 }
 
-// UnsubscribeFromPingFromPingChannel will stop the reception of Ping messages from Ping channel.
+// UnsubscribeFromPingOperation will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingOperation(
+	ctx context.Context,
+) {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -252,14 +257,17 @@ func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) 
 	delete(c.subscriptions, addr)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
-} // SubscribeToPingWithIDFromPingWithIDChannel will receive PingWithID messages from PingWithID channel.
+} // SubscribeToPingWithIDOperation will receive PingWithID messages from PingWithID channel.
 // Callback function 'fn' will be called each time a new message is received.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingWithIDFromPingWithIDChannel(ctx context.Context, fn func(ctx context.Context, msg PingWithIDMessage)) error {
+func (c *AppController) SubscribeToPingWithIDOperation(
+	ctx context.Context,
+	fn func(ctx context.Context, msg PingWithIDMessage),
+) error {
 	// Get channel address
 	addr := "issue130.pingWithID"
 
@@ -341,9 +349,11 @@ func (c *AppController) ReplyToPingWithIDWithPongWithIDOnPongWithIDChannel(ctx c
 	return c.SendAsReplyToPingWithIDOperation(ctx, replyMsg)
 }
 
-// UnsubscribeFromPingWithIDFromPingWithIDChannel will stop the reception of PingWithID messages from PingWithID channel.
+// UnsubscribeFromPingWithIDOperation will stop the reception of PingWithID messages from PingWithID channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingWithIDFromPingWithIDChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingWithIDOperation(
+	ctx context.Context,
+) {
 	// Get channel address
 	addr := "issue130.pingWithID"
 

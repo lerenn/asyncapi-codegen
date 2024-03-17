@@ -98,6 +98,7 @@ func main() {
   ctrl.SubscribeToSayHelloFromHelloChannel(context.Background(), func(_ context.Context, msg SayHelloMessage) {
     log.Println("Received message:", msg.Payload)
   })
+	defer ctrl.UnsubscribeFromReceiveHelloOperation(context.Background())
 
   // Process messages until interruption signal
   // ...

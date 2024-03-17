@@ -54,7 +54,7 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestRequestReplyWithReplyHelper() {
 	// Listen for pings on the application
-	err := suite.app.SubscribeToPingFromPingChannel(
+	err := suite.app.SubscribeToPingRequestOperation(
 		context.Background(),
 		func(ctx context.Context, ping PingMessage) {
 			callbackErr := suite.app.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
@@ -63,7 +63,7 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 			suite.Require().NoError(callbackErr)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingFromPingChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingRequestOperation(context.Background())
 
 	// Set a new ping
 	var msg PingMessage
@@ -80,7 +80,7 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 
 func (suite *Suite) TestRequestReplyOnRawChannel() {
 	// Listen for pings on the application
-	err := suite.app.SubscribeToPingFromPingChannel(
+	err := suite.app.SubscribeToPingRequestOperation(
 		context.Background(),
 		func(ctx context.Context, ping PingMessage) {
 			callbackErr := suite.app.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
@@ -89,7 +89,7 @@ func (suite *Suite) TestRequestReplyOnRawChannel() {
 			suite.Require().NoError(callbackErr)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingFromPingChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingRequestOperation(context.Background())
 
 	// Listen directly for reply from the broker
 	sub, err := suite.broker.Subscribe(context.Background(), "issue145.pong.2345")
