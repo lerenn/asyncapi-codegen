@@ -413,7 +413,7 @@ func (c *UserController) SendToGetServiceInfoOperation(
 	})
 }
 
-// RequestReplyOnReplyChannelWithRequestOnReceptionChannel will send a Request message on Reception channel
+// RequestToGetServiceInfoOperation will send a Request message on Reception channel
 // and wait for a Reply message from Reply channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -422,7 +422,7 @@ func (c *UserController) SendToGetServiceInfoOperation(
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *UserController) RequestReplyOnReplyChannelWithRequestOnReceptionChannel(
+func (c *UserController) RequestToGetServiceInfoOperation(
 	ctx context.Context,
 	msg RequestMessage,
 ) (ReplyMessage, error) {

@@ -571,7 +571,7 @@ func (c *UserController) SendToPingOperation(
 	})
 }
 
-// RequestPongOnPongChannelWithPingOnPingChannel will send a Ping message on Ping channel
+// RequestToPingOperation will send a Ping message on Ping channel
 // and wait for a Pong message from Pong channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -580,7 +580,7 @@ func (c *UserController) SendToPingOperation(
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
+func (c *UserController) RequestToPingOperation(
 	ctx context.Context,
 	msg PingMessage,
 ) (PongMessage, error) {
@@ -686,7 +686,7 @@ func (c *UserController) SendToPingWithIDOperation(
 	})
 }
 
-// RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel will send a PingWithID message on PingWithID channel
+// RequestToPingWithIDOperation will send a PingWithID message on PingWithID channel
 // and wait for a PongWithID message from PongWithID channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -695,7 +695,7 @@ func (c *UserController) SendToPingWithIDOperation(
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *UserController) RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel(
+func (c *UserController) RequestToPingWithIDOperation(
 	ctx context.Context,
 	msg PingWithIDMessage,
 ) (PongWithIDMessage, error) {

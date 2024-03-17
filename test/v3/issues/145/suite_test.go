@@ -71,7 +71,7 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 	msg.Headers.ReplyTo = utils.ToPointer("issue145.pong.1234")
 
 	// Send a request
-	resp, err := suite.user.RequestPongOnPongChannelWithPingOnPingChannel(context.Background(), msg)
+	resp, err := suite.user.RequestToPingRequestOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Check response

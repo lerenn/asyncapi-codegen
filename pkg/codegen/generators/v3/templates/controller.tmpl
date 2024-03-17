@@ -341,7 +341,7 @@ func (c *{{ $.Prefix }}Controller) Send{{ if eq $.Prefix "User" }}To{{else}}As{{
 
 {{if .Reply -}}
 
-// Request{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}With{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel
+// Request{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel
 // and wait for a {{ cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }} message from {{ cutSuffix (opToChannelTypeName $value.ReplyIs) "Channel" }} channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -350,7 +350,7 @@ func (c *{{ $.Prefix }}Controller) Send{{ if eq $.Prefix "User" }}To{{else}}As{{
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}With{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(
+func (c *{{ $.Prefix }}Controller) Request{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }}(
     ctx context.Context,
     {{- if .Channel.Follow.Parameters}}
     params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
