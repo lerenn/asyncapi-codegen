@@ -322,11 +322,11 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishUserOnUserSignupChannel will send a User message on UserSignup channel.
-
+// SendToReceiveUserSignedUpOperation will send a User message on UserSignup channel.
+//
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishUserOnUserSignupChannel(
+func (c *UserController) SendToReceiveUserSignedUpOperation(
 	ctx context.Context,
 	params UserSignupChannelParameters,
 	msg UserMessage,

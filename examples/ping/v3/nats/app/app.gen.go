@@ -226,7 +226,7 @@ func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, re
 	fn(&replyMsg)
 
 	// Publish reply
-	return c.PublishPongOnPongChannel(ctx, replyMsg)
+	return c.SendAsReplyToPingRequestOperation(ctx, replyMsg)
 }
 
 // UnsubscribeFromPingFromPingChannel will stop the reception of Ping messages from Ping channel.
@@ -253,11 +253,11 @@ func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) 
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// PublishPongOnPongChannel will send a Pong message on Pong channel.
-
+// SendAsReplyToPingRequestOperation will send a Pong message on Pong channel.
+//
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongOnPongChannel(
+func (c *AppController) SendAsReplyToPingRequestOperation(
 	ctx context.Context,
 	msg PongMessage,
 ) error {

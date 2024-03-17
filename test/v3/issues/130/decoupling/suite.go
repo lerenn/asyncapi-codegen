@@ -62,7 +62,7 @@ func (suite *Suite) TestSendReceive() {
 	msg.Payload.DisplayName = utils.ToPointer("testing")
 
 	// Send the new message
-	err = suite.user.PublishUserOnUserSignupChannel(context.Background(), msg)
+	err = suite.user.SendToConsumeUserSignupOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	wg.Wait()

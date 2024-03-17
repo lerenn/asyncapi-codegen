@@ -48,7 +48,7 @@ func (suite *Suite) TestRequestReply() {
 		func(ctx context.Context, msg PingMessage) {
 			var respMsg PongMessage
 			respMsg.Payload.Event = msg.Payload.Event
-			err := suite.app.PublishPongOnPongChannel(ctx, respMsg)
+			err := suite.app.SendAsReplyToPingOperation(ctx, respMsg)
 			suite.Require().NoError(err)
 		})
 	suite.Require().NoError(err)
@@ -76,7 +76,7 @@ func (suite *Suite) TestRequestReplyWithID() {
 			respMsg.Payload.Event = msg.Payload.Event
 
 			// Send response
-			callbackErr := suite.app.PublishPongWithIDOnPongWithIDChannel(ctx, respMsg)
+			callbackErr := suite.app.SendAsReplyToPingWithIDOperation(ctx, respMsg)
 			suite.Require().NoError(callbackErr)
 		})
 	suite.Require().NoError(err)

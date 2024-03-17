@@ -114,7 +114,7 @@ func (suite *Suite) TestRequestReplyOnRawChannel() {
 	msg.Headers.ReplyTo = utils.ToPointer("issue145.pong.2345")
 
 	// Send a request
-	err = suite.user.PublishPingOnPingChannel(context.Background(), msg)
+	err = suite.user.SendToPingRequestOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Wait for the end

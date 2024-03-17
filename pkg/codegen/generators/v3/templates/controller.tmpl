@@ -238,9 +238,9 @@ func (c *{{ $.Prefix }}Controller) ReplyTo{{cutSuffix (opToMsgTypeName $value) "
             chanAddr := *recvMsg.{{referenceToStructAttributePath .Reply.Address.Location}}
         {{- end }}
 
-        return c.Publish{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}(ctx, chanAddr, replyMsg)
+        return c.Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}ReplyTo{{ namify $value.Follow.Name }}(ctx, chanAddr, replyMsg)
     {{- else }}
-        return c.Publish{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}(ctx, replyMsg)
+        return c.Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}ReplyTo{{ namify $value.Follow.Name }}(ctx, replyMsg)
     {{- end }}
 }
 
@@ -277,12 +277,14 @@ func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{cutSuffix (opToMsgTypeName $
 
 {{- range  $key, $value := .Operations.Send}}
 
-// Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
-{{if .Reply}}// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.{{end}}
+// Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
 //
+{{- if .Reply}}
+// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
+{{- end}}
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *{{ $.Prefix }}Controller) Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(
+func (c *{{ $.Prefix }}Controller) Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }}(
     ctx context.Context,
     {{- if .Channel.Follow.Parameters }}
         params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
@@ -394,7 +396,7 @@ func (c *{{ $.Prefix }}Controller) Request{{cutSuffix (opToMsgTypeName $value.Re
     {{- end}}
 
     // Send the message 
-    if err := c.Publish{{cutSuffix (opToMsgTypeName $value) "Message" }}On{{opToChannelTypeName $value}}(ctx, {{- if .Channel.Follow.Parameters}}params,{{- end}} msg); err != nil {
+    if err := c.Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }}(ctx, {{- if .Channel.Follow.Parameters}}params,{{- end}} msg); err != nil {
         c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
         return {{channelToMessageTypeName .Reply.Channel}}{}, fmt.Errorf("error happened when sending message: %w", err)
     }

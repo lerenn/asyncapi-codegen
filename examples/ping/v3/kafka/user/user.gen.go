@@ -110,12 +110,12 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishPingOnPingChannel will send a Ping message on Ping channel.
-// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
+// SendToPingRequestOperation will send a Ping message on Ping channel.
 //
+// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingOnPingChannel(
+func (c *UserController) SendToPingRequestOperation(
 	ctx context.Context,
 	msg PingMessage,
 ) error {
@@ -189,7 +189,7 @@ func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
 	}
 
 	// Send the message
-	if err := c.PublishPingOnPingChannel(ctx, msg); err != nil {
+	if err := c.SendToPingRequestOperation(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
 		return PongMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}

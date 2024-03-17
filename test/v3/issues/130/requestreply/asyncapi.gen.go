@@ -227,7 +227,7 @@ func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, re
 	fn(&replyMsg)
 
 	// Publish reply
-	return c.PublishPongOnPongChannel(ctx, replyMsg)
+	return c.SendAsReplyToPingOperation(ctx, replyMsg)
 }
 
 // UnsubscribeFromPingFromPingChannel will stop the reception of Ping messages from Ping channel.
@@ -338,7 +338,7 @@ func (c *AppController) ReplyToPingWithIDWithPongWithIDOnPongWithIDChannel(ctx c
 	fn(&replyMsg)
 
 	// Publish reply
-	return c.PublishPongWithIDOnPongWithIDChannel(ctx, replyMsg)
+	return c.SendAsReplyToPingWithIDOperation(ctx, replyMsg)
 }
 
 // UnsubscribeFromPingWithIDFromPingWithIDChannel will stop the reception of PingWithID messages from PingWithID channel.
@@ -365,11 +365,11 @@ func (c *AppController) UnsubscribeFromPingWithIDFromPingWithIDChannel(ctx conte
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// PublishPongOnPongChannel will send a Pong message on Pong channel.
-
+// SendAsReplyToPingOperation will send a Pong message on Pong channel.
+//
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongOnPongChannel(
+func (c *AppController) SendAsReplyToPingOperation(
 	ctx context.Context,
 	msg PongMessage,
 ) error {
@@ -395,11 +395,11 @@ func (c *AppController) PublishPongOnPongChannel(
 	})
 }
 
-// PublishPongWithIDOnPongWithIDChannel will send a PongWithID message on PongWithID channel.
-
+// SendAsReplyToPingWithIDOperation will send a PongWithID message on PongWithID channel.
+//
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongWithIDOnPongWithIDChannel(
+func (c *AppController) SendAsReplyToPingWithIDOperation(
 	ctx context.Context,
 	msg PongWithIDMessage,
 ) error {
@@ -530,12 +530,12 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishPingOnPingChannel will send a Ping message on Ping channel.
-// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
+// SendToPingOperation will send a Ping message on Ping channel.
 //
+// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingOnPingChannel(
+func (c *UserController) SendToPingOperation(
 	ctx context.Context,
 	msg PingMessage,
 ) error {
@@ -598,7 +598,7 @@ func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
 	}()
 
 	// Send the message
-	if err := c.PublishPingOnPingChannel(ctx, msg); err != nil {
+	if err := c.SendToPingOperation(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
 		return PongMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
@@ -639,12 +639,12 @@ func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
 	}
 }
 
-// PublishPingWithIDOnPingWithIDChannel will send a PingWithID message on PingWithID channel.
-// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
+// SendToPingWithIDOperation will send a PingWithID message on PingWithID channel.
 //
+// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingWithIDOnPingWithIDChannel(
+func (c *UserController) SendToPingWithIDOperation(
 	ctx context.Context,
 	msg PingWithIDMessage,
 ) error {
@@ -718,7 +718,7 @@ func (c *UserController) RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPin
 	}
 
 	// Send the message
-	if err := c.PublishPingWithIDOnPingWithIDChannel(ctx, msg); err != nil {
+	if err := c.SendToPingWithIDOperation(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
 		return PongWithIDMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
