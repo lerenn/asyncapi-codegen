@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	// platforms represents the different OS/Arch platform wanted for docker hub
+	// platforms represents the different OS/Arch platform wanted for docker hub.
 	platforms = []RunnerType{
 		{OS: "linux", Arch: "386", BuildBaseImage: "golang:alpine", TargetBaseImage: "alpine"},
 		{OS: "linux", Arch: "amd64", BuildBaseImage: "golang:alpine", TargetBaseImage: "alpine"},

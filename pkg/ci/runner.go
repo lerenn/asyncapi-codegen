@@ -6,6 +6,7 @@ import (
 	"dagger.io/dagger"
 )
 
+// RunnerType represents the type of runner based on various info.
 type RunnerType struct {
 	OS              string
 	Arch            string
@@ -14,6 +15,7 @@ type RunnerType struct {
 }
 
 var (
+	// DefaultRunnerType is the default runner type to use in case of doubt.
 	DefaultRunnerType = RunnerType{
 		OS:              "linux",
 		Arch:            "amd64",
