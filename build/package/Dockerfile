@@ -1,5 +1,14 @@
+# Default arguments
+ARG BUILDPLATFORM=linux/amd64
+
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
+ARG BUILDBASEIMAGE=golang:alpine
+ARG TARGETBASEIMAGE=alpine:latest
+
 # Building image
-FROM golang:alpine AS build
+FROM --platform=${BUILDPLATFORM} ${BUILDBASEIMAGE} AS build
 
 # Disable CGO
 ENV CGO_ENABLED 0
@@ -12,10 +21,12 @@ COPY ./ /go/src/github.com/lerenn/asyncapi-codegen
 WORKDIR /go/src/github.com/lerenn/asyncapi-codegen
 
 # Build everything in cmd/
-RUN --mount=type=cache,target=/root/.cache/go-build go install ./cmd/*
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 \ 
+    go install ./cmd/*
 
 # Get final base image
-FROM alpine
+FROM --platform=${TARGETOS}/${TARGETARCH} ${TARGETBASEIMAGE}
 
 # Get binaries
 COPY --from=build /go/bin/* /usr/local/bin
