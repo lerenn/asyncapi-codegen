@@ -220,9 +220,9 @@ func (c *AppController) SubscribeToPingOperation(
 	return nil
 }
 
-// ReplyToPingWithPongOnPongChannel is a helper function to
+// ReplyToPingOperation is a helper function to
 // reply to a Ping message with a Pong message on Pong channel.
-func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
+func (c *AppController) ReplyToPingOperation(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
 	// Create reply message
 	replyMsg := NewPongMessage()
 
@@ -335,9 +335,9 @@ func (c *AppController) SubscribeToPingWithIDOperation(
 	return nil
 }
 
-// ReplyToPingWithIDWithPongWithIDOnPongWithIDChannel is a helper function to
+// ReplyToPingWithIDOperation is a helper function to
 // reply to a PingWithID message with a PongWithID message on PongWithID channel.
-func (c *AppController) ReplyToPingWithIDWithPongWithIDOnPongWithIDChannel(ctx context.Context, recvMsg PingWithIDMessage, fn func(replyMsg *PongWithIDMessage)) error {
+func (c *AppController) ReplyToPingWithIDOperation(ctx context.Context, recvMsg PingWithIDMessage, fn func(replyMsg *PongWithIDMessage)) error {
 	// Create reply message
 	replyMsg := NewPongWithIDMessage()
 	replyMsg.SetAsResponseFrom(&recvMsg)

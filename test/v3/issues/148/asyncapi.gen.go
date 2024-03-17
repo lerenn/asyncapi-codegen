@@ -210,9 +210,9 @@ func (c *AppController) SubscribeToGetServiceInfoOperation(
 	return nil
 }
 
-// ReplyToRequestWithReplyOnReplyChannel is a helper function to
+// ReplyToGetServiceInfoOperation is a helper function to
 // reply to a Request message with a Reply message on Reply channel.
-func (c *AppController) ReplyToRequestWithReplyOnReplyChannel(ctx context.Context, recvMsg RequestMessage, fn func(replyMsg *ReplyMessage)) error {
+func (c *AppController) ReplyToGetServiceInfoOperation(ctx context.Context, recvMsg RequestMessage, fn func(replyMsg *ReplyMessage)) error {
 	// Create reply message
 	replyMsg := NewReplyMessage()
 

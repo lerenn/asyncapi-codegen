@@ -216,9 +216,9 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{ namify $value.Follow.Name }}(
 }
 
 {{- if .Reply }}
-// ReplyTo{{cutSuffix (opToMsgTypeName $value) "Message" }}With{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}} is a helper function to
+// ReplyTo{{ namify $value.Follow.Name }} is a helper function to
 // reply to a {{cutSuffix (opToMsgTypeName $value) "Message"}} message with a {{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message"}} message on {{cutSuffix (opToChannelTypeName $value.ReplyIs) "Channel"}} channel.
-func (c *{{ $.Prefix }}Controller) ReplyTo{{cutSuffix (opToMsgTypeName $value) "Message" }}With{{cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }}On{{opToChannelTypeName $value.ReplyIs}}(ctx context.Context, recvMsg {{opToMsgTypeName $value}}, fn func(replyMsg *{{opToMsgTypeName $value.ReplyIs}})) error {
+func (c *{{ $.Prefix }}Controller) ReplyTo{{ namify $value.Follow.Name }}(ctx context.Context, recvMsg {{opToMsgTypeName $value}}, fn func(replyMsg *{{opToMsgTypeName $value.ReplyIs}})) error {
     // Create reply message
     replyMsg := New{{opToMsgTypeName $value.ReplyIs }}()
     {{if $value.GetMessage.HaveCorrelationID -}}

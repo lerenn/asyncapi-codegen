@@ -57,7 +57,7 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 	err := suite.app.SubscribeToPingRequestOperation(
 		context.Background(),
 		func(ctx context.Context, ping PingMessage) {
-			callbackErr := suite.app.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
+			callbackErr := suite.app.ReplyToPingRequestOperation(ctx, ping, func(pong *PongMessage) {
 				pong.Payload.Event = ping.Payload.Event
 			})
 			suite.Require().NoError(callbackErr)
@@ -83,7 +83,7 @@ func (suite *Suite) TestRequestReplyOnRawChannel() {
 	err := suite.app.SubscribeToPingRequestOperation(
 		context.Background(),
 		func(ctx context.Context, ping PingMessage) {
-			callbackErr := suite.app.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
+			callbackErr := suite.app.ReplyToPingRequestOperation(ctx, ping, func(pong *PongMessage) {
 				pong.Payload.Event = ping.Payload.Event
 			})
 			suite.Require().NoError(callbackErr)

@@ -218,9 +218,9 @@ func (c *AppController) SubscribeToPingRequestOperation(
 	return nil
 }
 
-// ReplyToPingWithPongOnPongChannel is a helper function to
+// ReplyToPingRequestOperation is a helper function to
 // reply to a Ping message with a Pong message on Pong channel.
-func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
+func (c *AppController) ReplyToPingRequestOperation(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
 	// Create reply message
 	replyMsg := NewPongMessage()
 	replyMsg.SetAsResponseFrom(&recvMsg)
