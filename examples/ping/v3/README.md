@@ -28,10 +28,10 @@ type Subscriber struct {
   Controller *AppController
 }
 
-func (s Subscriber) PingReceivedFromPingChannel(ctx context.Context, ping PingMessage) {
+func (s Subscriber) PingRequestOperationReceived(ctx context.Context, ping PingMessage) {
   // Publish the pong message, with the callback function to modify it
   // Note: it will indefinitely wait to publish as context has no timeout
-  err := s.Controller.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
+  err := s.Controller.ReplyToPingRequestOperation(ctx, ping, func(pong *PongMessage) {
   	// Reply with the same event than the ping
   	pong.Payload.Event = ping.Payload.Event
   })
@@ -51,6 +51,7 @@ func main() {
 	if err := ctrl.SubscribeToAllChannels(context.Background(), sub); err != nil {
 	  // -- Error management
 	}
+	defer ctrl.UnsubscribeFromAllChannels(context.Background())
 
   // Process messages until interruption signal
   // ...
@@ -75,7 +76,7 @@ req := NewPingMessage()
 // ID, then it will return the first message on the reply channel.
 //
 // Note: it will indefinitely wait for messages as context has no timeout
-resp, err := ctrl.RequestPongOnPongChannelWithPingOnPingChannel(context.Background(), req)
+resp, err := ctrl.RequestToPingRequestOperation(context.Background(), req)
 // -- Error management
 
 // Use the response

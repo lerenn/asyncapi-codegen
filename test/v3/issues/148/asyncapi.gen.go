@@ -12,8 +12,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// RequestReceivedFromReceptionChannel receive all Request messages from Reception channel.
-	RequestReceivedFromReceptionChannel(ctx context.Context, msg RequestMessage)
+	// GetServiceInfoOperationReceived receive all Request messages from Reception channel.
+	GetServiceInfoOperationReceived(ctx context.Context, msg RequestMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -124,7 +124,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToRequestFromReceptionChannel(ctx, as.RequestReceivedFromReceptionChannel); err != nil {
+	if err := c.SubscribeToGetServiceInfoOperation(ctx, as.GetServiceInfoOperationReceived); err != nil {
 		return err
 	}
 
@@ -133,10 +133,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromRequestFromReceptionChannel(ctx)
+	c.UnsubscribeFromGetServiceInfoOperation(ctx)
 }
 
-// SubscribeToRequestFromReceptionChannel will receive Request messages from Reception channel.
+// SubscribeToGetServiceInfoOperation will receive Request messages from Reception channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -144,7 +144,10 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToRequestFromReceptionChannel(ctx context.Context, fn func(ctx context.Context, msg RequestMessage)) error {
+func (c *AppController) SubscribeToGetServiceInfoOperation(
+	ctx context.Context,
+	fn func(ctx context.Context, msg RequestMessage),
+) error {
 	// Get channel address
 	addr := "issue148.reception"
 
@@ -207,9 +210,9 @@ func (c *AppController) SubscribeToRequestFromReceptionChannel(ctx context.Conte
 	return nil
 }
 
-// ReplyToRequestWithReplyOnReplyChannel is a helper function to
+// ReplyToGetServiceInfoOperation is a helper function to
 // reply to a Request message with a Reply message on Reply channel.
-func (c *AppController) ReplyToRequestWithReplyOnReplyChannel(ctx context.Context, recvMsg RequestMessage, fn func(replyMsg *ReplyMessage)) error {
+func (c *AppController) ReplyToGetServiceInfoOperation(ctx context.Context, recvMsg RequestMessage, fn func(replyMsg *ReplyMessage)) error {
 	// Create reply message
 	replyMsg := NewReplyMessage()
 
@@ -222,12 +225,14 @@ func (c *AppController) ReplyToRequestWithReplyOnReplyChannel(ctx context.Contex
 	}
 	chanAddr := *recvMsg.Headers.ReplyTo
 
-	return c.PublishReplyOnReplyChannel(ctx, chanAddr, replyMsg)
+	return c.SendAsReplyToGetServiceInfoOperation(ctx, chanAddr, replyMsg)
 }
 
-// UnsubscribeFromRequestFromReceptionChannel will stop the reception of Request messages from Reception channel.
+// UnsubscribeFromGetServiceInfoOperation will stop the reception of Request messages from Reception channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromRequestFromReceptionChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromGetServiceInfoOperation(
+	ctx context.Context,
+) {
 	// Get channel address
 	addr := "issue148.reception"
 
@@ -249,11 +254,11 @@ func (c *AppController) UnsubscribeFromRequestFromReceptionChannel(ctx context.C
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// PublishReplyOnReplyChannel will send a Reply message on Reply channel.
-
+// SendAsReplyToGetServiceInfoOperation will send a Reply message on Reply channel.
+//
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishReplyOnReplyChannel(
+func (c *AppController) SendAsReplyToGetServiceInfoOperation(
 	ctx context.Context,
 	chanAddr string,
 	msg ReplyMessage,
@@ -377,12 +382,12 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishRequestOnReceptionChannel will send a Request message on Reception channel.
-// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
+// SendToGetServiceInfoOperation will send a Request message on Reception channel.
 //
+// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishRequestOnReceptionChannel(
+func (c *UserController) SendToGetServiceInfoOperation(
 	ctx context.Context,
 	msg RequestMessage,
 ) error {
@@ -408,7 +413,7 @@ func (c *UserController) PublishRequestOnReceptionChannel(
 	})
 }
 
-// RequestReplyOnReplyChannelWithRequestOnReceptionChannel will send a Request message on Reception channel
+// RequestToGetServiceInfoOperation will send a Request message on Reception channel
 // and wait for a Reply message from Reply channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -417,7 +422,7 @@ func (c *UserController) PublishRequestOnReceptionChannel(
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *UserController) RequestReplyOnReplyChannelWithRequestOnReceptionChannel(
+func (c *UserController) RequestToGetServiceInfoOperation(
 	ctx context.Context,
 	msg RequestMessage,
 ) (ReplyMessage, error) {
@@ -448,7 +453,7 @@ func (c *UserController) RequestReplyOnReplyChannelWithRequestOnReceptionChannel
 	}()
 
 	// Send the message
-	if err := c.PublishRequestOnReceptionChannel(ctx, msg); err != nil {
+	if err := c.SendToGetServiceInfoOperation(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
 		return ReplyMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}

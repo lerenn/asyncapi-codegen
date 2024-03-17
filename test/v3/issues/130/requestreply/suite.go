@@ -43,23 +43,23 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestRequestReply() {
 	// Listen for pings on the application
-	err := suite.app.SubscribeToPingFromPingChannel(
+	err := suite.app.SubscribeToPingOperation(
 		context.Background(),
 		func(ctx context.Context, msg PingMessage) {
 			var respMsg PongMessage
 			respMsg.Payload.Event = msg.Payload.Event
-			err := suite.app.PublishPongOnPongChannel(ctx, respMsg)
+			err := suite.app.SendAsReplyToPingOperation(ctx, respMsg)
 			suite.Require().NoError(err)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingFromPingChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingOperation(context.Background())
 
 	// Set a new ping
 	var msg PingMessage
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.RequestPongOnPongChannelWithPingOnPingChannel(context.Background(), msg)
+	resp, err := suite.user.RequestToPingOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Check response
@@ -68,7 +68,7 @@ func (suite *Suite) TestRequestReply() {
 
 func (suite *Suite) TestRequestReplyWithID() {
 	// Listen to new pings
-	err := suite.app.SubscribeToPingWithIDFromPingWithIDChannel(context.Background(),
+	err := suite.app.SubscribeToPingWithIDOperation(context.Background(),
 		func(ctx context.Context, msg PingWithIDMessage) {
 			// Set response
 			var respMsg PongWithIDMessage
@@ -76,18 +76,18 @@ func (suite *Suite) TestRequestReplyWithID() {
 			respMsg.Payload.Event = msg.Payload.Event
 
 			// Send response
-			callbackErr := suite.app.PublishPongWithIDOnPongWithIDChannel(ctx, respMsg)
+			callbackErr := suite.app.SendAsReplyToPingWithIDOperation(ctx, respMsg)
 			suite.Require().NoError(callbackErr)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingWithIDFromPingWithIDChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingWithIDOperation(context.Background())
 
 	// Set a new ping
 	var msg PingWithIDMessage
 	msg.Payload.Event = utils.ToPointer("testing")
 
 	// Send a request
-	resp, err := suite.user.RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel(
+	resp, err := suite.user.RequestToPingWithIDOperation(
 		context.Background(),
 		msg,
 	)

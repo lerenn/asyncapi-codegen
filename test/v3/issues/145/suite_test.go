@@ -54,16 +54,16 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestRequestReplyWithReplyHelper() {
 	// Listen for pings on the application
-	err := suite.app.SubscribeToPingFromPingChannel(
+	err := suite.app.SubscribeToPingRequestOperation(
 		context.Background(),
 		func(ctx context.Context, ping PingMessage) {
-			callbackErr := suite.app.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
+			callbackErr := suite.app.ReplyToPingRequestOperation(ctx, ping, func(pong *PongMessage) {
 				pong.Payload.Event = ping.Payload.Event
 			})
 			suite.Require().NoError(callbackErr)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingFromPingChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingRequestOperation(context.Background())
 
 	// Set a new ping
 	var msg PingMessage
@@ -71,7 +71,7 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 	msg.Headers.ReplyTo = utils.ToPointer("issue145.pong.1234")
 
 	// Send a request
-	resp, err := suite.user.RequestPongOnPongChannelWithPingOnPingChannel(context.Background(), msg)
+	resp, err := suite.user.RequestToPingRequestOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Check response
@@ -80,16 +80,16 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 
 func (suite *Suite) TestRequestReplyOnRawChannel() {
 	// Listen for pings on the application
-	err := suite.app.SubscribeToPingFromPingChannel(
+	err := suite.app.SubscribeToPingRequestOperation(
 		context.Background(),
 		func(ctx context.Context, ping PingMessage) {
-			callbackErr := suite.app.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
+			callbackErr := suite.app.ReplyToPingRequestOperation(ctx, ping, func(pong *PongMessage) {
 				pong.Payload.Event = ping.Payload.Event
 			})
 			suite.Require().NoError(callbackErr)
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeFromPingFromPingChannel(context.Background())
+	defer suite.app.UnsubscribeFromPingRequestOperation(context.Background())
 
 	// Listen directly for reply from the broker
 	sub, err := suite.broker.Subscribe(context.Background(), "issue145.pong.2345")
@@ -114,7 +114,7 @@ func (suite *Suite) TestRequestReplyOnRawChannel() {
 	msg.Headers.ReplyTo = utils.ToPointer("issue145.pong.2345")
 
 	// Send a request
-	err = suite.user.PublishPingOnPingChannel(context.Background(), msg)
+	err = suite.user.SendToPingRequestOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 
 	// Wait for the end

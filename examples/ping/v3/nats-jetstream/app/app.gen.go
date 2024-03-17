@@ -15,8 +15,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// PingReceivedFromPingChannel receive all Ping messages from Ping channel.
-	PingReceivedFromPingChannel(ctx context.Context, msg PingMessage)
+	// PingRequestOperationReceived receive all Ping messages from Ping channel.
+	PingRequestOperationReceived(ctx context.Context, msg PingMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -127,7 +127,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToPingFromPingChannel(ctx, as.PingReceivedFromPingChannel); err != nil {
+	if err := c.SubscribeToPingRequestOperation(ctx, as.PingRequestOperationReceived); err != nil {
 		return err
 	}
 
@@ -136,10 +136,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromPingFromPingChannel(ctx)
+	c.UnsubscribeFromPingRequestOperation(ctx)
 }
 
-// SubscribeToPingFromPingChannel will receive Ping messages from Ping channel.
+// SubscribeToPingRequestOperation will receive Ping messages from Ping channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -147,7 +147,10 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
+func (c *AppController) SubscribeToPingRequestOperation(
+	ctx context.Context,
+	fn func(ctx context.Context, msg PingMessage),
+) error {
 	// Get channel address
 	addr := "ping.v3"
 
@@ -215,9 +218,9 @@ func (c *AppController) SubscribeToPingFromPingChannel(ctx context.Context, fn f
 	return nil
 }
 
-// ReplyToPingWithPongOnPongChannel is a helper function to
+// ReplyToPingRequestOperation is a helper function to
 // reply to a Ping message with a Pong message on Pong channel.
-func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
+func (c *AppController) ReplyToPingRequestOperation(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
 	// Create reply message
 	replyMsg := NewPongMessage()
 	replyMsg.SetAsResponseFrom(&recvMsg)
@@ -226,12 +229,14 @@ func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, re
 	fn(&replyMsg)
 
 	// Publish reply
-	return c.PublishPongOnPongChannel(ctx, replyMsg)
+	return c.SendAsReplyToPingRequestOperation(ctx, replyMsg)
 }
 
-// UnsubscribeFromPingFromPingChannel will stop the reception of Ping messages from Ping channel.
+// UnsubscribeFromPingRequestOperation will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingRequestOperation(
+	ctx context.Context,
+) {
 	// Get channel address
 	addr := "ping.v3"
 
@@ -253,11 +258,11 @@ func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) 
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// PublishPongOnPongChannel will send a Pong message on Pong channel.
-
+// SendAsReplyToPingRequestOperation will send a Pong message on Pong channel.
+//
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongOnPongChannel(
+func (c *AppController) SendAsReplyToPingRequestOperation(
 	ctx context.Context,
 	msg PongMessage,
 ) error {

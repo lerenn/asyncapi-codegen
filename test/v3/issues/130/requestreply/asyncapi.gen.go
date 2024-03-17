@@ -15,11 +15,11 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// PingReceivedFromPingChannel receive all Ping messages from Ping channel.
-	PingReceivedFromPingChannel(ctx context.Context, msg PingMessage)
+	// PingOperationReceived receive all Ping messages from Ping channel.
+	PingOperationReceived(ctx context.Context, msg PingMessage)
 
-	// PingWithIDReceivedFromPingWithIDChannel receive all PingWithID messages from PingWithID channel.
-	PingWithIDReceivedFromPingWithIDChannel(ctx context.Context, msg PingWithIDMessage)
+	// PingWithIDOperationReceived receive all PingWithID messages from PingWithID channel.
+	PingWithIDOperationReceived(ctx context.Context, msg PingWithIDMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -130,10 +130,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToPingFromPingChannel(ctx, as.PingReceivedFromPingChannel); err != nil {
+	if err := c.SubscribeToPingOperation(ctx, as.PingOperationReceived); err != nil {
 		return err
 	}
-	if err := c.SubscribeToPingWithIDFromPingWithIDChannel(ctx, as.PingWithIDReceivedFromPingWithIDChannel); err != nil {
+	if err := c.SubscribeToPingWithIDOperation(ctx, as.PingWithIDOperationReceived); err != nil {
 		return err
 	}
 
@@ -142,11 +142,11 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromPingFromPingChannel(ctx)
-	c.UnsubscribeFromPingWithIDFromPingWithIDChannel(ctx)
+	c.UnsubscribeFromPingOperation(ctx)
+	c.UnsubscribeFromPingWithIDOperation(ctx)
 }
 
-// SubscribeToPingFromPingChannel will receive Ping messages from Ping channel.
+// SubscribeToPingOperation will receive Ping messages from Ping channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -154,7 +154,10 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
+func (c *AppController) SubscribeToPingOperation(
+	ctx context.Context,
+	fn func(ctx context.Context, msg PingMessage),
+) error {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -217,9 +220,9 @@ func (c *AppController) SubscribeToPingFromPingChannel(ctx context.Context, fn f
 	return nil
 }
 
-// ReplyToPingWithPongOnPongChannel is a helper function to
+// ReplyToPingOperation is a helper function to
 // reply to a Ping message with a Pong message on Pong channel.
-func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
+func (c *AppController) ReplyToPingOperation(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
 	// Create reply message
 	replyMsg := NewPongMessage()
 
@@ -227,12 +230,14 @@ func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, re
 	fn(&replyMsg)
 
 	// Publish reply
-	return c.PublishPongOnPongChannel(ctx, replyMsg)
+	return c.SendAsReplyToPingOperation(ctx, replyMsg)
 }
 
-// UnsubscribeFromPingFromPingChannel will stop the reception of Ping messages from Ping channel.
+// UnsubscribeFromPingOperation will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingOperation(
+	ctx context.Context,
+) {
 	// Get channel address
 	addr := "issue130.ping"
 
@@ -252,14 +257,17 @@ func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) 
 	delete(c.subscriptions, addr)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
-} // SubscribeToPingWithIDFromPingWithIDChannel will receive PingWithID messages from PingWithID channel.
+} // SubscribeToPingWithIDOperation will receive PingWithID messages from PingWithID channel.
 // Callback function 'fn' will be called each time a new message is received.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingWithIDFromPingWithIDChannel(ctx context.Context, fn func(ctx context.Context, msg PingWithIDMessage)) error {
+func (c *AppController) SubscribeToPingWithIDOperation(
+	ctx context.Context,
+	fn func(ctx context.Context, msg PingWithIDMessage),
+) error {
 	// Get channel address
 	addr := "issue130.pingWithID"
 
@@ -327,9 +335,9 @@ func (c *AppController) SubscribeToPingWithIDFromPingWithIDChannel(ctx context.C
 	return nil
 }
 
-// ReplyToPingWithIDWithPongWithIDOnPongWithIDChannel is a helper function to
+// ReplyToPingWithIDOperation is a helper function to
 // reply to a PingWithID message with a PongWithID message on PongWithID channel.
-func (c *AppController) ReplyToPingWithIDWithPongWithIDOnPongWithIDChannel(ctx context.Context, recvMsg PingWithIDMessage, fn func(replyMsg *PongWithIDMessage)) error {
+func (c *AppController) ReplyToPingWithIDOperation(ctx context.Context, recvMsg PingWithIDMessage, fn func(replyMsg *PongWithIDMessage)) error {
 	// Create reply message
 	replyMsg := NewPongWithIDMessage()
 	replyMsg.SetAsResponseFrom(&recvMsg)
@@ -338,12 +346,14 @@ func (c *AppController) ReplyToPingWithIDWithPongWithIDOnPongWithIDChannel(ctx c
 	fn(&replyMsg)
 
 	// Publish reply
-	return c.PublishPongWithIDOnPongWithIDChannel(ctx, replyMsg)
+	return c.SendAsReplyToPingWithIDOperation(ctx, replyMsg)
 }
 
-// UnsubscribeFromPingWithIDFromPingWithIDChannel will stop the reception of PingWithID messages from PingWithID channel.
+// UnsubscribeFromPingWithIDOperation will stop the reception of PingWithID messages from PingWithID channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingWithIDFromPingWithIDChannel(ctx context.Context) {
+func (c *AppController) UnsubscribeFromPingWithIDOperation(
+	ctx context.Context,
+) {
 	// Get channel address
 	addr := "issue130.pingWithID"
 
@@ -365,11 +375,11 @@ func (c *AppController) UnsubscribeFromPingWithIDFromPingWithIDChannel(ctx conte
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// PublishPongOnPongChannel will send a Pong message on Pong channel.
-
+// SendAsReplyToPingOperation will send a Pong message on Pong channel.
+//
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongOnPongChannel(
+func (c *AppController) SendAsReplyToPingOperation(
 	ctx context.Context,
 	msg PongMessage,
 ) error {
@@ -395,11 +405,11 @@ func (c *AppController) PublishPongOnPongChannel(
 	})
 }
 
-// PublishPongWithIDOnPongWithIDChannel will send a PongWithID message on PongWithID channel.
-
+// SendAsReplyToPingWithIDOperation will send a PongWithID message on PongWithID channel.
+//
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) PublishPongWithIDOnPongWithIDChannel(
+func (c *AppController) SendAsReplyToPingWithIDOperation(
 	ctx context.Context,
 	msg PongWithIDMessage,
 ) error {
@@ -530,12 +540,12 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishPingOnPingChannel will send a Ping message on Ping channel.
-// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
+// SendToPingOperation will send a Ping message on Ping channel.
 //
+// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingOnPingChannel(
+func (c *UserController) SendToPingOperation(
 	ctx context.Context,
 	msg PingMessage,
 ) error {
@@ -561,7 +571,7 @@ func (c *UserController) PublishPingOnPingChannel(
 	})
 }
 
-// RequestPongOnPongChannelWithPingOnPingChannel will send a Ping message on Ping channel
+// RequestToPingOperation will send a Ping message on Ping channel
 // and wait for a Pong message from Pong channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -570,7 +580,7 @@ func (c *UserController) PublishPingOnPingChannel(
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
+func (c *UserController) RequestToPingOperation(
 	ctx context.Context,
 	msg PingMessage,
 ) (PongMessage, error) {
@@ -598,7 +608,7 @@ func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
 	}()
 
 	// Send the message
-	if err := c.PublishPingOnPingChannel(ctx, msg); err != nil {
+	if err := c.SendToPingOperation(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
 		return PongMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
@@ -639,12 +649,12 @@ func (c *UserController) RequestPongOnPongChannelWithPingOnPingChannel(
 	}
 }
 
-// PublishPingWithIDOnPingWithIDChannel will send a PingWithID message on PingWithID channel.
-// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
+// SendToPingWithIDOperation will send a PingWithID message on PingWithID channel.
 //
+// NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishPingWithIDOnPingWithIDChannel(
+func (c *UserController) SendToPingWithIDOperation(
 	ctx context.Context,
 	msg PingWithIDMessage,
 ) error {
@@ -676,7 +686,7 @@ func (c *UserController) PublishPingWithIDOnPingWithIDChannel(
 	})
 }
 
-// RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel will send a PingWithID message on PingWithID channel
+// RequestToPingWithIDOperation will send a PingWithID message on PingWithID channel
 // and wait for a PongWithID message from PongWithID channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -685,7 +695,7 @@ func (c *UserController) PublishPingWithIDOnPingWithIDChannel(
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *UserController) RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPingWithIDChannel(
+func (c *UserController) RequestToPingWithIDOperation(
 	ctx context.Context,
 	msg PingWithIDMessage,
 ) (PongWithIDMessage, error) {
@@ -718,7 +728,7 @@ func (c *UserController) RequestPongWithIDOnPongWithIDChannelWithPingWithIDOnPin
 	}
 
 	// Send the message
-	if err := c.PublishPingWithIDOnPingWithIDChannel(ctx, msg); err != nil {
+	if err := c.SendToPingWithIDOperation(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
 		return PongWithIDMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}

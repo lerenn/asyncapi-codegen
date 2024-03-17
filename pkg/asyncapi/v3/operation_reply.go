@@ -49,3 +49,11 @@ func (or *OperationReply) Process(name string, op *Operation, spec Specification
 	// Process address
 	or.Address.Process(name+"Address", op, spec)
 }
+
+// Follow returns referenced operation if specified or the actual operation.
+func (or *OperationReply) Follow() *OperationReply {
+	if or.ReferenceTo != nil {
+		return or.ReferenceTo
+	}
+	return or
+}

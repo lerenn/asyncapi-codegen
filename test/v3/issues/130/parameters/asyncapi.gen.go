@@ -13,8 +13,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// UserReceivedFromUserSignupChannel receive all User messages from UserSignup channel.
-	UserReceivedFromUserSignupChannel(ctx context.Context, msg UserMessage)
+	// ReceiveUserSignedUpOperationReceived receive all User messages from UserSignup channel.
+	ReceiveUserSignedUpOperationReceived(ctx context.Context, msg UserMessage)
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -132,7 +132,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 }
 
-// SubscribeToUserFromUserSignupChannel will receive User messages from UserSignup channel.
+// SubscribeToReceiveUserSignedUpOperation will receive User messages from UserSignup channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -140,7 +140,11 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToUserFromUserSignupChannel(ctx context.Context, params UserSignupChannelParameters, fn func(ctx context.Context, msg UserMessage)) error {
+func (c *AppController) SubscribeToReceiveUserSignedUpOperation(
+	ctx context.Context,
+	params UserSignupChannelParameters,
+	fn func(ctx context.Context, msg UserMessage),
+) error {
 	// Get channel address
 	addr := fmt.Sprintf("issue130.user.%s.signedup", params.UserId)
 
@@ -201,9 +205,12 @@ func (c *AppController) SubscribeToUserFromUserSignupChannel(ctx context.Context
 	c.subscriptions[addr] = sub
 
 	return nil
-} // UnsubscribeFromUserFromUserSignupChannel will stop the reception of User messages from UserSignup channel.
+} // UnsubscribeFromReceiveUserSignedUpOperation will stop the reception of User messages from UserSignup channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromUserFromUserSignupChannel(ctx context.Context, params UserSignupChannelParameters) {
+func (c *AppController) UnsubscribeFromReceiveUserSignedUpOperation(
+	ctx context.Context,
+	params UserSignupChannelParameters,
+) {
 	// Get channel address
 	addr := fmt.Sprintf("issue130.user.%s.signedup", params.UserId)
 
@@ -322,11 +329,11 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishUserOnUserSignupChannel will send a User message on UserSignup channel.
-
+// SendToReceiveUserSignedUpOperation will send a User message on UserSignup channel.
+//
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) PublishUserOnUserSignupChannel(
+func (c *UserController) SendToReceiveUserSignedUpOperation(
 	ctx context.Context,
 	params UserSignupChannelParameters,
 	msg UserMessage,

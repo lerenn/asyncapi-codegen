@@ -52,7 +52,7 @@ func (ac *AppController) Close(ctx context.Context)
 // method.
 func (ac *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscriber) error
 
-// SubscribeToSayHelloFromHelloChannel will subscribe to new messages on the "hello"
+// SubscribeToReceiveHelloOperation will subscribe to new messages on the "hello"
 // channel, specified in the "ReceiveHello" operation.
 // It will expect messages as specified in the AsyncAPI specification.
 //
@@ -64,7 +64,7 @@ func (ac *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubsc
 //
 // The subscription will be canceled if the context is canceled, if the subscription
 // is explicitely unsubscribed or if the controller is closed
-func (ac *AppController) SubscribeToSayHelloFromHelloChannel(ctx context.Context, fn func(msg SayHelloMessage)) error
+func (ac *AppController) SubscribeToReceiveHelloOperation(ctx context.Context, fn func(msg SayHelloMessage)) error
 
 // UnsubscribeFromReceiveHelloOperation will unsubscribe only the subscription
 // on the "ReceiveHello" operation.
@@ -95,9 +95,10 @@ func main() {
   // Subscribe to HelloWorld messages
   // Note: it will indefinitely wait for messages as context has no timeout
   log.Println("Subscribe to hello world...")
-  ctrl.SubscribeToSayHelloFromHelloChannel(context.Background(), func(_ context.Context, msg SayHelloMessage) {
+  ctrl.SubscribeToReceiveHelloOperation(context.Background(), func(_ context.Context, msg SayHelloMessage) {
     log.Println("Received message:", msg.Payload)
   })
+	defer ctrl.UnsubscribeFromReceiveHelloOperation(context.Background())
 
   // Process messages until interruption signal
   // ...
@@ -124,9 +125,9 @@ func NewUserController(bs BrokerController, options ...ControllerOption) *UserCo
 // with a `defer`
 func (cc *UserController) Close(ctx context.Context)
 
-// PublishSayHelloOnHelloChannel will publish a hello world message on the "hello"
+// SendToReceiveHelloOperation will publish a hello world message on the "hello"
 // channel as specified in the "ReceiveHello" operation.
-func (cc *UserController) PublishSayHelloOnHelloChannel(ctx context.Context, msg SayHelloMessage) error
+func (cc *UserController) SendToReceiveHelloOperation(ctx context.Context, msg SayHelloMessage) error
 ```
 
 And here is an example of the user that could be written to use this generated
@@ -150,7 +151,7 @@ func main() {
   // Send HelloWorld
   // Note: it will indefinitely wait to publish as context has no timeout
   log.Println("Publishing 'hello world' message")
-  if err := ctrl.PublishSayHelloOnHelloChannel(context.Background(), SayHelloMessage{
+  if err := ctrl.SendToReceiveHelloOperation(context.Background(), SayHelloMessage{
     Payload: "HelloWorld!",
   }); err != nil {
     panic(err)
