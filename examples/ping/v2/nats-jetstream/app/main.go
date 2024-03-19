@@ -13,11 +13,13 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
+var _ AppSubscriber = (*ServerSubscriber)(nil)
+
 type ServerSubscriber struct {
 	Controller *AppController
 }
 
-func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage) {
+func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage) error {
 	// Generate a pong message, set as a response of the request
 	resp := NewPongMessage()
 	resp.SetAsResponseFrom(&req)
@@ -30,6 +32,8 @@ func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage) {
 	if err != nil {
 		panic(err)
 	}
+
+	return nil
 }
 
 func main() {

@@ -9,14 +9,15 @@ import (
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/errorhandlers"
 
 	"github.com/google/uuid"
 )
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// PingRequestOperationReceived receive all Ping messages from Ping channel.
-	PingRequestOperationReceived(ctx context.Context, msg PingMessage)
+	// PingReceivedFromPingChannel receive all Ping messages from Ping channel.
+	PingReceivedFromPingChannel(ctx context.Context, msg PingMessage) error
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -38,6 +39,7 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  errorhandlers.Noop(),
 	}
 
 	// Apply options
@@ -127,7 +129,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeToPingRequestOperation(ctx, as.PingRequestOperationReceived); err != nil {
+	if err := c.SubscribeToPingFromPingChannel(ctx, as.PingReceivedFromPingChannel); err != nil {
 		return err
 	}
 
@@ -136,10 +138,10 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromPingRequestOperation(ctx)
+	c.UnsubscribeFromPingFromPingChannel(ctx)
 }
 
-// SubscribeToPingRequestOperation will receive Ping messages from Ping channel.
+// SubscribeToPingFromPingChannel will receive Ping messages from Ping channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -147,10 +149,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingRequestOperation(
-	ctx context.Context,
-	fn func(ctx context.Context, msg PingMessage),
-) error {
+func (c *AppController) SubscribeToPingFromPingChannel(ctx context.Context, fn func(ctx context.Context, msg PingMessage) error) error {
 	// Get channel address
 	addr := "ping.v3"
 
@@ -178,21 +177,21 @@ func (c *AppController) SubscribeToPingRequestOperation(
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newPingMessageFromBrokerMessage(brokerMsg)
+				msg, err := newPingMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -203,11 +202,18 @@ func (c *AppController) SubscribeToPingRequestOperation(
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, addr, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -218,9 +224,9 @@ func (c *AppController) SubscribeToPingRequestOperation(
 	return nil
 }
 
-// ReplyToPingRequestOperation is a helper function to
+// ReplyToPingWithPongOnPongChannel is a helper function to
 // reply to a Ping message with a Pong message on Pong channel.
-func (c *AppController) ReplyToPingRequestOperation(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
+func (c *AppController) ReplyToPingWithPongOnPongChannel(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
 	// Create reply message
 	replyMsg := NewPongMessage()
 	replyMsg.SetAsResponseFrom(&recvMsg)
@@ -229,14 +235,12 @@ func (c *AppController) ReplyToPingRequestOperation(ctx context.Context, recvMsg
 	fn(&replyMsg)
 
 	// Publish reply
-	return c.SendAsReplyToPingRequestOperation(ctx, replyMsg)
+	return c.PublishPongOnPongChannel(ctx, replyMsg)
 }
 
-// UnsubscribeFromPingRequestOperation will stop the reception of Ping messages from Ping channel.
+// UnsubscribeFromPingFromPingChannel will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingRequestOperation(
-	ctx context.Context,
-) {
+func (c *AppController) UnsubscribeFromPingFromPingChannel(ctx context.Context) {
 	// Get channel address
 	addr := "ping.v3"
 
@@ -258,11 +262,11 @@ func (c *AppController) UnsubscribeFromPingRequestOperation(
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// SendAsReplyToPingRequestOperation will send a Pong message on Pong channel.
-//
+// PublishPongOnPongChannel will send a Pong message on Pong channel.
+
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SendAsReplyToPingRequestOperation(
+func (c *AppController) PublishPongOnPongChannel(
 	ctx context.Context,
 	msg PongMessage,
 ) error {
@@ -311,6 +315,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -328,6 +334,13 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	return func(controller *controller) {
 		controller.middlewares = middlewares
+	}
+}
+
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
 	}
 }
 

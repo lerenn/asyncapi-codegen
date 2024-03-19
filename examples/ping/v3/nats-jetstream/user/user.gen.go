@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/errorhandlers"
 
 	"github.com/google/uuid"
 )
@@ -32,6 +33,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  errorhandlers.Noop(),
 	}
 
 	// Apply options
@@ -197,20 +199,22 @@ func (c *UserController) RequestToPingRequestOperation(
 	// Wait for corresponding response
 	for {
 		select {
-		case brokerMsg, open := <-sub.MessagesChannel():
+		case acknowledgeableBrokerMessage, open := <-sub.MessagesChannel():
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then the subscription ended before
 			// receiving the expected message
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				c.logger.Error(ctx, "Channel closed before getting message")
 				return PongMessage{}, extensions.ErrSubscriptionCanceled
 			}
 
 			// Get new message
-			rmsg, err := newPongMessageFromBrokerMessage(brokerMsg)
+			rmsg, err := newPongMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 			if err != nil {
 				c.logger.Error(ctx, err.Error())
 			}
+
+			acknowledgeableBrokerMessage.Ack()
 
 			// If message doesn't have corresponding correlation ID, then ingore and continue
 			if msg.CorrelationID() != rmsg.CorrelationID() {
@@ -218,12 +222,12 @@ func (c *UserController) RequestToPingRequestOperation(
 			}
 
 			// Set context with received values as it is the expected message
-			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
 			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
 
 			// Execute middlewares before returning
-			if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
+			if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, nil); err != nil {
 				return PongMessage{}, err
 			}
 
@@ -231,7 +235,7 @@ func (c *UserController) RequestToPingRequestOperation(
 			//
 			// NOTE: it is transformed from the broker again, as it could have
 			// been modified by middlewares
-			return newPongMessageFromBrokerMessage(brokerMsg)
+			return newPongMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 		case <-ctx.Done(): // Set corrsponding error if context is done
 			c.logger.Error(ctx, "Context done before getting message")
 			return PongMessage{}, extensions.ErrContextCanceled
@@ -254,6 +258,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -271,6 +277,13 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	return func(controller *controller) {
 		controller.middlewares = middlewares
+	}
+}
+
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
 	}
 }
 
