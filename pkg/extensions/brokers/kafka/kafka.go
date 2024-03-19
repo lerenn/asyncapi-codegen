@@ -23,8 +23,11 @@ type Controller struct {
 	// Reception only
 	groupID string
 
-	logger extensions.Logger
+	logger     extensions.Logger
+	autoCommit bool
 }
+
+type MessagesHandler func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription)
 
 // ControllerOption is a function that can be used to configure a Kafka controller
 // Examples: WithGroupID(), WithPartition(), WithMaxBytes(), WithLogger().
@@ -34,11 +37,12 @@ type ControllerOption func(controller *Controller)
 func NewController(hosts []string, options ...ControllerOption) (*Controller, error) {
 	// Create default controller
 	controller := &Controller{
-		logger:    extensions.DummyLogger{},
-		groupID:   brokers.DefaultQueueGroupID,
-		hosts:     hosts,
-		partition: 0,
-		maxBytes:  10e6, // 10MB
+		logger:     extensions.DummyLogger{},
+		groupID:    brokers.DefaultQueueGroupID,
+		hosts:      hosts,
+		partition:  0,
+		maxBytes:   10e6, // 10MB
+		autoCommit: true,
 	}
 
 	// Execute options
@@ -74,6 +78,14 @@ func WithMaxBytes(maxBytes int) ControllerOption {
 func WithLogger(logger extensions.Logger) ControllerOption {
 	return func(controller *Controller) {
 		controller.logger = logger
+	}
+}
+
+// WithAutoCommit set if a AutoCommitMessagesHandler or ManualCommitMessagesHandler should be used for processing
+// the messages
+func WithAutoCommit(enabled bool) ControllerOption {
+	return func(controller *Controller) {
+		controller.autoCommit = enabled
 	}
 }
 
@@ -140,12 +152,16 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 
 	// Create subscription
 	sub := extensions.NewBrokerChannelSubscription(
-		make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
+		make(chan extensions.AcknowledgeableBrokerMessage, brokers.BrokerMessagesQueueSize),
 		make(chan any, 1),
 	)
 
 	// Handle events
-	go c.messagesHandler(ctx, r, sub)
+	if c.autoCommit {
+		go autoCommitMessagesHandler(&c.logger)(ctx, r, sub)
+	} else {
+		go manualCommitMessagesHandler(&c.logger)(ctx, r, sub)
+	}
 
 	// Wait for cancellation and stop the kafka listener when it happens
 	sub.WaitForCancellationAsync(func() {
@@ -155,32 +171,6 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 	})
 
 	return sub, nil
-}
-
-func (c *Controller) messagesHandler(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
-	for {
-		msg, err := r.ReadMessage(ctx)
-		if err != nil {
-			// If the error is not io.EOF, then it is a real error
-			if !errors.Is(err, io.EOF) {
-				c.logger.Warning(ctx, fmt.Sprintf("Error when reading message: %q", err.Error()))
-			}
-
-			return
-		}
-
-		// Get headers
-		headers := make(map[string][]byte, len(msg.Headers))
-		for _, header := range msg.Headers {
-			headers[header.Key] = header.Value
-		}
-
-		// Send received message
-		sub.TransmitReceivedMessage(extensions.BrokerMessage{
-			Headers: headers,
-			Payload: msg.Value,
-		})
-	}
 }
 
 func (c *Controller) checkTopicExistOrCreateIt(ctx context.Context, topic string) error {
@@ -222,3 +212,94 @@ func (c *Controller) checkTopicExistOrCreateIt(ctx context.Context, topic string
 		c.logger.Warning(ctx, fmt.Sprintf("Topic %s doesn't exists yet, retrying (#%d)", topic, i))
 	}
 }
+
+// autoCommitMessagesHandler provides a MessagesHandler with auto commit
+// using auto commit could result in an offset being committed before the message is fully processed and handled but
+// allow more throughput
+//
+// Maybe consider to use the manualCommitMessagesHandler
+func autoCommitMessagesHandler(logger *extensions.Logger) func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
+	return func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
+		for {
+			msg, err := r.ReadMessage(ctx)
+			if err != nil {
+				// If the error is not io.EOF, then it is a real error
+				if !errors.Is(err, io.EOF) {
+					(*logger).Warning(ctx, fmt.Sprintf("Error when reading message: %q", err.Error()))
+				}
+
+				return
+			}
+
+			// Get headers
+			headers := make(map[string][]byte, len(msg.Headers))
+			for _, header := range msg.Headers {
+				headers[header.Key] = header.Value
+			}
+
+			// Send received message
+			sub.TransmitReceivedMessage(extensions.NewAcknowledgeableBrokerMessage(
+				extensions.BrokerMessage{
+					Headers: headers,
+					Payload: msg.Value,
+				},
+				BrokerAcknowledgment{NoopCommit}))
+		}
+	}
+}
+
+// manualCommitMessagesHandler provides a MessagesHandler with manual commit
+// the message is committed by user via the AcknowledgementHandler
+func manualCommitMessagesHandler(logger *extensions.Logger) func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
+	return func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
+		for {
+			msg, err := r.FetchMessage(ctx)
+			if err != nil {
+				// If the error is not io.EOF, then it is a real error
+				if !errors.Is(err, io.EOF) {
+					(*logger).Warning(ctx, fmt.Sprintf("Error when reading message: %q", err.Error()))
+				}
+
+				return
+			}
+
+			// Get headers
+			headers := make(map[string][]byte, len(msg.Headers))
+			for _, header := range msg.Headers {
+				headers[header.Key] = header.Value
+			}
+
+			// Send received message
+			sub.TransmitReceivedMessage(extensions.NewAcknowledgeableBrokerMessage(
+				extensions.BrokerMessage{
+					Headers: headers,
+					Payload: msg.Value,
+				},
+				BrokerAcknowledgment{doCommit: func() {
+					if err := r.CommitMessages(ctx, msg); err != nil {
+						(*logger).Error(ctx, fmt.Sprintf("error on committing message: %q", err.Error()))
+					}
+				}},
+			))
+		}
+	}
+}
+
+var _ extensions.BrokerAcknowledgment = (*BrokerAcknowledgment)(nil)
+
+// BrokerAcknowledgment for kafka broker.
+// Naks are not supported on kafka side. Committing the message is the only way to handling the message.
+// Proper errorhandling needs to be done by the subscriber
+type BrokerAcknowledgment struct {
+	doCommit func()
+}
+
+func (k BrokerAcknowledgment) AckMessage() {
+	k.doCommit()
+}
+
+func (k BrokerAcknowledgment) NakMessage() {
+	k.doCommit()
+}
+
+func NoopCommit() {}
