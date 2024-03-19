@@ -77,9 +77,10 @@ func (suite *Suite) TestAddingHeader() {
 	// Check what the app receive and translate
 	var recvMsg Issue99TestMessage
 	wg.Add(1)
-	err := suite.app.SubscribeIssue99Test(context.Background(), func(_ context.Context, msg Issue99TestMessage) {
+	err := suite.app.SubscribeIssue99Test(context.Background(), func(_ context.Context, msg Issue99TestMessage) error {
 		recvMsg = msg
 		wg.Done()
+		return nil
 	})
 	suite.Require().NoError(err)
 
