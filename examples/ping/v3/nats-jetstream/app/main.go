@@ -18,10 +18,10 @@ type Subscriber struct {
 	Controller *AppController
 }
 
-func (s Subscriber) PingReceivedFromPingChannel(ctx context.Context, ping PingMessage) error {
+func (s Subscriber) PingRequestOperationReceived(ctx context.Context, ping PingMessage) error {
 	// Publish the pong message, with the callback function to modify it
 	// Note: it will indefinitely wait to publish as context has no timeout
-	err := s.Controller.ReplyToPingWithPongOnPongChannel(ctx, ping, func(pong *PongMessage) {
+	err := s.Controller.ReplyToPingRequestOperation(ctx, ping, func(pong *PongMessage) {
 		// Reply with the same event than the ping
 		pong.Payload.Event = ping.Payload.Event
 	})

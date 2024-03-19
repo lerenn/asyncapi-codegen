@@ -166,7 +166,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(ctx context
     go func() {
         for {
             // Wait for next message
-             acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
+            acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
             // If subscription is closed and there is no more message
             // (i.e. uninitialized message), then exit the function

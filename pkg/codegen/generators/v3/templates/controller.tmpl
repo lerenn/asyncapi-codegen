@@ -140,17 +140,12 @@ func (c *{{ .Prefix }}Controller) UnsubscribeFromAllChannels(ctx context.Context
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-{{- if .Channel.Follow.Parameters}}
-func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context, params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, fn func (ctx context.Context, msg {{opToMsgTypeName $value}}) error) error {
-{{- else}}
-func (c *{{ $.Prefix }}Controller) SubscribeTo{{cutSuffix (opToMsgTypeName $value) "Message" }}From{{opToChannelTypeName $value}}(ctx context.Context, fn func (ctx context.Context, msg {{opToMsgTypeName $value}}) error) error {
-{{- end }}
 func (c *{{ $.Prefix }}Controller) SubscribeTo{{ namify $value.Follow.Name }}(
     ctx context.Context,
     {{- if .Channel.Follow.Parameters}}
     params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
     {{- end}}
-    fn func (ctx context.Context, msg {{opToMsgTypeName $value}}),
+    fn func (ctx context.Context, msg {{opToMsgTypeName $value}}) error,
 ) error {
     // Get channel address
     addr := {{ generateChannelAddrFromOp $value }}

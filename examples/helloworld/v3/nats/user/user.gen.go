@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/errorhandlers"
 )
 
 // UserController is the structure that provides sending capabilities to the
@@ -29,6 +30,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  errorhandlers.Noop(),
 	}
 
 	// Apply options
@@ -152,6 +154,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -169,6 +173,13 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	return func(controller *controller) {
 		controller.middlewares = middlewares
+	}
+}
+
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
 	}
 }
 
