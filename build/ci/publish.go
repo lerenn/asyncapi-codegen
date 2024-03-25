@@ -1,20 +1,20 @@
-package ci
+package main
 
 import (
 	"context"
+	"dagger/asyncapi-codegen-ci/internal/dagger"
 
-	"dagger.io/dagger"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils/git"
 )
 
 const (
-	// DockerImageName is the name of the docker image.
-	DockerImageName = "lerenn/asyncapi-codegen"
+	// dockerImageName is the name of the docker image.
+	dockerImageName = "lerenn/asyncapi-codegen"
 )
 
 var (
 	// platforms represents the different OS/Arch platform wanted for docker hub.
-	platforms = []RunnerType{
+	platforms = []runnerType{
 		{OS: "linux", Arch: "386", BuildBaseImage: "golang:alpine", TargetBaseImage: "alpine"},
 		{OS: "linux", Arch: "amd64", BuildBaseImage: "golang:alpine", TargetBaseImage: "alpine"},
 		{OS: "linux", Arch: "arm/v6", BuildBaseImage: "golang:alpine", TargetBaseImage: "alpine"},
@@ -26,43 +26,32 @@ var (
 	}
 )
 
-// Publish should publish tag on git repository and docker image(s) on Docker Hub
-// Note: if this is not 'main' branch, then it will just push docker image with
-// git tag.
-func Publish(ctx context.Context, client *dagger.Client, tag string) error {
-	if err := tagAndPush(tag); err != nil {
+func tagAndPush(ctx context.Context, dir *Directory, tag string) error {
+	if _, err := dir.Export(ctx, "/tmp/asyncapi-codegen"); err != nil {
 		return err
 	}
 
-	if err := publishDocker(ctx, client, tag); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func tagAndPush(tag string) error {
 	// Stop here if this not main branch
-	if name, err := git.ActualBranchName("."); err != nil {
+	if name, err := git.ActualBranchName("/tmp/asyncapi-codegen"); err != nil {
 		return err
 	} else if name != "main" {
 		return nil
 	}
 
 	// Tag commit
-	if err := git.TagCommit(".", tag); err != nil {
+	if err := git.TagCommit("/tmp/asyncapi-codegen", tag); err != nil {
 		return err
 	}
 
 	// Push the result
-	return git.PushTags(".", tag)
+	return git.PushTags("/tmp/asyncapi-codegen", tag)
 }
 
-func publishDocker(ctx context.Context, client *dagger.Client, tag string) error {
+func publishDocker(ctx context.Context, dir *Directory, tag string) error {
 	// Get images for each platform
 	platformVariants := make([]*dagger.Container, len(platforms))
 	for i, p := range platforms {
-		platformVariants[i] = RunnerFromDockerfile(client, p)
+		platformVariants[i] = runnerFromDockerfile(dir, p)
 	}
 
 	// Set publication options from images
@@ -77,7 +66,7 @@ func publishDocker(ctx context.Context, client *dagger.Client, tag string) error
 	}
 
 	// Publish with hash
-	if _, err := client.Container().Publish(ctx, DockerImageName+":"+hash, publishOpts); err != nil {
+	if _, err := dag.Container().Publish(ctx, dockerImageName+":"+hash, publishOpts); err != nil {
 		return err
 	}
 
@@ -89,12 +78,12 @@ func publishDocker(ctx context.Context, client *dagger.Client, tag string) error
 	}
 
 	// Publish with tag passed in argument
-	if _, err := client.Container().Publish(ctx, DockerImageName+":"+tag, publishOpts); err != nil {
+	if _, err := dag.Container().Publish(ctx, dockerImageName+":"+tag, publishOpts); err != nil {
 		return err
 	}
 
 	// Publish with "latest" as tag
-	if _, err := client.Container().Publish(ctx, DockerImageName+":latest", publishOpts); err != nil {
+	if _, err := dag.Container().Publish(ctx, dockerImageName+":latest", publishOpts); err != nil {
 		return err
 	}
 
