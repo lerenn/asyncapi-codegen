@@ -17,7 +17,7 @@ func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...Contr
         subscriptions:  make(map[string]extensions.BrokerChannelSubscription),
         logger:         extensions.DummyLogger{},
         middlewares:    make([]extensions.Middleware, 0),
-        errorHandler: errorhandlers.Noop(),
+        errorHandler:   extensions.DefaultErrorHandler(),
     }
 
     // Apply options

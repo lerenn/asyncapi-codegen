@@ -32,6 +32,8 @@ func main() {
 		log.Println("Received message:", msg.Payload)
 		return nil
 	})
+	defer ctrl.UnsubscribeFromReceiveHelloOperation(context.Background())
+
 	if err != nil {
 		panic(err)
 	}

@@ -14,7 +14,7 @@ type controller struct {
     // receiving messages
     middlewares      []extensions.Middleware
     // handler to handle errors from consumers and middlewares
-    errorHandler extensions.ErrorHandler
+    errorHandler     extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
