@@ -60,8 +60,3 @@ func (e *Error) Error() string {
 
 // TestingSchema is a schema from the AsyncAPI specification required in messages
 type TestingSchema string
-
-const ()
-
-// ChannelsPaths is an array of all channels paths
-var ChannelsPaths = []string{}

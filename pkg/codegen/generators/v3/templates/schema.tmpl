@@ -20,7 +20,7 @@ struct {
 
     {{- if .AdditionalProperties}}
     // AdditionalProperties represents the object additional properties
-    AdditionalProperties map[string]{{template "schema" .AdditionalProperties.Follow}}
+    AdditionalProperties map[string]{{template "schema" .AdditionalProperties.Follow}} `json:"-"`
     {{end -}}
 }
 

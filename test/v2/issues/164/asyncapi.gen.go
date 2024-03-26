@@ -108,5 +108,5 @@ func (msg TestMapMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // TestMapSchema is a schema from the AsyncAPI specification required in messages
 type TestMapSchema struct {
 	// AdditionalProperties represents the object additional properties
-	AdditionalProperties map[string]string
+	AdditionalProperties map[string]string `json:"-"`
 }
