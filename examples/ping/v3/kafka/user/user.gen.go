@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/errorhandlers"
 
 	"github.com/google/uuid"
 )
@@ -33,7 +32,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
-		errorHandler:  errorhandlers.Noop(),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options

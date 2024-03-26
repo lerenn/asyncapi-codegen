@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/errorhandlers"
 )
 
 // AppController is the structure that provides publishing capabilities to the
@@ -31,7 +30,7 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
-		errorHandler:  errorhandlers.Noop(),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -213,7 +212,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
-		errorHandler:  errorhandlers.Noop(),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
