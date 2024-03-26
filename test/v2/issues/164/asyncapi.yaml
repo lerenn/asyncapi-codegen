@@ -8,7 +8,7 @@ components:
 
   schemas:
     TestMap:
-      type: map
+      type: object
       additionalProperties:
         type: string
     

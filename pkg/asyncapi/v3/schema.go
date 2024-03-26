@@ -35,7 +35,7 @@ type Schema struct {
 	WriteOnly            bool               `json:"writeOnly"`
 	Properties           map[string]*Schema `json:"properties"`
 	PatternProperties    map[string]*Schema `json:"patternProperties"`
-	AdditionalProperties map[string]*Schema `json:"additionalProperties"`
+	AdditionalProperties *Schema            `json:"additionalProperties"`
 	AdditionalItems      []*Schema          `json:"additionalItems"`
 	Items                *Schema            `json:"items"`
 	PropertyNames        []string           `json:"propertyNames"`
@@ -99,9 +99,9 @@ func (s *Schema) Process(name string, spec Specification, isRequired bool) {
 		p.Process(n+"PatternProperty", spec, utils.IsInSlice(s.Required, n))
 	}
 
-	// Process Additional Properties
-	for n, p := range s.AdditionalProperties {
-		p.Process(n+"AdditionalProperties", spec, utils.IsInSlice(s.Required, n))
+	// Process AdditionalProperties
+	if s.AdditionalProperties != nil {
+		s.AdditionalProperties.Process(s.Name+"AdditionalProperties", spec, false)
 	}
 
 	// Process Additional Items

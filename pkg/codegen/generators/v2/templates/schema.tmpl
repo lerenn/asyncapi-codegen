@@ -7,7 +7,8 @@
 {{- else if .Type -}}
 
 {{- /* Type Object */ -}}
-{{- if or (eq .Type "object") .Properties -}}struct {
+{{- if eq .Type "object" -}}
+struct {
     {{- range $key, $value := .Properties -}}
     {{if $value.Description}}
     // Description: {{multiLineComment $value.Description}}
@@ -15,6 +16,11 @@
     // Description: {{$value.ReferenceTo.Description}}
     {{end -}}
     {{namify $key}} {{if and (not (isRequired $ $key)) (ne $value.Type "array")}}*{{end}}{{template "schema" $value}} `json:"{{snakeCase $key}}"`
+    {{end -}}
+
+    {{- if .AdditionalProperties}}
+    // AdditionalProperties represents the object additional properties
+    AdditionalProperties map[string]{{template "schema" .AdditionalProperties}}
     {{end -}}
 }
 

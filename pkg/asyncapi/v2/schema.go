@@ -8,16 +8,17 @@ import (
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#schemaObject
 type Schema struct {
-	AllOf       []*Schema          `json:"allOf"`
-	AnyOf       []*Schema          `json:"anyOf"`
-	OneOf       []*Schema          `json:"oneOf"`
-	Type        string             `json:"type"`
-	Description string             `json:"description"`
-	Format      string             `json:"format"`
-	Properties  map[string]*Schema `json:"properties"`
-	Items       *Schema            `json:"items"`
-	Reference   string             `json:"$ref"`
-	Required    []string           `json:"required"`
+	AllOf                []*Schema          `json:"allOf"`
+	AnyOf                []*Schema          `json:"anyOf"`
+	OneOf                []*Schema          `json:"oneOf"`
+	Type                 string             `json:"type"`
+	Description          string             `json:"description"`
+	Format               string             `json:"format"`
+	Properties           map[string]*Schema `json:"properties"`
+	Items                *Schema            `json:"items"`
+	Reference            string             `json:"$ref"`
+	Required             []string           `json:"required"`
+	AdditionalProperties *Schema            `json:"additionalProperties"`
 
 	// Non AsyncAPI fields
 	Name        string  `json:"-"`
@@ -77,6 +78,11 @@ func (a *Schema) Process(name string, spec Specification, isRequired bool) {
 
 		// Merge with other fields as one struct (invalidate references)
 		a.MergeWith(spec, *v)
+	}
+
+	// Process AdditionalProperties
+	if a.AdditionalProperties != nil {
+		a.AdditionalProperties.Process(name+"AdditionalProperties", spec, false)
 	}
 
 	// Set IsRequired
