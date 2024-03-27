@@ -6,12 +6,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"testing"
+
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"sync"
-	"testing"
 )
 
 var errTest = errors.New("some test error")

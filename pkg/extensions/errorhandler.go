@@ -5,7 +5,7 @@ import (
 )
 
 // ErrorHandler is the signature of the function that needs to be implemented to use
-// errorhandler functionality
+// errorhandler functionality.
 type ErrorHandler func(ctx context.Context, topic string, msg *AcknowledgeableBrokerMessage, err error)
 
 // DefaultErrorHandler returns the default error handler, which is a Noop errorhandler.

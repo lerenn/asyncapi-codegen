@@ -27,7 +27,12 @@ type Controller struct {
 	autoCommit bool
 }
 
-type MessagesHandler func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription)
+// MessagesHandler is a function that can be used to process messages from the broker.
+type MessagesHandler func(
+	ctx context.Context,
+	r *kafka.Reader,
+	sub extensions.BrokerChannelSubscription,
+)
 
 // ControllerOption is a function that can be used to configure a Kafka controller
 // Examples: WithGroupID(), WithPartition(), WithMaxBytes(), WithLogger().
@@ -81,8 +86,8 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 	}
 }
 
-// WithAutoCommit set if a AutoCommitMessagesHandler or ManualCommitMessagesHandler should be used for processing
-// the messages
+// WithAutoCommit set if a AutoCommitMessagesHandler or ManualCommitMessagesHandler
+// should be used for processing the messages.
 func WithAutoCommit(enabled bool) ControllerOption {
 	return func(controller *Controller) {
 		controller.autoCommit = enabled
@@ -213,12 +218,15 @@ func (c *Controller) checkTopicExistOrCreateIt(ctx context.Context, topic string
 	}
 }
 
-// autoCommitMessagesHandler provides a MessagesHandler with auto commit
-// using auto commit could result in an offset being committed before the message is fully processed and handled but
-// allow more throughput
+// autoCommitMessagesHandler provides a MessagesHandler with auto commit.
 //
-// Maybe consider to use the manualCommitMessagesHandler
-func autoCommitMessagesHandler(logger *extensions.Logger) func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
+// Using auto commit could result in an offset being committed before the
+// message is fully processed and handled but allow more throughput.
+//
+// Maybe consider to use the manualCommitMessagesHandler.
+func autoCommitMessagesHandler(
+	logger *extensions.Logger,
+) func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
 	return func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
 		for {
 			msg, err := r.ReadMessage(ctx)
@@ -249,8 +257,10 @@ func autoCommitMessagesHandler(logger *extensions.Logger) func(ctx context.Conte
 }
 
 // manualCommitMessagesHandler provides a MessagesHandler with manual commit
-// the message is committed by user via the AcknowledgementHandler
-func manualCommitMessagesHandler(logger *extensions.Logger) func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
+// the message is committed by user via the AcknowledgementHandler.
+func manualCommitMessagesHandler(
+	logger *extensions.Logger,
+) func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
 	return func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
 		for {
 			msg, err := r.FetchMessage(ctx)
@@ -289,17 +299,20 @@ var _ extensions.BrokerAcknowledgment = (*BrokerAcknowledgment)(nil)
 
 // BrokerAcknowledgment for kafka broker.
 // Naks are not supported on kafka side. Committing the message is the only way to handling the message.
-// Proper errorhandling needs to be done by the subscriber
+// Proper errorhandling needs to be done by the subscriber.
 type BrokerAcknowledgment struct {
 	doCommit func()
 }
 
+// AckMessage acknowledges the message.
 func (k BrokerAcknowledgment) AckMessage() {
 	k.doCommit()
 }
 
+// NakMessage negatively acknowledges the message.
 func (k BrokerAcknowledgment) NakMessage() {
 	k.doCommit()
 }
 
+// NoopCommit is a no operation commit function.
 func NoopCommit() {}

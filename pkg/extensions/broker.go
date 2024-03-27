@@ -14,7 +14,10 @@ type BrokerChannelSubscription struct {
 
 // NewBrokerChannelSubscription creates a new broker channel subscription based
 // on the channels used to receive message and cancel the subscription.
-func NewBrokerChannelSubscription(messages chan AcknowledgeableBrokerMessage, cancel chan any) BrokerChannelSubscription {
+func NewBrokerChannelSubscription(
+	messages chan AcknowledgeableBrokerMessage,
+	cancel chan any,
+) BrokerChannelSubscription {
 	return BrokerChannelSubscription{
 		messages: messages,
 		cancel:   cancel,
@@ -92,9 +95,10 @@ func (bm BrokerMessage) String() string {
 	}
 }
 
-// AcknowledgeableBrokerMessage is the struct that embeds BrokerMessage and provide a BrokerAcknowledgment to
-// acknowledge a message to the broker depending on the implementation. AcknowledgeableBrokerMessage make sure that
-// only one acknowledgement is sent to the broker
+// AcknowledgeableBrokerMessage is the struct that embeds BrokerMessage and
+// provide a BrokerAcknowledgment to acknowledge a message to the broker
+// depending on the implementation. AcknowledgeableBrokerMessage make sure that
+// only one acknowledgement is sent to the broker.
 type AcknowledgeableBrokerMessage struct {
 	BrokerMessage
 
@@ -102,12 +106,17 @@ type AcknowledgeableBrokerMessage struct {
 	acknowledgment BrokerAcknowledgment
 }
 
-// NewAcknowledgeableBrokerMessage return a new AcknowledgeableBrokerMessage from BrokerMessage and BrokerAcknowledgment
-func NewAcknowledgeableBrokerMessage(bm BrokerMessage, acknowledgment BrokerAcknowledgment) AcknowledgeableBrokerMessage {
+// NewAcknowledgeableBrokerMessage return a new AcknowledgeableBrokerMessage
+// from BrokerMessage and BrokerAcknowledgment.
+func NewAcknowledgeableBrokerMessage(
+	bm BrokerMessage,
+	acknowledgment BrokerAcknowledgment,
+) AcknowledgeableBrokerMessage {
 	return AcknowledgeableBrokerMessage{BrokerMessage: bm, acknowledgment: acknowledgment}
 }
 
-// Ack will call the AckMessage of the underlying BrokerAcknowledgment implementation if the message was not already acked
+// Ack will call the AckMessage of the underlying BrokerAcknowledgment
+// implementation if the message was not already acked.
 func (bm *AcknowledgeableBrokerMessage) Ack() {
 	if !bm.acked {
 		bm.acknowledgment.AckMessage()
@@ -115,7 +124,8 @@ func (bm *AcknowledgeableBrokerMessage) Ack() {
 	}
 }
 
-// Nak will call the NakMessage of the underlying BrokerAcknowledgment implementation if the message was not already acked
+// Nak will call the NakMessage of the underlying BrokerAcknowledgment
+// implementation if the message was not already acked.
 func (bm *AcknowledgeableBrokerMessage) Nak() {
 	if !bm.acked {
 		bm.acknowledgment.NakMessage()

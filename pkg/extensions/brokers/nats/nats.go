@@ -3,10 +3,11 @@ package nats
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/nats-io/nats.go"
-	"time"
 )
 
 // Check that it still fills the interface.
@@ -63,7 +64,7 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 	}
 }
 
-// WithNakDelay set the delay when redeliver messages via nak
+// WithNakDelay set the delay when redeliver messages via nak.
 func WithNakDelay(duration time.Duration) ControllerOption {
 	return func(controller *Controller) {
 		controller.nakDelay = duration
@@ -157,10 +158,12 @@ type AcknowledgementHandler struct {
 	doNak func()
 }
 
+// AckMessage acknowledges the message.
 func (k AcknowledgementHandler) AckMessage() {
 	k.doAck()
 }
 
+// NakMessage negatively acknowledges the message.
 func (k AcknowledgementHandler) NakMessage() {
 	k.doNak()
 }

@@ -93,7 +93,7 @@ func WithConsumer(name string) ControllerOption {
 	}
 }
 
-// WithNakDelay set the delay when redeliver messages via nak
+// WithNakDelay set the delay when redeliver messages via nak.
 func WithNakDelay(duration time.Duration) ControllerOption {
 	return func(controller *Controller) error {
 		controller.nakDelay = duration
@@ -277,10 +277,12 @@ type AcknowledgementHandler struct {
 	doNak func()
 }
 
+// AckMessage acknowledges the message.
 func (k AcknowledgementHandler) AckMessage() {
 	k.doAck()
 }
 
+// NakMessage negatively acknowledges the message.
 func (k AcknowledgementHandler) NakMessage() {
 	k.doNak()
 }
