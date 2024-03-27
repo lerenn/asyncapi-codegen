@@ -1,0 +1,14 @@
+asyncapi: 2.6.0
+
+components:
+  messages:
+    TestMap:
+      payload:
+        $ref: "#/components/schemas/TestMap"
+
+  schemas:
+    TestMap:
+      type: object
+      additionalProperties:
+        type: string
+    

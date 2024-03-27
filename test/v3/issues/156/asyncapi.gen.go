@@ -121,8 +121,3 @@ type SubTestSchema string
 type TestSchema struct {
 	Subtest *SubTestSchema `json:"subtest"`
 }
-
-const ()
-
-// ChannelsPaths is an array of all channels paths
-var ChannelsPaths = []string{}
