@@ -30,6 +30,7 @@ to the application/user. Just plug your application to your favorite message bro
   * [Logging](#logging)
   * [Versioning](#versioning)
   * [Extensions](#specification-extensions)
+  * [ErrorHandler](#errorhandler)
 * [Contributing and support](#contributing-and-support)
 
 ## Supported functionalities
@@ -144,6 +145,7 @@ Here are the options that you can use with the Kafka controller:
 * `WithPartition`: specify the partition that will be used by the controller. If not specified, default partition (`0`) will be used.
 * `WithMaxBytes`: specify the maximum size of a message that will be received. If not specified, default value (`10e6`, meaning `10MB`) will be used.
 * `WithLogger`: specify the logger that will be used by the controller. If not specified, a silent logger is used that won't log anything.
+* `WithAutoCommit`: specify if the broker should use auto-commit for incoming messages or manual commits. Note that commits are managed by the broker implementation regardless, with manual commits they are executed after the message is complete processed. Subscribers retain the option to manually handle errors via the ErrorHandler, to use mechanisms such as dead letter or retry topics. The default value is `true`
 
 ### NATS
 
@@ -164,6 +166,7 @@ Here are the options that you can use with the NATS controller:
 
 * `WithLogger`: specify the logger that will be used by the controller. If not specified, a silent logger is used that won't log anything.
 * `WithQueueGroup`: specify the queue group that will be used by the controller. If not specified, default queue name (`asyncapi`) will be used.
+* `WithNakDelay`: specify the delay for retry nak messages. If not specified, default nak delay (`time.Second * 5`) will be used.
 
 ### NATS JetStream
 
@@ -612,6 +615,46 @@ These extension properties apply to "Schema Objects" in AsyncAPI spec.
           Flag alias.Flag `json:"flag"`
   }
   ```
+
+### ErrorHandler
+
+You can use an error handler that will be executed when processing for messages
+failed. To add a custom ErrorHandler to your controller use the  `WithErrorHandler`
+function in the initialization of the App or User controller:
+
+```golang
+// Create a new app controller with ErrorHandler
+ctrl, _ := NewAppController(/* Broker of your choice */, WithErrorHandler(myErrorHandler), ...)
+```
+
+Here the function signature that should be satisfied:
+
+```golang
+func(ctx context.Context, topic string, msg *AcknowledgeableBrokerMessage, err error)
+```
+
+**Note:** The default ErrorHandler is a Noop ErrorHandler doing nothing. By using a ErrorHandler you can add custom behavior for example to move messages to retry or dead letter topics/queues. 
+Acks and Naks will be executed after the ErrorHandler, you can use the AcknowledgeableBrokerMessage in the handler to Ack/Nak the message manually.
+
+#### Examples
+
+##### Use the Logging ErrorHandler
+```golang
+// Create a new app controller with Logging ErrorHandler
+ctrl, _ := NewAppController(/* Broker of your choice */, WithErrorHandler(errorhandlers.Logging(mylogger)), ...)
+```
+
+##### Build a custom ErrorHandler and handle Ack/Nak of the message
+```golang
+func(ctx context.Context, topic string, msg *extensions.AcknowledgeableBrokerMessage, err error) {
+    // check error or move message to some other queue/topic
+    handleTheErrorSomehow()
+    
+    // Ack or Nak the message
+    msg.Ack()
+    msg.Nak()
+}
+```
 
 ## Contributing and support
 

@@ -14,7 +14,7 @@ import (
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
 	// ConsumeUserSignupOperationReceived receive all User messages from UserSignup channel.
-	ConsumeUserSignupOperationReceived(ctx context.Context, msg UserMessage)
+	ConsumeUserSignupOperationReceived(ctx context.Context, msg UserMessage) error
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -36,6 +36,7 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -147,7 +148,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 // If you need support for other messages, please raise an issue.
 func (c *AppController) SubscribeToConsumeUserSignupOperation(
 	ctx context.Context,
-	fn func(ctx context.Context, msg UserMessage),
+	fn func(ctx context.Context, msg UserMessage) error,
 ) error {
 	// Get channel address
 	addr := "issue130.user.signedup"
@@ -176,31 +177,38 @@ func (c *AppController) SubscribeToConsumeUserSignupOperation(
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newUserMessageFromBrokerMessage(brokerMsg)
+				msg, err := newUserMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, addr, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -254,6 +262,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -377,6 +386,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -394,6 +405,13 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	return func(controller *controller) {
 		controller.middlewares = middlewares
+	}
+}
+
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
 	}
 }
 

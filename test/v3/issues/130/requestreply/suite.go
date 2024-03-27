@@ -45,11 +45,12 @@ func (suite *Suite) TestRequestReply() {
 	// Listen for pings on the application
 	err := suite.app.SubscribeToPingOperation(
 		context.Background(),
-		func(ctx context.Context, msg PingMessage) {
+		func(ctx context.Context, msg PingMessage) error {
 			var respMsg PongMessage
 			respMsg.Payload.Event = msg.Payload.Event
 			err := suite.app.SendAsReplyToPingOperation(ctx, respMsg)
 			suite.Require().NoError(err)
+			return nil
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromPingOperation(context.Background())
@@ -69,7 +70,7 @@ func (suite *Suite) TestRequestReply() {
 func (suite *Suite) TestRequestReplyWithID() {
 	// Listen to new pings
 	err := suite.app.SubscribeToPingWithIDOperation(context.Background(),
-		func(ctx context.Context, msg PingWithIDMessage) {
+		func(ctx context.Context, msg PingWithIDMessage) error {
 			// Set response
 			var respMsg PongWithIDMessage
 			respMsg.SetAsResponseFrom(&msg)
@@ -78,6 +79,8 @@ func (suite *Suite) TestRequestReplyWithID() {
 			// Send response
 			callbackErr := suite.app.SendAsReplyToPingWithIDOperation(ctx, respMsg)
 			suite.Require().NoError(callbackErr)
+
+			return nil
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromPingWithIDOperation(context.Background())

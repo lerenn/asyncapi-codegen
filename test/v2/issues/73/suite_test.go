@@ -98,16 +98,22 @@ func (suite *Suite) TestV1Reception() {
 	// Check what the app receive and translate
 	var recvMsg v1.Issue73HelloMessage
 	wg.Add(1)
-	err := suite.v1.app.SubscribeIssue73Hello(context.Background(), func(_ context.Context, msg v1.Issue73HelloMessage) {
-		recvMsg = msg
-		wg.Done()
-	})
+	err := suite.v1.app.SubscribeIssue73Hello(
+		context.Background(),
+		func(_ context.Context, msg v1.Issue73HelloMessage) error {
+			recvMsg = msg
+			wg.Done()
+			return nil
+		})
 	suite.Require().NoError(err)
 
 	// Check that the other app doesn't receive
-	err = suite.v2.app.SubscribeIssue73Hello(context.Background(), func(_ context.Context, _ v2.Issue73HelloMessage) {
-		suite.Require().FailNow("this should not happen")
-	})
+	err = suite.v2.app.SubscribeIssue73Hello(
+		context.Background(),
+		func(_ context.Context, _ v2.Issue73HelloMessage) error {
+			suite.Require().FailNow("this should not happen")
+			return nil
+		})
 	suite.Require().NoError(err)
 
 	// Publish the message
@@ -142,18 +148,24 @@ func (suite *Suite) TestV2Reception() {
 	}
 
 	// Check that the other app doesn't receive
-	err := suite.v1.app.SubscribeIssue73Hello(context.Background(), func(_ context.Context, _ v1.Issue73HelloMessage) {
-		suite.Require().FailNow("this should not happen")
-	})
+	err := suite.v1.app.SubscribeIssue73Hello(
+		context.Background(),
+		func(_ context.Context, _ v1.Issue73HelloMessage) error {
+			suite.Require().FailNow("this should not happen")
+			return nil
+		})
 	suite.Require().NoError(err)
 
 	// Check what the app receive and translate
 	var recvMsg v2.Issue73HelloMessage
 	wg.Add(1)
-	err = suite.v2.app.SubscribeIssue73Hello(context.Background(), func(_ context.Context, msg v2.Issue73HelloMessage) {
-		recvMsg = msg
-		wg.Done()
-	})
+	err = suite.v2.app.SubscribeIssue73Hello(
+		context.Background(),
+		func(_ context.Context, msg v2.Issue73HelloMessage) error {
+			recvMsg = msg
+			wg.Done()
+			return nil
+		})
 	suite.Require().NoError(err)
 
 	// Publish the message

@@ -12,11 +12,13 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
 )
 
+var _ AppSubscriber = (*Subscriber)(nil)
+
 type Subscriber struct {
 	Controller *AppController
 }
 
-func (s Subscriber) Ping(ctx context.Context, req PingMessage) {
+func (s Subscriber) Ping(ctx context.Context, req PingMessage) error {
 	// Generate a pong message, set as a response of the request
 	resp := NewPongMessage()
 	resp.SetAsResponseFrom(&req)
@@ -29,6 +31,8 @@ func (s Subscriber) Ping(ctx context.Context, req PingMessage) {
 	if err != nil {
 		panic(err)
 	}
+
+	return nil
 }
 
 func main() {

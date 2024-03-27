@@ -28,8 +28,9 @@ func main() {
 	// Subscribe to HelloWorld messages
 	// Note: it will indefinitely wait for messages as context has no timeout
 	log.Println("Subscribe to hello world...")
-	ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage) {
+	ctrl.SubscribeHello(context.Background(), func(_ context.Context, msg HelloMessage) error {
 		log.Println("Received message:", msg.Payload)
+		return nil
 	})
 
 	// Listen on port to let know that app is ready
