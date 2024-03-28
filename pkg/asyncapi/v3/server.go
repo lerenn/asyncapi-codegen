@@ -3,7 +3,7 @@ package asyncapiv3
 import (
 	"fmt"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 // Server is a representation of the corresponding asyncapi object filled
@@ -33,36 +33,66 @@ type Server struct {
 }
 
 // Process processes the Server to make it ready for code generation.
-func (srv *Server) Process(name string, spec Specification) {
+func (srv *Server) Process(name string, spec Specification) error {
 	// Prevent modification if nil
 	if srv == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	srv.Name = utils.UpperFirstLetter(name)
+	srv.Name = template.Namify(name)
 
-	// Add pointer to reference if there is one
-	if srv.Reference != "" {
-		srv.ReferenceTo = spec.ReferenceServer(srv.Reference)
+	// Process references
+	if err := srv.processReference(spec); err != nil {
+		return err
 	}
 
 	// Process variables
 	for n, s := range srv.Variables {
-		s.Process(n+"Variable", spec)
+		if err := s.Process(n+"Variable", spec); err != nil {
+			return err
+		}
 	}
 
 	// Process security
-	srv.Security.Process(srv.Name+"Security", spec)
+	if err := srv.Security.Process(srv.Name+"Security", spec); err != nil {
+		return err
+	}
 
 	// Process tags
 	for i, t := range srv.Tags {
-		t.Process(fmt.Sprintf("%sTag%d", srv.Name, i), spec)
+		if err := t.Process(fmt.Sprintf("%sTag%d", srv.Name, i), spec); err != nil {
+			return err
+		}
 	}
 
 	// Process external documentation
-	srv.ExternalDocs.Process(srv.Name+ExternalDocsNameSuffix, spec)
+	if err := srv.ExternalDocs.Process(srv.Name+ExternalDocsNameSuffix, spec); err != nil {
+		return err
+	}
 
 	// Process Bindings
-	srv.Bindings.Process(srv.Name+BindingsSuffix, spec)
+	if err := srv.Bindings.Process(srv.Name+BindingsSuffix, spec); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (srv *Server) processReference(spec Specification) error {
+	// check reference exists
+	if srv.Reference == "" {
+		return nil
+	}
+
+	// Get reference
+	refTo, err := spec.ReferenceServer(srv.Reference)
+	if err != nil {
+		return err
+	}
+
+	// Set reference
+	srv.ReferenceTo = refTo
+
+	return nil
 }

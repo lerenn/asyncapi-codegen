@@ -17,10 +17,10 @@ type Parameter struct {
 }
 
 // Process processes the Parameter structure to make it ready for code generation.
-func (p *Parameter) Process(name string, spec Specification) {
+func (p *Parameter) Process(name string, spec Specification) error {
 	// Prevent modification if nil
 	if p == nil {
-		return
+		return nil
 	}
 
 	// Set name
@@ -28,6 +28,12 @@ func (p *Parameter) Process(name string, spec Specification) {
 
 	// Add pointer to reference if there is one
 	if p.Reference != "" {
-		p.ReferenceTo = spec.ReferenceParameter(p.Reference)
+		refTo, err := spec.ReferenceParameter(p.Reference)
+		if err != nil {
+			return err
+		}
+		p.ReferenceTo = refTo
 	}
+
+	return nil
 }

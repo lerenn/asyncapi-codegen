@@ -34,7 +34,8 @@ func NewSubscriberGenerator(side Side, spec asyncapi.Specification) SubscriberGe
 func (asg SubscriberGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		subscriberTemplatePath,
-		schemaTemplatePath,
+		schemaDefinitionTemplatePath,
+		schemaNameTemplatePath,
 		messageTemplatePath,
 	)
 	if err != nil {

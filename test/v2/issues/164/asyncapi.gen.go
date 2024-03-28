@@ -59,7 +59,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// TestMapMessage is the message expected for 'TestMap' channel
+// TestMapMessage is the message expected for 'TestMapMessage' channel.
 type TestMapMessage struct {
 	// Payload will be inserted in the message payload
 	Payload TestMapSchema

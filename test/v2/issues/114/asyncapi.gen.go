@@ -58,7 +58,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Issue114StatusMessage is the message expected for 'Issue114Status' channel
+// Issue114StatusMessage is the message expected for 'Issue114StatusMessage' channel.
 type Issue114StatusMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
@@ -100,7 +100,7 @@ func (msg Issue114StatusMessage) toBrokerMessage() (extensions.BrokerMessage, er
 }
 
 const (
-	// Issue114StatusPath is the constant representing the 'Issue114.status' channel path.
+	// Issue114StatusPath is the constant representing the 'Issue114Status' channel path.
 	Issue114StatusPath = "issue114.status"
 )
 

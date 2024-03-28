@@ -7,8 +7,35 @@ import (
 	"text/template"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	templateutil "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
+
+// GetChildrenObjectSchemas will return all the children object schemas of a
+// schema, only from first level and without AnyOf, AllOf and OneOf.
+func GetChildrenObjectSchemas(s asyncapi.Schema) []*asyncapi.Schema {
+	allSchemas := make([]*asyncapi.Schema, 0)
+
+	allSchemas = append(allSchemas, utils.MapToList(s.Properties)...)
+
+	if s.Items != nil {
+		allSchemas = append(allSchemas, s.Items)
+	}
+
+	if s.AdditionalProperties != nil {
+		allSchemas = append(allSchemas, s.AdditionalProperties)
+	}
+
+	// Only keep object schemas
+	filteredSchemas := make([]*asyncapi.Schema, 0, len(allSchemas))
+	for _, schema := range allSchemas {
+		if schema.Type == asyncapi.SchemaTypeIsObject.String() {
+			filteredSchemas = append(filteredSchemas, schema)
+		}
+	}
+
+	return filteredSchemas
+}
 
 // referenceToSlicePath will convert a reference to a slice where each element is a
 // step of the path.
@@ -26,7 +53,7 @@ func ReferenceToStructAttributePath(ref string) string {
 
 	for k, v := range path {
 		// If this is concerning the header, then it will be named "headers"
-		if v == asyncapi.MessageTypeIsHeader.String() {
+		if v == asyncapi.MessageFieldIsHeader.String() {
 			v = "headers"
 		}
 
@@ -40,15 +67,7 @@ func ReferenceToStructAttributePath(ref string) string {
 // golang conventional type names.
 func ReferenceToTypeName(ref string) string {
 	parts := strings.Split(ref, "/")
-
-	name := parts[3]
-	if parts[2] == "messages" {
-		name += "Message"
-	} else if parts[2] == "schemas" {
-		name += "Schema"
-	}
-
-	return templateutil.Namify(name)
+	return templateutil.Namify(parts[3])
 }
 
 // ChannelToMessageTypeName will convert a channel to a message type name in the
@@ -57,10 +76,10 @@ func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 	msg := ch.GetChannelMessage()
 
 	if msg.Payload != nil || msg.OneOf != nil {
-		return templateutil.Namify(ch.Name) + "Message"
+		return msg.Name
 	}
 
-	return ReferenceToTypeName(msg.Reference)
+	return ReferenceToTypeName(msg.Reference) + "Message"
 }
 
 // IsRequired will check if a field is required in a asyncapi struct.
@@ -109,6 +128,7 @@ func OperationName(channel asyncapi.Channel) string {
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
 	return template.FuncMap{
+		"getChildrenObjectSchemas":       GetChildrenObjectSchemas,
 		"channelToMessageTypeName":       ChannelToMessageTypeName,
 		"isRequired":                     IsRequired,
 		"generateChannelPath":            GenerateChannelPath,

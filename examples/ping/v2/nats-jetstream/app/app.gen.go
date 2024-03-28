@@ -313,13 +313,16 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// PingMessage is the message expected for 'Ping' channel
+// PingMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PingMessageHeaders struct {
+	// Description: Correlation ID set by user
+	CorrelationId *string `json:"correlation_id"`
+}
+
+// PingMessage is the message expected for 'PingMessage' channel.
 type PingMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Correlation ID set by user
-		CorrelationId *string `json:"correlation_id"`
-	}
+	Headers PingMessageHeaders
 
 	// Payload will be inserted in the message payload
 	Payload string
@@ -402,22 +405,28 @@ func (msg *PingMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	msg.Headers.CorrelationId = &id
 }
 
-// PongMessage is the message expected for 'Pong' channel
+// PongMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PongMessageHeaders struct {
+	// Description: Correlation ID set by user on corresponding request
+	CorrelationId *string `json:"correlation_id"`
+}
+
+// PongMessagePayload is a schema from the AsyncAPI specification required in messages
+type PongMessagePayload struct {
+	// Description: Pong message
+	Message string `json:"message"`
+
+	// Description: Pong creation time
+	Time time.Time `json:"time"`
+}
+
+// PongMessage is the message expected for 'PongMessage' channel.
 type PongMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Correlation ID set by user on corresponding request
-		CorrelationId *string `json:"correlation_id"`
-	}
+	Headers PongMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		// Description: Pong message
-		Message string `json:"message"`
-
-		// Description: Pong creation time
-		Time time.Time `json:"time"`
-	}
+	Payload PongMessagePayload
 }
 
 func NewPongMessage() PongMessage {
@@ -503,9 +512,9 @@ func (msg *PongMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 }
 
 const (
-	// PingV2Path is the constant representing the 'Ping.v2' channel path.
+	// PingV2Path is the constant representing the 'PingV2' channel path.
 	PingV2Path = "ping.v2"
-	// PongV2Path is the constant representing the 'Pong.v2' channel path.
+	// PongV2Path is the constant representing the 'PongV2' channel path.
 	PongV2Path = "pong.v2"
 )
 

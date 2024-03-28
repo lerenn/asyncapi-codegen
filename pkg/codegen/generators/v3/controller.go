@@ -75,7 +75,8 @@ func isControllerSendOperation(side Side, op *asyncapi.Operation) bool {
 func (asg ControllerGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		controllerTemplatePath,
-		schemaTemplatePath,
+		schemaDefinitionTemplatePath,
+		schemaNameTemplatePath,
 		messageTemplatePath,
 	)
 	if err != nil {

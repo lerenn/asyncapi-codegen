@@ -1,6 +1,6 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils"
+import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 
 // Tag is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
@@ -19,19 +19,25 @@ type Tag struct {
 }
 
 // Process processes the Tag to make it ready for code generation.
-func (t *Tag) Process(path string, spec Specification) {
+func (t *Tag) Process(path string, spec Specification) error {
 	// Prevent modification if nil
 	if t == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	t.Name = utils.UpperFirstLetter(path)
+	t.Name = template.Namify(path)
 
 	// Add pointer to reference if there is one
 	if t.Reference != "" {
-		t.ReferenceTo = spec.ReferenceTag(t.Reference)
+		refTo, err := spec.ReferenceTag(t.Reference)
+		if err != nil {
+			return err
+		}
+		t.ReferenceTo = refTo
 	}
+
+	return nil
 }
 
 // RemoveDuplicateTags removes the tags that have the same name, keeping the first occurrence.

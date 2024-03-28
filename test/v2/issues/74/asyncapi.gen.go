@@ -397,19 +397,17 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// TestMessage is the message expected for 'Test' channel
-// test message
+// TestMessagePayload is a schema from the AsyncAPI specification required in messages
+type TestMessagePayload struct{}
+
+// TestMessage is the message expected for 'TestMessage' channel.
+// NOTE: test message
 type TestMessage struct {
 	// Headers will be used to fill the message headers
 	Headers HeaderSchema
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Obj1 struct {
-			// Description: reference ID.
-			ReferenceId string `json:"reference_id"`
-		} `json:"obj1"`
-	}
+	Payload TestMessagePayload
 }
 
 func NewTestMessage() TestMessage {
@@ -482,16 +480,19 @@ type HeaderSchema struct {
 	Version string `json:"version"`
 }
 
-// TestSchemaSchema is a schema from the AsyncAPI specification required in messages
-type TestSchemaSchema struct {
-	Obj1 struct {
-		// Description: reference ID.
-		ReferenceId string `json:"reference_id"`
-	} `json:"obj1"`
+// TestSchema is a schema from the AsyncAPI specification required in messages
+type TestSchema struct {
+	Obj1 TestSchemaObj1 `json:"obj1"`
+}
+
+// TestSchemaObj1 is a schema from the AsyncAPI specification required in messages
+type TestSchemaObj1 struct {
+	// Description: reference ID.
+	ReferenceId string `json:"reference_id"`
 }
 
 const (
-	// Issue74TestChannelPath is the constant representing the 'Issue74.testChannel' channel path.
+	// Issue74TestChannelPath is the constant representing the 'Issue74TestChannel' channel path.
 	Issue74TestChannelPath = "issue74.testChannel"
 )
 

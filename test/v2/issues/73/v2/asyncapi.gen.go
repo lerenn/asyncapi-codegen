@@ -397,13 +397,16 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Issue73HelloMessage is the message expected for 'Issue73Hello' channel
+// Issue73HelloMessagePayload is a schema from the AsyncAPI specification required in messages
+type Issue73HelloMessagePayload struct {
+	Message   string    `json:"message"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// Issue73HelloMessage is the message expected for 'Issue73HelloMessage' channel.
 type Issue73HelloMessage struct {
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Message   string    `json:"message"`
-		Timestamp time.Time `json:"timestamp"`
-	}
+	Payload Issue73HelloMessagePayload
 }
 
 func NewIssue73HelloMessage() Issue73HelloMessage {
@@ -447,7 +450,7 @@ func (msg Issue73HelloMessage) toBrokerMessage() (extensions.BrokerMessage, erro
 }
 
 const (
-	// Issue73HelloPath is the constant representing the 'Issue73.hello' channel path.
+	// Issue73HelloPath is the constant representing the 'Issue73Hello' channel path.
 	Issue73HelloPath = "issue73.hello"
 )
 

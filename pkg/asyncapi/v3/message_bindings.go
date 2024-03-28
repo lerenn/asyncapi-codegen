@@ -1,6 +1,6 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils"
+import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 
 // MessageBindings is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
@@ -36,16 +36,22 @@ type MessageBindings struct {
 }
 
 // Process processes the MessageBindings to make it ready for code generation.
-func (mb *MessageBindings) Process(name string, spec Specification) { // Prevent modification if nil
+func (mb *MessageBindings) Process(name string, spec Specification) error { // Prevent modification if nil
 	if mb == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	mb.Name = utils.UpperFirstLetter(name)
+	mb.Name = template.Namify(name)
 
 	// Add pointer to reference if there is one
 	if mb.Reference != "" {
-		mb.ReferenceTo = spec.ReferenceMessageBindings(mb.Reference)
+		refTo, err := spec.ReferenceMessageBindings(mb.Reference)
+		if err != nil {
+			return err
+		}
+		mb.ReferenceTo = refTo
 	}
+
+	return nil
 }

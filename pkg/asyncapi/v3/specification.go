@@ -2,12 +2,20 @@ package asyncapiv3
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
+
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
 const (
 	// MajorVersion is the major version of this AsyncAPI implementation.
 	MajorVersion = 3
+)
+
+var (
+	// ErrInvalidReference is sent when a reference is invalid.
+	ErrInvalidReference = fmt.Errorf("%w: invalid reference", extensions.ErrAsyncAPI)
 )
 
 // Specification is the asyncapi specification struct that will be used to generate
@@ -29,32 +37,40 @@ type Specification struct {
 }
 
 // Process processes the Specification to make it ready for code generation.
-func (s *Specification) Process() {
+func (s *Specification) Process() error {
 	// Prevent modification if nil
 	if s == nil {
-		return
+		return nil
 	}
 
 	// Process info
-	s.Info.Process(*s)
+	if err := s.Info.Process(*s); err != nil {
+		return err
+	}
 
 	// Process servers
 	for i, srv := range s.Servers {
-		srv.Process(fmt.Sprintf("Server%d", i), *s)
+		if err := srv.Process(fmt.Sprintf("Server%d", i), *s); err != nil {
+			return err
+		}
 	}
 
 	// Process channels
 	for name, ch := range s.Channels {
-		ch.Process(name+ChannelSuffix, *s)
+		if err := ch.Process(name+ChannelSuffix, *s); err != nil {
+			return err
+		}
 	}
 
 	// Process operations
 	for name, op := range s.Operations {
-		op.Process(name+"Operation", *s)
+		if err := op.Process(name+"Operation", *s); err != nil {
+			return err
+		}
 	}
 
 	// Process components
-	s.Components.Process(*s)
+	return s.Components.Process(*s)
 }
 
 // GetOperationCountByAction gets the count of 'sending' operations and the count
@@ -76,117 +92,402 @@ func (s Specification) GetOperationCountByAction() (sendCount, receiveCount uint
 }
 
 // ReferenceChannel returns the Channel struct corresponding to the given reference.
-func (s Specification) ReferenceChannel(ref string) *Channel {
-	ch, _ := s.reference(ref).(*Channel)
-	return ch
+func (s Specification) ReferenceChannel(ref string) (*Channel, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to channel
+	channel, ok := obj.(*Channel)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'Channel' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that channel is not nil
+	if channel == nil {
+		return nil, fmt.Errorf("%w: empty target for channel reference %q", ErrInvalidReference, ref)
+	}
+
+	return channel, nil
 }
 
 // ReferenceChannelBindings returns the ChannelBindings struct corresponding to the given reference.
-func (s Specification) ReferenceChannelBindings(ref string) *ChannelBindings {
-	bindings, _ := s.reference(ref).(*ChannelBindings)
-	return bindings
+func (s Specification) ReferenceChannelBindings(ref string) (*ChannelBindings, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to channel bindings
+	bindings, ok := obj.(*ChannelBindings)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'ChannelBindings' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that channel bindings is not nil
+	if bindings == nil {
+		return nil, fmt.Errorf("%w: empty target for channel bindings reference %q", ErrInvalidReference, ref)
+	}
+
+	return bindings, nil
 }
 
 // ReferenceExternalDocumentation returns the ExternalDocumentation struct corresponding to the given reference.
-func (s Specification) ReferenceExternalDocumentation(ref string) *ExternalDocumentation {
-	extDoc, _ := s.reference(ref).(*ExternalDocumentation)
-	return extDoc
+func (s Specification) ReferenceExternalDocumentation(ref string) (*ExternalDocumentation, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to external documentation
+	doc, ok := obj.(*ExternalDocumentation)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'ExternalDocumentation' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that external documentation is not nil
+	if doc == nil {
+		return nil, fmt.Errorf("%w: empty target for external documentation reference %q", ErrInvalidReference, ref)
+	}
+
+	return doc, nil
 }
 
 // ReferenceMessage returns the Message struct corresponding to the given reference.
-func (s Specification) ReferenceMessage(ref string) *Message {
-	msg, _ := s.reference(ref).(*Message)
-	return msg
+func (s Specification) ReferenceMessage(ref string) (*Message, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to message
+	msg, ok := obj.(*Message)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'Message' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that message is not nil
+	if msg == nil {
+		return nil, fmt.Errorf("%w: empty target for message reference %q", ErrInvalidReference, ref)
+	}
+
+	return msg, nil
 }
 
 // ReferenceMessageBindings returns the MessageBindings struct corresponding to the given reference.
-func (s Specification) ReferenceMessageBindings(ref string) *MessageBindings {
-	bindings, _ := s.reference(ref).(*MessageBindings)
-	return bindings
+func (s Specification) ReferenceMessageBindings(ref string) (*MessageBindings, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to message bindings
+	bindings, ok := obj.(*MessageBindings)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'MessageBindings' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that message bindings is not nil
+	if bindings == nil {
+		return nil, fmt.Errorf("%w: empty target for message bindings reference %q", ErrInvalidReference, ref)
+	}
+
+	return bindings, nil
 }
 
 // ReferenceMessageExample returns the MessageExample struct corresponding to the given reference.
-func (s Specification) ReferenceMessageExample(ref string) *MessageExample {
-	bindings, _ := s.reference(ref).(*MessageExample)
-	return bindings
+func (s Specification) ReferenceMessageExample(ref string) (*MessageExample, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to message example
+	example, ok := obj.(*MessageExample)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'MessageExample' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that message example is not nil
+	if example == nil {
+		return nil, fmt.Errorf("%w: empty target for message example reference %q", ErrInvalidReference, ref)
+	}
+
+	return example, nil
 }
 
 // ReferenceMessageTrait returns the MessageTrait struct corresponding to the given reference.
-func (s Specification) ReferenceMessageTrait(ref string) *MessageTrait {
-	bindings, _ := s.reference(ref).(*MessageTrait)
-	return bindings
+func (s Specification) ReferenceMessageTrait(ref string) (*MessageTrait, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to message trait
+	trait, ok := obj.(*MessageTrait)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'MessageTrait' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that message trait is not nil
+	if trait == nil {
+		return nil, fmt.Errorf("%w: empty target for message trait reference %q", ErrInvalidReference, ref)
+	}
+
+	return trait, nil
 }
 
 // ReferenceOperation returns the Operation struct corresponding to the given reference.
-func (s Specification) ReferenceOperation(ref string) *Operation {
-	op, _ := s.reference(ref).(*Operation)
-	return op
+func (s Specification) ReferenceOperation(ref string) (*Operation, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to operation
+	operation, ok := obj.(*Operation)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'Operation' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that operation is not nil
+	if operation == nil {
+		return nil, fmt.Errorf("%w: empty target for operation reference %q", ErrInvalidReference, ref)
+	}
+
+	return operation, nil
 }
 
 // ReferenceOperationBindings returns the OperationBindings struct corresponding to the given reference.
-func (s Specification) ReferenceOperationBindings(ref string) *OperationBindings {
-	bindings, _ := s.reference(ref).(*OperationBindings)
-	return bindings
+func (s Specification) ReferenceOperationBindings(ref string) (*OperationBindings, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to operation bindings
+	bindings, ok := obj.(*OperationBindings)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'OperationBindings' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that operation bindings is not nil
+	if bindings == nil {
+		return nil, fmt.Errorf("%w: empty target for operation bindings reference %q", ErrInvalidReference, ref)
+	}
+
+	return bindings, nil
 }
 
 // ReferenceOperationReply returns the OperationReply struct corresponding to the given reference.
-func (s Specification) ReferenceOperationReply(ref string) *OperationReply {
-	opReply, _ := s.reference(ref).(*OperationReply)
-	return opReply
+func (s Specification) ReferenceOperationReply(ref string) (*OperationReply, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to operation reply
+	reply, ok := obj.(*OperationReply)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'OperationReply' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that operation reply is not nil
+	if reply == nil {
+		return nil, fmt.Errorf("%w: empty target for operation reply reference %q", ErrInvalidReference, ref)
+	}
+
+	return reply, nil
 }
 
 // ReferenceOperationReplyAddress returns the OperationReplyAddress struct corresponding to the given reference.
-func (s Specification) ReferenceOperationReplyAddress(ref string) *OperationReplyAddress {
-	opReply, _ := s.reference(ref).(*OperationReplyAddress)
-	return opReply
+func (s Specification) ReferenceOperationReplyAddress(ref string) (*OperationReplyAddress, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to operation reply address
+	address, ok := obj.(*OperationReplyAddress)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'OperationReplyAddress' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that operation reply address is not nil
+	if address == nil {
+		return nil, fmt.Errorf("%w: empty target for operation reply address reference %q", ErrInvalidReference, ref)
+	}
+
+	return address, nil
 }
 
 // ReferenceOperationTrait returns the OperationTrait struct corresponding to the given reference.
-func (s Specification) ReferenceOperationTrait(ref string) *OperationTrait {
-	opTrait, _ := s.reference(ref).(*OperationTrait)
-	return opTrait
+func (s Specification) ReferenceOperationTrait(ref string) (*OperationTrait, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to operation trait
+	trait, ok := obj.(*OperationTrait)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'OperationTrait' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that operation trait is not nil
+	if trait == nil {
+		return nil, fmt.Errorf("%w: empty target for operation trait reference %q", ErrInvalidReference, ref)
+	}
+
+	return trait, nil
 }
 
 // ReferenceParameter returns the Parameter struct corresponding to the given reference.
-func (s Specification) ReferenceParameter(ref string) *Parameter {
-	param, _ := s.reference(ref).(*Parameter)
-	return param
+func (s Specification) ReferenceParameter(ref string) (*Parameter, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to parameter
+	param, ok := obj.(*Parameter)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'Parameter' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that parameter is not nil
+	if param == nil {
+		return nil, fmt.Errorf("%w: empty target for parameter reference %q", ErrInvalidReference, ref)
+	}
+
+	return param, nil
 }
 
 // ReferenceSecurity returns the SecurityScheme struct corresponding to the given reference.
-func (s Specification) ReferenceSecurity(ref string) *SecurityScheme {
-	security, _ := s.reference(ref).(*SecurityScheme)
-	return security
+func (s Specification) ReferenceSecurity(ref string) (*SecurityScheme, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to security scheme
+	security, ok := obj.(*SecurityScheme)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'SecurityScheme' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that security scheme is not nil
+	if security == nil {
+		return nil, fmt.Errorf("%w: empty target for security scheme reference %q", ErrInvalidReference, ref)
+	}
+
+	return security, nil
 }
 
 // ReferenceSchema returns the Schema struct corresponding to the given reference.
-func (s Specification) ReferenceSchema(ref string) *Schema {
-	schema, _ := s.reference(ref).(*Schema)
-	return schema
+func (s Specification) ReferenceSchema(ref string) (*Schema, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to schema
+	schema, ok := obj.(*Schema)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'Schema' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that schema is not nil
+	if schema == nil {
+		return nil, fmt.Errorf("%w: empty target for schema reference %q", ErrInvalidReference, ref)
+	}
+
+	return schema, nil
 }
 
 // ReferenceServer returns the Server struct corresponding to the given reference.
-func (s Specification) ReferenceServer(ref string) *Server {
-	bindings, _ := s.reference(ref).(*Server)
-	return bindings
+func (s Specification) ReferenceServer(ref string) (*Server, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to server
+	server, ok := obj.(*Server)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'Server' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that server is not nil
+	if server == nil {
+		return nil, fmt.Errorf("%w: empty target for server reference %q", ErrInvalidReference, ref)
+	}
+
+	return server, nil
 }
 
 // ReferenceServerBindings returns the ServerBindings struct corresponding to the given reference.
-func (s Specification) ReferenceServerBindings(ref string) *ServerBindings {
-	bindings, _ := s.reference(ref).(*ServerBindings)
-	return bindings
+func (s Specification) ReferenceServerBindings(ref string) (*ServerBindings, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to server bindings
+	bindings, ok := obj.(*ServerBindings)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'ServerBindings' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that server bindings is not nil
+	if bindings == nil {
+		return nil, fmt.Errorf("%w: empty target for server bindings reference %q", ErrInvalidReference, ref)
+	}
+
+	return bindings, nil
 }
 
 // ReferenceServerVariable returns the ServerVariable struct corresponding to the given reference.
-func (s Specification) ReferenceServerVariable(ref string) *ServerVariable {
-	bindings, _ := s.reference(ref).(*ServerVariable)
-	return bindings
+func (s Specification) ReferenceServerVariable(ref string) (*ServerVariable, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to server variable
+	variable, ok := obj.(*ServerVariable)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'ServerVariable' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that server variable is not nil
+	if variable == nil {
+		return nil, fmt.Errorf("%w: empty target for server variable reference %q", ErrInvalidReference, ref)
+	}
+
+	return variable, nil
 }
 
 // ReferenceTag returns the Tag struct corresponding to the given reference.
-func (s Specification) ReferenceTag(ref string) *Tag {
-	bindings, _ := s.reference(ref).(*Tag)
-	return bindings
+func (s Specification) ReferenceTag(ref string) (*Tag, error) {
+	// Get object pointed by reference
+	obj := s.reference(ref)
+
+	// Cast to tag
+	tag, ok := obj.(*Tag)
+	if !ok {
+		return nil, fmt.Errorf(
+			"%w: cannot cast %q into 'Tag' (type is %q)",
+			ErrInvalidReference, ref, reflect.TypeOf(obj))
+	}
+
+	// Check that tag is not nil
+	if tag == nil {
+		return nil, fmt.Errorf("%w: empty target for tag reference %q", ErrInvalidReference, ref)
+	}
+
+	return tag, nil
 }
 
 //nolint:funlen,cyclop // Not necessary to reduce statements and cyclop
@@ -236,12 +537,14 @@ func (s Specification) reference(ref string) any {
 			return s.Components.OperationBindings[refPath[2]]
 		case "messageBindings":
 			return s.Components.MessageBindings[refPath[2]]
+		default:
+			return fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[1], ref)
 		}
 	case "channels":
 		return s.Channels[refPath[1]]
+	default:
+		return fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[0], ref)
 	}
-
-	return nil
 }
 
 // MajorVersion returns the asyncapi major version of this document.

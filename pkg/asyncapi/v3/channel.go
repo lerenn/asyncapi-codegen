@@ -3,7 +3,7 @@ package asyncapiv3
 import (
 	"fmt"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 const (
@@ -36,45 +36,102 @@ type Channel struct {
 }
 
 // Process processes the Channel to make it ready for code generation.
-func (ch *Channel) Process(path string, spec Specification) {
+func (ch *Channel) Process(name string, spec Specification) error {
 	// Prevent modification if nil
 	if ch == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	ch.Name = utils.UpperFirstLetter(path)
+	ch.Name = template.Namify(name)
 
-	// Add pointer to reference if there is one
-	if ch.Reference != "" {
-		ch.ReferenceTo = spec.ReferenceChannel(ch.Reference)
+	// Process reference
+	if err := ch.processReference(spec); err != nil {
+		return err
 	}
 
 	// Process messages
-	for name, msg := range ch.Messages {
-		msg.Process(name+"Message", spec)
+	if err := ch.processMessages(spec); err != nil {
+		return err
 	}
 
 	// Process servers
-	for i, srv := range ch.Servers {
-		srv.Process(fmt.Sprintf("%sServer%d", ch.Name, i), spec)
+	if err := ch.processServers(spec); err != nil {
+		return err
 	}
 
 	// Process parameters
-	for name, parameter := range ch.Parameters {
-		parameter.Process(name+"Parameter", spec)
+	if err := ch.processParameters(spec); err != nil {
+		return err
 	}
 
 	// Process tags
-	for i, t := range ch.Tags {
-		t.Process(fmt.Sprintf("%sTag%d", ch.Name, i), spec)
+	if err := ch.processTags(spec); err != nil {
+		return err
 	}
 
 	// Process external documentation
-	ch.ExternalDocs.Process(ch.Name+ExternalDocsNameSuffix, spec)
+	if err := ch.ExternalDocs.Process(ch.Name+ExternalDocsNameSuffix, spec); err != nil {
+		return err
+	}
 
 	// Process Bindings
-	ch.Bindings.Process(ch.Name+BindingsSuffix, spec)
+	return ch.Bindings.Process(ch.Name+BindingsSuffix, spec)
+}
+
+func (ch *Channel) processParameters(spec Specification) error {
+	for name, param := range ch.Parameters {
+		if err := param.Process(name+"Parameter", spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ch *Channel) processServers(spec Specification) error {
+	for i, srv := range ch.Servers {
+		if err := srv.Process(fmt.Sprintf("%sServer%d", ch.Name, i), spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ch *Channel) processMessages(spec Specification) error {
+	for name, msg := range ch.Messages {
+		if err := msg.Process(name+"Message", spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ch *Channel) processTags(spec Specification) error {
+	for i, t := range ch.Tags {
+		if err := t.Process(fmt.Sprintf("%sTag%d", ch.Name, i), spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ch *Channel) processReference(spec Specification) error {
+	if ch.Reference == "" {
+		return nil
+	}
+
+	// Add pointer to reference if there is one
+	refTo, err := spec.ReferenceChannel(ch.Reference)
+	if err != nil {
+		return err
+	}
+	ch.ReferenceTo = refTo
+
+	return nil
 }
 
 // Follow returns referenced channel if specified or the actual channel.

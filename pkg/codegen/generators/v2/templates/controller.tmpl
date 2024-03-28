@@ -234,7 +234,7 @@ func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value}}(ctx conte
 
     c.logger.Info(ctx, "Unsubscribed from channel")
 }
-{{- end}}
+{{end}}
 
 {{- range  $key, $value := .PublishChannels}}
 // Publish{{operationName $value}} will publish messages to '{{$key}}' channel

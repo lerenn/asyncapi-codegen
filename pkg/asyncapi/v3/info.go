@@ -21,16 +21,22 @@ type Info struct {
 }
 
 // Process processes the Info to make it ready for code generation.
-func (info *Info) Process(spec Specification) { // Prevent modification if nil
+func (info *Info) Process(spec Specification) error { // Prevent modification if nil
 	if info == nil {
-		return
+		return nil
 	}
 
 	// Process tags
 	for i, t := range info.Tags {
-		t.Process(fmt.Sprintf("InfoTag%d", i), spec)
+		if err := t.Process(fmt.Sprintf("InfoTag%d", i), spec); err != nil {
+			return err
+		}
 	}
 
 	// Process external documentation
-	info.ExternalDocs.Process("InfoExternalDocs", spec)
+	if err := info.ExternalDocs.Process("InfoExternalDocs", spec); err != nil {
+		return err
+	}
+
+	return nil
 }

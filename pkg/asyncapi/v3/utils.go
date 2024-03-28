@@ -1,11 +1,17 @@
 package asyncapiv3
 
+import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+
 type processable interface {
-	Process(string, Specification)
+	Process(string, Specification) error
 }
 
-func processMap[T processable](spec Specification, m map[string]T, suffix string) {
+func processMap[T processable](spec Specification, m map[string]T, suffix string) error {
 	for name, entity := range m {
-		entity.Process(name+suffix, spec)
+		if err := entity.Process(template.Namify(name)+suffix, spec); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }

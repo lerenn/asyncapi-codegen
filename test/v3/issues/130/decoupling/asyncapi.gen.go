@@ -411,13 +411,16 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// UserMessage is the golang representation of the AsyncAPI message
+// UserMessagePayload is a schema from the AsyncAPI specification required in messages
+type UserMessagePayload struct {
+	// Description: Name of the user
+	DisplayName *string `json:"display_name"`
+}
+
+// UserMessage is the message expected for 'UserMessage' channel.
 type UserMessage struct {
 	// Payload will be inserted in the message payload
-	Payload struct {
-		// Description: Name of the user
-		DisplayName *string `json:"display_name"`
-	}
+	Payload UserMessagePayload
 }
 
 func NewUserMessage() UserMessage {

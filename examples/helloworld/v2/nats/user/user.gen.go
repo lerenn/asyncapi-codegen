@@ -180,7 +180,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// HelloMessage is the message expected for 'Hello' channel
+// HelloMessage is the message expected for 'HelloMessage' channel.
 type HelloMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string

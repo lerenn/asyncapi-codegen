@@ -59,7 +59,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// TestingMessage is the golang representation of the AsyncAPI message
+// TestingMessage is the message expected for 'TestingMessage' channel.
 type TestingMessage struct {
 	// Payload will be inserted in the message payload
 	Payload TestSchema

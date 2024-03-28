@@ -1,6 +1,8 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils"
+import (
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+)
 
 // ChannelBindings is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
@@ -36,17 +38,23 @@ type ChannelBindings struct {
 }
 
 // Process processes the ChannelBindings to make it ready for code generation.
-func (chb *ChannelBindings) Process(name string, spec Specification) { // Return if empty
+func (chb *ChannelBindings) Process(name string, spec Specification) error { // Return if empty
 	// Prevent modification if nil
 	if chb == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	chb.Name = utils.UpperFirstLetter(name)
+	chb.Name = template.Namify(name)
 
 	// Add pointer to reference if there is one
 	if chb.Reference != "" {
-		chb.ReferenceTo = spec.ReferenceChannelBindings(chb.Reference)
+		refTo, err := spec.ReferenceChannelBindings(chb.Reference)
+		if err != nil {
+			return err
+		}
+		chb.ReferenceTo = refTo
 	}
+
+	return nil
 }

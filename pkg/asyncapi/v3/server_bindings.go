@@ -1,6 +1,6 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils"
+import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 
 // ServerBindings is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
@@ -36,17 +36,23 @@ type ServerBindings struct {
 }
 
 // Process processes the ServerBindings to make it ready for code generation.
-func (ob *ServerBindings) Process(name string, spec Specification) {
+func (ob *ServerBindings) Process(name string, spec Specification) error {
 	// Prevent modification if nil
 	if ob == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	ob.Name = utils.UpperFirstLetter(name)
+	ob.Name = template.Namify(name)
 
 	// Add pointer to reference if there is one
 	if ob.Reference != "" {
-		ob.ReferenceTo = spec.ReferenceServerBindings(ob.Reference)
+		refTo, err := spec.ReferenceServerBindings(ob.Reference)
+		if err != nil {
+			return err
+		}
+		ob.ReferenceTo = refTo
 	}
+
+	return nil
 }
