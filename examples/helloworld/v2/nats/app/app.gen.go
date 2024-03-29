@@ -139,7 +139,10 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribeHello will subscribe to new messages from 'hello' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeHello(ctx context.Context, fn func(ctx context.Context, msg HelloMessage) error) error {
+func (c *AppController) SubscribeHello(
+	ctx context.Context,
+	fn func(ctx context.Context, msg HelloMessage) error,
+) error {
 	// Get channel path
 	path := "hello"
 
@@ -291,7 +294,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// HelloMessage is the message expected for 'Hello' channel
+// HelloMessage is the message expected for 'HelloMessage' channel.
 type HelloMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string

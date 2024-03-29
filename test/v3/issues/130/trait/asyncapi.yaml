@@ -7,9 +7,9 @@ components:
     UserSignup:
       description: A longer description.
       payload:
-        $ref: '#/components/schemas/userSignupPayload'
+        type: string
       traits:
-        - name: UserSignup
+        - name: UserSignupTrait
           title: User signup
           summary: Action to sign a user up.
           description: Description from trait.

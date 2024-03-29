@@ -572,21 +572,27 @@ func (e *Error) Error() string {
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// PingMessage is the golang representation of the AsyncAPI message
+// PingMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PingMessageHeaders struct {
+	// Description: Provide path to which reply must be provided
+	ReplyTo *string `json:"reply_to"`
+
+	// Description: Provide request id that you will use to identify the reply match
+	RequestId *string `json:"request_id"`
+}
+
+// PingMessagePayload is a schema from the AsyncAPI specification required in messages
+type PingMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PingMessage is the message expected for 'PingMessage' channel.
 type PingMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Provide path to which reply must be provided
-		ReplyTo *string `json:"reply_to"`
-
-		// Description: Provide request id that you will use to identify the reply match
-		RequestId *string `json:"request_id"`
-	}
+	Headers PingMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PingMessagePayload
 }
 
 func NewPingMessage() PingMessage {
@@ -651,18 +657,24 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PongMessage is the golang representation of the AsyncAPI message
+// PongMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PongMessageHeaders struct {
+	// Description: Reply message must contain id of the request message
+	RequestId *string `json:"request_id"`
+}
+
+// PongMessagePayload is a schema from the AsyncAPI specification required in messages
+type PongMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PongMessage is the message expected for 'PongMessage' channel.
 type PongMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Reply message must contain id of the request message
-		RequestId *string `json:"request_id"`
-	}
+	Headers PongMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PongMessagePayload
 }
 
 func NewPongMessage() PongMessage {

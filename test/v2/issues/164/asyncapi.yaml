@@ -1,0 +1,23 @@
+asyncapi: 2.6.0
+
+channels:
+  issue164.testMap:
+    publish:
+      message: 
+        $ref: "#/components/messages/TestMap"
+
+components:
+  messages:
+    TestMap:
+      payload:
+        $ref: "#/components/schemas/TestMap"
+
+  schemas:
+    TestMap:
+      type: object
+      properties:
+        property:
+          type: string
+      additionalProperties:
+        type: string
+    

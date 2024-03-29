@@ -310,18 +310,24 @@ func (e *Error) Error() string {
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// PingMessage is the golang representation of the AsyncAPI message
+// PingMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PingMessageHeaders struct {
+	// Description: Correlation ID set by user
+	CorrelationId *string `json:"correlation_id"`
+}
+
+// PingMessagePayload is a schema from the AsyncAPI specification required in messages
+type PingMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PingMessage is the message expected for 'PingMessage' channel.
 type PingMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Correlation ID set by user
-		CorrelationId *string `json:"correlation_id"`
-	}
+	Headers PingMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PingMessagePayload
 }
 
 func NewPingMessage() PingMessage {
@@ -406,18 +412,24 @@ func (msg *PingMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	msg.Headers.CorrelationId = &id
 }
 
-// PongMessage is the golang representation of the AsyncAPI message
+// PongMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PongMessageHeaders struct {
+	// Description: Correlation ID set by user
+	CorrelationId *string `json:"correlation_id"`
+}
+
+// PongMessagePayload is a schema from the AsyncAPI specification required in messages
+type PongMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PongMessage is the message expected for 'PongMessage' channel.
 type PongMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Correlation ID set by user
-		CorrelationId *string `json:"correlation_id"`
-	}
+	Headers PongMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PongMessagePayload
 }
 
 func NewPongMessage() PongMessage {

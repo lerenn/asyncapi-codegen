@@ -433,12 +433,15 @@ type UserSignupChannelParameters struct {
 	UserId string
 }
 
-// UserMessage is the golang representation of the AsyncAPI message
+// UserMessagePayload is a schema from the AsyncAPI specification required in messages
+type UserMessagePayload struct {
+	Name *string `json:"name"`
+}
+
+// UserMessage is the message expected for 'UserMessage' channel.
 type UserMessage struct {
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Name *string `json:"name"`
-	}
+	Payload UserMessagePayload
 }
 
 func NewUserMessage() UserMessage {

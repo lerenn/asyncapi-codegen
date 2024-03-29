@@ -67,7 +67,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// GroupMessage is the message expected for 'Group' channel
+// GroupMessage is the message expected for 'GroupMessage' channel.
 type GroupMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
@@ -108,7 +108,7 @@ func (msg GroupMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// InfoMessage is the message expected for 'Info' channel
+// InfoMessage is the message expected for 'InfoMessage' channel.
 type InfoMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
@@ -149,7 +149,7 @@ func (msg InfoMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// ProjectMessage is the message expected for 'Project' channel
+// ProjectMessage is the message expected for 'ProjectMessage' channel.
 type ProjectMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
@@ -190,7 +190,7 @@ func (msg ProjectMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// ResourceMessage is the message expected for 'Resource' channel
+// ResourceMessage is the message expected for 'ResourceMessage' channel.
 type ResourceMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
@@ -231,7 +231,7 @@ func (msg ResourceMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// StatusMessage is the message expected for 'Status' channel
+// StatusMessage is the message expected for 'StatusMessage' channel.
 type StatusMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string

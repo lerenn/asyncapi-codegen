@@ -139,7 +139,10 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue99Test will subscribe to new messages from 'issue99.test' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeIssue99Test(ctx context.Context, fn func(ctx context.Context, msg Issue99TestMessage) error) error {
+func (c *AppController) SubscribeIssue99Test(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue99TestMessage) error,
+) error {
 	// Get channel path
 	path := "issue99.test"
 
@@ -332,7 +335,10 @@ func (c *UserController) Close(ctx context.Context) {
 }
 
 // PublishIssue99Test will publish messages to 'issue99.test' channel
-func (c *UserController) PublishIssue99Test(ctx context.Context, msg Issue99TestMessage) error {
+func (c *UserController) PublishIssue99Test(
+	ctx context.Context,
+	msg Issue99TestMessage,
+) error {
 	// Get channel path
 	path := "issue99.test"
 
@@ -413,7 +419,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Issue99TestMessage is the message expected for 'Issue99Test' channel
+// Issue99TestMessage is the message expected for 'Issue99TestMessage' channel.
 type Issue99TestMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
@@ -455,7 +461,7 @@ func (msg Issue99TestMessage) toBrokerMessage() (extensions.BrokerMessage, error
 }
 
 const (
-	// Issue99TestPath is the constant representing the 'Issue99.test' channel path.
+	// Issue99TestPath is the constant representing the 'Issue99Test' channel path.
 	Issue99TestPath = "issue99.test"
 )
 

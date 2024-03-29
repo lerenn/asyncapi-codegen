@@ -110,7 +110,10 @@ func (c *AppController) Close(ctx context.Context) {
 }
 
 // PublishIssue97ReferencePayloadArray will publish messages to 'issue97.referencePayloadArray' channel
-func (c *AppController) PublishIssue97ReferencePayloadArray(ctx context.Context, msg ReferencePayloadArrayMessage) error {
+func (c *AppController) PublishIssue97ReferencePayloadArray(
+	ctx context.Context,
+	msg ReferencePayloadArrayMessage,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadArray"
 
@@ -134,7 +137,10 @@ func (c *AppController) PublishIssue97ReferencePayloadArray(ctx context.Context,
 }
 
 // PublishIssue97ReferencePayloadObject will publish messages to 'issue97.referencePayloadObject' channel
-func (c *AppController) PublishIssue97ReferencePayloadObject(ctx context.Context, msg ReferencePayloadObjectMessage) error {
+func (c *AppController) PublishIssue97ReferencePayloadObject(
+	ctx context.Context,
+	msg ReferencePayloadObjectMessage,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadObject"
 
@@ -158,7 +164,10 @@ func (c *AppController) PublishIssue97ReferencePayloadObject(ctx context.Context
 }
 
 // PublishIssue97ReferencePayloadString will publish messages to 'issue97.referencePayloadString' channel
-func (c *AppController) PublishIssue97ReferencePayloadString(ctx context.Context, msg ReferencePayloadStringMessage) error {
+func (c *AppController) PublishIssue97ReferencePayloadString(
+	ctx context.Context,
+	msg ReferencePayloadStringMessage,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadString"
 
@@ -324,7 +333,10 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue97ReferencePayloadArray will subscribe to new messages from 'issue97.referencePayloadArray' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadArray(ctx context.Context, fn func(ctx context.Context, msg ReferencePayloadArrayMessage) error) error {
+func (c *UserController) SubscribeIssue97ReferencePayloadArray(
+	ctx context.Context,
+	fn func(ctx context.Context, msg ReferencePayloadArrayMessage) error,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadArray"
 
@@ -416,9 +428,15 @@ func (c *UserController) UnsubscribeIssue97ReferencePayloadArray(ctx context.Con
 	delete(c.subscriptions, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
-} // SubscribeIssue97ReferencePayloadObject will subscribe to new messages from 'issue97.referencePayloadObject' channel.
+}
+
+// SubscribeIssue97ReferencePayloadObject will subscribe to new messages from 'issue97.referencePayloadObject' channel.
+//
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadObject(ctx context.Context, fn func(ctx context.Context, msg ReferencePayloadObjectMessage) error) error {
+func (c *UserController) SubscribeIssue97ReferencePayloadObject(
+	ctx context.Context,
+	fn func(ctx context.Context, msg ReferencePayloadObjectMessage) error,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadObject"
 
@@ -510,9 +528,15 @@ func (c *UserController) UnsubscribeIssue97ReferencePayloadObject(ctx context.Co
 	delete(c.subscriptions, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
-} // SubscribeIssue97ReferencePayloadString will subscribe to new messages from 'issue97.referencePayloadString' channel.
+}
+
+// SubscribeIssue97ReferencePayloadString will subscribe to new messages from 'issue97.referencePayloadString' channel.
+//
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadString(ctx context.Context, fn func(ctx context.Context, msg ReferencePayloadStringMessage) error) error {
+func (c *UserController) SubscribeIssue97ReferencePayloadString(
+	ctx context.Context,
+	fn func(ctx context.Context, msg ReferencePayloadStringMessage) error,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadString"
 
@@ -664,7 +688,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// ReferencePayloadArrayMessage is the message expected for 'ReferencePayloadArray' channel
+// ReferencePayloadArrayMessage is the message expected for 'ReferencePayloadArrayMessage' channel.
 type ReferencePayloadArrayMessage struct {
 	// Payload will be inserted in the message payload
 	Payload ArraySchema
@@ -710,7 +734,7 @@ func (msg ReferencePayloadArrayMessage) toBrokerMessage() (extensions.BrokerMess
 	}, nil
 }
 
-// ReferencePayloadObjectMessage is the message expected for 'ReferencePayloadObject' channel
+// ReferencePayloadObjectMessage is the message expected for 'ReferencePayloadObjectMessage' channel.
 type ReferencePayloadObjectMessage struct {
 	// Payload will be inserted in the message payload
 	Payload ObjectSchema
@@ -756,7 +780,7 @@ func (msg ReferencePayloadObjectMessage) toBrokerMessage() (extensions.BrokerMes
 	}, nil
 }
 
-// ReferencePayloadStringMessage is the message expected for 'ReferencePayloadString' channel
+// ReferencePayloadStringMessage is the message expected for 'ReferencePayloadStringMessage' channel.
 type ReferencePayloadStringMessage struct {
 	// Payload will be inserted in the message payload
 	Payload StringSchema
@@ -798,7 +822,7 @@ func (msg ReferencePayloadStringMessage) toBrokerMessage() (extensions.BrokerMes
 }
 
 // ArraySchema is a schema from the AsyncAPI specification required in messages
-type ArraySchema []struct{}
+type ArraySchema []string
 
 // ObjectSchema is a schema from the AsyncAPI specification required in messages
 type ObjectSchema struct {
@@ -809,11 +833,11 @@ type ObjectSchema struct {
 type StringSchema string
 
 const (
-	// Issue97ReferencePayloadArrayPath is the constant representing the 'Issue97.referencePayloadArray' channel path.
+	// Issue97ReferencePayloadArrayPath is the constant representing the 'Issue97ReferencePayloadArray' channel path.
 	Issue97ReferencePayloadArrayPath = "issue97.referencePayloadArray"
-	// Issue97ReferencePayloadObjectPath is the constant representing the 'Issue97.referencePayloadObject' channel path.
+	// Issue97ReferencePayloadObjectPath is the constant representing the 'Issue97ReferencePayloadObject' channel path.
 	Issue97ReferencePayloadObjectPath = "issue97.referencePayloadObject"
-	// Issue97ReferencePayloadStringPath is the constant representing the 'Issue97.referencePayloadString' channel path.
+	// Issue97ReferencePayloadStringPath is the constant representing the 'Issue97ReferencePayloadString' channel path.
 	Issue97ReferencePayloadStringPath = "issue97.referencePayloadString"
 )
 

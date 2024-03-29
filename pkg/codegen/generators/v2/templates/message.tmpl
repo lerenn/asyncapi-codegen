@@ -1,25 +1,33 @@
 {{define "message" -}}
 
-// {{namify .Name}}Message is the message expected for '{{namify .Name}}' channel
+{{- if and .Headers (not .Headers.ReferenceTo) }}
+{{template "schema-definition" .Headers}}
+{{- end}}
+
+{{- if and (eq .Payload.Type "object") (not .Payload.ReferenceTo) }}
+{{template "schema-definition" .Payload}}
+{{- end}}
+
+// {{namify .Name}} is the message expected for '{{namify .Name}}' channel.
 {{if $.Description -}}
-// {{multiLineComment $.Description}}
+// NOTE: {{multiLineComment $.Description}}
 {{end -}}
 
-type {{namify .Name}}Message struct {
+type {{namify .Name}} struct {
 
 {{- /* Display headers if they exists */}}
 {{- if .Headers}}
 // Headers will be used to fill the message headers
-Headers {{template "schema" .Headers}}
+Headers {{template "schema-name" .Headers}}
 {{end -}}
 
 {{- /* Display payload */}}
 // Payload will be inserted in the message payload
-Payload {{template "schema" .Payload}}
+Payload {{template "schema-name" .Payload}}
 }
 
-func New{{namify .Name}}Message() {{namify .Name}}Message {
-    var msg {{namify .Name}}Message
+func New{{namify .Name}}() {{namify .Name}} {
+    var msg {{namify .Name}}
 
     {{if ne $.CorrelationIDLocation "" -}}
     // Set correlation ID
@@ -30,9 +38,9 @@ func New{{namify .Name}}Message() {{namify .Name}}Message {
     return msg
 }
 
-// new{{namify .Name}}MessageFromBrokerMessage will fill a new {{namify .Name}}Message with data from generic broker message
-func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) ({{namify .Name}}Message, error) {
-    var msg {{namify .Name}}Message
+// new{{namify .Name}}FromBrokerMessage will fill a new {{namify .Name}} with data from generic broker message
+func new{{namify .Name}}FromBrokerMessage(bMsg extensions.BrokerMessage) ({{namify .Name}}, error) {
+    var msg {{namify .Name}}
 
     {{/* Get payload by reference, or not*/}}
     {{- $payload := .Payload}}
@@ -46,7 +54,7 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) 
         {{- if and $payload.Format (or (eq $payload.Format "date") (eq $payload.Format "date-time"))}}
             t, err := time.Parse(time.RFC3339, string(bMsg.Payload))
             if err != nil {
-                return {{namify .Name}}Message{}, err
+                return {{namify .Name}}{}, err
             }
             payload := t
         {{- else}}
@@ -78,7 +86,7 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) 
     {{- if or (eq $payload.Type "string") (eq $payload.Type "integer") (eq $payload.Type "numeric")}}
         {{- /* If that's a reference, then there will be a conversion to struct to add */}}
         {{- if .Payload.Reference}}
-            msg.Payload = {{referenceToTypeName .Payload.Reference}}(payload)
+            msg.Payload = {{ .Payload.ReferenceTo.Name }}(payload)
         {{- else}}
             msg.Payload = payload // No need for type conversion to reference
         {{- end}}
@@ -142,8 +150,8 @@ func new{{namify .Name}}MessageFromBrokerMessage(bMsg extensions.BrokerMessage) 
     return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from {{namify .Name}}Message data
-func (msg {{namify .Name}}Message) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from {{namify .Name}} data
+func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) {
     // TODO: implement checks on message
 
     {{/* Get payload by reference, or not*/}}
@@ -241,7 +249,7 @@ func (msg {{namify .Name}}Message) toBrokerMessage() (extensions.BrokerMessage, 
 
 {{if ne $.CorrelationIDLocation "" -}}
 // CorrelationID will give the correlation ID of the message, based on AsyncAPI spec
-func (msg {{namify .Name}}Message) CorrelationID() string {
+func (msg {{namify .Name}}) CorrelationID() string {
     {{if $.CorrelationIDRequired -}}
         return msg.{{referenceToStructAttributePath $.CorrelationIDLocation}}
     {{- else -}}
@@ -254,14 +262,14 @@ func (msg {{namify .Name}}Message) CorrelationID() string {
 }
 
 // SetCorrelationID will set the correlation ID of the message, based on AsyncAPI spec
-func (msg *{{namify .Name}}Message) SetCorrelationID(id string) {
+func (msg *{{namify .Name}}) SetCorrelationID(id string) {
     msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
 }
 
 // SetAsResponseFrom will correlate the message with the one passed in parameter.
 // It will assign the 'req' message correlation ID to the message correlation ID,
 // both specified in AsyncAPI spec.
-func (msg *{{namify .Name}}Message) SetAsResponseFrom(req MessageWithCorrelationID) {
+func (msg *{{namify .Name}}) SetAsResponseFrom(req MessageWithCorrelationID) {
     id := req.CorrelationID()
     msg.{{referenceToStructAttributePath $.CorrelationIDLocation}} = {{if not $.CorrelationIDRequired -}}&{{end}}id
 }

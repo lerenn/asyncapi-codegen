@@ -1,0 +1,29 @@
+asyncapi: 3.0.0
+
+channels:
+  testMap:
+    address: 'issue164.testMap'
+    messages:
+      TestMap:
+        $ref: '#/components/messages/TestMap'
+operations:
+  testMap:
+    action: 'receive'
+    channel:
+      $ref: '#/channels/testMap'
+
+components:
+  messages:
+    TestMap:
+      payload:
+        $ref: "#/components/schemas/TestMap"
+
+  schemas:
+    TestMap:
+      type: object
+      properties:
+        property:
+          type: string
+      additionalProperties:
+        type: string
+    

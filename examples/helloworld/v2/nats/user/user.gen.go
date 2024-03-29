@@ -109,7 +109,10 @@ func (c *UserController) Close(ctx context.Context) {
 }
 
 // PublishHello will publish messages to 'hello' channel
-func (c *UserController) PublishHello(ctx context.Context, msg HelloMessage) error {
+func (c *UserController) PublishHello(
+	ctx context.Context,
+	msg HelloMessage,
+) error {
 	// Get channel path
 	path := "hello"
 
@@ -190,7 +193,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// HelloMessage is the message expected for 'Hello' channel
+// HelloMessage is the message expected for 'HelloMessage' channel.
 type HelloMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string

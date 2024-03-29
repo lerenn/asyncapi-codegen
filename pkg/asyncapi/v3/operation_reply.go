@@ -3,7 +3,7 @@ package asyncapiv3
 import (
 	"fmt"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 // OperationReply is a representation of the corresponding asyncapi object filled
@@ -24,30 +24,42 @@ type OperationReply struct {
 }
 
 // Process processes the OperationReply to make it ready for code generation.
-func (or *OperationReply) Process(name string, op *Operation, spec Specification) {
+func (or *OperationReply) Process(name string, op *Operation, spec Specification) error {
 	// Prevent modification if nil
 	if or == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	or.Name = utils.UpperFirstLetter(name)
+	or.Name = template.Namify(name)
 
 	// Add pointer to reference if there is one
 	if or.Reference != "" {
-		or.ReferenceTo = spec.ReferenceOperationReply(or.Reference)
+		refTo, err := spec.ReferenceOperationReply(or.Reference)
+		if err != nil {
+			return err
+		}
+		or.ReferenceTo = refTo
 	}
 
 	// Process channel if there is one
-	or.Channel.Process(name+ChannelSuffix, spec)
+	if err := or.Channel.Process(name+ChannelSuffix, spec); err != nil {
+		return err
+	}
 
 	// Process messages
 	for i, msg := range or.Messages {
-		msg.Process(fmt.Sprintf("%s%d", name, i), spec)
+		if err := msg.Process(fmt.Sprintf("%s%d", name, i), spec); err != nil {
+			return err
+		}
 	}
 
 	// Process address
-	or.Address.Process(name+"Address", op, spec)
+	if err := or.Address.Process(name+"Address", op, spec); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Follow returns referenced operation if specified or the actual operation.

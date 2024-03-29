@@ -9,9 +9,17 @@
 
 {{else}}
 
-// {{namify .Name}} is the golang representation of the AsyncAPI message
+{{- if and .Headers (not .Headers.ReferenceTo) }}
+{{template "schema-definition" .Headers}}
+{{- end}}
+
+{{- if and .Payload (eq .Payload.Type "object") (not .Payload.ReferenceTo) }}
+{{template "schema-definition" .Payload}}
+{{- end}}
+
+// {{namify .Name}} is the message expected for '{{namify .Name}}' channel.
 {{if $.Description -}}
-// {{multiLineComment $.Description}}
+// NOTE: {{multiLineComment $.Description}}
 {{end -}}
 
 type {{namify .Name}} struct {
@@ -19,12 +27,12 @@ type {{namify .Name}} struct {
 {{- /* Display headers if they exists */}}
 {{- if .Headers}}
 // Headers will be used to fill the message headers
-Headers {{template "schema" .Headers}}
+Headers {{template "schema-name" .Headers}}
 {{end -}}
 
 {{- /* Display payload */}}
 // Payload will be inserted in the message payload
-Payload {{template "schema" .Payload}}
+Payload {{template "schema-name" .Payload}}
 }
 
 func New{{namify .Name}}() {{namify .Name}} {
@@ -87,7 +95,7 @@ func new{{namify .Name}}FromBrokerMessage(bMsg extensions.BrokerMessage) ({{nami
     {{- if or (eq $payload.Type "string") (eq $payload.Type "integer") (eq $payload.Type "numeric")}}
         {{- /* If that's a reference, then there will be a conversion to struct to add */}}
         {{- if .Payload.Reference}}
-            msg.Payload = {{namify .Payload.Name}}(payload)
+            msg.Payload = {{ .Payload.Follow.Name }}(payload)
         {{- else}}
             msg.Payload = payload // No need for type conversion to reference
         {{- end}}

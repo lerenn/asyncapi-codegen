@@ -3,7 +3,7 @@ package asyncapiv3
 import (
 	"fmt"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 // MessageTrait is a representation of the corresponding asyncapi object filled
@@ -37,43 +37,89 @@ type MessageTrait struct {
 }
 
 // Process processes the MessageTrait to make it ready for code generation.
-func (mt *MessageTrait) Process(name string, spec Specification) {
+func (mt *MessageTrait) Process(name string, spec Specification) error {
 	// Prevent modification if nil
 	if mt == nil {
-		return
+		return nil
 	}
 
 	// Set name
 	if mt.Name == "" {
-		mt.Name = utils.UpperFirstLetter(name)
+		mt.Name = template.Namify(name)
 	} else {
-		mt.Name = utils.UpperFirstLetter(mt.Name)
+		mt.Name = template.Namify(mt.Name)
 	}
 
-	// Add pointer to reference if there is one
-	if mt.Reference != "" {
-		mt.ReferenceTo = spec.ReferenceMessageTrait(mt.Reference)
+	// Process reference
+	if err := mt.processReference(spec); err != nil {
+		return err
 	}
 
 	// Process Headers and Payload
-	mt.Headers.Process(name+"Headers", spec, false)
-	mt.Payload.Process(name+"Payload", spec, false)
+	if err := mt.Headers.Process(name+"Headers", spec, false); err != nil {
+		return err
+	}
+	if err := mt.Payload.Process(name+"Payload", spec, false); err != nil {
+		return err
+	}
 
 	// Process tags
-	for i, t := range mt.Tags {
-		t.Process(fmt.Sprintf("%sTag%d", mt.Name, i), spec)
+	if err := mt.processTags(spec); err != nil {
+		return err
 	}
 
 	// Process external documentation
-	mt.ExternalDocs.Process(mt.Name+ExternalDocsNameSuffix, spec)
+	if err := mt.ExternalDocs.Process(mt.Name+ExternalDocsNameSuffix, spec); err != nil {
+		return err
+	}
 
 	// Process Bindings
-	mt.Bindings.Process(mt.Name+BindingsSuffix, spec)
+	if err := mt.Bindings.Process(mt.Name+BindingsSuffix, spec); err != nil {
+		return err
+	}
 
 	// Process Message Examples
-	for i, ex := range mt.Examples {
-		ex.Process(fmt.Sprintf("%sExample%d", mt.Name, i), spec)
+	if err := mt.processExamples(spec); err != nil {
+		return err
 	}
+
+	return nil
+}
+
+func (mt *MessageTrait) processExamples(spec Specification) error {
+	for i, e := range mt.Examples {
+		if err := e.Process(fmt.Sprintf("%sExample%d", mt.Name, i), spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (mt *MessageTrait) processTags(spec Specification) error {
+	for i, t := range mt.Tags {
+		if err := t.Process(fmt.Sprintf("%sTag%d", mt.Name, i), spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (mt *MessageTrait) processReference(spec Specification) error {
+	// check reference exists
+	if mt.Reference == "" {
+		return nil
+	}
+
+	// Add pointer to reference if there is one
+	refTo, err := spec.ReferenceMessageTrait(mt.Reference)
+	if err != nil {
+		return err
+	}
+	mt.ReferenceTo = refTo
+
+	return nil
 }
 
 // Follow returns referenced MessageTrait if specified or the actual MessageTrait.

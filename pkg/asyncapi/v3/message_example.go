@@ -1,6 +1,6 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils"
+import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 
 // MessageExample is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
@@ -20,17 +20,23 @@ type MessageExample struct {
 }
 
 // Process processes the MessageExample to make it ready for code generation.
-func (me *MessageExample) Process(path string, spec Specification) {
+func (me *MessageExample) Process(path string, spec Specification) error {
 	// Prevent modification if nil
 	if me == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	me.Name = utils.UpperFirstLetter(path)
+	me.Name = template.Namify(path)
 
 	// Add pointer to reference if there is one
 	if me.Reference != "" {
-		me.ReferenceTo = spec.ReferenceMessageExample(me.Reference)
+		refTo, err := spec.ReferenceMessageExample(me.Reference)
+		if err != nil {
+			return err
+		}
+		me.ReferenceTo = refTo
 	}
+
+	return nil
 }

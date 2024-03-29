@@ -1,6 +1,9 @@
 package generatorv3
 
-import asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
+import (
+	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
+)
 
 // ActionOperations contains operations based on their action.
 type ActionOperations struct {
@@ -11,12 +14,12 @@ type ActionOperations struct {
 }
 
 // NewActionOperations will create a struct with operations based on their action.
-func NewActionOperations(side Side, spec asyncapi.Specification) ActionOperations {
+func NewActionOperations(side generators.Side, spec asyncapi.Specification) ActionOperations {
 	var ao ActionOperations
 
 	// Get action count based on action
 	sendCount, receiveCount := spec.GetOperationCountByAction()
-	if side == SideIsApplication {
+	if side == generators.SideIsApplication {
 		ao.SendCount = sendCount
 		ao.ReceiveCount = receiveCount
 	} else {

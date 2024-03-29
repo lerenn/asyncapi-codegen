@@ -13,13 +13,18 @@ import (
 const (
 	templatesDir = "templates"
 
-	importsTemplatePath    = templatesDir + "/imports.tmpl"
-	typesTemplatePath      = templatesDir + "/types.tmpl"
-	schemaTemplatePath     = templatesDir + "/schema.tmpl"
-	messageTemplatePath    = templatesDir + "/message.tmpl"
-	subscriberTemplatePath = templatesDir + "/subscriber.tmpl"
-	controllerTemplatePath = templatesDir + "/controller.tmpl"
-	parameterTemplatePath  = templatesDir + "/parameter.tmpl"
+	importsTemplatePath          = templatesDir + "/imports.tmpl"
+	typesTemplatePath            = templatesDir + "/types.tmpl"
+	schemaDefinitionTemplatePath = templatesDir + "/schema_definition.tmpl"
+	schemaNameTemplatePath       = templatesDir + "/schema_name.tmpl"
+	messageTemplatePath          = templatesDir + "/message.tmpl"
+	subscriberTemplatePath       = templatesDir + "/subscriber.tmpl"
+	controllerTemplatePath       = templatesDir + "/controller.tmpl"
+	parameterTemplatePath        = templatesDir + "/parameter.tmpl"
+
+	marshalingTemplatesDir                     = templatesDir + "/marshaling"
+	marshalingAdditionalPropertiesTemplatePath = marshalingTemplatesDir + "/additional_properties.tmpl"
+	marshalingTimeTemplatePath                 = marshalingTemplatesDir + "/time.tmpl"
 )
 
 var (

@@ -23,7 +23,8 @@ func (suite *Suite) TestExtensionsWithSchema() {
 		Components: asyncapi.Components{
 			Schemas: map[string]*asyncapi.Schema{
 				"flag": {
-					Type:       asyncapi.MessageTypeIsInteger.String(),
+					Name:       "FlagSchema",
+					Type:       asyncapi.SchemaTypeIsInteger.String(),
 					Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 				},
 			},
@@ -41,11 +42,12 @@ func (suite *Suite) TestExtensionsWithObjectProperty() {
 	spec := asyncapi.Specification{
 		Components: asyncapi.Components{
 			Schemas: map[string]*asyncapi.Schema{
-				asyncapi.MessageTypeIsObject.String(): {
-					Type: asyncapi.MessageTypeIsObject.String(),
+				asyncapi.SchemaTypeIsObject.String(): {
+					Type: asyncapi.SchemaTypeIsObject.String(),
 					Properties: map[string]*asyncapi.Schema{
 						"flag": {
-							Type:       asyncapi.MessageTypeIsInteger.String(),
+							Name:       "Flag",
+							Type:       asyncapi.SchemaTypeIsInteger.String(),
 							Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 						},
 					},
@@ -67,9 +69,11 @@ func (suite *Suite) TestExtensionsWithArrayItem() {
 		Components: asyncapi.Components{
 			Schemas: map[string]*asyncapi.Schema{
 				"flags": {
-					Type: asyncapi.MessageTypeIsArray.String(),
+					Name: "FlagsSchema",
+					Type: asyncapi.SchemaTypeIsArray.String(),
 					Items: &asyncapi.Schema{
-						Type:       asyncapi.MessageTypeIsInteger.String(),
+						Name:       "FlagSchema",
+						Type:       asyncapi.SchemaTypeIsInteger.String(),
 						Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 					},
 				},
@@ -88,11 +92,13 @@ func (suite *Suite) TestExtensionsWithObjectPropertyAndTypeFromPackage() {
 	spec := asyncapi.Specification{
 		Components: asyncapi.Components{
 			Schemas: map[string]*asyncapi.Schema{
-				asyncapi.MessageTypeIsObject.String(): {
-					Type: asyncapi.MessageTypeIsObject.String(),
+				asyncapi.SchemaTypeIsObject.String(): {
+					Name: "ObjectSchema",
+					Type: asyncapi.SchemaTypeIsObject.String(),
 					Properties: map[string]*asyncapi.Schema{
 						"flag": {
-							Type:       asyncapi.MessageTypeIsInteger.String(),
+							Name:       "Flag",
+							Type:       asyncapi.SchemaTypeIsInteger.String(),
 							Extensions: asyncapi.Extensions{ExtGoType: "mypackage.Flag"},
 						},
 					},

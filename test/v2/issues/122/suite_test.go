@@ -65,14 +65,16 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestErrorHandlerForApp() {
 	// Test message
-	sent := Issue122MsgMessage{
+	sent := Issue122MsgPublishMessage{
 		Payload: "test some errors",
 	}
 
 	// return some error on message
-	err := suite.app.SubscribeIssue122Msg(context.Background(), func(_ context.Context, msg Issue122MsgMessage) error {
-		return errTest
-	})
+	err := suite.app.SubscribeIssue122Msg(
+		context.Background(),
+		func(_ context.Context, msg Issue122MsgSubscribeMessage) error {
+			return errTest
+		})
 	suite.Require().NoError(err)
 
 	suite.wg.Add(1)
@@ -87,14 +89,16 @@ func (suite *Suite) TestErrorHandlerForApp() {
 
 func (suite *Suite) TestErrorHandlerForUser() {
 	// Test message
-	sent := Issue122MsgMessage{
+	sent := Issue122MsgPublishMessage{
 		Payload: "test some errors",
 	}
 
 	// return some error on message
-	err := suite.user.SubscribeIssue122Msg(context.Background(), func(_ context.Context, msg Issue122MsgMessage) error {
-		return errTest
-	})
+	err := suite.user.SubscribeIssue122Msg(
+		context.Background(),
+		func(_ context.Context, msg Issue122MsgSubscribeMessage) error {
+			return errTest
+		})
 	suite.Require().NoError(err)
 
 	suite.wg.Add(1)

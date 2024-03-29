@@ -874,12 +874,15 @@ func (e *Error) Error() string {
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// PingMessage is the golang representation of the AsyncAPI message
+// PingMessagePayload is a schema from the AsyncAPI specification required in messages
+type PingMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PingMessage is the message expected for 'PingMessage' channel.
 type PingMessage struct {
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PingMessagePayload
 }
 
 func NewPingMessage() PingMessage {
@@ -922,18 +925,24 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PingWithIDMessage is the golang representation of the AsyncAPI message
+// PingWithIDMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PingWithIDMessageHeaders struct {
+	// Description: Correlation ID set by user
+	CorrelationId *string `json:"correlation_id"`
+}
+
+// PingWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
+type PingWithIDMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PingWithIDMessage is the message expected for 'PingWithIDMessage' channel.
 type PingWithIDMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Correlation ID set by user
-		CorrelationId *string `json:"correlation_id"`
-	}
+	Headers PingWithIDMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PingWithIDMessagePayload
 }
 
 func NewPingWithIDMessage() PingWithIDMessage {
@@ -1018,12 +1027,15 @@ func (msg *PingWithIDMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	msg.Headers.CorrelationId = &id
 }
 
-// PongMessage is the golang representation of the AsyncAPI message
+// PongMessagePayload is a schema from the AsyncAPI specification required in messages
+type PongMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PongMessage is the message expected for 'PongMessage' channel.
 type PongMessage struct {
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PongMessagePayload
 }
 
 func NewPongMessage() PongMessage {
@@ -1066,18 +1078,24 @@ func (msg PongMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PongWithIDMessage is the golang representation of the AsyncAPI message
+// PongWithIDMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PongWithIDMessageHeaders struct {
+	// Description: Correlation ID set by user
+	CorrelationId *string `json:"correlation_id"`
+}
+
+// PongWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
+type PongWithIDMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PongWithIDMessage is the message expected for 'PongWithIDMessage' channel.
 type PongWithIDMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Correlation ID set by user
-		CorrelationId *string `json:"correlation_id"`
-	}
+	Headers PongWithIDMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PongWithIDMessagePayload
 }
 
 func NewPongWithIDMessage() PongWithIDMessage {

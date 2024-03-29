@@ -16,8 +16,12 @@ type TypesGenerator struct {
 func (tg TypesGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		typesTemplatePath,
-		schemaTemplatePath,
+		schemaDefinitionTemplatePath,
+		schemaNameTemplatePath,
 		messageTemplatePath,
+
+		marshalingAdditionalPropertiesTemplatePath,
+		marshalingTimeTemplatePath,
 	)
 	if err != nil {
 		return "", err

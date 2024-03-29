@@ -31,3 +31,7 @@ func (suite *HelpersSuite) TestIsRequired() {
 		suite.Require().Equal(c.Result, IsRequired(c.Schema, c.Field), i)
 	}
 }
+
+func (suite *HelpersSuite) TestGetChildrenObjectSchemas() {
+	// TODO
+}

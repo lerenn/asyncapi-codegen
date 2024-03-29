@@ -196,7 +196,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// SayHelloMessage is the golang representation of the AsyncAPI message
+// SayHelloMessage is the message expected for 'SayHelloMessage' channel.
 type SayHelloMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string

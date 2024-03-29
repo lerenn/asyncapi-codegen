@@ -561,12 +561,15 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// RequestMessage is the golang representation of the AsyncAPI message
+// RequestMessageHeaders is a schema from the AsyncAPI specification required in messages
+type RequestMessageHeaders struct {
+	ReplyTo *string `json:"reply_to"`
+}
+
+// RequestMessage is the message expected for 'RequestMessage' channel.
 type RequestMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		ReplyTo *string `json:"reply_to"`
-	}
+	Headers RequestMessageHeaders
 
 	// Payload will be inserted in the message payload
 	Payload string
@@ -623,7 +626,7 @@ func (msg RequestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// ReplyMessage is the golang representation of the AsyncAPI message
+// ReplyMessage is the message expected for 'ReplyMessage' channel.
 type ReplyMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string

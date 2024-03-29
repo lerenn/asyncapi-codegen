@@ -84,3 +84,7 @@ func (suite *HelpersSuite) TestOperationName() {
 		suite.Require().Equal(c.Result, OperationName(c.Channel), i)
 	}
 }
+
+func (suite *HelpersSuite) TestGetChildrenObjectSchemas() {
+	// TODO
+}
