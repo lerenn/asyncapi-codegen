@@ -139,7 +139,10 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue122Msg will subscribe to new messages from 'issue122.msg' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeIssue122Msg(ctx context.Context, fn func(ctx context.Context, msg Issue122MsgSubscribeMessage) error) error {
+func (c *AppController) SubscribeIssue122Msg(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue122MsgSubscribeMessage) error,
+) error {
 	// Get channel path
 	path := "issue122.msg"
 
@@ -234,7 +237,10 @@ func (c *AppController) UnsubscribeIssue122Msg(ctx context.Context) {
 }
 
 // PublishIssue122Msg will publish messages to 'issue122.msg' channel
-func (c *AppController) PublishIssue122Msg(ctx context.Context, msg Issue122MsgSubscribeMessage) error {
+func (c *AppController) PublishIssue122Msg(
+	ctx context.Context,
+	msg Issue122MsgPublishMessage,
+) error {
 	// Get channel path
 	path := "issue122.msg"
 
@@ -386,7 +392,10 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue122Msg will subscribe to new messages from 'issue122.msg' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue122Msg(ctx context.Context, fn func(ctx context.Context, msg Issue122MsgSubscribeMessage) error) error {
+func (c *UserController) SubscribeIssue122Msg(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue122MsgSubscribeMessage) error,
+) error {
 	// Get channel path
 	path := "issue122.msg"
 
@@ -481,7 +490,10 @@ func (c *UserController) UnsubscribeIssue122Msg(ctx context.Context) {
 }
 
 // PublishIssue122Msg will publish messages to 'issue122.msg' channel
-func (c *UserController) PublishIssue122Msg(ctx context.Context, msg Issue122MsgSubscribeMessage) error {
+func (c *UserController) PublishIssue122Msg(
+	ctx context.Context,
+	msg Issue122MsgPublishMessage,
+) error {
 	// Get channel path
 	path := "issue122.msg"
 

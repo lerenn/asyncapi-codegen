@@ -109,7 +109,10 @@ func (c *UserController) Close(ctx context.Context) {
 }
 
 // PublishHello will publish messages to 'hello' channel
-func (c *UserController) PublishHello(ctx context.Context, msg HelloMessage) error {
+func (c *UserController) PublishHello(
+	ctx context.Context,
+	msg HelloMessage,
+) error {
 	// Get channel path
 	path := "hello"
 

@@ -139,7 +139,10 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue49Chat will subscribe to new messages from 'issue49.chat' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeIssue49Chat(ctx context.Context, fn func(ctx context.Context, msg Issue49ChatSubscribeMessage) error) error {
+func (c *AppController) SubscribeIssue49Chat(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue49ChatSubscribeMessage) error,
+) error {
 	// Get channel path
 	path := "issue49.chat"
 
@@ -234,7 +237,10 @@ func (c *AppController) UnsubscribeIssue49Chat(ctx context.Context) {
 }
 
 // PublishIssue49Chat will publish messages to 'issue49.chat' channel
-func (c *AppController) PublishIssue49Chat(ctx context.Context, msg Issue49ChatSubscribeMessage) error {
+func (c *AppController) PublishIssue49Chat(
+	ctx context.Context,
+	msg Issue49ChatPublishMessage,
+) error {
 	// Get channel path
 	path := "issue49.chat"
 
@@ -258,7 +264,10 @@ func (c *AppController) PublishIssue49Chat(ctx context.Context, msg Issue49ChatS
 }
 
 // PublishIssue49Status will publish messages to 'issue49.status' channel
-func (c *AppController) PublishIssue49Status(ctx context.Context, msg Issue49StatusMessage) error {
+func (c *AppController) PublishIssue49Status(
+	ctx context.Context,
+	msg Issue49StatusMessage,
+) error {
 	// Get channel path
 	path := "issue49.status"
 
@@ -417,7 +426,10 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue49Chat will subscribe to new messages from 'issue49.chat' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue49Chat(ctx context.Context, fn func(ctx context.Context, msg Issue49ChatSubscribeMessage) error) error {
+func (c *UserController) SubscribeIssue49Chat(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue49ChatSubscribeMessage) error,
+) error {
 	// Get channel path
 	path := "issue49.chat"
 
@@ -514,7 +526,10 @@ func (c *UserController) UnsubscribeIssue49Chat(ctx context.Context) {
 // SubscribeIssue49Status will subscribe to new messages from 'issue49.status' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue49Status(ctx context.Context, fn func(ctx context.Context, msg Issue49StatusMessage) error) error {
+func (c *UserController) SubscribeIssue49Status(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue49StatusMessage) error,
+) error {
 	// Get channel path
 	path := "issue49.status"
 
@@ -609,7 +624,10 @@ func (c *UserController) UnsubscribeIssue49Status(ctx context.Context) {
 }
 
 // PublishIssue49Chat will publish messages to 'issue49.chat' channel
-func (c *UserController) PublishIssue49Chat(ctx context.Context, msg Issue49ChatSubscribeMessage) error {
+func (c *UserController) PublishIssue49Chat(
+	ctx context.Context,
+	msg Issue49ChatPublishMessage,
+) error {
 	// Get channel path
 	path := "issue49.chat"
 

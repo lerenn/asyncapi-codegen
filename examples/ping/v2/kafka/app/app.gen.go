@@ -143,7 +143,10 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribePing will subscribe to new messages from 'ping.v2' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.Context, msg PingMessage) error) error {
+func (c *AppController) SubscribePing(
+	ctx context.Context,
+	fn func(ctx context.Context, msg PingMessage) error,
+) error {
 	// Get channel path
 	path := "ping.v2"
 
@@ -243,7 +246,10 @@ func (c *AppController) UnsubscribePing(ctx context.Context) {
 }
 
 // PublishPong will publish messages to 'pong.v2' channel
-func (c *AppController) PublishPong(ctx context.Context, msg PongMessage) error {
+func (c *AppController) PublishPong(
+	ctx context.Context,
+	msg PongMessage,
+) error {
 	// Get channel path
 	path := "pong.v2"
 

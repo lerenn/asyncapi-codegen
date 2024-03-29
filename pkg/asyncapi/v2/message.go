@@ -357,3 +357,11 @@ func (msg *Message) mergeWithMessageHeaders(msg2 Message, spec Specification) er
 	}
 	return nil
 }
+
+// Follow will follow the reference to the end.
+func (msg *Message) Follow() *Message {
+	if msg.ReferenceTo != nil {
+		return msg.ReferenceTo.Follow()
+	}
+	return msg
+}

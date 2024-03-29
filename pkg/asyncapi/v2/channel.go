@@ -55,13 +55,3 @@ func (c *Channel) Process(path string, spec Specification) error {
 
 	return nil
 }
-
-// GetChannelMessage will return the channel message
-// WARNING: if there is a reference, then it won't be followed.
-func (c Channel) GetChannelMessage() *Message {
-	if c.Subscribe != nil {
-		return &c.Subscribe.Message
-	}
-
-	return &c.Publish.Message
-}

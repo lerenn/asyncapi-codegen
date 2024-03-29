@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
 )
 
 // ControllerGenerator is a code generator for controllers that will turn an
@@ -15,14 +16,14 @@ type ControllerGenerator struct {
 }
 
 // NewControllerGenerator will create a new controller code generator.
-func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGenerator {
+func NewControllerGenerator(side generators.Side, spec asyncapi.Specification) ControllerGenerator {
 	var gen ControllerGenerator
 
 	// Generate receive send operations
 	gen.Operations = NewActionOperations(side, spec)
 
 	// Set generation name
-	if side == SideIsApplication {
+	if side == generators.SideIsApplication {
 		gen.Prefix = "App"
 	} else {
 		gen.Prefix = "User"
@@ -34,37 +35,37 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	return gen
 }
 
-func shouldControllerRespondToReply(side Side, op *asyncapi.Operation) bool {
+func shouldControllerRespondToReply(side generators.Side, op *asyncapi.Operation) bool {
 	if op.Reply == nil || op.Reply.Channel == nil {
 		return false
 	}
 
 	switch {
-	case side == SideIsApplication && op.Action.IsReceive():
+	case side == generators.SideIsApplication && op.Action.IsReceive():
 		return true
-	case side == SideIsUser && op.Action.IsSend():
-		return true
-	default:
-		return false
-	}
-}
-
-func isControllerReceiveOperation(side Side, op *asyncapi.Operation) bool {
-	switch {
-	case side == SideIsApplication && op.Action.IsReceive():
-		return true
-	case side == SideIsUser && op.Action.IsSend():
+	case side == generators.SideIsUser && op.Action.IsSend():
 		return true
 	default:
 		return false
 	}
 }
 
-func isControllerSendOperation(side Side, op *asyncapi.Operation) bool {
+func isControllerReceiveOperation(side generators.Side, op *asyncapi.Operation) bool {
 	switch {
-	case side == SideIsApplication && op.Action.IsSend():
+	case side == generators.SideIsApplication && op.Action.IsReceive():
 		return true
-	case side == SideIsUser && op.Action.IsReceive():
+	case side == generators.SideIsUser && op.Action.IsSend():
+		return true
+	default:
+		return false
+	}
+}
+
+func isControllerSendOperation(side generators.Side, op *asyncapi.Operation) bool {
+	switch {
+	case side == generators.SideIsApplication && op.Action.IsSend():
+		return true
+	case side == generators.SideIsUser && op.Action.IsReceive():
 		return true
 	default:
 		return false

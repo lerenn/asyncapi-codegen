@@ -110,7 +110,10 @@ func (c *AppController) Close(ctx context.Context) {
 }
 
 // PublishIssue97ReferencePayloadArray will publish messages to 'issue97.referencePayloadArray' channel
-func (c *AppController) PublishIssue97ReferencePayloadArray(ctx context.Context, msg ReferencePayloadArrayMessage) error {
+func (c *AppController) PublishIssue97ReferencePayloadArray(
+	ctx context.Context,
+	msg ReferencePayloadArrayMessage,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadArray"
 
@@ -134,7 +137,10 @@ func (c *AppController) PublishIssue97ReferencePayloadArray(ctx context.Context,
 }
 
 // PublishIssue97ReferencePayloadObject will publish messages to 'issue97.referencePayloadObject' channel
-func (c *AppController) PublishIssue97ReferencePayloadObject(ctx context.Context, msg ReferencePayloadObjectMessage) error {
+func (c *AppController) PublishIssue97ReferencePayloadObject(
+	ctx context.Context,
+	msg ReferencePayloadObjectMessage,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadObject"
 
@@ -158,7 +164,10 @@ func (c *AppController) PublishIssue97ReferencePayloadObject(ctx context.Context
 }
 
 // PublishIssue97ReferencePayloadString will publish messages to 'issue97.referencePayloadString' channel
-func (c *AppController) PublishIssue97ReferencePayloadString(ctx context.Context, msg ReferencePayloadStringMessage) error {
+func (c *AppController) PublishIssue97ReferencePayloadString(
+	ctx context.Context,
+	msg ReferencePayloadStringMessage,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadString"
 
@@ -324,7 +333,10 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue97ReferencePayloadArray will subscribe to new messages from 'issue97.referencePayloadArray' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadArray(ctx context.Context, fn func(ctx context.Context, msg ReferencePayloadArrayMessage) error) error {
+func (c *UserController) SubscribeIssue97ReferencePayloadArray(
+	ctx context.Context,
+	fn func(ctx context.Context, msg ReferencePayloadArrayMessage) error,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadArray"
 
@@ -421,7 +433,10 @@ func (c *UserController) UnsubscribeIssue97ReferencePayloadArray(ctx context.Con
 // SubscribeIssue97ReferencePayloadObject will subscribe to new messages from 'issue97.referencePayloadObject' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadObject(ctx context.Context, fn func(ctx context.Context, msg ReferencePayloadObjectMessage) error) error {
+func (c *UserController) SubscribeIssue97ReferencePayloadObject(
+	ctx context.Context,
+	fn func(ctx context.Context, msg ReferencePayloadObjectMessage) error,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadObject"
 
@@ -518,7 +533,10 @@ func (c *UserController) UnsubscribeIssue97ReferencePayloadObject(ctx context.Co
 // SubscribeIssue97ReferencePayloadString will subscribe to new messages from 'issue97.referencePayloadString' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadString(ctx context.Context, fn func(ctx context.Context, msg ReferencePayloadStringMessage) error) error {
+func (c *UserController) SubscribeIssue97ReferencePayloadString(
+	ctx context.Context,
+	fn func(ctx context.Context, msg ReferencePayloadStringMessage) error,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadString"
 

@@ -70,16 +70,30 @@ func ReferenceToTypeName(ref string) string {
 	return templateutil.Namify(parts[3])
 }
 
-// ChannelToMessageTypeName will convert a channel to a message type name in the
-// form of golang conventional type names.
-func ChannelToMessageTypeName(ch asyncapi.Channel) string {
-	msg := ch.GetChannelMessage()
-
-	if msg.Payload != nil || msg.OneOf != nil {
-		return msg.Name
+// ChannelToMessage will convert a channel to its message, based on publish/subscribe.
+//
+//nolint:cyclop
+func ChannelToMessage(ch asyncapi.Channel, direction string) *asyncapi.Message {
+	switch {
+	case ch.Publish != nil && ch.Subscribe == nil:
+		return ch.Publish.Message.Follow()
+	case ch.Subscribe != nil && ch.Publish == nil:
+		return ch.Subscribe.Message.Follow()
+	case direction == "publish":
+		if ch.Publish == nil {
+			panic("ChannelToMessage: channel has no publish operation")
+		}
+		return ch.Publish.Message.Follow()
+	case direction == "subscribe":
+		if ch.Subscribe == nil {
+			panic("ChannelToMessage: channel has no subscribe operation")
+		}
+		return ch.Subscribe.Message.Follow()
+	case ch.Subscribe == nil && ch.Publish == nil:
+		panic("ChannelToMessage: channel has no publish or subscribe operation")
+	default:
+		panic("direction must be either 'publish' or 'subscribe'")
 	}
-
-	return ReferenceToTypeName(msg.Reference) + "Message"
 }
 
 // IsRequired will check if a field is required in a asyncapi struct.
@@ -129,7 +143,7 @@ func OperationName(channel asyncapi.Channel) string {
 func HelpersFunctions() template.FuncMap {
 	return template.FuncMap{
 		"getChildrenObjectSchemas":       GetChildrenObjectSchemas,
-		"channelToMessageTypeName":       ChannelToMessageTypeName,
+		"channelToMessage":               ChannelToMessage,
 		"isRequired":                     IsRequired,
 		"generateChannelPath":            GenerateChannelPath,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,

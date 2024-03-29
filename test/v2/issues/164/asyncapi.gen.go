@@ -140,7 +140,10 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue164TestMap will subscribe to new messages from 'issue164.testMap' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeIssue164TestMap(ctx context.Context, fn func(ctx context.Context, msg TestMapMessage) error) error {
+func (c *AppController) SubscribeIssue164TestMap(
+	ctx context.Context,
+	fn func(ctx context.Context, msg TestMapMessage) error,
+) error {
 	// Get channel path
 	path := "issue164.testMap"
 
@@ -333,7 +336,10 @@ func (c *UserController) Close(ctx context.Context) {
 }
 
 // PublishIssue164TestMap will publish messages to 'issue164.testMap' channel
-func (c *UserController) PublishIssue164TestMap(ctx context.Context, msg TestMapMessage) error {
+func (c *UserController) PublishIssue164TestMap(
+	ctx context.Context,
+	msg TestMapMessage,
+) error {
 	// Get channel path
 	path := "issue164.testMap"
 
