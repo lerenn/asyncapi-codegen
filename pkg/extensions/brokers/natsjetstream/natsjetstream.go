@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
@@ -23,6 +24,8 @@ type Controller struct {
 	consumerName   string
 	consumeContext jetstream.ConsumeContext
 	channels       map[string]chan jetstream.Msg
+
+	nakDelay time.Duration
 }
 
 // ControllerOption is a function that can be used to configure a NATS controller.
@@ -90,6 +93,14 @@ func WithConsumer(name string) ControllerOption {
 	}
 }
 
+// WithNakDelay set the delay when redeliver messages via nak.
+func WithNakDelay(duration time.Duration) ControllerOption {
+	return func(controller *Controller) error {
+		controller.nakDelay = duration
+		return nil
+	}
+}
+
 // NewController creates a new NATS JetStream controller.
 func NewController(url string, options ...ControllerOption) (*Controller, error) {
 	// Connect to NATS
@@ -111,6 +122,7 @@ func NewController(url string, options ...ControllerOption) (*Controller, error)
 		logger:         extensions.DummyLogger{},
 		channels:       make(map[string]chan jetstream.Msg),
 		consumeContext: nil,
+		nakDelay:       time.Second * 5,
 	}
 
 	// Execute options
@@ -145,7 +157,7 @@ func (c *Controller) Publish(ctx context.Context, channel string, bm extensions.
 func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.BrokerChannelSubscription, error) {
 	// Create a new subscription
 	sub := extensions.NewBrokerChannelSubscription(
-		make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
+		make(chan extensions.AcknowledgeableBrokerMessage, brokers.BrokerMessagesQueueSize),
 		make(chan any, 1),
 	)
 
@@ -162,7 +174,7 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 				Key:   "message",
 				Value: message,
 			})
-			c.HandleMessage(message, sub)
+			c.HandleMessage(ctx, message, sub)
 		}
 	}()
 
@@ -177,7 +189,7 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 }
 
 // HandleMessage handles a message received from a stream.
-func (c *Controller) HandleMessage(msg jetstream.Msg, sub extensions.BrokerChannelSubscription) {
+func (c *Controller) HandleMessage(ctx context.Context, msg jetstream.Msg, sub extensions.BrokerChannelSubscription) {
 	// Get headers
 	headers := make(map[string][]byte, len(msg.Headers()))
 	for k, v := range msg.Headers() {
@@ -187,13 +199,23 @@ func (c *Controller) HandleMessage(msg jetstream.Msg, sub extensions.BrokerChann
 	}
 
 	// Create and transmit message to user
-	sub.TransmitReceivedMessage(extensions.BrokerMessage{
-		Headers: headers,
-		Payload: msg.Data(),
-	})
-
-	// Acknowledge message
-	_ = msg.Ack()
+	sub.TransmitReceivedMessage(extensions.NewAcknowledgeableBrokerMessage(
+		extensions.BrokerMessage{
+			Headers: headers,
+			Payload: msg.Data(),
+		},
+		AcknowledgementHandler{
+			doAck: func() {
+				if err := msg.Ack(); err != nil {
+					c.logger.Error(ctx, fmt.Sprintf("error on ack message: %q", err.Error()))
+				}
+			},
+			doNak: func() {
+				if err := msg.NakWithDelay(c.nakDelay); err != nil {
+					c.logger.Error(ctx, fmt.Sprintf("error on nak message: %q", err.Error()))
+				}
+			},
+		}))
 }
 
 // Close closes everything related to the broker.
@@ -245,4 +267,22 @@ func (c *Controller) ConsumeMessage(ctx context.Context) jetstream.MessageHandle
 		}
 		c.channels[msg.Subject()] <- msg
 	}
+}
+
+var _ extensions.BrokerAcknowledgment = (*AcknowledgementHandler)(nil)
+
+// AcknowledgementHandler for nats jetstream broker.
+type AcknowledgementHandler struct {
+	doAck func()
+	doNak func()
+}
+
+// AckMessage acknowledges the message.
+func (k AcknowledgementHandler) AckMessage() {
+	k.doAck()
+}
+
+// NakMessage negatively acknowledges the message.
+func (k AcknowledgementHandler) NakMessage() {
+	k.doNak()
 }

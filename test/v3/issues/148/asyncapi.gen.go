@@ -13,7 +13,7 @@ import (
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
 	// GetServiceInfoOperationReceived receive all Request messages from Reception channel.
-	GetServiceInfoOperationReceived(ctx context.Context, msg RequestMessage)
+	GetServiceInfoOperationReceived(ctx context.Context, msg RequestMessage) error
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -35,6 +35,7 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -146,7 +147,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 // If you need support for other messages, please raise an issue.
 func (c *AppController) SubscribeToGetServiceInfoOperation(
 	ctx context.Context,
-	fn func(ctx context.Context, msg RequestMessage),
+	fn func(ctx context.Context, msg RequestMessage) error,
 ) error {
 	// Get channel address
 	addr := "issue148.reception"
@@ -175,31 +176,38 @@ func (c *AppController) SubscribeToGetServiceInfoOperation(
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newRequestMessageFromBrokerMessage(brokerMsg)
+				msg, err := newRequestMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, addr, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -304,6 +312,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -461,11 +470,11 @@ func (c *UserController) RequestToGetServiceInfoOperation(
 	// Wait for corresponding response
 	for {
 		select {
-		case brokerMsg, open := <-sub.MessagesChannel():
+		case acknowledgeableBrokerMessage, open := <-sub.MessagesChannel():
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then the subscription ended before
 			// receiving the expected message
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				c.logger.Error(ctx, "Channel closed before getting message")
 				return ReplyMessage{}, extensions.ErrSubscriptionCanceled
 			}
@@ -474,11 +483,11 @@ func (c *UserController) RequestToGetServiceInfoOperation(
 			// the first received message.
 
 			// Set context with received values as it is the expected message
-			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
 
 			// Execute middlewares before returning
-			if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
+			if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, nil); err != nil {
 				return ReplyMessage{}, err
 			}
 
@@ -486,7 +495,7 @@ func (c *UserController) RequestToGetServiceInfoOperation(
 			//
 			// NOTE: it is transformed from the broker again, as it could have
 			// been modified by middlewares
-			return newReplyMessageFromBrokerMessage(brokerMsg)
+			return newReplyMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 		case <-ctx.Done(): // Set corrsponding error if context is done
 			c.logger.Error(ctx, "Context done before getting message")
 			return ReplyMessage{}, extensions.ErrContextCanceled
@@ -509,6 +518,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -526,6 +537,13 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	return func(controller *controller) {
 		controller.middlewares = middlewares
+	}
+}
+
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
 	}
 }
 

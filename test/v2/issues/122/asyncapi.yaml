@@ -1,0 +1,18 @@
+# Issue: https://github.com/lerenn/asyncapi-codegen/issues/122
+
+# Add a NACK mechanism to compatible brokers
+
+asyncapi: 2.6.0
+info:
+  title: Sample App
+  version: 1.0.0
+channels:
+  issue122.msg: # channel that has the two operations
+    subscribe:
+      message:
+        payload:
+          type: string
+    publish:
+      message:
+        payload:
+          type: string

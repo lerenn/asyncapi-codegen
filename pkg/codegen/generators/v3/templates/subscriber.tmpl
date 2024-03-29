@@ -3,7 +3,7 @@
 type {{ .Prefix }}Subscriber interface {
 {{- range $key, $value := .Operations.Receive}}
     // {{ namify $value.Follow.Name }}Received receive all {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
-    {{ namify $value.Follow.Name }}Received(ctx context.Context, msg {{opToMsgTypeName $value}})
+    {{ namify $value.Follow.Name }}Received(ctx context.Context, msg {{opToMsgTypeName $value}}) error
 {{end}}
 }
 {{- end}}

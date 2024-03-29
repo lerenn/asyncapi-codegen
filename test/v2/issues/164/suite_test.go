@@ -77,9 +77,10 @@ func (suite *Suite) TestAdditionalProperties() {
 	wg.Add(1)
 	err := suite.app.SubscribeIssue164TestMap(
 		context.Background(),
-		func(_ context.Context, msg TestMapMessage) {
+		func(_ context.Context, msg TestMapMessage) error {
 			recvMsg = msg
 			wg.Done()
+			return nil
 		})
 	suite.Require().NoError(err)
 

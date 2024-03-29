@@ -8,13 +8,16 @@ import (
 // BrokerChannelSubscription is a struct that contains every returned structures
 // when subscribing a channel.
 type BrokerChannelSubscription struct {
-	messages chan BrokerMessage
+	messages chan AcknowledgeableBrokerMessage
 	cancel   chan any
 }
 
 // NewBrokerChannelSubscription creates a new broker channel subscription based
 // on the channels used to receive message and cancel the subscription.
-func NewBrokerChannelSubscription(messages chan BrokerMessage, cancel chan any) BrokerChannelSubscription {
+func NewBrokerChannelSubscription(
+	messages chan AcknowledgeableBrokerMessage,
+	cancel chan any,
+) BrokerChannelSubscription {
 	return BrokerChannelSubscription{
 		messages: messages,
 		cancel:   cancel,
@@ -23,13 +26,13 @@ func NewBrokerChannelSubscription(messages chan BrokerMessage, cancel chan any) 
 
 // TransmitReceivedMessage should only be used by the broker to transmit the
 // new received messages to the user.
-func (bcs BrokerChannelSubscription) TransmitReceivedMessage(msg BrokerMessage) {
+func (bcs BrokerChannelSubscription) TransmitReceivedMessage(msg AcknowledgeableBrokerMessage) {
 	bcs.messages <- msg
 }
 
 // MessagesChannel returns the channel that will get the received messages from
 // broker and from which the user should listen.
-func (bcs BrokerChannelSubscription) MessagesChannel() <-chan BrokerMessage {
+func (bcs BrokerChannelSubscription) MessagesChannel() <-chan AcknowledgeableBrokerMessage {
 	return bcs.messages
 }
 
@@ -92,6 +95,44 @@ func (bm BrokerMessage) String() string {
 	}
 }
 
+// AcknowledgeableBrokerMessage is the struct that embeds BrokerMessage and
+// provide a BrokerAcknowledgment to acknowledge a message to the broker
+// depending on the implementation. AcknowledgeableBrokerMessage make sure that
+// only one acknowledgement is sent to the broker.
+type AcknowledgeableBrokerMessage struct {
+	BrokerMessage
+
+	acked          bool
+	acknowledgment BrokerAcknowledgment
+}
+
+// NewAcknowledgeableBrokerMessage return a new AcknowledgeableBrokerMessage
+// from BrokerMessage and BrokerAcknowledgment.
+func NewAcknowledgeableBrokerMessage(
+	bm BrokerMessage,
+	acknowledgment BrokerAcknowledgment,
+) AcknowledgeableBrokerMessage {
+	return AcknowledgeableBrokerMessage{BrokerMessage: bm, acknowledgment: acknowledgment}
+}
+
+// Ack will call the AckMessage of the underlying BrokerAcknowledgment
+// implementation if the message was not already acked.
+func (bm *AcknowledgeableBrokerMessage) Ack() {
+	if !bm.acked {
+		bm.acknowledgment.AckMessage()
+		bm.acked = true
+	}
+}
+
+// Nak will call the NakMessage of the underlying BrokerAcknowledgment
+// implementation if the message was not already acked.
+func (bm *AcknowledgeableBrokerMessage) Nak() {
+	if !bm.acked {
+		bm.acknowledgment.NakMessage()
+		bm.acked = true
+	}
+}
+
 // BrokerController represents the functions that should be implemented to connect
 // the broker to the application or the user.
 type BrokerController interface {
@@ -100,4 +141,12 @@ type BrokerController interface {
 
 	// Subscribe to messages from the broker
 	Subscribe(ctx context.Context, channel string) (BrokerChannelSubscription, error)
+}
+
+// BrokerAcknowledgment represents the function that should be implemented to acknowledge a
+// message from subscriber to the broker.
+// Some brokers may do not support naks so is it up to the broker implementation to handle naks correctly.
+type BrokerAcknowledgment interface {
+	AckMessage()
+	NakMessage()
 }
