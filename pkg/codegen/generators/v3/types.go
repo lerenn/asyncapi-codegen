@@ -19,6 +19,9 @@ func (tg TypesGenerator) Generate() (string, error) {
 		schemaDefinitionTemplatePath,
 		schemaNameTemplatePath,
 		messageTemplatePath,
+
+		marshalingAdditionalPropertiesTemplatePath,
+		marshalingTimeTemplatePath,
 	)
 	if err != nil {
 		return "", err

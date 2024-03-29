@@ -20,6 +20,10 @@ const (
 	messageTemplatePath          = templatesDir + "/message.tmpl"
 	subscriberTemplatePath       = templatesDir + "/subscriber.tmpl"
 	controllerTemplatePath       = templatesDir + "/controller.tmpl"
+
+	marshalingTemplatesDir                     = templatesDir + "/marshaling"
+	marshalingAdditionalPropertiesTemplatePath = marshalingTemplatesDir + "/additional_properties.tmpl"
+	marshalingTimeTemplatePath                 = marshalingTemplatesDir + "/time.tmpl"
 )
 
 var (

@@ -21,6 +21,10 @@ const (
 	subscriberTemplatePath       = templatesDir + "/subscriber.tmpl"
 	controllerTemplatePath       = templatesDir + "/controller.tmpl"
 	parameterTemplatePath        = templatesDir + "/parameter.tmpl"
+
+	marshalingTemplatesDir                     = templatesDir + "/marshaling"
+	marshalingAdditionalPropertiesTemplatePath = marshalingTemplatesDir + "/additional_properties.tmpl"
+	marshalingTimeTemplatePath                 = marshalingTemplatesDir + "/time.tmpl"
 )
 
 var (

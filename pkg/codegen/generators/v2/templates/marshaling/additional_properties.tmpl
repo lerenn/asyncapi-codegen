@@ -1,0 +1,59 @@
+{{define "marshaling-additional-properties" -}}
+
+// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
+func (t {{ .Name }}) MarshalJSON() ([]byte, error) {
+    type alias {{ .Name }}
+
+    // Copy original into alias and marshal the alias to avoid JSON marshal recursion
+    b, err := json.Marshal(alias(t))
+    if err != nil {
+        return nil, err
+    }
+
+    // Remove the end of the json (i.e. '}')
+    b = b[:len(b)-1]
+
+    // Add additional properties
+    for k, v := range t.AdditionalProperties {
+        b = append(b,[]byte(fmt.Sprintf(",%q:%q", k, v))...)
+    }
+
+    // Close JSON and return
+    return append(b, []byte("}")...) , nil
+}
+
+// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
+func (t *{{ .Name }}) UnmarshalJSON(data []byte) error {
+    type alias {{ .Name }}
+
+    // Unmarshal to map to get all fields
+    var m map[string]{{template "schema-name" .AdditionalProperties}}
+    if err := json.Unmarshal(data, &m);  err != nil {
+        return err
+    }
+
+    // Unmarshal into the alias then copy the alias content into the original
+    // object. This is done to avoid JSON unmarshal recursion.
+    var a alias
+    if err := json.Unmarshal(data, &a);  err != nil {
+        return err
+    }
+    *t = TestMapSchema(a)
+
+    // Get all fields that are additional and add them to the AdditionalProperties field.
+    t.AdditionalProperties = make(map[string]{{template "schema-name" .AdditionalProperties}}, len(m))
+    for k, v := range m {
+        switch k {
+            {{- range $key, $value := .Properties -}}
+                case "{{snakeCase $key}}":
+                    continue
+            {{- end}}
+        default:
+            t.AdditionalProperties[k] = v
+        }
+    }
+
+    return nil
+}
+
+{{- end}}

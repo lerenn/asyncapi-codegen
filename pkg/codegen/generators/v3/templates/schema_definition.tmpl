@@ -19,10 +19,15 @@ type {{ .Name }} struct {
     {{end -}}
 
     {{- if .AdditionalProperties}}
-    // AdditionalProperties represents the object additional properties
+    // AdditionalProperties represents the object additional properties.
     AdditionalProperties map[string]{{template "schema-name" .AdditionalProperties}} `json:"-"`
     {{end -}}
 }
+
+{{- /* Override JSON marshalling in case there is additional properties */ -}}
+{{- if .AdditionalProperties}}
+    {{template "marshaling-additional-properties" .}}
+{{- end}}
 
 {{ if and (not .AnyOf) (not .OneOf) -}}
     {{- range $key, $value := getChildrenObjectSchemas . }}
@@ -37,21 +42,7 @@ type {{ .Name }} {{template "schema-name" .}}
 
 {{/* Create specific marshaling for time */ -}}
 {{- if or (eq .Format "date") (eq .Format "date-time") -}}
-// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
-func (t {{ .Name }}) MarshalJSON() ([]byte, error) {
-    return json.Marshal(time.Time(t))
-}
-
-// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
-func (t *{{ .Name }}) UnmarshalJSON(data []byte) error {
-    var timeFormat time.Time
-    if err := json.Unmarshal(data, &timeFormat);  err != nil {
-        return err
-    }
-
-    *t = {{ .Name }}(timeFormat)
-    return nil
-}
+    {{template "marshaling-time" .}}
 {{- end -}}
 
 {{- end -}}
