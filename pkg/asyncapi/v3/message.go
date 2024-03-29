@@ -63,16 +63,16 @@ func (msg *Message) Process(name string, spec Specification) error {
 		return nil
 	}
 
-	// Process asyncapi fields
-	if err := msg.processAsyncAPIFields(spec); err != nil {
-		return err
-	}
-
 	// Set name
 	if msg.Name == "" {
 		msg.Name = template.Namify(name)
 	} else {
 		msg.Name = template.Namify(msg.Name)
+	}
+
+	// Process asyncapi fields
+	if err := msg.processAsyncAPIFields(spec); err != nil {
+		return err
 	}
 
 	// Process correlation ID
