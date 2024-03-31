@@ -25,6 +25,13 @@ const (
 	MessageFieldIsPayload MessageField = "payload"
 )
 
+const (
+	// MessageHeadersSuffix is the suffix for the headers schema name.
+	MessageHeadersSuffix = "Headers"
+	// MessagePayloadSuffix is the suffix for the payload schema name.
+	MessagePayloadSuffix = "Payload"
+)
+
 // Message is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#messageObject
@@ -89,7 +96,7 @@ func (msg *Message) processAsyncAPIFields(spec Specification) error {
 	}
 
 	// Process Payload
-	if err := msg.Payload.Process(msg.Name+"Payload", spec, false); err != nil {
+	if err := msg.Payload.Process(msg.Name+MessagePayloadSuffix, spec, false); err != nil {
 		return err
 	}
 
@@ -166,7 +173,7 @@ func (msg *Message) processHeaders(spec Specification) error {
 		return nil
 	}
 
-	if err := msg.Headers.Process(msg.Name+"Headers", spec, false); err != nil {
+	if err := msg.Headers.Process(msg.Name+MessageHeadersSuffix, spec, false); err != nil {
 		return err
 	}
 
@@ -427,18 +434,14 @@ func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) error {
 		return nil
 	}
 
-	// Merge headers if present
-	if mt.Headers != nil {
-		if err := msg.Headers.MergeWith(spec, *mt.Headers); err != nil {
-			return err
-		}
+	// Merge headers
+	if err := msg.mergeHeaders(spec, mt.Headers); err != nil {
+		return err
 	}
 
-	// Merge payload if present
-	if mt.Payload != nil {
-		if err := msg.Payload.MergeWith(spec, *mt.Payload); err != nil {
-			return err
-		}
+	// Merge payload
+	if err := msg.mergePayload(spec, mt.Payload); err != nil {
+		return err
 	}
 
 	// Add correlation ID if present and not overriding
@@ -481,6 +484,40 @@ func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) error {
 	msg.Examples = append(msg.Examples, mt.Examples...)
 
 	return nil
+}
+
+func (msg *Message) mergeHeaders(spec Specification, headers *Schema) error {
+	// Check if headers are nil
+	if headers == nil {
+		return nil
+	}
+
+	// Check if message headers are nil, then create them
+	if msg.Headers == nil {
+		newHeaders := utils.ToValue(headers.Follow())
+		msg.Headers = &newHeaders
+		return newHeaders.Process(msg.Name+MessageHeadersSuffix, spec, false)
+	}
+
+	// Merge headers
+	return msg.Headers.MergeWith(spec, *headers)
+}
+
+func (msg *Message) mergePayload(spec Specification, payload *Schema) error {
+	// Check if payload is nil
+	if payload == nil {
+		return nil
+	}
+
+	// Check if message payload is nil, then create them
+	if msg.Payload == nil {
+		newPayload := utils.ToValue(payload.Follow())
+		msg.Payload = &newPayload
+		return newPayload.Process(msg.Name+MessagePayloadSuffix, spec, false)
+	}
+
+	// Merge payload
+	return msg.Headers.MergeWith(spec, *payload)
 }
 
 // HaveCorrelationID check that the message have a correlation ID.
