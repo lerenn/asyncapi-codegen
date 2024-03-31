@@ -427,19 +427,11 @@ func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) error {
 		return nil
 	}
 
-	// Merge headers if present
-	if mt.Headers != nil {
-		if err := msg.Headers.MergeWith(spec, *mt.Headers); err != nil {
-			return err
-		}
-	}
+	// Merge headers
+	msg.mergeHeaders(spec, mt.Headers)
 
-	// Merge payload if present
-	if mt.Payload != nil {
-		if err := msg.Payload.MergeWith(spec, *mt.Payload); err != nil {
-			return err
-		}
-	}
+	// Merge payload
+	msg.mergePayload(spec, mt.Payload)
 
 	// Add correlation ID if present and not overriding
 	if msg.CorrelationID == nil && mt.CorrelationID != nil {
@@ -481,6 +473,40 @@ func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) error {
 	msg.Examples = append(msg.Examples, mt.Examples...)
 
 	return nil
+}
+
+func (msg *Message) mergeHeaders(spec Specification, headers *Schema) error {
+	// Check if headers are nil
+	if headers == nil {
+		return nil
+	}
+
+	// Check if message headers are nil, then create them
+	if msg.Headers == nil {
+		newHeaders := utils.ToValue(headers.Follow())
+		msg.Headers = &newHeaders
+		return newHeaders.Process(msg.Name+"Headers", spec, false)
+	}
+
+	// Merge headers
+	return msg.Headers.MergeWith(spec, *headers)
+}
+
+func (msg *Message) mergePayload(spec Specification, payload *Schema) error {
+	// Check if payload is nil
+	if payload == nil {
+		return nil
+	}
+
+	// Check if message payload is nil, then create them
+	if msg.Payload == nil {
+		newPayload := utils.ToValue(payload.Follow())
+		msg.Payload = &newPayload
+		return newPayload.Process(msg.Name+"Payload", spec, false)
+	}
+
+	// Merge payload
+	return msg.Headers.MergeWith(spec, *payload)
 }
 
 // HaveCorrelationID check that the message have a correlation ID.
