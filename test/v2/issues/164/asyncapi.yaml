@@ -1,7 +1,7 @@
 asyncapi: 2.6.0
 
 channels:
-  issue164.testMap:
+  v2.issue164.testMap:
     publish:
       message: 
         $ref: "#/components/messages/TestMap"

@@ -3,7 +3,7 @@ info:
   title: Hello world application V2
   version: '2.0.0'
 channels:
-  issue73.hello:
+  v2.issue73.hello:
     publish:
       message:
         payload:

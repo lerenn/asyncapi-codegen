@@ -67,21 +67,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Issue114StatusMessage is the message expected for 'Issue114StatusMessage' channel.
-type Issue114StatusMessage struct {
+// V2Issue114StatusMessage is the message expected for 'V2Issue114StatusMessage' channel.
+type V2Issue114StatusMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewIssue114StatusMessage() Issue114StatusMessage {
-	var msg Issue114StatusMessage
+func NewV2Issue114StatusMessage() V2Issue114StatusMessage {
+	var msg V2Issue114StatusMessage
 
 	return msg
 }
 
-// newIssue114StatusMessageFromBrokerMessage will fill a new Issue114StatusMessage with data from generic broker message
-func newIssue114StatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue114StatusMessage, error) {
-	var msg Issue114StatusMessage
+// newV2Issue114StatusMessageFromBrokerMessage will fill a new V2Issue114StatusMessage with data from generic broker message
+func newV2Issue114StatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue114StatusMessage, error) {
+	var msg V2Issue114StatusMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -92,8 +92,8 @@ func newIssue114StatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (I
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Issue114StatusMessage data
-func (msg Issue114StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue114StatusMessage data
+func (msg V2Issue114StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -109,11 +109,11 @@ func (msg Issue114StatusMessage) toBrokerMessage() (extensions.BrokerMessage, er
 }
 
 const (
-	// Issue114StatusPath is the constant representing the 'Issue114Status' channel path.
-	Issue114StatusPath = "issue114.status"
+	// V2Issue114StatusPath is the constant representing the 'V2Issue114Status' channel path.
+	V2Issue114StatusPath = "v2.issue114.status"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	Issue114StatusPath,
+	V2Issue114StatusPath,
 }

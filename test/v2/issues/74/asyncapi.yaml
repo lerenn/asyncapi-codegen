@@ -9,7 +9,7 @@ info:
   version: 1.0.0
   description: test
 channels:
-  issue74.testChannel:
+  v2.issue74.testChannel:
     description: test channel
     publish:
       message:

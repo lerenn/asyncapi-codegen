@@ -3,7 +3,7 @@ info:
   title: Test99 application
   version: '1.0.0'
 channels:
-  issue99.test:
+  v2.issue99.test:
     publish:
       message:
         payload:

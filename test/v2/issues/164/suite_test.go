@@ -75,7 +75,7 @@ func (suite *Suite) TestAdditionalProperties() {
 	// Check what the app receive and translate
 	var recvMsg TestMapMessage
 	wg.Add(1)
-	err := suite.app.SubscribeIssue164TestMap(
+	err := suite.app.SubscribeV2Issue164TestMap(
 		context.Background(),
 		func(_ context.Context, msg TestMapMessage) error {
 			recvMsg = msg
@@ -85,7 +85,7 @@ func (suite *Suite) TestAdditionalProperties() {
 	suite.Require().NoError(err)
 
 	// Send the message
-	err = suite.user.PublishIssue164TestMap(context.Background(), sent)
+	err = suite.user.PublishV2Issue164TestMap(context.Background(), sent)
 	suite.Require().NoError(err)
 
 	// Wait for the message to be received by the app

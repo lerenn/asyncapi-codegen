@@ -10,7 +10,7 @@ info:
   title: Sample App
   version: 1.0.0
 channels:
-  issue49.chat: # channel that has the two operations
+  v2.issue49.chat: # channel that has the two operations
     subscribe:
       message:
         payload:
@@ -19,7 +19,7 @@ channels:
       message:
         payload:
           type: string
-  issue49.status:
+  v2.issue49.status:
     subscribe:
       message:
         payload:
