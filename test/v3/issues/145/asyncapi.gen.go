@@ -151,7 +151,7 @@ func (c *AppController) SubscribeToPingRequestOperation(
 	fn func(ctx context.Context, msg PingMessage) error,
 ) error {
 	// Get channel address
-	addr := "ping"
+	addr := "v3.issue145.ping"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -243,7 +243,7 @@ func (c *AppController) UnsubscribeFromPingRequestOperation(
 	ctx context.Context,
 ) {
 	// Get channel address
-	addr := "ping"
+	addr := "v3.issue145.ping"
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -402,7 +402,7 @@ func (c *UserController) SendToPingRequestOperation(
 	msg PingMessage,
 ) error {
 	// Set channel address
-	addr := "ping"
+	addr := "v3.issue145.ping"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -735,7 +735,7 @@ func (msg PongMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 
 const (
 	// PingChannelPath is the constant representing the 'PingChannel' channel path.
-	PingChannelPath = "ping"
+	PingChannelPath = "v3.issue145.ping"
 	// PongChannelPath is the constant representing the 'PongChannel' channel path.
 	PongChannelPath = ""
 )

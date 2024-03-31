@@ -2,7 +2,7 @@ asyncapi: 3.0.0
 
 channels:
   testMap:
-    address: 'issue164.testMap'
+    address: v3.issue164.testMap
     messages:
       TestMap:
         $ref: '#/components/messages/TestMap'

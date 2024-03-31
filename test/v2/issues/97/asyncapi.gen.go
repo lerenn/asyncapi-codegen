@@ -109,13 +109,13 @@ func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishIssue97ReferencePayloadArray will publish messages to 'issue97.referencePayloadArray' channel
-func (c *AppController) PublishIssue97ReferencePayloadArray(
+// PublishV2Issue97ReferencePayloadArray will publish messages to 'v2.issue97.referencePayloadArray' channel
+func (c *AppController) PublishV2Issue97ReferencePayloadArray(
 	ctx context.Context,
 	msg ReferencePayloadArrayMessage,
 ) error {
 	// Get channel path
-	path := "issue97.referencePayloadArray"
+	path := "v2.issue97.referencePayloadArray"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -136,13 +136,13 @@ func (c *AppController) PublishIssue97ReferencePayloadArray(
 	})
 }
 
-// PublishIssue97ReferencePayloadObject will publish messages to 'issue97.referencePayloadObject' channel
-func (c *AppController) PublishIssue97ReferencePayloadObject(
+// PublishV2Issue97ReferencePayloadObject will publish messages to 'v2.issue97.referencePayloadObject' channel
+func (c *AppController) PublishV2Issue97ReferencePayloadObject(
 	ctx context.Context,
 	msg ReferencePayloadObjectMessage,
 ) error {
 	// Get channel path
-	path := "issue97.referencePayloadObject"
+	path := "v2.issue97.referencePayloadObject"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -163,13 +163,13 @@ func (c *AppController) PublishIssue97ReferencePayloadObject(
 	})
 }
 
-// PublishIssue97ReferencePayloadString will publish messages to 'issue97.referencePayloadString' channel
-func (c *AppController) PublishIssue97ReferencePayloadString(
+// PublishV2Issue97ReferencePayloadString will publish messages to 'v2.issue97.referencePayloadString' channel
+func (c *AppController) PublishV2Issue97ReferencePayloadString(
 	ctx context.Context,
 	msg ReferencePayloadStringMessage,
 ) error {
 	// Get channel path
-	path := "issue97.referencePayloadString"
+	path := "v2.issue97.referencePayloadString"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -192,14 +192,14 @@ func (c *AppController) PublishIssue97ReferencePayloadString(
 
 // UserSubscriber represents all handlers that are expecting messages for User
 type UserSubscriber interface {
-	// Issue97ReferencePayloadArray subscribes to messages placed on the 'issue97.referencePayloadArray' channel
-	Issue97ReferencePayloadArray(ctx context.Context, msg ReferencePayloadArrayMessage) error
+	// V2Issue97ReferencePayloadArray subscribes to messages placed on the 'v2.issue97.referencePayloadArray' channel
+	V2Issue97ReferencePayloadArray(ctx context.Context, msg ReferencePayloadArrayMessage) error
 
-	// Issue97ReferencePayloadObject subscribes to messages placed on the 'issue97.referencePayloadObject' channel
-	Issue97ReferencePayloadObject(ctx context.Context, msg ReferencePayloadObjectMessage) error
+	// V2Issue97ReferencePayloadObject subscribes to messages placed on the 'v2.issue97.referencePayloadObject' channel
+	V2Issue97ReferencePayloadObject(ctx context.Context, msg ReferencePayloadObjectMessage) error
 
-	// Issue97ReferencePayloadString subscribes to messages placed on the 'issue97.referencePayloadString' channel
-	Issue97ReferencePayloadString(ctx context.Context, msg ReferencePayloadStringMessage) error
+	// V2Issue97ReferencePayloadString subscribes to messages placed on the 'v2.issue97.referencePayloadString' channel
+	V2Issue97ReferencePayloadString(ctx context.Context, msg ReferencePayloadStringMessage) error
 }
 
 // UserController is the structure that provides publishing capabilities to the
@@ -310,13 +310,13 @@ func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) er
 		return extensions.ErrNilUserSubscriber
 	}
 
-	if err := c.SubscribeIssue97ReferencePayloadArray(ctx, as.Issue97ReferencePayloadArray); err != nil {
+	if err := c.SubscribeV2Issue97ReferencePayloadArray(ctx, as.V2Issue97ReferencePayloadArray); err != nil {
 		return err
 	}
-	if err := c.SubscribeIssue97ReferencePayloadObject(ctx, as.Issue97ReferencePayloadObject); err != nil {
+	if err := c.SubscribeV2Issue97ReferencePayloadObject(ctx, as.V2Issue97ReferencePayloadObject); err != nil {
 		return err
 	}
-	if err := c.SubscribeIssue97ReferencePayloadString(ctx, as.Issue97ReferencePayloadString); err != nil {
+	if err := c.SubscribeV2Issue97ReferencePayloadString(ctx, as.V2Issue97ReferencePayloadString); err != nil {
 		return err
 	}
 
@@ -325,20 +325,20 @@ func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) er
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *UserController) UnsubscribeAll(ctx context.Context) {
-	c.UnsubscribeIssue97ReferencePayloadArray(ctx)
-	c.UnsubscribeIssue97ReferencePayloadObject(ctx)
-	c.UnsubscribeIssue97ReferencePayloadString(ctx)
+	c.UnsubscribeV2Issue97ReferencePayloadArray(ctx)
+	c.UnsubscribeV2Issue97ReferencePayloadObject(ctx)
+	c.UnsubscribeV2Issue97ReferencePayloadString(ctx)
 }
 
-// SubscribeIssue97ReferencePayloadArray will subscribe to new messages from 'issue97.referencePayloadArray' channel.
+// SubscribeV2Issue97ReferencePayloadArray will subscribe to new messages from 'v2.issue97.referencePayloadArray' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadArray(
+func (c *UserController) SubscribeV2Issue97ReferencePayloadArray(
 	ctx context.Context,
 	fn func(ctx context.Context, msg ReferencePayloadArrayMessage) error,
 ) error {
 	// Get channel path
-	path := "issue97.referencePayloadArray"
+	path := "v2.issue97.referencePayloadArray"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -406,11 +406,11 @@ func (c *UserController) SubscribeIssue97ReferencePayloadArray(
 	return nil
 }
 
-// UnsubscribeIssue97ReferencePayloadArray will unsubscribe messages from 'issue97.referencePayloadArray' channel.
+// UnsubscribeV2Issue97ReferencePayloadArray will unsubscribe messages from 'v2.issue97.referencePayloadArray' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) UnsubscribeIssue97ReferencePayloadArray(ctx context.Context) {
+func (c *UserController) UnsubscribeV2Issue97ReferencePayloadArray(ctx context.Context) {
 	// Get channel path
-	path := "issue97.referencePayloadArray"
+	path := "v2.issue97.referencePayloadArray"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -430,15 +430,15 @@ func (c *UserController) UnsubscribeIssue97ReferencePayloadArray(ctx context.Con
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// SubscribeIssue97ReferencePayloadObject will subscribe to new messages from 'issue97.referencePayloadObject' channel.
+// SubscribeV2Issue97ReferencePayloadObject will subscribe to new messages from 'v2.issue97.referencePayloadObject' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadObject(
+func (c *UserController) SubscribeV2Issue97ReferencePayloadObject(
 	ctx context.Context,
 	fn func(ctx context.Context, msg ReferencePayloadObjectMessage) error,
 ) error {
 	// Get channel path
-	path := "issue97.referencePayloadObject"
+	path := "v2.issue97.referencePayloadObject"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -506,11 +506,11 @@ func (c *UserController) SubscribeIssue97ReferencePayloadObject(
 	return nil
 }
 
-// UnsubscribeIssue97ReferencePayloadObject will unsubscribe messages from 'issue97.referencePayloadObject' channel.
+// UnsubscribeV2Issue97ReferencePayloadObject will unsubscribe messages from 'v2.issue97.referencePayloadObject' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) UnsubscribeIssue97ReferencePayloadObject(ctx context.Context) {
+func (c *UserController) UnsubscribeV2Issue97ReferencePayloadObject(ctx context.Context) {
 	// Get channel path
-	path := "issue97.referencePayloadObject"
+	path := "v2.issue97.referencePayloadObject"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -530,15 +530,15 @@ func (c *UserController) UnsubscribeIssue97ReferencePayloadObject(ctx context.Co
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// SubscribeIssue97ReferencePayloadString will subscribe to new messages from 'issue97.referencePayloadString' channel.
+// SubscribeV2Issue97ReferencePayloadString will subscribe to new messages from 'v2.issue97.referencePayloadString' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadString(
+func (c *UserController) SubscribeV2Issue97ReferencePayloadString(
 	ctx context.Context,
 	fn func(ctx context.Context, msg ReferencePayloadStringMessage) error,
 ) error {
 	// Get channel path
-	path := "issue97.referencePayloadString"
+	path := "v2.issue97.referencePayloadString"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -606,11 +606,11 @@ func (c *UserController) SubscribeIssue97ReferencePayloadString(
 	return nil
 }
 
-// UnsubscribeIssue97ReferencePayloadString will unsubscribe messages from 'issue97.referencePayloadString' channel.
+// UnsubscribeV2Issue97ReferencePayloadString will unsubscribe messages from 'v2.issue97.referencePayloadString' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) UnsubscribeIssue97ReferencePayloadString(ctx context.Context) {
+func (c *UserController) UnsubscribeV2Issue97ReferencePayloadString(ctx context.Context) {
 	// Get channel path
-	path := "issue97.referencePayloadString"
+	path := "v2.issue97.referencePayloadString"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -833,17 +833,17 @@ type ObjectSchema struct {
 type StringSchema string
 
 const (
-	// Issue97ReferencePayloadArrayPath is the constant representing the 'Issue97ReferencePayloadArray' channel path.
-	Issue97ReferencePayloadArrayPath = "issue97.referencePayloadArray"
-	// Issue97ReferencePayloadObjectPath is the constant representing the 'Issue97ReferencePayloadObject' channel path.
-	Issue97ReferencePayloadObjectPath = "issue97.referencePayloadObject"
-	// Issue97ReferencePayloadStringPath is the constant representing the 'Issue97ReferencePayloadString' channel path.
-	Issue97ReferencePayloadStringPath = "issue97.referencePayloadString"
+	// V2Issue97ReferencePayloadArrayPath is the constant representing the 'V2Issue97ReferencePayloadArray' channel path.
+	V2Issue97ReferencePayloadArrayPath = "v2.issue97.referencePayloadArray"
+	// V2Issue97ReferencePayloadObjectPath is the constant representing the 'V2Issue97ReferencePayloadObject' channel path.
+	V2Issue97ReferencePayloadObjectPath = "v2.issue97.referencePayloadObject"
+	// V2Issue97ReferencePayloadStringPath is the constant representing the 'V2Issue97ReferencePayloadString' channel path.
+	V2Issue97ReferencePayloadStringPath = "v2.issue97.referencePayloadString"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	Issue97ReferencePayloadArrayPath,
-	Issue97ReferencePayloadObjectPath,
-	Issue97ReferencePayloadStringPath,
+	V2Issue97ReferencePayloadArrayPath,
+	V2Issue97ReferencePayloadObjectPath,
+	V2Issue97ReferencePayloadStringPath,
 }

@@ -8,15 +8,15 @@ info:
   version: 1.0.0
   description: test
 channels:
-  issue97.referencePayloadObject:
+  v2.issue97.referencePayloadObject:
     subscribe:
       message:
         $ref: '#/components/messages/ReferencePayloadObject'
-  issue97.referencePayloadString:
+  v2.issue97.referencePayloadString:
     subscribe:
       message:
         $ref: '#/components/messages/ReferencePayloadString'
-  issue97.referencePayloadArray:
+  v2.issue97.referencePayloadArray:
     subscribe:
       message:
         $ref: '#/components/messages/ReferencePayloadArray'

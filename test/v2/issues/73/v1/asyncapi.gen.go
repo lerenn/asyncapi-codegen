@@ -12,8 +12,8 @@ import (
 
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
-	// Issue73Hello subscribes to messages placed on the 'issue73.hello' channel
-	Issue73Hello(ctx context.Context, msg Issue73HelloMessage) error
+	// V2Issue73Hello subscribes to messages placed on the 'v2.issue73.hello' channel
+	V2Issue73Hello(ctx context.Context, msg V2Issue73HelloMessage) error
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -124,7 +124,7 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeIssue73Hello(ctx, as.Issue73Hello); err != nil {
+	if err := c.SubscribeV2Issue73Hello(ctx, as.V2Issue73Hello); err != nil {
 		return err
 	}
 
@@ -133,18 +133,18 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll(ctx context.Context) {
-	c.UnsubscribeIssue73Hello(ctx)
+	c.UnsubscribeV2Issue73Hello(ctx)
 }
 
-// SubscribeIssue73Hello will subscribe to new messages from 'issue73.hello' channel.
+// SubscribeV2Issue73Hello will subscribe to new messages from 'v2.issue73.hello' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeIssue73Hello(
+func (c *AppController) SubscribeV2Issue73Hello(
 	ctx context.Context,
-	fn func(ctx context.Context, msg Issue73HelloMessage) error,
+	fn func(ctx context.Context, msg V2Issue73HelloMessage) error,
 ) error {
 	// Get channel path
-	path := "issue73.hello"
+	path := "v2.issue73.hello"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -184,7 +184,7 @@ func (c *AppController) SubscribeIssue73Hello(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newIssue73HelloMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := newV2Issue73HelloMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -212,11 +212,11 @@ func (c *AppController) SubscribeIssue73Hello(
 	return nil
 }
 
-// UnsubscribeIssue73Hello will unsubscribe messages from 'issue73.hello' channel.
+// UnsubscribeV2Issue73Hello will unsubscribe messages from 'v2.issue73.hello' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeIssue73Hello(ctx context.Context) {
+func (c *AppController) UnsubscribeV2Issue73Hello(ctx context.Context) {
 	// Get channel path
-	path := "issue73.hello"
+	path := "v2.issue73.hello"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -334,13 +334,13 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishIssue73Hello will publish messages to 'issue73.hello' channel
-func (c *UserController) PublishIssue73Hello(
+// PublishV2Issue73Hello will publish messages to 'v2.issue73.hello' channel
+func (c *UserController) PublishV2Issue73Hello(
 	ctx context.Context,
-	msg Issue73HelloMessage,
+	msg V2Issue73HelloMessage,
 ) error {
 	// Get channel path
-	path := "issue73.hello"
+	path := "v2.issue73.hello"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -419,21 +419,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Issue73HelloMessage is the message expected for 'Issue73HelloMessage' channel.
-type Issue73HelloMessage struct {
+// V2Issue73HelloMessage is the message expected for 'V2Issue73HelloMessage' channel.
+type V2Issue73HelloMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewIssue73HelloMessage() Issue73HelloMessage {
-	var msg Issue73HelloMessage
+func NewV2Issue73HelloMessage() V2Issue73HelloMessage {
+	var msg V2Issue73HelloMessage
 
 	return msg
 }
 
-// newIssue73HelloMessageFromBrokerMessage will fill a new Issue73HelloMessage with data from generic broker message
-func newIssue73HelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue73HelloMessage, error) {
-	var msg Issue73HelloMessage
+// newV2Issue73HelloMessageFromBrokerMessage will fill a new V2Issue73HelloMessage with data from generic broker message
+func newV2Issue73HelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue73HelloMessage, error) {
+	var msg V2Issue73HelloMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -444,8 +444,8 @@ func newIssue73HelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Iss
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Issue73HelloMessage data
-func (msg Issue73HelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue73HelloMessage data
+func (msg V2Issue73HelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -461,11 +461,11 @@ func (msg Issue73HelloMessage) toBrokerMessage() (extensions.BrokerMessage, erro
 }
 
 const (
-	// Issue73HelloPath is the constant representing the 'Issue73Hello' channel path.
-	Issue73HelloPath = "issue73.hello"
+	// V2Issue73HelloPath is the constant representing the 'V2Issue73Hello' channel path.
+	V2Issue73HelloPath = "v2.issue73.hello"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	Issue73HelloPath,
+	V2Issue73HelloPath,
 }

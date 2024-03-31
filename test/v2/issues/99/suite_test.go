@@ -70,14 +70,14 @@ func (suite *Suite) TestAddingHeader() {
 	var wg sync.WaitGroup
 
 	// Expected message
-	sent := Issue99TestMessage{
+	sent := V2Issue99TestMessage{
 		Payload: "hello!",
 	}
 
 	// Check what the app receive and translate
-	var recvMsg Issue99TestMessage
+	var recvMsg V2Issue99TestMessage
 	wg.Add(1)
-	err := suite.app.SubscribeIssue99Test(context.Background(), func(_ context.Context, msg Issue99TestMessage) error {
+	err := suite.app.SubscribeV2Issue99Test(context.Background(), func(_ context.Context, msg V2Issue99TestMessage) error {
 		recvMsg = msg
 		wg.Done()
 		return nil
@@ -85,7 +85,7 @@ func (suite *Suite) TestAddingHeader() {
 	suite.Require().NoError(err)
 
 	// Publish the message
-	err = suite.user.PublishIssue99Test(context.Background(), sent)
+	err = suite.user.PublishV2Issue99Test(context.Background(), sent)
 	suite.Require().NoError(err)
 
 	// Wait for the message to be received by the app

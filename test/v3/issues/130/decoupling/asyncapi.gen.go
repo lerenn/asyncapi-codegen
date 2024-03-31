@@ -151,7 +151,7 @@ func (c *AppController) SubscribeToConsumeUserSignupOperation(
 	fn func(ctx context.Context, msg UserMessage) error,
 ) error {
 	// Get channel address
-	addr := "issue130.user.signedup"
+	addr := "v3.issue130.user.signedup"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -223,7 +223,7 @@ func (c *AppController) UnsubscribeFromConsumeUserSignupOperation(
 	ctx context.Context,
 ) {
 	// Get channel address
-	addr := "issue130.user.signedup"
+	addr := "v3.issue130.user.signedup"
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -350,7 +350,7 @@ func (c *UserController) SendToConsumeUserSignupOperation(
 	msg UserMessage,
 ) error {
 	// Set channel address
-	addr := "issue130.user.signedup"
+	addr := "v3.issue130.user.signedup"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -483,7 +483,7 @@ func (msg UserMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 
 const (
 	// UserSignupChannelPath is the constant representing the 'UserSignupChannel' channel path.
-	UserSignupChannelPath = "issue130.user.signedup"
+	UserSignupChannelPath = "v3.issue130.user.signedup"
 )
 
 // ChannelsPaths is an array of all channels paths

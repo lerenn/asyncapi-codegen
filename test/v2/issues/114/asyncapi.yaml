@@ -9,7 +9,7 @@ info:
   title: Sample App
   version: 1.2.3
 channels:
-  issue114.status:
+  v2.issue114.status:
     subscribe:
       message:
         payload:

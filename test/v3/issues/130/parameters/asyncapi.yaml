@@ -1,7 +1,7 @@
 asyncapi: 3.0.0
 channels: 
   userSignup:
-    address: issue130.user.{userId}.signedup
+    address: v3.issue130.user.{userId}.signedup
     parameters:
       userId:
         description: Id of the user.

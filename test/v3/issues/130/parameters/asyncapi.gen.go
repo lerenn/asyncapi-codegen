@@ -147,7 +147,7 @@ func (c *AppController) SubscribeToReceiveUserSignedUpOperation(
 	fn func(ctx context.Context, msg UserMessage) error,
 ) error {
 	// Get channel address
-	addr := fmt.Sprintf("issue130.user.%s.signedup", params.UserId)
+	addr := fmt.Sprintf("v3.issue130.user.%s.signedup", params.UserId)
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -220,7 +220,7 @@ func (c *AppController) UnsubscribeFromReceiveUserSignedUpOperation(
 	params UserSignupChannelParameters,
 ) {
 	// Get channel address
-	addr := fmt.Sprintf("issue130.user.%s.signedup", params.UserId)
+	addr := fmt.Sprintf("v3.issue130.user.%s.signedup", params.UserId)
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -348,7 +348,7 @@ func (c *UserController) SendToReceiveUserSignedUpOperation(
 	msg UserMessage,
 ) error {
 	// Set channel address
-	addr := fmt.Sprintf("issue130.user.%s.signedup", params.UserId)
+	addr := fmt.Sprintf("v3.issue130.user.%s.signedup", params.UserId)
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -486,7 +486,7 @@ func (msg UserMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 
 const (
 	// UserSignupChannelPath is the constant representing the 'UserSignupChannel' channel path.
-	UserSignupChannelPath = "issue130.user.{userId}.signedup"
+	UserSignupChannelPath = "v3.issue130.user.{userId}.signedup"
 )
 
 // ChannelsPaths is an array of all channels paths
