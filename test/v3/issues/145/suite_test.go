@@ -56,11 +56,12 @@ func (suite *Suite) TestRequestReplyWithReplyHelper() {
 	// Listen for pings on the application
 	err := suite.app.SubscribeToPingRequestOperation(
 		context.Background(),
-		func(ctx context.Context, ping PingMessage) {
+		func(ctx context.Context, ping PingMessage) error {
 			callbackErr := suite.app.ReplyToPingRequestOperation(ctx, ping, func(pong *PongMessage) {
 				pong.Payload.Event = ping.Payload.Event
 			})
 			suite.Require().NoError(callbackErr)
+			return nil
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromPingRequestOperation(context.Background())
@@ -82,11 +83,12 @@ func (suite *Suite) TestRequestReplyOnRawChannel() {
 	// Listen for pings on the application
 	err := suite.app.SubscribeToPingRequestOperation(
 		context.Background(),
-		func(ctx context.Context, ping PingMessage) {
+		func(ctx context.Context, ping PingMessage) error {
 			callbackErr := suite.app.ReplyToPingRequestOperation(ctx, ping, func(pong *PongMessage) {
 				pong.Payload.Event = ping.Payload.Event
 			})
 			suite.Require().NoError(callbackErr)
+			return nil
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromPingRequestOperation(context.Background())
@@ -99,7 +101,7 @@ func (suite *Suite) TestRequestReplyOnRawChannel() {
 	var wg sync.WaitGroup
 	go func() {
 		rawReply := <-sub.MessagesChannel()
-		reply, err := newPongMessageFromBrokerMessage(rawReply)
+		reply, err := newPongMessageFromBrokerMessage(rawReply.BrokerMessage)
 		suite.Require().NoError(err)
 		suite.Require().NotNil(reply.Payload.Event)
 		suite.Require().Equal("testing.2345", *reply.Payload.Event)

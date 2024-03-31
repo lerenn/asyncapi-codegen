@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 	"github.com/mohae/deepcopy"
 )
 
@@ -21,29 +23,6 @@ const (
 	MessageFieldIsHeader MessageField = "header"
 	// MessageFieldIsPayload represents the message field of a payload.
 	MessageFieldIsPayload MessageField = "payload"
-)
-
-// MessageType is a structure that represents the type of a field.
-type MessageType string
-
-// String returns the string representation of the type.
-func (t MessageType) String() string {
-	return string(t)
-}
-
-const (
-	// MessageTypeIsArray represents the type of an array.
-	MessageTypeIsArray MessageType = "array"
-	// MessageTypeIsHeader represents the type of a header.
-	MessageTypeIsHeader MessageType = "header"
-	// MessageTypeIsObject represents the type of an object.
-	MessageTypeIsObject MessageType = "object"
-	// MessageTypeIsString represents the type of a string.
-	MessageTypeIsString MessageType = "string"
-	// MessageTypeIsInteger represents the type of an integer.
-	MessageTypeIsInteger MessageType = "integer"
-	// MessageTypeIsPayload represents the type of a payload.
-	MessageTypeIsPayload MessageType = "payload"
 )
 
 // Message is a representation of the corresponding asyncapi object filled
@@ -78,62 +57,155 @@ type Message struct {
 }
 
 // Process processes the Message to make it ready for code generation.
-func (msg *Message) Process(name string, spec Specification) {
+func (msg *Message) Process(name string, spec Specification) error {
 	// Prevent modification if nil
 	if msg == nil {
-		return
+		return nil
 	}
 
 	// Set name
 	if msg.Name == "" {
-		msg.Name = utils.UpperFirstLetter(name)
+		msg.Name = template.Namify(name)
 	} else {
-		msg.Name = utils.UpperFirstLetter(msg.Name)
+		msg.Name = template.Namify(msg.Name)
 	}
 
-	// Add pointer to reference if there is one
-	if msg.Reference != "" {
-		msg.ReferenceTo = spec.ReferenceMessage(msg.Reference)
-	}
-
-	// Process Headers and Payload
-	msg.Headers.Process(name+"Headers", spec, false)
-	msg.Payload.Process(name+"Payload", spec, false)
-
-	// Process OneOf
-	for i, v := range msg.OneOf {
-		// Process the OneOf
-		v.Process(fmt.Sprintf("%sOneOf%d", name, i), spec)
-
-		// Merge the OneOf as one payload
-		msg.MergeWith(spec, *v)
-	}
-
-	// Process tags
-	for i, t := range msg.Tags {
-		t.Process(fmt.Sprintf("%sTag%d", msg.Name, i), spec)
-	}
-
-	// Process external documentation
-	msg.ExternalDocs.Process(msg.Name+ExternalDocsNameSuffix, spec)
-
-	// Process Bindings
-	msg.Bindings.Process(msg.Name+BindingsSuffix, spec)
-
-	// Process Message Examples
-	for i, ex := range msg.Examples {
-		ex.Process(fmt.Sprintf("%sExample%d", msg.Name, i), spec)
-	}
-
-	// Process traits and apply them
-	for i, t := range msg.Traits {
-		t.Process(fmt.Sprintf("%sTrait%d", msg.Name, i), spec)
-		msg.ApplyTrait(t.Follow(), spec)
+	// Process asyncapi fields
+	if err := msg.processAsyncAPIFields(spec); err != nil {
+		return err
 	}
 
 	// Process correlation ID
 	msg.createCorrelationIDFieldIfMissing()
 	msg.CorrelationIDRequired = msg.isCorrelationIDRequired()
+
+	return nil
+}
+
+func (msg *Message) processAsyncAPIFields(spec Specification) error {
+	// Add pointer to reference if there is one
+	if err := msg.processReference(spec); err != nil {
+		return err
+	}
+
+	// Process Payload
+	if err := msg.Payload.Process(msg.Name+"Payload", spec, false); err != nil {
+		return err
+	}
+
+	// Process Headers
+	if err := msg.processHeaders(spec); err != nil {
+		return err
+	}
+
+	// Process OneOf
+	if err := msg.processOneOf(spec); err != nil {
+		return err
+	}
+
+	// Process tags
+	if err := msg.processTags(spec); err != nil {
+		return err
+	}
+
+	// Process external documentation
+	if err := msg.ExternalDocs.Process(msg.Name+ExternalDocsNameSuffix, spec); err != nil {
+		return err
+	}
+
+	// Process Bindings
+	if err := msg.Bindings.Process(msg.Name+BindingsSuffix, spec); err != nil {
+		return err
+	}
+
+	// Process Message Examples
+	if err := msg.processExamples(spec); err != nil {
+		return err
+	}
+
+	// Process traits
+	return msg.processTraits(spec)
+}
+
+func (msg *Message) processReference(spec Specification) error {
+	if msg.Reference == "" {
+		return nil
+	}
+
+	refMsg, err := spec.ReferenceMessage(msg.Reference)
+	if err != nil {
+		return err
+	}
+	msg.ReferenceTo = refMsg
+
+	return nil
+}
+
+func (msg *Message) processTags(spec Specification) error {
+	for i, t := range msg.Tags {
+		if err := t.Process(fmt.Sprintf("%sTag%d", msg.Name, i), spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (msg *Message) processExamples(spec Specification) error {
+	for i, ex := range msg.Examples {
+		if err := ex.Process(fmt.Sprintf("%sExample%d", msg.Name, i), spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (msg *Message) processHeaders(spec Specification) error {
+	if msg.Headers == nil {
+		return nil
+	}
+
+	if err := msg.Headers.Process(msg.Name+"Headers", spec, false); err != nil {
+		return err
+	}
+
+	if msg.Headers.Follow().Type != SchemaTypeIsObject.String() {
+		return fmt.Errorf(
+			"%w: %q headers must be an object, is %q",
+			extensions.ErrAsyncAPI, msg.Name, msg.Headers.Follow().Type)
+	}
+
+	return nil
+}
+
+func (msg *Message) processOneOf(spec Specification) error {
+	for i, v := range msg.OneOf {
+		// Process the OneOf
+		if err := v.Process(fmt.Sprintf("%sOneOf%d", msg.Name, i), spec); err != nil {
+			return err
+		}
+
+		// Merge the OneOf as one payload
+		if err := msg.MergeWith(spec, *v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (msg *Message) processTraits(spec Specification) error {
+	for i, t := range msg.Traits {
+		if err := t.Process(fmt.Sprintf("%sTrait%d", msg.Name, i), spec); err != nil {
+			return err
+		}
+		if err := msg.ApplyTrait(t.Follow(), spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (msg Message) isCorrelationIDRequired() bool {
@@ -162,22 +234,22 @@ func (msg *Message) createTreeUntilLocation(location string) (locationParent *Sc
 
 	// Check that the correlation ID is in header
 	if strings.HasPrefix(location, "$message.header#") {
-		return msg.createTreeUntilLocationFromMessageType(MessageTypeIsHeader, location)
+		return msg.createTreeUntilLocationFromMessageType(MessageFieldIsHeader, location)
 	}
 
 	// Check that the correlation ID is in payload
 	if strings.HasPrefix(location, "$message.payload#") {
-		return msg.createTreeUntilLocationFromMessageType(MessageTypeIsPayload, location)
+		return msg.createTreeUntilLocationFromMessageType(MessageFieldIsPayload, location)
 	}
 
 	// Default to nothing
 	return utils.ToPointer(NewSchema())
 }
 
-func (msg *Message) createTreeUntilLocationFromMessageType(t MessageType, location string) (locationParent *Schema) {
+func (msg *Message) createTreeUntilLocationFromMessageType(t MessageField, location string) (locationParent *Schema) {
 	// Get correct top level placeholder
 	var placeholder **Schema
-	if t == MessageTypeIsHeader {
+	if t == MessageFieldIsHeader {
 		placeholder = &msg.Headers
 	} else {
 		placeholder = &msg.Payload
@@ -191,8 +263,8 @@ func (msg *Message) createTreeUntilLocationFromMessageType(t MessageType, locati
 	case (*placeholder) == nil: // If there is no header and no reference
 		// Create a default one for the message
 		(*placeholder) = utils.ToPointer(NewSchema())
-		(*placeholder).Name = MessageTypeIsHeader.String()
-		(*placeholder).Type = MessageTypeIsObject.String()
+		(*placeholder).Name = MessageFieldIsHeader.String()
+		(*placeholder).Type = SchemaTypeIsObject.String()
 		fallthrough
 	default:
 		// Set the child as the message headers
@@ -218,9 +290,9 @@ func (msg Message) downToLocation(child *Schema, location string) (locationParen
 			child = utils.ToPointer(NewSchema())
 			child.Name = v
 			if i == len(path)-2 { // As there is -1 in the loop slice
-				child.Type = MessageTypeIsString.String()
+				child.Type = SchemaTypeIsString.String()
 			} else {
-				child.Type = MessageTypeIsHeader.String()
+				child.Type = MessageFieldIsHeader.String()
 			}
 
 			// Add it to parent
@@ -242,7 +314,7 @@ func (msg *Message) referenceFrom(ref []string) any {
 	var next *Schema
 	if ref[0] == "payload" {
 		next = msg.Payload
-	} else if ref[0] == MessageTypeIsHeader.String() {
+	} else if ref[0] == MessageFieldIsHeader.String() {
 		next = msg.Headers
 	}
 
@@ -250,37 +322,92 @@ func (msg *Message) referenceFrom(ref []string) any {
 }
 
 // MergeWith merges the Message with another one.
-func (msg *Message) MergeWith(spec Specification, msg2 Message) {
+func (msg *Message) MergeWith(spec Specification, msg2 Message) error {
 	// Remove reference if merging
-	if msg.Reference != "" {
-		refMsg := spec.ReferenceMessage(msg.Reference)
-		msg.Reference = ""
-		msg.MergeWith(spec, *refMsg)
+	if err := msg.mergeWithSelfReference(spec); err != nil {
+		return err
 	}
 
 	// Get reference from msg2
-	if msg2.Reference != "" {
-		refMsg2 := spec.ReferenceMessage(msg2.Reference)
-		msg2.MergeWith(spec, *refMsg2)
+	if err := msg.mergeWithMessageFromReference(msg2, spec); err != nil {
+		return err
 	}
 
 	// Merge Payload
+	if err := msg.mergeWithMessagePayload(msg2, spec); err != nil {
+		return err
+	}
+
+	// Merge Headers
+	if err := msg.mergeWithMessageHeaders(msg2, spec); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (msg *Message) mergeWithSelfReference(spec Specification) error {
+	if msg.Reference != "" {
+		// Get referenced message
+		refMsg, err := spec.ReferenceMessage(msg.Reference)
+		if err != nil {
+			return err
+		}
+
+		// Remove reference
+		msg.Reference = ""
+
+		// Merge with referenced message
+		if err := msg.MergeWith(spec, *refMsg); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (msg *Message) mergeWithMessageFromReference(msg2 Message, spec Specification) error {
+	if msg2.Reference != "" {
+		// Get referenced message
+		refMsg2, err := spec.ReferenceMessage(msg2.Reference)
+		if err != nil {
+			return err
+		}
+
+		// Merge with referenced message
+		if err := msg2.MergeWith(spec, *refMsg2); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (msg *Message) mergeWithMessagePayload(msg2 Message, spec Specification) error {
 	if msg2.Payload != nil {
 		if msg.Payload == nil {
 			msg.Payload = deepcopy.Copy(msg2.Payload).(*Schema)
 		} else {
-			msg.Payload.MergeWith(spec, *msg2.Payload)
+			if err := msg.Payload.MergeWith(spec, *msg2.Payload); err != nil {
+				return err
+			}
 		}
 	}
 
-	// Merge Headers
+	return nil
+}
+
+func (msg *Message) mergeWithMessageHeaders(msg2 Message, spec Specification) error {
 	if msg2.Headers != nil {
 		if msg.Headers == nil {
 			msg.Headers = deepcopy.Copy(msg2.Headers).(*Schema)
 		} else {
-			msg.Headers.MergeWith(spec, *msg2.Headers)
+			if err := msg.Headers.MergeWith(spec, *msg2.Headers); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // Follow returns referenced message if specified or the actual message.
@@ -294,20 +421,24 @@ func (msg *Message) Follow() *Message {
 // ApplyTrait applies a trait to the message.
 //
 //nolint:cyclop
-func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) {
+func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) error {
 	// Check message is not nil
 	if msg == nil {
-		return
+		return nil
 	}
 
 	// Merge headers if present
 	if mt.Headers != nil {
-		msg.Headers.MergeWith(spec, *mt.Headers)
+		if err := msg.Headers.MergeWith(spec, *mt.Headers); err != nil {
+			return err
+		}
 	}
 
 	// Merge payload if present
 	if mt.Payload != nil {
-		msg.Payload.MergeWith(spec, *mt.Payload)
+		if err := msg.Payload.MergeWith(spec, *mt.Payload); err != nil {
+			return err
+		}
 	}
 
 	// Add correlation ID if present and not overriding
@@ -348,6 +479,8 @@ func (msg *Message) ApplyTrait(mt *MessageTrait, spec Specification) {
 
 	// Merge examples
 	msg.Examples = append(msg.Examples, mt.Examples...)
+
+	return nil
 }
 
 // HaveCorrelationID check that the message have a correlation ID.

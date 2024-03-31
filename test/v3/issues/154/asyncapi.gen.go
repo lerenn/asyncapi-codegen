@@ -24,6 +24,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -44,6 +46,13 @@ func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	}
 }
 
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
+	}
+}
+
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
@@ -60,8 +69,3 @@ func (e *Error) Error() string {
 
 // TestingSchema is a schema from the AsyncAPI specification required in messages
 type TestingSchema int64
-
-const ()
-
-// ChannelsPaths is an array of all channels paths
-var ChannelsPaths = []string{}

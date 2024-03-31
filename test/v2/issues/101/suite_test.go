@@ -71,8 +71,9 @@ func (suite *Suite) TestAddingHeader() {
 
 	// Check what the app receive
 	wg.Add(1)
-	err := suite.app.SubscribeIssue101Test(context.Background(), func(_ context.Context, msg Issue101TestMessage) {
+	err := suite.app.SubscribeIssue101Test(context.Background(), func(_ context.Context, msg Issue101TestMessage) error {
 		wg.Done()
+		return nil
 	})
 	suite.Require().NoError(err)
 

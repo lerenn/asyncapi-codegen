@@ -4,6 +4,26 @@ import (
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+)
+
+// SchemaType is a structure that represents the type of a field.
+type SchemaType string
+
+// String returns the string representation of the type.
+func (st SchemaType) String() string {
+	return string(st)
+}
+
+const (
+	// SchemaTypeIsArray represents the type of an array.
+	SchemaTypeIsArray SchemaType = "array"
+	// SchemaTypeIsObject represents the type of an object.
+	SchemaTypeIsObject SchemaType = "object"
+	// SchemaTypeIsString represents the type of a string.
+	SchemaTypeIsString SchemaType = "string"
+	// SchemaTypeIsInteger represents the type of an integer.
+	SchemaTypeIsInteger SchemaType = "integer"
 )
 
 // Schema is a representation of the corresponding asyncapi object filled
@@ -35,7 +55,7 @@ type Schema struct {
 	WriteOnly            bool               `json:"writeOnly"`
 	Properties           map[string]*Schema `json:"properties"`
 	PatternProperties    map[string]*Schema `json:"patternProperties"`
-	AdditionalProperties map[string]*Schema `json:"additionalProperties"`
+	AdditionalProperties *Schema            `json:"additionalProperties"`
 	AdditionalItems      []*Schema          `json:"additionalItems"`
 	Items                *Schema            `json:"items"`
 	PropertyNames        []string           `json:"propertyNames"`
@@ -75,77 +95,151 @@ func NewSchema() Schema {
 // Process processes the Schema structure to make it ready for code generation.
 //
 //nolint:funlen,cyclop // Not necessary to reduce length and cyclop
-func (s *Schema) Process(name string, spec Specification, isRequired bool) {
+func (s *Schema) Process(name string, spec Specification, isRequired bool) error {
 	// Prevent modification if nil
 	if s == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	s.Name = utils.UpperFirstLetter(name)
+	s.Name = template.Namify(name)
 
-	// Add pointer to reference if there is one
-	if s.Reference != "" {
-		s.ReferenceTo = spec.ReferenceSchema(s.Reference)
+	// Process reference
+	if err := s.processReference(spec); err != nil {
+		return err
 	}
 
 	// Process Properties
-	for n, p := range s.Properties {
-		p.Process(n+"Property", spec, utils.IsInSlice(s.Required, n))
+	if err := s.processProperties(spec); err != nil {
+		return err
 	}
 
 	// Process Pattern Properties
 	for n, p := range s.PatternProperties {
-		p.Process(n+"PatternProperty", spec, utils.IsInSlice(s.Required, n))
+		if err := p.Process(n+"PatternProperty", spec, utils.IsInSlice(s.Required, n)); err != nil {
+			return err
+		}
 	}
 
-	// Process Additional Properties
-	for n, p := range s.AdditionalProperties {
-		p.Process(n+"AdditionalProperties", spec, utils.IsInSlice(s.Required, n))
+	// Process AdditionalProperties
+	if s.AdditionalProperties != nil {
+		if err := s.AdditionalProperties.Process(s.Name+"AdditionalProperties", spec, false); err != nil {
+			return err
+		}
 	}
 
 	// Process Additional Items
 	for i, item := range s.AdditionalItems {
-		item.Process(fmt.Sprintf("%sAdditionalItem%d", name, i), spec, false)
+		if err := item.Process(fmt.Sprintf("%sAdditionalItem%d", s.Name, i), spec, false); err != nil {
+			return err
+		}
 	}
 
 	// Process Items
-	s.Items.Process(name+"Items", spec, false)
+	if err := s.Items.Process(s.Name+"Items", spec, false); err != nil {
+		return err
+	}
 
 	// Process Contains
 	for i, item := range s.Contains {
-		item.Process(fmt.Sprintf("%sContains%d", name, i), spec, false)
+		if err := item.Process(fmt.Sprintf("%sContains%d", name, i), spec, false); err != nil {
+			return err
+		}
 	}
 
 	// Process AnyOf
-	for _, v := range s.AnyOf {
-		v.Process(name+"AnyOf", spec, false)
-
-		// Merge with other fields as one struct (invalidate references)
-		s.MergeWith(spec, *v)
+	if err := s.processAnyOf(spec); err != nil {
+		return err
 	}
 
 	// Process OneOf
-	for _, v := range s.OneOf {
-		v.Process(name+"OneOf", spec, false)
-
-		// Merge with other fields as one struct (invalidate references)
-		s.MergeWith(spec, *v)
+	if err := s.processOneOf(spec); err != nil {
+		return err
 	}
 
 	// Process AllOf
-	for _, v := range s.AllOf {
-		v.Process(name+"AllOf", spec, false)
-
-		// Merge with other fields as one struct (invalidate references)
-		s.MergeWith(spec, *v)
+	if err := s.processAllOf(spec); err != nil {
+		return err
 	}
 
 	// Process Not
-	s.Not.Process(name+"Not", spec, false)
+	if err := s.Not.Process(s.Name+"Not", spec, false); err != nil {
+		return err
+	}
 
 	// Set IsRequired
 	s.IsRequired = isRequired
+
+	return nil
+}
+
+func (s *Schema) processAllOf(spec Specification) error {
+	for _, v := range s.AllOf {
+		if err := v.Process(s.Name+"AllOf", spec, false); err != nil {
+			return err
+		}
+
+		// Merge with other fields as one struct (invalidate references)
+		if err := s.MergeWith(spec, *v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) processOneOf(spec Specification) error {
+	for _, v := range s.OneOf {
+		if err := v.Process(s.Name+"OneOf", spec, false); err != nil {
+			return err
+		}
+
+		// Merge with other fields as one struct (invalidate references)
+		if err := s.MergeWith(spec, *v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) processAnyOf(spec Specification) error {
+	for _, v := range s.AnyOf {
+		if err := v.Process(s.Name+"AnyOf", spec, false); err != nil {
+			return err
+		}
+
+		// Merge with other fields as one struct (invalidate references)
+		if err := s.MergeWith(spec, *v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) processProperties(spec Specification) error {
+	for n, p := range s.Properties {
+		if err := p.Process(n+"Property", spec, utils.IsInSlice(s.Required, n)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Schema) processReference(spec Specification) error {
+	if s.Reference == "" {
+		return nil
+	}
+
+	// Add pointer to reference
+	refTo, err := spec.ReferenceSchema(s.Reference)
+	if err != nil {
+		return err
+	}
+	s.ReferenceTo = refTo
+
+	return nil
 }
 
 // IsFieldRequired checks if a field is required in the asyncapi struct.
@@ -165,17 +259,23 @@ func (s *Schema) referenceFrom(ref []string) *Schema {
 // (basically for AllOf, AnyOf, OneOf, etc).
 //
 //nolint:cyclop
-func (s *Schema) MergeWith(spec Specification, s2 Schema) {
+func (s *Schema) MergeWith(spec Specification, s2 Schema) error {
 	if s == nil {
-		return
+		return nil
 	}
 
-	s.Type = MessageTypeIsObject.String()
+	s.Type = SchemaTypeIsObject.String()
 
 	// Getting merged with reference
 	if s2.Reference != "" {
-		refAny2 := spec.ReferenceSchema(s2.Reference)
-		s2.MergeWith(spec, *refAny2)
+		refAny2, err := spec.ReferenceSchema(s2.Reference)
+		if err != nil {
+			return err
+		}
+
+		if err := s2.MergeWith(spec, *refAny2); err != nil {
+			return err
+		}
 	}
 
 	// Merge AnyOf
@@ -213,6 +313,8 @@ func (s *Schema) MergeWith(spec Specification, s2 Schema) {
 	// Merge requirements
 	s.Required = append(s.Required, s2.Required...)
 	s.Required = utils.RemoveDuplicateFromSlice(s.Required)
+
+	return nil
 }
 
 // Follow returns referenced schema if specified or the actual schema.

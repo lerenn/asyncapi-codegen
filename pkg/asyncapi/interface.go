@@ -18,7 +18,7 @@ type Specification interface {
 	//
 	// WARNING: this will alter the specification as you will find, by example,
 	// traits applied in the specification.
-	Process()
+	Process() error
 }
 
 // ToV2 returns an AsyncAPI specification V2 from interface, if compatible.

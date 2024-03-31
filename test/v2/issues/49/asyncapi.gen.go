@@ -13,7 +13,7 @@ import (
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// Issue49Chat subscribes to messages placed on the 'issue49.chat' channel
-	Issue49Chat(ctx context.Context, msg Issue49ChatMessage)
+	Issue49Chat(ctx context.Context, msg Issue49ChatSubscribeMessage) error
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -35,6 +35,7 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -138,7 +139,10 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue49Chat will subscribe to new messages from 'issue49.chat' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeIssue49Chat(ctx context.Context, fn func(ctx context.Context, msg Issue49ChatMessage)) error {
+func (c *AppController) SubscribeIssue49Chat(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue49ChatSubscribeMessage) error,
+) error {
 	// Get channel path
 	path := "issue49.chat"
 
@@ -166,31 +170,38 @@ func (c *AppController) SubscribeIssue49Chat(ctx context.Context, fn func(ctx co
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newIssue49ChatMessageFromBrokerMessage(brokerMsg)
+				msg, err := newIssue49ChatSubscribeMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -226,7 +237,10 @@ func (c *AppController) UnsubscribeIssue49Chat(ctx context.Context) {
 }
 
 // PublishIssue49Chat will publish messages to 'issue49.chat' channel
-func (c *AppController) PublishIssue49Chat(ctx context.Context, msg Issue49ChatMessage) error {
+func (c *AppController) PublishIssue49Chat(
+	ctx context.Context,
+	msg Issue49ChatPublishMessage,
+) error {
 	// Get channel path
 	path := "issue49.chat"
 
@@ -250,7 +264,10 @@ func (c *AppController) PublishIssue49Chat(ctx context.Context, msg Issue49ChatM
 }
 
 // PublishIssue49Status will publish messages to 'issue49.status' channel
-func (c *AppController) PublishIssue49Status(ctx context.Context, msg Issue49StatusMessage) error {
+func (c *AppController) PublishIssue49Status(
+	ctx context.Context,
+	msg Issue49StatusMessage,
+) error {
 	// Get channel path
 	path := "issue49.status"
 
@@ -276,10 +293,10 @@ func (c *AppController) PublishIssue49Status(ctx context.Context, msg Issue49Sta
 // UserSubscriber represents all handlers that are expecting messages for User
 type UserSubscriber interface {
 	// Issue49Chat subscribes to messages placed on the 'issue49.chat' channel
-	Issue49Chat(ctx context.Context, msg Issue49ChatMessage)
+	Issue49Chat(ctx context.Context, msg Issue49ChatSubscribeMessage) error
 
 	// Issue49Status subscribes to messages placed on the 'issue49.status' channel
-	Issue49Status(ctx context.Context, msg Issue49StatusMessage)
+	Issue49Status(ctx context.Context, msg Issue49StatusMessage) error
 }
 
 // UserController is the structure that provides publishing capabilities to the
@@ -301,6 +318,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -408,7 +426,10 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue49Chat will subscribe to new messages from 'issue49.chat' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue49Chat(ctx context.Context, fn func(ctx context.Context, msg Issue49ChatMessage)) error {
+func (c *UserController) SubscribeIssue49Chat(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue49ChatSubscribeMessage) error,
+) error {
 	// Get channel path
 	path := "issue49.chat"
 
@@ -436,31 +457,38 @@ func (c *UserController) SubscribeIssue49Chat(ctx context.Context, fn func(ctx c
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newIssue49ChatMessageFromBrokerMessage(brokerMsg)
+				msg, err := newIssue49ChatSubscribeMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -493,9 +521,15 @@ func (c *UserController) UnsubscribeIssue49Chat(ctx context.Context) {
 	delete(c.subscriptions, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
-} // SubscribeIssue49Status will subscribe to new messages from 'issue49.status' channel.
+}
+
+// SubscribeIssue49Status will subscribe to new messages from 'issue49.status' channel.
+//
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue49Status(ctx context.Context, fn func(ctx context.Context, msg Issue49StatusMessage)) error {
+func (c *UserController) SubscribeIssue49Status(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue49StatusMessage) error,
+) error {
 	// Get channel path
 	path := "issue49.status"
 
@@ -523,31 +557,38 @@ func (c *UserController) SubscribeIssue49Status(ctx context.Context, fn func(ctx
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newIssue49StatusMessageFromBrokerMessage(brokerMsg)
+				msg, err := newIssue49StatusMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -583,7 +624,10 @@ func (c *UserController) UnsubscribeIssue49Status(ctx context.Context) {
 }
 
 // PublishIssue49Chat will publish messages to 'issue49.chat' channel
-func (c *UserController) PublishIssue49Chat(ctx context.Context, msg Issue49ChatMessage) error {
+func (c *UserController) PublishIssue49Chat(
+	ctx context.Context,
+	msg Issue49ChatPublishMessage,
+) error {
 	// Get channel path
 	path := "issue49.chat"
 
@@ -621,6 +665,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -641,6 +687,13 @@ func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	}
 }
 
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
+	}
+}
+
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
@@ -655,21 +708,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Issue49ChatMessage is the message expected for 'Issue49Chat' channel
-type Issue49ChatMessage struct {
+// Issue49ChatSubscribeMessage is the message expected for 'Issue49ChatSubscribeMessage' channel.
+type Issue49ChatSubscribeMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewIssue49ChatMessage() Issue49ChatMessage {
-	var msg Issue49ChatMessage
+func NewIssue49ChatSubscribeMessage() Issue49ChatSubscribeMessage {
+	var msg Issue49ChatSubscribeMessage
 
 	return msg
 }
 
-// newIssue49ChatMessageFromBrokerMessage will fill a new Issue49ChatMessage with data from generic broker message
-func newIssue49ChatMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue49ChatMessage, error) {
-	var msg Issue49ChatMessage
+// newIssue49ChatSubscribeMessageFromBrokerMessage will fill a new Issue49ChatSubscribeMessage with data from generic broker message
+func newIssue49ChatSubscribeMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue49ChatSubscribeMessage, error) {
+	var msg Issue49ChatSubscribeMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -680,8 +733,8 @@ func newIssue49ChatMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issu
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Issue49ChatMessage data
-func (msg Issue49ChatMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from Issue49ChatSubscribeMessage data
+func (msg Issue49ChatSubscribeMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -696,21 +749,21 @@ func (msg Issue49ChatMessage) toBrokerMessage() (extensions.BrokerMessage, error
 	}, nil
 }
 
-// Message is the message expected for ” channel
-type Message struct {
+// Issue49ChatPublishMessage is the message expected for 'Issue49ChatPublishMessage' channel.
+type Issue49ChatPublishMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewMessage() Message {
-	var msg Message
+func NewIssue49ChatPublishMessage() Issue49ChatPublishMessage {
+	var msg Issue49ChatPublishMessage
 
 	return msg
 }
 
-// newMessageFromBrokerMessage will fill a new Message with data from generic broker message
-func newMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Message, error) {
-	var msg Message
+// newIssue49ChatPublishMessageFromBrokerMessage will fill a new Issue49ChatPublishMessage with data from generic broker message
+func newIssue49ChatPublishMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue49ChatPublishMessage, error) {
+	var msg Issue49ChatPublishMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -721,8 +774,8 @@ func newMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Message, error)
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Message data
-func (msg Message) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from Issue49ChatPublishMessage data
+func (msg Issue49ChatPublishMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -737,7 +790,7 @@ func (msg Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// Issue49StatusMessage is the message expected for 'Issue49Status' channel
+// Issue49StatusMessage is the message expected for 'Issue49StatusMessage' channel.
 type Issue49StatusMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
@@ -779,9 +832,9 @@ func (msg Issue49StatusMessage) toBrokerMessage() (extensions.BrokerMessage, err
 }
 
 const (
-	// Issue49ChatPath is the constant representing the 'Issue49.chat' channel path.
+	// Issue49ChatPath is the constant representing the 'Issue49Chat' channel path.
 	Issue49ChatPath = "issue49.chat"
-	// Issue49StatusPath is the constant representing the 'Issue49.status' channel path.
+	// Issue49StatusPath is the constant representing the 'Issue49Status' channel path.
 	Issue49StatusPath = "issue49.status"
 )
 

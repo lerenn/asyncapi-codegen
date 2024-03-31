@@ -30,6 +30,7 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -109,7 +110,10 @@ func (c *AppController) Close(ctx context.Context) {
 }
 
 // PublishIssue97ReferencePayloadArray will publish messages to 'issue97.referencePayloadArray' channel
-func (c *AppController) PublishIssue97ReferencePayloadArray(ctx context.Context, msg ReferencePayloadArrayMessage) error {
+func (c *AppController) PublishIssue97ReferencePayloadArray(
+	ctx context.Context,
+	msg ReferencePayloadArrayMessage,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadArray"
 
@@ -133,7 +137,10 @@ func (c *AppController) PublishIssue97ReferencePayloadArray(ctx context.Context,
 }
 
 // PublishIssue97ReferencePayloadObject will publish messages to 'issue97.referencePayloadObject' channel
-func (c *AppController) PublishIssue97ReferencePayloadObject(ctx context.Context, msg ReferencePayloadObjectMessage) error {
+func (c *AppController) PublishIssue97ReferencePayloadObject(
+	ctx context.Context,
+	msg ReferencePayloadObjectMessage,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadObject"
 
@@ -157,7 +164,10 @@ func (c *AppController) PublishIssue97ReferencePayloadObject(ctx context.Context
 }
 
 // PublishIssue97ReferencePayloadString will publish messages to 'issue97.referencePayloadString' channel
-func (c *AppController) PublishIssue97ReferencePayloadString(ctx context.Context, msg ReferencePayloadStringMessage) error {
+func (c *AppController) PublishIssue97ReferencePayloadString(
+	ctx context.Context,
+	msg ReferencePayloadStringMessage,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadString"
 
@@ -183,13 +193,13 @@ func (c *AppController) PublishIssue97ReferencePayloadString(ctx context.Context
 // UserSubscriber represents all handlers that are expecting messages for User
 type UserSubscriber interface {
 	// Issue97ReferencePayloadArray subscribes to messages placed on the 'issue97.referencePayloadArray' channel
-	Issue97ReferencePayloadArray(ctx context.Context, msg ReferencePayloadArrayMessage)
+	Issue97ReferencePayloadArray(ctx context.Context, msg ReferencePayloadArrayMessage) error
 
 	// Issue97ReferencePayloadObject subscribes to messages placed on the 'issue97.referencePayloadObject' channel
-	Issue97ReferencePayloadObject(ctx context.Context, msg ReferencePayloadObjectMessage)
+	Issue97ReferencePayloadObject(ctx context.Context, msg ReferencePayloadObjectMessage) error
 
 	// Issue97ReferencePayloadString subscribes to messages placed on the 'issue97.referencePayloadString' channel
-	Issue97ReferencePayloadString(ctx context.Context, msg ReferencePayloadStringMessage)
+	Issue97ReferencePayloadString(ctx context.Context, msg ReferencePayloadStringMessage) error
 }
 
 // UserController is the structure that provides publishing capabilities to the
@@ -211,6 +221,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -322,7 +333,10 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue97ReferencePayloadArray will subscribe to new messages from 'issue97.referencePayloadArray' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadArray(ctx context.Context, fn func(ctx context.Context, msg ReferencePayloadArrayMessage)) error {
+func (c *UserController) SubscribeIssue97ReferencePayloadArray(
+	ctx context.Context,
+	fn func(ctx context.Context, msg ReferencePayloadArrayMessage) error,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadArray"
 
@@ -350,31 +364,38 @@ func (c *UserController) SubscribeIssue97ReferencePayloadArray(ctx context.Conte
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newReferencePayloadArrayMessageFromBrokerMessage(brokerMsg)
+				msg, err := newReferencePayloadArrayMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -407,9 +428,15 @@ func (c *UserController) UnsubscribeIssue97ReferencePayloadArray(ctx context.Con
 	delete(c.subscriptions, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
-} // SubscribeIssue97ReferencePayloadObject will subscribe to new messages from 'issue97.referencePayloadObject' channel.
+}
+
+// SubscribeIssue97ReferencePayloadObject will subscribe to new messages from 'issue97.referencePayloadObject' channel.
+//
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadObject(ctx context.Context, fn func(ctx context.Context, msg ReferencePayloadObjectMessage)) error {
+func (c *UserController) SubscribeIssue97ReferencePayloadObject(
+	ctx context.Context,
+	fn func(ctx context.Context, msg ReferencePayloadObjectMessage) error,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadObject"
 
@@ -437,31 +464,38 @@ func (c *UserController) SubscribeIssue97ReferencePayloadObject(ctx context.Cont
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newReferencePayloadObjectMessageFromBrokerMessage(brokerMsg)
+				msg, err := newReferencePayloadObjectMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -494,9 +528,15 @@ func (c *UserController) UnsubscribeIssue97ReferencePayloadObject(ctx context.Co
 	delete(c.subscriptions, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
-} // SubscribeIssue97ReferencePayloadString will subscribe to new messages from 'issue97.referencePayloadString' channel.
+}
+
+// SubscribeIssue97ReferencePayloadString will subscribe to new messages from 'issue97.referencePayloadString' channel.
+//
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue97ReferencePayloadString(ctx context.Context, fn func(ctx context.Context, msg ReferencePayloadStringMessage)) error {
+func (c *UserController) SubscribeIssue97ReferencePayloadString(
+	ctx context.Context,
+	fn func(ctx context.Context, msg ReferencePayloadStringMessage) error,
+) error {
 	// Get channel path
 	path := "issue97.referencePayloadString"
 
@@ -524,31 +564,38 @@ func (c *UserController) SubscribeIssue97ReferencePayloadString(ctx context.Cont
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newReferencePayloadStringMessageFromBrokerMessage(brokerMsg)
+				msg, err := newReferencePayloadStringMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -598,6 +645,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -618,6 +667,13 @@ func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	}
 }
 
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
+	}
+}
+
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
@@ -632,7 +688,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// ReferencePayloadArrayMessage is the message expected for 'ReferencePayloadArray' channel
+// ReferencePayloadArrayMessage is the message expected for 'ReferencePayloadArrayMessage' channel.
 type ReferencePayloadArrayMessage struct {
 	// Payload will be inserted in the message payload
 	Payload ArraySchema
@@ -678,7 +734,7 @@ func (msg ReferencePayloadArrayMessage) toBrokerMessage() (extensions.BrokerMess
 	}, nil
 }
 
-// ReferencePayloadObjectMessage is the message expected for 'ReferencePayloadObject' channel
+// ReferencePayloadObjectMessage is the message expected for 'ReferencePayloadObjectMessage' channel.
 type ReferencePayloadObjectMessage struct {
 	// Payload will be inserted in the message payload
 	Payload ObjectSchema
@@ -724,7 +780,7 @@ func (msg ReferencePayloadObjectMessage) toBrokerMessage() (extensions.BrokerMes
 	}, nil
 }
 
-// ReferencePayloadStringMessage is the message expected for 'ReferencePayloadString' channel
+// ReferencePayloadStringMessage is the message expected for 'ReferencePayloadStringMessage' channel.
 type ReferencePayloadStringMessage struct {
 	// Payload will be inserted in the message payload
 	Payload StringSchema
@@ -766,7 +822,7 @@ func (msg ReferencePayloadStringMessage) toBrokerMessage() (extensions.BrokerMes
 }
 
 // ArraySchema is a schema from the AsyncAPI specification required in messages
-type ArraySchema []struct{}
+type ArraySchema []string
 
 // ObjectSchema is a schema from the AsyncAPI specification required in messages
 type ObjectSchema struct {
@@ -777,11 +833,11 @@ type ObjectSchema struct {
 type StringSchema string
 
 const (
-	// Issue97ReferencePayloadArrayPath is the constant representing the 'Issue97.referencePayloadArray' channel path.
+	// Issue97ReferencePayloadArrayPath is the constant representing the 'Issue97ReferencePayloadArray' channel path.
 	Issue97ReferencePayloadArrayPath = "issue97.referencePayloadArray"
-	// Issue97ReferencePayloadObjectPath is the constant representing the 'Issue97.referencePayloadObject' channel path.
+	// Issue97ReferencePayloadObjectPath is the constant representing the 'Issue97ReferencePayloadObject' channel path.
 	Issue97ReferencePayloadObjectPath = "issue97.referencePayloadObject"
-	// Issue97ReferencePayloadStringPath is the constant representing the 'Issue97.referencePayloadString' channel path.
+	// Issue97ReferencePayloadStringPath is the constant representing the 'Issue97ReferencePayloadString' channel path.
 	Issue97ReferencePayloadStringPath = "issue97.referencePayloadString"
 )
 

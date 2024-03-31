@@ -17,7 +17,7 @@ import (
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// Ping subscribes to messages placed on the 'ping.v2' channel
-	Ping(ctx context.Context, msg PingMessage)
+	Ping(ctx context.Context, msg PingMessage) error
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -39,6 +39,7 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -142,7 +143,10 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribePing will subscribe to new messages from 'ping.v2' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.Context, msg PingMessage)) error {
+func (c *AppController) SubscribePing(
+	ctx context.Context,
+	fn func(ctx context.Context, msg PingMessage) error,
+) error {
 	// Get channel path
 	path := "ping.v2"
 
@@ -170,21 +174,21 @@ func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.C
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newPingMessageFromBrokerMessage(brokerMsg)
+				msg, err := newPingMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -195,11 +199,18 @@ func (c *AppController) SubscribePing(ctx context.Context, fn func(ctx context.C
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -235,7 +246,10 @@ func (c *AppController) UnsubscribePing(ctx context.Context) {
 }
 
 // PublishPong will publish messages to 'pong.v2' channel
-func (c *AppController) PublishPong(ctx context.Context, msg PongMessage) error {
+func (c *AppController) PublishPong(
+	ctx context.Context,
+	msg PongMessage,
+) error {
 	// Get channel path
 	path := "pong.v2"
 
@@ -279,6 +293,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -299,6 +315,13 @@ func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	}
 }
 
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
+	}
+}
+
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
@@ -313,13 +336,16 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// PingMessage is the message expected for 'Ping' channel
+// PingMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PingMessageHeaders struct {
+	// Description: Correlation ID set by user
+	CorrelationId *string `json:"correlation_id"`
+}
+
+// PingMessage is the message expected for 'PingMessage' channel.
 type PingMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Correlation ID set by user
-		CorrelationId *string `json:"correlation_id"`
-	}
+	Headers PingMessageHeaders
 
 	// Payload will be inserted in the message payload
 	Payload string
@@ -402,22 +428,28 @@ func (msg *PingMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 	msg.Headers.CorrelationId = &id
 }
 
-// PongMessage is the message expected for 'Pong' channel
+// PongMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PongMessageHeaders struct {
+	// Description: Correlation ID set by user on corresponding request
+	CorrelationId *string `json:"correlation_id"`
+}
+
+// PongMessagePayload is a schema from the AsyncAPI specification required in messages
+type PongMessagePayload struct {
+	// Description: Pong message
+	Message string `json:"message"`
+
+	// Description: Pong creation time
+	Time time.Time `json:"time"`
+}
+
+// PongMessage is the message expected for 'PongMessage' channel.
 type PongMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Correlation ID set by user on corresponding request
-		CorrelationId *string `json:"correlation_id"`
-	}
+	Headers PongMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		// Description: Pong message
-		Message string `json:"message"`
-
-		// Description: Pong creation time
-		Time time.Time `json:"time"`
-	}
+	Payload PongMessagePayload
 }
 
 func NewPongMessage() PongMessage {
@@ -503,9 +535,9 @@ func (msg *PongMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 }
 
 const (
-	// PingV2Path is the constant representing the 'Ping.v2' channel path.
+	// PingV2Path is the constant representing the 'PingV2' channel path.
 	PingV2Path = "ping.v2"
-	// PongV2Path is the constant representing the 'Pong.v2' channel path.
+	// PongV2Path is the constant representing the 'PongV2' channel path.
 	PongV2Path = "pong.v2"
 )
 

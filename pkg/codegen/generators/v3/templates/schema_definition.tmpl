@@ -1,0 +1,50 @@
+{{define "schema-definition" -}}
+
+// {{ .Name }} is a schema from the AsyncAPI specification required in messages
+{{if .Description -}}
+// Description: {{multiLineComment .Description}}
+{{end -}}
+
+{{- /* ----------------------------- Object ----------------------------- */ -}}
+{{- if eq .Type "object" -}}
+
+type {{ .Name }} struct {
+    {{- range $key, $value := .Properties -}}
+    {{if $value.Description}}
+    // Description: {{multiLineComment $value.Description}}
+    {{else if and $value.ReferenceTo $value.ReferenceTo.Description}}
+    // Description: {{$value.ReferenceTo.Description}}
+    {{end -}}
+    {{namify $key}} {{if and (not (isRequired $ $key)) (ne $value.Type "array")}}*{{end}}{{template "schema-name" $value}} `json:"{{snakeCase $key}}"`
+    {{end -}}
+
+    {{- if .AdditionalProperties}}
+    // AdditionalProperties represents the object additional properties.
+    AdditionalProperties map[string]{{template "schema-name" .AdditionalProperties}} `json:"-"`
+    {{end -}}
+}
+
+{{- /* Override JSON marshalling in case there is additional properties */ -}}
+{{- if .AdditionalProperties}}
+    {{template "marshaling-additional-properties" .}}
+{{- end}}
+
+{{ if and (not .AnyOf) (not .OneOf) -}}
+    {{- range $key, $value := getChildrenObjectSchemas . }}
+        {{template "schema-definition" $value }}
+    {{- end}}
+{{- end}}
+
+{{- /* ----------------------------- Others ----------------------------- */ -}}
+{{- else -}}
+
+type {{ .Name }} {{template "schema-name" .}}
+
+{{/* Create specific marshaling for time */ -}}
+{{- if or (eq .Format "date") (eq .Format "date-time") -}}
+    {{template "marshaling-time" .}}
+{{- end -}}
+
+{{- end -}}
+
+{{- end -}}

@@ -17,6 +17,7 @@ func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...Contr
         subscriptions:  make(map[string]extensions.BrokerChannelSubscription),
         logger:         extensions.DummyLogger{},
         middlewares:    make([]extensions.Middleware, 0),
+        errorHandler:   extensions.DefaultErrorHandler(),
     }
 
     // Apply options
@@ -142,9 +143,9 @@ func (c *{{ .Prefix }}Controller) UnsubscribeFromAllChannels(ctx context.Context
 func (c *{{ $.Prefix }}Controller) SubscribeTo{{ namify $value.Follow.Name }}(
     ctx context.Context,
     {{- if .Channel.Follow.Parameters}}
-    params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters, 
+    params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
     {{- end}}
-    fn func (ctx context.Context, msg {{opToMsgTypeName $value}}),
+    fn func (ctx context.Context, msg {{opToMsgTypeName $value}}) error,
 ) error {
     // Get channel address
     addr := {{ generateChannelAddrFromOp $value }}
@@ -173,21 +174,21 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{ namify $value.Follow.Name }}(
     go func() {
         for {
             // Wait for next message
-            brokerMsg, open := <-sub.MessagesChannel()
+            acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
             // If subscription is closed and there is no more message
             // (i.e. uninitialized message), then exit the function
-            if !open && brokerMsg.IsUninitialized() {
+            if !open && acknowledgeableBrokerMessage.IsUninitialized() {
                 return
             }
 
             // Set broker message to context
-            ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+            ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
             // Execute middlewares before handling the message
-            if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+            if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
                 // Process message
-                msg, err := new{{opToMsgTypeName $value}}FromBrokerMessage(brokerMsg)
+                msg, err := new{{opToMsgTypeName $value}}FromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
                 if err != nil {
                     return err
                 }
@@ -200,11 +201,18 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{ namify $value.Follow.Name }}(
                 {{- end}}
 
                 // Execute the subscription function
-                fn(ctx, msg)
+                if err := fn(ctx, msg); err != nil {
+                    return err
+                }
+
+                acknowledgeableBrokerMessage.Ack()
 
                 return nil
             }); err != nil {
-                c.logger.Error(ctx, err.Error())
+                c.errorHandler(ctx, addr, &acknowledgeableBrokerMessage, err)
+                // On error execute the acknowledgeableBrokerMessage nack() function and
+                // let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+                acknowledgeableBrokerMessage.Nak()
             }
         }
     } ()
@@ -407,21 +415,23 @@ func (c *{{ $.Prefix }}Controller) Request{{ if eq $.Prefix "User" }}To{{else}}A
     // Wait for corresponding response
     for {
         select {
-        case brokerMsg, open := <-sub.MessagesChannel():
+        case acknowledgeableBrokerMessage, open := <-sub.MessagesChannel():
             // If subscription is closed and there is no more message
             // (i.e. uninitialized message), then the subscription ended before
             // receiving the expected message
-            if !open && brokerMsg.IsUninitialized() {
+            if !open && acknowledgeableBrokerMessage.IsUninitialized() {
                 c.logger.Error(ctx, "Channel closed before getting message")
                 return {{channelToMessageTypeName .Reply.Channel}}{}, extensions.ErrSubscriptionCanceled
             }
 
             {{if $value.GetMessage.HaveCorrelationID -}}
             // Get new message
-            rmsg, err := new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(brokerMsg)
+            rmsg, err := new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
             if err != nil {
                 c.logger.Error(ctx, err.Error())
             }
+
+            acknowledgeableBrokerMessage.Ack()
 
             // If message doesn't have corresponding correlation ID, then ingore and continue
             if msg.CorrelationID() != rmsg.CorrelationID() {
@@ -433,14 +443,14 @@ func (c *{{ $.Prefix }}Controller) Request{{ if eq $.Prefix "User" }}To{{else}}A
             {{- end}}
 
             // Set context with received values as it is the expected message
-            msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+            msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
             msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
             {{if $value.GetMessage.HaveCorrelationID -}}
             msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
             {{- end}}
 
             // Execute middlewares before returning
-            if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
+            if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, nil); err != nil {
                 return {{channelToMessageTypeName .Reply.Channel}}{}, err
             }
 
@@ -448,7 +458,7 @@ func (c *{{ $.Prefix }}Controller) Request{{ if eq $.Prefix "User" }}To{{else}}A
             //
             // NOTE: it is transformed from the broker again, as it could have
             // been modified by middlewares
-            return new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(brokerMsg)
+            return new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
         case <-ctx.Done(): // Set corrsponding error if context is done
             c.logger.Error(ctx, "Context done before getting message")
             return {{channelToMessageTypeName .Reply.Channel}}{}, extensions.ErrContextCanceled

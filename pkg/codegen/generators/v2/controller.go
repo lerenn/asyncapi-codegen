@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
 )
 
 // ControllerGenerator is a code generator for controllers that will turn an
@@ -17,12 +18,12 @@ type ControllerGenerator struct {
 }
 
 // NewControllerGenerator will create a new controller code generator.
-func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGenerator {
+func NewControllerGenerator(side generators.Side, spec asyncapi.Specification) ControllerGenerator {
 	var gen ControllerGenerator
 
 	// Get subscription methods count based on publish/subscribe count
 	publishCount, subscribeCount := spec.GetPublishSubscribeCount()
-	if side == SideIsApplication {
+	if side == generators.SideIsApplication {
 		gen.MethodCount = publishCount
 	} else {
 		gen.MethodCount = subscribeCount
@@ -44,7 +45,7 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	}
 
 	// Set generation name
-	if side == SideIsApplication {
+	if side == generators.SideIsApplication {
 		gen.Prefix = "App"
 	} else {
 		gen.Prefix = "User"
@@ -56,22 +57,22 @@ func NewControllerGenerator(side Side, spec asyncapi.Specification) ControllerGe
 	return gen
 }
 
-func isSubscribeChannel(side Side, channel *asyncapi.Channel) bool {
+func isSubscribeChannel(side generators.Side, channel *asyncapi.Channel) bool {
 	switch {
-	case side == SideIsApplication && channel.Publish != nil:
+	case side == generators.SideIsApplication && channel.Publish != nil:
 		return true
-	case side == SideIsUser && channel.Subscribe != nil:
+	case side == generators.SideIsUser && channel.Subscribe != nil:
 		return true
 	default:
 		return false
 	}
 }
 
-func isPublishChannel(side Side, channel *asyncapi.Channel) bool {
+func isPublishChannel(side generators.Side, channel *asyncapi.Channel) bool {
 	switch {
-	case side == SideIsApplication && channel.Subscribe != nil:
+	case side == generators.SideIsApplication && channel.Subscribe != nil:
 		return true
-	case side == SideIsUser && channel.Publish != nil:
+	case side == generators.SideIsUser && channel.Publish != nil:
 		return true
 	default:
 		return false
@@ -82,7 +83,8 @@ func isPublishChannel(side Side, channel *asyncapi.Channel) bool {
 func (asg ControllerGenerator) Generate() (string, error) {
 	tmplt, err := loadTemplate(
 		controllerTemplatePath,
-		schemaTemplatePath,
+		schemaDefinitionTemplatePath,
+		schemaNameTemplatePath,
 		messageTemplatePath,
 	)
 	if err != nil {

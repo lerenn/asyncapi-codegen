@@ -11,11 +11,13 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
 )
 
+var _ AppSubscriber = (*Subscriber)(nil)
+
 type Subscriber struct {
 	Controller *AppController
 }
 
-func (s Subscriber) PingRequestOperationReceived(ctx context.Context, ping PingMessage) {
+func (s Subscriber) PingRequestOperationReceived(ctx context.Context, ping PingMessage) error {
 	// Publish the pong message, with the callback function to modify it
 	// Note: it will indefinitely wait to publish as context has no timeout
 	err := s.Controller.ReplyToPingRequestOperation(ctx, ping, func(pong *PongMessage) {
@@ -27,6 +29,8 @@ func (s Subscriber) PingRequestOperationReceived(ctx context.Context, ping PingM
 	if err != nil {
 		panic(err)
 	}
+
+	return nil
 }
 
 func main() {
@@ -57,7 +61,6 @@ func main() {
 	if err := ctrl.SubscribeToAllChannels(context.Background(), sub); err != nil {
 		panic(err)
 	}
-	defer ctrl.UnsubscribeFromAllChannels(context.Background())
 
 	// Listen on port to let know that app is ready
 	examples.ListenLocalPort(1234)

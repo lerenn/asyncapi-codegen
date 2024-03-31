@@ -33,32 +33,32 @@ type GoTypeImportName string
 // goTypeImports collects custom imports in this Schema Object set by x-go-type-import key
 // into the imports map.
 // Reports error when the same import path is assigned multiple import names.
-func (a *Schema) goTypeImports(imports map[GoTypeImportPath]GoTypeImportName) error {
+func (s *Schema) goTypeImports(imports map[GoTypeImportPath]GoTypeImportName) error {
 	// Process Properties
-	for _, p := range a.Properties {
+	for _, p := range s.Properties {
 		if err := p.goTypeImports(imports); err != nil {
 			return err
 		}
 	}
 
 	// Process Items
-	if a.Items != nil {
-		if err := a.Items.goTypeImports(imports); err != nil {
+	if s.Items != nil {
+		if err := s.Items.goTypeImports(imports); err != nil {
 			return err
 		}
 	}
 
-	if a.ExtGoTypeImport != nil {
-		name, exists := imports[a.ExtGoTypeImport.Path]
-		if exists && name != a.ExtGoTypeImport.Name {
+	if s.ExtGoTypeImport != nil {
+		name, exists := imports[s.ExtGoTypeImport.Path]
+		if exists && name != s.ExtGoTypeImport.Name {
 			return fmt.Errorf(
 				"x-go-type-import name conflict for item %s: %s and %s for %s",
-				a.Name, name, a.ExtGoTypeImport.Name, a.ExtGoTypeImport.Path,
+				s.Name, name, s.ExtGoTypeImport.Name, s.ExtGoTypeImport.Path,
 			)
 		}
 
 		if !exists {
-			imports[a.ExtGoTypeImport.Path] = a.ExtGoTypeImport.Name
+			imports[s.ExtGoTypeImport.Path] = s.ExtGoTypeImport.Name
 		}
 	}
 	return nil

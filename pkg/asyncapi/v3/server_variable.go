@@ -1,6 +1,6 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils"
+import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 
 // ServerVariable is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
@@ -21,17 +21,23 @@ type ServerVariable struct {
 }
 
 // Process processes the ServerVariable to make it ready for code generation.
-func (sv *ServerVariable) Process(path string, spec Specification) {
+func (sv *ServerVariable) Process(path string, spec Specification) error {
 	// Prevent modification if nil
 	if sv == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	sv.Name = utils.UpperFirstLetter(path)
+	sv.Name = template.Namify(path)
 
 	// Add pointer to reference if there is one
 	if sv.Reference != "" {
-		sv.ReferenceTo = spec.ReferenceServerVariable(sv.Reference)
+		refTo, err := spec.ReferenceServerVariable(sv.Reference)
+		if err != nil {
+			return err
+		}
+		sv.ReferenceTo = refTo
 	}
+
+	return nil
 }

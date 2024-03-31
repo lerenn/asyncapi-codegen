@@ -1,6 +1,6 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils"
+import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 
 // OAuthFlow is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
@@ -53,19 +53,25 @@ type SecurityScheme struct {
 }
 
 // Process processes the SecurityScheme to make it ready for code generation.
-func (s *SecurityScheme) Process(name string, spec Specification) {
+func (s *SecurityScheme) Process(name string, spec Specification) error {
 	// Prevent modification if nil
 	if s == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	s.Name = utils.UpperFirstLetter(name)
+	s.Name = template.Namify(name)
 
 	// Add pointer to reference if there is one
 	if s.Reference != "" {
-		s.ReferenceTo = spec.ReferenceSecurity(s.Reference)
+		refTo, err := spec.ReferenceSecurity(s.Reference)
+		if err != nil {
+			return err
+		}
+		s.ReferenceTo = refTo
 	}
+
+	return nil
 }
 
 // RemoveDuplicateSecuritySchemes removes the security schemes that have the same

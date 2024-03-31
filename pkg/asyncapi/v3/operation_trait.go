@@ -3,7 +3,7 @@ package asyncapiv3
 import (
 	"fmt"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 // OperationTrait is a representation of the corresponding asyncapi object filled
@@ -28,35 +28,45 @@ type OperationTrait struct {
 }
 
 // Process processes the OperationTrait to make it ready for code generation.
-func (ot *OperationTrait) Process(name string, spec Specification) {
+func (ot *OperationTrait) Process(name string, spec Specification) error {
 	// Prevent modification if nil
 	if ot == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	ot.Name = utils.UpperFirstLetter(name)
+	ot.Name = template.Namify(name)
 
 	// Add pointer to reference if there is one
 	if ot.Reference != "" {
-		ot.ReferenceTo = spec.ReferenceOperationTrait(ot.Reference)
+		refTo, err := spec.ReferenceOperationTrait(ot.Reference)
+		if err != nil {
+			return err
+		}
+		ot.ReferenceTo = refTo
 	}
 
 	// Process securities
 	for i, s := range ot.Security {
-		s.Process(fmt.Sprintf("%sSecurity%d", name, i), spec)
+		if err := s.Process(fmt.Sprintf("%sSecurity%d", name, i), spec); err != nil {
+			return err
+		}
 	}
 
 	// Process external doc if there is one
-	ot.ExternalDocs.Process(name+ExternalDocsNameSuffix, spec)
+	if err := ot.ExternalDocs.Process(name+ExternalDocsNameSuffix, spec); err != nil {
+		return err
+	}
 
 	// Process tags
 	for i, t := range ot.Tags {
-		t.Process(fmt.Sprintf("%sTag%d", ot.Name, i), spec)
+		if err := t.Process(fmt.Sprintf("%sTag%d", ot.Name, i), spec); err != nil {
+			return err
+		}
 	}
 
 	// Process bindings if there is one
-	ot.Bindings.Process(name+BindingsSuffix, spec)
+	return ot.Bindings.Process(name+BindingsSuffix, spec)
 }
 
 // Follow returns referenced MessageTrait if specified or the actual MessageTrait.

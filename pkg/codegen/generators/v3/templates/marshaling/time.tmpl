@@ -1,0 +1,17 @@
+{{define "marshaling-time" -}}
+// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
+func (t {{ .Name }}) MarshalJSON() ([]byte, error) {
+    return json.Marshal(time.Time(t))
+}
+
+// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
+func (t *{{ .Name }}) UnmarshalJSON(data []byte) error {
+    var timeFormat time.Time
+    if err := json.Unmarshal(data, &timeFormat);  err != nil {
+        return err
+    }
+
+    *t = {{ .Name }}(timeFormat)
+    return nil
+}
+{{- end}}

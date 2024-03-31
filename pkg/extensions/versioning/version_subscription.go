@@ -18,7 +18,7 @@ func newVersionSubscription(version string, parent *brokerSubscription) versionS
 	return versionSubcription{
 		version: version,
 		subscription: extensions.NewBrokerChannelSubscription(
-			make(chan extensions.BrokerMessage, brokers.BrokerMessagesQueueSize),
+			make(chan extensions.AcknowledgeableBrokerMessage, brokers.BrokerMessagesQueueSize),
 			make(chan any, 1),
 		),
 		parent: parent,

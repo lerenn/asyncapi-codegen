@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
 )
 
@@ -71,7 +72,7 @@ func (g Generator) generateApp() (string, error) {
 
 	// Generate application listener
 	listener, err := NewSubscriberGenerator(
-		SideIsApplication,
+		generators.SideIsApplication,
 		g.Specification,
 	).Generate()
 	if err != nil {
@@ -81,7 +82,7 @@ func (g Generator) generateApp() (string, error) {
 
 	// Generate application controller
 	controller, err := NewControllerGenerator(
-		SideIsApplication,
+		generators.SideIsApplication,
 		g.Specification,
 	).Generate()
 	if err != nil {
@@ -97,7 +98,7 @@ func (g Generator) generateUser() (string, error) {
 
 	// Generate user listener
 	listener, err := NewSubscriberGenerator(
-		SideIsUser,
+		generators.SideIsUser,
 		g.Specification,
 	).Generate()
 	if err != nil {
@@ -106,7 +107,7 @@ func (g Generator) generateUser() (string, error) {
 	content += listener
 	// Generate user controller
 	controller, err := NewControllerGenerator(
-		SideIsUser,
+		generators.SideIsUser,
 		g.Specification,
 	).Generate()
 	if err != nil {

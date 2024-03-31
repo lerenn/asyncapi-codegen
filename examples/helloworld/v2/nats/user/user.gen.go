@@ -29,6 +29,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -108,7 +109,10 @@ func (c *UserController) Close(ctx context.Context) {
 }
 
 // PublishHello will publish messages to 'hello' channel
-func (c *UserController) PublishHello(ctx context.Context, msg HelloMessage) error {
+func (c *UserController) PublishHello(
+	ctx context.Context,
+	msg HelloMessage,
+) error {
 	// Get channel path
 	path := "hello"
 
@@ -146,6 +150,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -166,6 +172,13 @@ func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	}
 }
 
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
+	}
+}
+
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
@@ -180,7 +193,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// HelloMessage is the message expected for 'Hello' channel
+// HelloMessage is the message expected for 'HelloMessage' channel.
 type HelloMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string

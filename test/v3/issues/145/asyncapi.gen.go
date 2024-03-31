@@ -14,7 +14,7 @@ import (
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
 	// PingRequestOperationReceived receive all Ping messages from Ping channel.
-	PingRequestOperationReceived(ctx context.Context, msg PingMessage)
+	PingRequestOperationReceived(ctx context.Context, msg PingMessage) error
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -36,6 +36,7 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -147,7 +148,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 // If you need support for other messages, please raise an issue.
 func (c *AppController) SubscribeToPingRequestOperation(
 	ctx context.Context,
-	fn func(ctx context.Context, msg PingMessage),
+	fn func(ctx context.Context, msg PingMessage) error,
 ) error {
 	// Get channel address
 	addr := "ping"
@@ -176,31 +177,38 @@ func (c *AppController) SubscribeToPingRequestOperation(
 	go func() {
 		for {
 			// Wait for next message
-			brokerMsg, open := <-sub.MessagesChannel()
+			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
 
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then exit the function
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				return
 			}
 
 			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 
 			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newPingMessageFromBrokerMessage(brokerMsg)
+				msg, err := newPingMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
 
 				// Execute the subscription function
-				fn(ctx, msg)
+				if err := fn(ctx, msg); err != nil {
+					return err
+				}
+
+				acknowledgeableBrokerMessage.Ack()
 
 				return nil
 			}); err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.errorHandler(ctx, addr, &acknowledgeableBrokerMessage, err)
+				// On error execute the acknowledgeableBrokerMessage nack() function and
+				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+				acknowledgeableBrokerMessage.Nak()
 			}
 		}
 	}()
@@ -305,6 +313,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
+		errorHandler:  extensions.DefaultErrorHandler(),
 	}
 
 	// Apply options
@@ -462,11 +471,11 @@ func (c *UserController) RequestToPingRequestOperation(
 	// Wait for corresponding response
 	for {
 		select {
-		case brokerMsg, open := <-sub.MessagesChannel():
+		case acknowledgeableBrokerMessage, open := <-sub.MessagesChannel():
 			// If subscription is closed and there is no more message
 			// (i.e. uninitialized message), then the subscription ended before
 			// receiving the expected message
-			if !open && brokerMsg.IsUninitialized() {
+			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				c.logger.Error(ctx, "Channel closed before getting message")
 				return PongMessage{}, extensions.ErrSubscriptionCanceled
 			}
@@ -475,11 +484,11 @@ func (c *UserController) RequestToPingRequestOperation(
 			// the first received message.
 
 			// Set context with received values as it is the expected message
-			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
 			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
 
 			// Execute middlewares before returning
-			if err := c.executeMiddlewares(msgCtx, &brokerMsg, nil); err != nil {
+			if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, nil); err != nil {
 				return PongMessage{}, err
 			}
 
@@ -487,7 +496,7 @@ func (c *UserController) RequestToPingRequestOperation(
 			//
 			// NOTE: it is transformed from the broker again, as it could have
 			// been modified by middlewares
-			return newPongMessageFromBrokerMessage(brokerMsg)
+			return newPongMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 		case <-ctx.Done(): // Set corrsponding error if context is done
 			c.logger.Error(ctx, "Context done before getting message")
 			return PongMessage{}, extensions.ErrContextCanceled
@@ -510,6 +519,8 @@ type controller struct {
 	// middlewares are the middlewares that will be executed when sending or
 	// receiving messages
 	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -527,6 +538,13 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 	return func(controller *controller) {
 		controller.middlewares = middlewares
+	}
+}
+
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
 	}
 }
 
@@ -554,21 +572,27 @@ func (e *Error) Error() string {
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// PingMessage is the golang representation of the AsyncAPI message
+// PingMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PingMessageHeaders struct {
+	// Description: Provide path to which reply must be provided
+	ReplyTo *string `json:"reply_to"`
+
+	// Description: Provide request id that you will use to identify the reply match
+	RequestId *string `json:"request_id"`
+}
+
+// PingMessagePayload is a schema from the AsyncAPI specification required in messages
+type PingMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PingMessage is the message expected for 'PingMessage' channel.
 type PingMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Provide path to which reply must be provided
-		ReplyTo *string `json:"reply_to"`
-
-		// Description: Provide request id that you will use to identify the reply match
-		RequestId *string `json:"request_id"`
-	}
+	Headers PingMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PingMessagePayload
 }
 
 func NewPingMessage() PingMessage {
@@ -633,18 +657,24 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PongMessage is the golang representation of the AsyncAPI message
+// PongMessageHeaders is a schema from the AsyncAPI specification required in messages
+type PongMessageHeaders struct {
+	// Description: Reply message must contain id of the request message
+	RequestId *string `json:"request_id"`
+}
+
+// PongMessagePayload is a schema from the AsyncAPI specification required in messages
+type PongMessagePayload struct {
+	Event *string `json:"event"`
+}
+
+// PongMessage is the message expected for 'PongMessage' channel.
 type PongMessage struct {
 	// Headers will be used to fill the message headers
-	Headers struct {
-		// Description: Reply message must contain id of the request message
-		RequestId *string `json:"request_id"`
-	}
+	Headers PongMessageHeaders
 
 	// Payload will be inserted in the message payload
-	Payload struct {
-		Event *string `json:"event"`
-	}
+	Payload PongMessagePayload
 }
 
 func NewPongMessage() PongMessage {

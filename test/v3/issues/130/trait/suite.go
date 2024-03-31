@@ -21,7 +21,7 @@ func (suite *Suite) TestGenerateWithTrait() {
 	suite.Require().NoError(err)
 
 	// Process it to apply traits
-	agnosticSpec.Process()
+	suite.Require().NoError(agnosticSpec.Process())
 
 	// Get spec from codegen
 	spec, ok := agnosticSpec.(*asyncapiv3.Specification)

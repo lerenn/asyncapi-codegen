@@ -5,6 +5,11 @@ channels:
     address: issue148.reception
     messages:
       request:
+        headers:
+          type: object
+          properties:
+            replyTo:
+              type: string
         payload:
           type: string
   reply:
@@ -25,7 +30,7 @@ operations:
       channel:
         $ref: '#/channels/reply'
     traits:
-      - $ref: '#/components/operationTraits/withReplyTo'
+      - $ref: '#/components/operationTraits/withGenericDescription'
 
 components:
   operationTraits:

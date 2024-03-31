@@ -30,40 +30,102 @@ type Components struct {
 }
 
 // Process processes the Components structure to make it ready for code generation.
-func (c *Components) Process(spec Specification) {
+func (c *Components) Process(spec Specification) error {
 	// Prevent modification if nil
 	if c == nil {
-		return
+		return nil
 	}
 
 	// Process schemas
 	for name, schema := range c.Schemas {
-		schema.Process(name+"Schema", spec, false)
+		if err := schema.Process(name+"Schema", spec, false); err != nil {
+			return err
+		}
 	}
 
 	// Process mapped structured
-	processMap(spec, c.Servers, "Server")
-	processMap(spec, c.Channels, "Channel")
-	processMap(spec, c.Operations, "Operation")
-	processMap(spec, c.Messages, "Message")
-	processMap(spec, c.SecuritySchemes, "SecurityScheme")
-	processMap(spec, c.ServerVariables, "ServerVariable")
-	processMap(spec, c.Parameters, "Parameter")
-	processMap(spec, c.CorrelationIDs, "CorrelationID")
-	processMap(spec, c.ExternalDocs, ExternalDocsNameSuffix)
-	processMap(spec, c.Tags, "Tag")
-	processMap(spec, c.OperationTraits, "OperationTrait")
-	processMap(spec, c.MessageTraits, "MessageTrait")
-	processMap(spec, c.ServerBindings, "ServerBinding")
-	processMap(spec, c.ChannelBindings, "ChannelBinding")
-	processMap(spec, c.OperationBindings, "OperationBinding")
-	processMap(spec, c.MessageBindings, "MessageBinding")
+	if err := c.processMaps(spec); err != nil {
+		return err
+	}
 
+	// Process reply operations
 	for name, reply := range c.Replies {
-		reply.Process(name+"Reply", &Operation{}, spec)
+		if err := reply.Process(name+"Reply", &Operation{}, spec); err != nil {
+			return err
+		}
 	}
 
+	// Process reply addresses
 	for name, repAddr := range c.ReplyAddresses {
-		repAddr.Process(name+"ReplyAddress", &Operation{}, spec)
+		if err := repAddr.Process(name+"ReplyAddress", &Operation{}, spec); err != nil {
+			return err
+		}
 	}
+
+	return nil
+}
+
+//nolint:cyclop,funlen
+func (c *Components) processMaps(spec Specification) error {
+	if err := processMap(spec, c.Servers, "Server"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.Channels, "Channel"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.Operations, "Operation"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.Messages, "Message"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.SecuritySchemes, "SecurityScheme"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.ServerVariables, "ServerVariable"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.Parameters, "Parameter"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.CorrelationIDs, "CorrelationID"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.ExternalDocs, ExternalDocsNameSuffix); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.Tags, "Tag"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.OperationTraits, "OperationTrait"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.MessageTraits, "MessageTrait"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.ServerBindings, "ServerBinding"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.ChannelBindings, "ChannelBinding"); err != nil {
+		return err
+	}
+
+	if err := processMap(spec, c.OperationBindings, "OperationBinding"); err != nil {
+		return err
+	}
+
+	return processMap(spec, c.MessageBindings, "MessageBinding")
 }

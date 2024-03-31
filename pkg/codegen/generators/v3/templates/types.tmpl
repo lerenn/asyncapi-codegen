@@ -13,6 +13,8 @@ type controller struct {
     // middlewares are the middlewares that will be executed when sending or
     // receiving messages
     middlewares      []extensions.Middleware
+    // handler to handle errors from consumers and middlewares
+    errorHandler     extensions.ErrorHandler
 }
 
 // ControllerOption is the type of the options that can be passed
@@ -32,6 +34,13 @@ func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
 		controller.middlewares = middlewares
 	}
 }
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
+	}
+}
+
 
 type MessageWithCorrelationID interface {
     CorrelationID() string
@@ -67,37 +76,15 @@ type {{ namifyWithoutParam .Name }}Parameters struct {
 
 {{/* NOTE: No need to generate messages from operation as they are only references */}}
 
-{{range $key, $value := .Components.Messages}}
+{{- range $key, $value := .Components.Messages}}
 {{template "message" $value}}
-{{end}}
+{{end -}}
 
 {{range $key, $value := .Components.Schemas}}
-// {{namify $key}}Schema is a schema from the AsyncAPI specification required in messages
-{{if $value.Description -}}
-// Description: {{multiLineComment $value.Description}}
-{{end -}}
-type {{namify $key}}Schema {{template "schema" $value}}
-
-{{/* Create specific marshaling for time */ -}}
-{{- if or (eq $value.Format "date") (eq $value.Format "date-time") -}}
-// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
-func (t {{namify $key}}Schema) MarshalJSON() ([]byte, error) {
-    return json.Marshal(time.Time(t))
-}
-
-// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
-func (t *{{namify $key}}Schema) UnmarshalJSON(data []byte) error {
-    var timeFormat time.Time
-    if err := json.Unmarshal(data, &timeFormat);  err != nil {
-        return err
-    }
-
-    *t = {{namify $key}}Schema(timeFormat)
-    return nil
-}
-{{- end -}}
+{{template "schema-definition" $value}}
 {{- end}}
 
+{{- if .Channels}}
 const(
 {{- range $key, $value := .Channels}}
     // {{ namifyWithoutParam .Follow.Name }}Path is the constant representing the '{{ .Follow.Name }}' channel path.
@@ -111,3 +98,4 @@ var ChannelsPaths = []string{
     {{ namifyWithoutParam .Follow.Name }}Path,
 {{- end}}
 }
+{{- end}}

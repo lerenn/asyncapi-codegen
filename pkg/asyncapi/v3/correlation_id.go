@@ -1,6 +1,6 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils"
+import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 
 // CorrelationID is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
@@ -19,19 +19,25 @@ type CorrelationID struct {
 }
 
 // Process processes the CorrelationID to make it ready for code generation.
-func (c *CorrelationID) Process(path string, spec Specification) {
+func (c *CorrelationID) Process(path string, spec Specification) error {
 	// Prevent modification if nil
 	if c == nil {
-		return
+		return nil
 	}
 
 	// Set name
-	c.Name = utils.UpperFirstLetter(path)
+	c.Name = template.Namify(path)
 
 	// Add pointer to reference if there is one
 	if c.Reference != "" {
-		c.ReferenceTo = spec.ReferenceChannel(c.Reference)
+		refTo, err := spec.ReferenceChannel(c.Reference)
+		if err != nil {
+			return err
+		}
+		c.ReferenceTo = refTo
 	}
+
+	return nil
 }
 
 // Exists checks that the correlation exists (and that the location is set).

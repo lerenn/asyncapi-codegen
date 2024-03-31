@@ -60,7 +60,9 @@ func modulePathVersion() (path, version string) {
 // processed the AsyncAPI file when creating it.
 func (cg CodeGen) Generate(opt options.Options) error {
 	// Process specification
-	cg.specification.Process()
+	if err := cg.specification.Process(); err != nil {
+		return err
+	}
 
 	// Generate content
 	content, err := cg.generateContent(opt)

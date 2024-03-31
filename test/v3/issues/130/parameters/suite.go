@@ -54,10 +54,11 @@ func (suite *Suite) TestParameter() {
 	err := suite.app.SubscribeToReceiveUserSignedUpOperation(
 		context.Background(),
 		params,
-		func(ctx context.Context, msg UserMessage) {
+		func(ctx context.Context, msg UserMessage) error {
 			suite.Require().NotNil(msg.Payload.Name)
 			suite.Require().Equal("testing", *msg.Payload.Name)
 			wg.Done()
+			return nil
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromReceiveUserSignedUpOperation(context.Background(), params)
