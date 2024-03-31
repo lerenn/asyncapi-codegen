@@ -71,10 +71,12 @@ func (suite *Suite) TestAddingHeader() {
 
 	// Check what the app receive
 	wg.Add(1)
-	err := suite.app.SubscribeV2Issue101Test(context.Background(), func(_ context.Context, msg V2Issue101TestMessage) error {
-		wg.Done()
-		return nil
-	})
+	err := suite.app.SubscribeV2Issue101Test(
+		context.Background(),
+		func(_ context.Context, msg V2Issue101TestMessage) error {
+			wg.Done()
+			return nil
+		})
 	suite.Require().NoError(err)
 
 	// Publish the message
