@@ -4,7 +4,10 @@
 {{template "schema-definition" .Headers}}
 {{- end}}
 
-{{- if and (eq .Payload.Type "object") (not .Payload.ReferenceTo) }}
+{{- /* Generate payload definition if payload is not a reference and if is an object/array */ -}}
+{{- if and .Payload 
+        (or (eq .Payload.Type "object") (eq .Payload.Type "array"))
+        (not .Payload.ReferenceTo) }}
 {{template "schema-definition" .Payload}}
 {{- end}}
 

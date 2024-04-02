@@ -136,7 +136,7 @@ func (s *Schema) Process(name string, spec Specification, isRequired bool) error
 	}
 
 	// Process Items
-	if err := s.Items.Process(s.Name+"Items", spec, false); err != nil {
+	if err := s.Items.Process(s.Name+"Item", spec, false); err != nil {
 		return err
 	}
 
