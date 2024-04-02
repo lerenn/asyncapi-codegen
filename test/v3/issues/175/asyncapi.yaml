@@ -1,0 +1,41 @@
+asyncapi: 3.0.0
+
+components:
+  messages:
+    type1:
+      payload:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            age:
+              type: integer
+            email:
+              type: string
+              format: email
+
+    type2:
+      payload:
+        $ref: "#/components/schemas/arrayPayload"
+
+    type3:
+      payload:
+        type: array
+        items:
+          type: string
+
+  schemas:
+    arrayPayload:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          age:
+            type: integer
+          email:
+            type: string
+            format: email

@@ -29,12 +29,6 @@ type {{ .Name }} struct {
     {{template "marshaling-additional-properties" .}}
 {{- end}}
 
-{{ if and (not .AnyOf) (not .OneOf) -}}
-    {{- range $key, $value := getChildrenObjectSchemas . }}
-        {{template "schema-definition" $value }}
-    {{- end}}
-{{- end}}
-
 {{- /* ----------------------------- Others ----------------------------- */ -}}
 {{- else -}}
 
@@ -46,5 +40,12 @@ type {{ .Name }} {{template "schema-name" .}}
 {{- end -}}
 
 {{- end -}}
+
+{{- /* ------------------------- SubDefinitions ------------------------- */ -}}
+{{ if or (eq .Type "object") (eq .Type "array") -}}
+    {{- range $key, $value := getChildrenObjectSchemas . }}
+        {{template "schema-definition" $value }}
+    {{- end}}
+{{- end}}
 
 {{- end -}}

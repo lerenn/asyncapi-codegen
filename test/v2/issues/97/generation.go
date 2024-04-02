@@ -2,4 +2,12 @@
 
 package issue97
 
-// This is just to test that the generation is correct
+// CheckGeneration is just to test that the generation is correct.
+func CheckGeneration() {
+	var msg ReferencePayloadArrayMessage
+	msg.Payload = ArraySchema{
+		"content1",
+		"content2",
+		"content3",
+	}
+}
