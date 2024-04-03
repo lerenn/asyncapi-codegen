@@ -2,8 +2,10 @@ package kafka
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/segmentio/kafka-go/sasl"
 	"io"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
@@ -16,15 +18,17 @@ var _ extensions.BrokerController = (*Controller)(nil)
 
 // Controller is the Kafka implementation for asyncapi-codegen.
 type Controller struct {
-	hosts     []string
-	partition int
-	maxBytes  int
-
+	hosts []string
 	// Reception only
 	groupID string
 
-	logger     extensions.Logger
+	dialer *kafka.Dialer
+
+	partition  int
+	maxBytes   int
 	autoCommit bool
+
+	logger extensions.Logger
 }
 
 // MessagesHandler is a function that can be used to process messages from the broker.
@@ -42,9 +46,10 @@ type ControllerOption func(controller *Controller)
 func NewController(hosts []string, options ...ControllerOption) (*Controller, error) {
 	// Create default controller
 	controller := &Controller{
+		hosts:      hosts,
 		logger:     extensions.DummyLogger{},
 		groupID:    brokers.DefaultQueueGroupID,
-		hosts:      hosts,
+		dialer:     kafka.DefaultDialer,
 		partition:  0,
 		maxBytes:   10e6, // 10MB
 		autoCommit: true,
@@ -94,14 +99,36 @@ func WithAutoCommit(enabled bool) ControllerOption {
 	}
 }
 
+// WithTLS set the tls.Config that will be used for kafka.Dial, kafka.Reader and kafka.Writer.
+func WithTLS(tls *tls.Config) ControllerOption {
+	return func(controller *Controller) {
+		controller.dialer.TLS = tls
+	}
+}
+
+// WithSasl set the sasl.Mechanism that will be used for kafka.Dial, kafka.Reader and kafka.Writer.
+func WithSasl(sasl sasl.Mechanism) ControllerOption {
+	return func(controller *Controller) {
+		controller.dialer.SASLMechanism = sasl
+	}
+}
+
 // Publish a message to the broker.
 func (c *Controller) Publish(ctx context.Context, channel string, um extensions.BrokerMessage) error {
 	// Create new writer
-	w := kafka.NewWriter(kafka.WriterConfig{
-		Brokers:  c.hosts,
+	w := kafka.Writer{
+		Addr:     kafka.TCP(c.hosts...),
 		Topic:    channel,
 		Balancer: &kafka.LeastBytes{},
-	})
+		Transport: &kafka.Transport{
+			// reuse the optionally TLS and SASLMechanism from dialer provided by the user to pass it to the writer
+			// it can be nil
+			TLS:  c.dialer.TLS,
+			SASL: c.dialer.SASLMechanism,
+		},
+	}
+
+	defer w.Close()
 
 	// Create the message
 	msg := kafka.Message{
@@ -153,6 +180,7 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 		Partition: c.partition,
 		MaxBytes:  c.maxBytes,
 		GroupID:   c.groupID,
+		Dialer:    c.dialer,
 	})
 
 	// Create subscription
@@ -180,7 +208,7 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 
 func (c *Controller) checkTopicExistOrCreateIt(ctx context.Context, topic string) error {
 	// Get connection to first host
-	conn, err := kafka.Dial("tcp", c.hosts[0])
+	conn, err := c.dialer.Dial("tcp", c.hosts[0])
 	if err != nil {
 		return err
 	}
