@@ -1,5 +1,3 @@
-///usr/local/bin/dagger run go run $0 $@ ; exit
-
 package main
 
 import (
