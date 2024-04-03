@@ -17,6 +17,7 @@ var _ extensions.BrokerController = (*Controller)(nil)
 
 // Controller is the Controller implementation for asyncapi-codegen.
 type Controller struct {
+	url            string
 	natsConn       *nats.Conn
 	jetStream      jetstream.JetStream
 	logger         extensions.Logger
@@ -101,24 +102,23 @@ func WithNakDelay(duration time.Duration) ControllerOption {
 	}
 }
 
+// WithConnectionOpts set the nats.Options to connect to nats.
+func WithConnectionOpts(opts ...nats.Option) ControllerOption {
+	return func(controller *Controller) error {
+		nc, err := nats.Connect(controller.url, opts...)
+		if err != nil {
+			return fmt.Errorf("could not connect to nats: %w", err)
+		}
+		controller.natsConn = nc
+		return nil
+	}
+}
+
 // NewController creates a new NATS JetStream controller.
 func NewController(url string, options ...ControllerOption) (*Controller, error) {
-	// Connect to NATS
-	nc, err := nats.Connect(url)
-	if err != nil {
-		return nil, fmt.Errorf("could not connect to nats: %w", err)
-	}
-
-	// Create a JetStream management interface
-	js, err := jetstream.New(nc)
-	if err != nil {
-		return nil, fmt.Errorf("could not connect to jetstream: %w", err)
-	}
-
 	// Creates default controller
 	controller := &Controller{
-		natsConn:       nc,
-		jetStream:      js,
+		url:            url,
 		logger:         extensions.DummyLogger{},
 		channels:       make(map[string]chan jetstream.Msg),
 		consumeContext: nil,
@@ -131,6 +131,24 @@ func NewController(url string, options ...ControllerOption) (*Controller, error)
 			return nil, fmt.Errorf("could not apply option to controller: %w", err)
 		}
 	}
+
+	// If connection not already created with WithConnectionOpts, connect to NATS
+	if controller.natsConn == nil {
+		nc, err := nats.Connect(url)
+		if err != nil {
+			return nil, fmt.Errorf("could not connect to nats: %w", err)
+		}
+
+		controller.natsConn = nc
+	}
+
+	// Create a JetStream management interface
+	js, err := jetstream.New(controller.natsConn)
+	if err != nil {
+		return nil, fmt.Errorf("could not connect to jetstream: %w", err)
+	}
+
+	controller.jetStream = js
 
 	return controller, nil
 }
