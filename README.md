@@ -163,7 +163,7 @@ kafkaController, err := kafka.NewController([]string{"<host>:<port>"},
 // Sha256 mechanism
 sha256Mechanism, err := scram.Mechanism(scram.SHA256, "<user>", "<password>")
 if err != nil {
-    return nil, nil
+    // handle error
 }
 
 kafkaController, err := kafka.NewController([]string{"<host>:<port>"},
@@ -174,12 +174,12 @@ kafkaController, err := kafka.NewController([]string{"<host>:<port>"},
 // Sha512 mechanism
 sha512Mechanism, err := scram.Mechanism(scram.SHA512, "<user>", "<password>")
 if err != nil {
-    return nil, nil
+    // handle error
 }
 
 kafkaController, err := kafka.NewController([]string{"<host>:<port>"},
     kafka.WithGroupID(queueGroupID),
-    kafka.WithSasl(sha256Mechanism),
+    kafka.WithSasl(sha512Mechanism),
 )
 
 // TLS
