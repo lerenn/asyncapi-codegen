@@ -43,17 +43,26 @@ func (ora *OperationReplyAddress) Process(name string, op *Operation, spec Speci
 	}
 
 	// Get location to schema
-	ora.LocationRequired = ora.isLocationRequired(op)
+	locRequired, err := ora.isLocationRequired(op)
+	if err != nil {
+		return err
+	}
+	ora.LocationRequired = locRequired
 
 	return nil
 }
 
-func (ora OperationReplyAddress) isLocationRequired(op *Operation) bool {
+func (ora OperationReplyAddress) isLocationRequired(op *Operation) (bool, error) {
 	if ora.Location == "" {
-		return false
+		return false, nil
 	}
 
-	locationParent := op.Follow().GetMessage().createTreeUntilLocation(ora.Location)
+	msg, err := op.Follow().GetMessage()
+	if err != nil {
+		return false, err
+	}
+
+	locationParent := msg.createTreeUntilLocation(ora.Location)
 	path := strings.Split(ora.Location, "/")
-	return locationParent.IsFieldRequired(path[len(path)-1])
+	return locationParent.IsFieldRequired(path[len(path)-1]), nil
 }

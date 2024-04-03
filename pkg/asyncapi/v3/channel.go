@@ -3,12 +3,18 @@ package asyncapiv3
 import (
 	"fmt"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 const (
 	// ChannelSuffix is the suffix added to the channels name.
 	ChannelSuffix = "Channel"
+)
+
+var (
+	// ErrNoMessageInChannel is the error returned when there is no message in a channel.
+	ErrNoMessageInChannel = fmt.Errorf("%w: no message in channel", extensions.ErrAsyncAPI)
 )
 
 // Channel is a representation of the corresponding asyncapi object filled
@@ -143,9 +149,9 @@ func (ch *Channel) Follow() *Channel {
 }
 
 // GetMessage will return the channel message.
-func (ch Channel) GetMessage() *Message {
+func (ch Channel) GetMessage() (*Message, error) {
 	for _, m := range ch.Follow().Messages {
-		return m.Follow() // TODO: change
+		return m.Follow(), nil // TODO: change
 	}
-	return nil
+	return nil, fmt.Errorf("%w: channel %q", ErrNoMessageInChannel, ch.Name)
 }
