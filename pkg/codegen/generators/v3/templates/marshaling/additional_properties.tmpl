@@ -1,6 +1,6 @@
 {{define "marshaling-additional-properties" -}}
 
-// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
+// MarshalJSON marshals the schema into JSON with support for additional properties.
 func (t {{ .Name }}) MarshalJSON() ([]byte, error) {
     type alias {{ .Name }}
 
@@ -22,7 +22,7 @@ func (t {{ .Name }}) MarshalJSON() ([]byte, error) {
     return append(b, []byte("}")...) , nil
 }
 
-// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
+// UnmarshalJSON unmarshals schema from JSON with support for additional properties.
 func (t *{{ .Name }}) UnmarshalJSON(data []byte) error {
     type alias {{ .Name }}
 
@@ -38,7 +38,7 @@ func (t *{{ .Name }}) UnmarshalJSON(data []byte) error {
     if err := json.Unmarshal(data, &a);  err != nil {
         return err
     }
-    *t = TestMapSchema(a)
+    *t = {{ .Name }}(a)
 
     // Get all fields that are additional and add them to the AdditionalProperties field.
     t.AdditionalProperties = make(map[string]{{template "schema-name" .AdditionalProperties}}, len(m))
