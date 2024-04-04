@@ -1,0 +1,44 @@
+asyncapi: 3.0.0
+
+channels:
+  request:
+    address: v3.issue181.reception
+    messages:
+      request:
+        $ref: "#/components/messages/request"
+  reply:
+    address: null
+    messages:
+      reply:
+        payload:
+          type: string
+
+operations:
+  GetServiceInfo:
+    action: receive
+    channel: 
+      $ref: "#/channels/request"
+    reply:
+      address:
+        location: "$message.header#/replyTo"
+      channel:
+        $ref: '#/channels/reply'
+
+components:
+  messageTraits:
+    withReplyTo:
+      headers:
+        type: object
+        required:
+          - replyTo
+        properties:
+          replyTo:
+            description: Channel used to respond to request
+            type: string
+  
+  messages:
+    request:
+      payload:
+        type: string
+      traits:
+        - $ref: "#/components/messageTraits/withReplyTo"

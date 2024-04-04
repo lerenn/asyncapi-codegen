@@ -43,6 +43,11 @@ func (s *Specification) Process() error {
 		return nil
 	}
 
+	// Process components
+	if err := s.Components.Process(*s); err != nil {
+		return err
+	}
+
 	// Process info
 	if err := s.Info.Process(*s); err != nil {
 		return err
@@ -69,8 +74,7 @@ func (s *Specification) Process() error {
 		}
 	}
 
-	// Process components
-	return s.Components.Process(*s)
+	return nil
 }
 
 // GetOperationCountByAction gets the count of 'sending' operations and the count
