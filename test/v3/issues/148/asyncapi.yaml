@@ -2,7 +2,7 @@ asyncapi: 3.0.0
 
 channels:
   reception:
-    address: issue148.reception
+    address: v3.issue148.reception
     messages:
       request:
         headers:

@@ -14,9 +14,7 @@ import (
 // GetChildrenObjectSchemas will return all the children object schemas of a
 // schema, only from first level and without AnyOf, AllOf and OneOf.
 func GetChildrenObjectSchemas(s asyncapi.Schema) []*asyncapi.Schema {
-	allSchemas := make([]*asyncapi.Schema, 0)
-
-	allSchemas = append(allSchemas, utils.MapToList(s.Properties)...)
+	allSchemas := utils.MapToList(s.Properties)
 
 	if s.Items != nil {
 		allSchemas = append(allSchemas, s.Items)
@@ -66,15 +64,21 @@ func ReferenceToStructAttributePath(ref string) string {
 // ChannelToMessageTypeName will convert a channel to a message type name in the
 // form of golang conventional type names.
 func ChannelToMessageTypeName(ch asyncapi.Channel) string {
-	msg := ch.Follow().GetMessage()
-	return templateutil.Namify(msg.Name)
+	msg, err := ch.Follow().GetMessage()
+	if err != nil {
+		panic(err)
+	}
+	return templateutil.Namify(msg.Follow().Name)
 }
 
 // OpToMsgTypeName will convert an operation to a message type name in the
 // form of golang conventional type names.
 func OpToMsgTypeName(op asyncapi.Operation) string {
-	msg := op.Follow().GetMessage().Follow()
-	return templateutil.Namify(msg.Name)
+	msg, err := op.Follow().GetMessage()
+	if err != nil {
+		panic(err)
+	}
+	return templateutil.Namify(msg.Follow().Name)
 }
 
 // OpToChannelTypeName will convert an operation to a channel type name in the

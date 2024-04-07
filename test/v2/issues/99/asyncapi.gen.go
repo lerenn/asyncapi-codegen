@@ -12,8 +12,8 @@ import (
 
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
-	// Issue99Test subscribes to messages placed on the 'issue99.test' channel
-	Issue99Test(ctx context.Context, msg Issue99TestMessage) error
+	// V2Issue99Test subscribes to messages placed on the 'v2.issue99.test' channel
+	V2Issue99Test(ctx context.Context, msg V2Issue99TestMessage) error
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -124,7 +124,7 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeIssue99Test(ctx, as.Issue99Test); err != nil {
+	if err := c.SubscribeV2Issue99Test(ctx, as.V2Issue99Test); err != nil {
 		return err
 	}
 
@@ -133,18 +133,18 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll(ctx context.Context) {
-	c.UnsubscribeIssue99Test(ctx)
+	c.UnsubscribeV2Issue99Test(ctx)
 }
 
-// SubscribeIssue99Test will subscribe to new messages from 'issue99.test' channel.
+// SubscribeV2Issue99Test will subscribe to new messages from 'v2.issue99.test' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeIssue99Test(
+func (c *AppController) SubscribeV2Issue99Test(
 	ctx context.Context,
-	fn func(ctx context.Context, msg Issue99TestMessage) error,
+	fn func(ctx context.Context, msg V2Issue99TestMessage) error,
 ) error {
 	// Get channel path
-	path := "issue99.test"
+	path := "v2.issue99.test"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -184,7 +184,7 @@ func (c *AppController) SubscribeIssue99Test(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newIssue99TestMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := newV2Issue99TestMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -212,11 +212,11 @@ func (c *AppController) SubscribeIssue99Test(
 	return nil
 }
 
-// UnsubscribeIssue99Test will unsubscribe messages from 'issue99.test' channel.
+// UnsubscribeV2Issue99Test will unsubscribe messages from 'v2.issue99.test' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeIssue99Test(ctx context.Context) {
+func (c *AppController) UnsubscribeV2Issue99Test(ctx context.Context) {
 	// Get channel path
-	path := "issue99.test"
+	path := "v2.issue99.test"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -334,13 +334,13 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishIssue99Test will publish messages to 'issue99.test' channel
-func (c *UserController) PublishIssue99Test(
+// PublishV2Issue99Test will publish messages to 'v2.issue99.test' channel
+func (c *UserController) PublishV2Issue99Test(
 	ctx context.Context,
-	msg Issue99TestMessage,
+	msg V2Issue99TestMessage,
 ) error {
 	// Get channel path
-	path := "issue99.test"
+	path := "v2.issue99.test"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -419,21 +419,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Issue99TestMessage is the message expected for 'Issue99TestMessage' channel.
-type Issue99TestMessage struct {
+// V2Issue99TestMessage is the message expected for 'V2Issue99TestMessage' channel.
+type V2Issue99TestMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewIssue99TestMessage() Issue99TestMessage {
-	var msg Issue99TestMessage
+func NewV2Issue99TestMessage() V2Issue99TestMessage {
+	var msg V2Issue99TestMessage
 
 	return msg
 }
 
-// newIssue99TestMessageFromBrokerMessage will fill a new Issue99TestMessage with data from generic broker message
-func newIssue99TestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue99TestMessage, error) {
-	var msg Issue99TestMessage
+// newV2Issue99TestMessageFromBrokerMessage will fill a new V2Issue99TestMessage with data from generic broker message
+func newV2Issue99TestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue99TestMessage, error) {
+	var msg V2Issue99TestMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -444,8 +444,8 @@ func newIssue99TestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issu
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Issue99TestMessage data
-func (msg Issue99TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue99TestMessage data
+func (msg V2Issue99TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -461,11 +461,11 @@ func (msg Issue99TestMessage) toBrokerMessage() (extensions.BrokerMessage, error
 }
 
 const (
-	// Issue99TestPath is the constant representing the 'Issue99Test' channel path.
-	Issue99TestPath = "issue99.test"
+	// V2Issue99TestPath is the constant representing the 'V2Issue99Test' channel path.
+	V2Issue99TestPath = "v2.issue99.test"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	Issue99TestPath,
+	V2Issue99TestPath,
 }

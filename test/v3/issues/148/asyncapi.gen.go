@@ -150,7 +150,7 @@ func (c *AppController) SubscribeToGetServiceInfoOperation(
 	fn func(ctx context.Context, msg RequestMessage) error,
 ) error {
 	// Get channel address
-	addr := "issue148.reception"
+	addr := "v3.issue148.reception"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -242,7 +242,7 @@ func (c *AppController) UnsubscribeFromGetServiceInfoOperation(
 	ctx context.Context,
 ) {
 	// Get channel address
-	addr := "issue148.reception"
+	addr := "v3.issue148.reception"
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -401,7 +401,7 @@ func (c *UserController) SendToGetServiceInfoOperation(
 	msg RequestMessage,
 ) error {
 	// Set channel address
-	addr := "issue148.reception"
+	addr := "v3.issue148.reception"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -669,7 +669,7 @@ func (msg ReplyMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 
 const (
 	// ReceptionChannelPath is the constant representing the 'ReceptionChannel' channel path.
-	ReceptionChannelPath = "issue148.reception"
+	ReceptionChannelPath = "v3.issue148.reception"
 	// ReplyChannelPath is the constant representing the 'ReplyChannel' channel path.
 	ReplyChannelPath = ""
 )

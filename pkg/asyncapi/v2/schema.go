@@ -132,7 +132,7 @@ func (s *Schema) processProperties(spec Specification) error {
 
 func (s *Schema) processItems(spec Specification) error {
 	if s.Items != nil {
-		if err := s.Items.Process(s.Name+"Items", spec, false); err != nil {
+		if err := s.Items.Process(s.Name+"Item", spec, false); err != nil {
 			return err
 		}
 	}

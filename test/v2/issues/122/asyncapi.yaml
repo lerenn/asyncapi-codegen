@@ -7,7 +7,7 @@ info:
   title: Sample App
   version: 1.0.0
 channels:
-  issue122.msg: # channel that has the two operations
+  v2.issue122.msg: # channel that has the two operations
     subscribe:
       message:
         payload:

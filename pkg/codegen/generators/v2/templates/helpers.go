@@ -14,9 +14,7 @@ import (
 // GetChildrenObjectSchemas will return all the children object schemas of a
 // schema, only from first level and without AnyOf, AllOf and OneOf.
 func GetChildrenObjectSchemas(s asyncapi.Schema) []*asyncapi.Schema {
-	allSchemas := make([]*asyncapi.Schema, 0)
-
-	allSchemas = append(allSchemas, utils.MapToList(s.Properties)...)
+	allSchemas := utils.MapToList(s.Properties)
 
 	if s.Items != nil {
 		allSchemas = append(allSchemas, s.Items)

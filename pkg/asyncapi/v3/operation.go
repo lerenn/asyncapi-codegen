@@ -173,12 +173,12 @@ func (op *Operation) generateReply() {
 }
 
 // GetMessage will return the operation message.
-func (op Operation) GetMessage() *Message {
+func (op Operation) GetMessage() (*Message, error) {
 	if len(op.Messages) > 0 {
-		return op.Messages[0] // TODO: change
-	} else {
-		return op.Channel.GetMessage()
+		return op.Messages[0], nil // TODO: change
 	}
+
+	return op.Channel.GetMessage()
 }
 
 // ApplyTrait applies a trait to the operation.

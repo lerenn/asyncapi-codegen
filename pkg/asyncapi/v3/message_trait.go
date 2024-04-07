@@ -56,10 +56,10 @@ func (mt *MessageTrait) Process(name string, spec Specification) error {
 	}
 
 	// Process Headers and Payload
-	if err := mt.Headers.Process(name+"Headers", spec, false); err != nil {
+	if err := mt.Headers.Process(name+MessageHeadersSuffix, spec, false); err != nil {
 		return err
 	}
-	if err := mt.Payload.Process(name+"Payload", spec, false); err != nil {
+	if err := mt.Payload.Process(name+MessagePayloadSuffix, spec, false); err != nil {
 		return err
 	}
 

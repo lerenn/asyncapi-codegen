@@ -151,7 +151,7 @@ func (c *AppController) SubscribeToTestMapOperation(
 	fn func(ctx context.Context, msg TestMapMessage) error,
 ) error {
 	// Get channel address
-	addr := "issue164.testMap"
+	addr := "v3.issue164.testMap"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -223,7 +223,7 @@ func (c *AppController) UnsubscribeFromTestMapOperation(
 	ctx context.Context,
 ) {
 	// Get channel address
-	addr := "issue164.testMap"
+	addr := "v3.issue164.testMap"
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -350,7 +350,7 @@ func (c *UserController) SendToTestMapOperation(
 	msg TestMapMessage,
 ) error {
 	// Set channel address
-	addr := "issue164.testMap"
+	addr := "v3.issue164.testMap"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -488,7 +488,7 @@ type TestMapSchema struct {
 	AdditionalProperties map[string]string `json:"-"`
 }
 
-// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
+// MarshalJSON marshals the schema into JSON with support for additional properties.
 func (t TestMapSchema) MarshalJSON() ([]byte, error) {
 	type alias TestMapSchema
 
@@ -510,7 +510,7 @@ func (t TestMapSchema) MarshalJSON() ([]byte, error) {
 	return append(b, []byte("}")...), nil
 }
 
-// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
+// UnmarshalJSON unmarshals schema from JSON with support for additional properties.
 func (t *TestMapSchema) UnmarshalJSON(data []byte) error {
 	type alias TestMapSchema
 
@@ -544,7 +544,7 @@ func (t *TestMapSchema) UnmarshalJSON(data []byte) error {
 
 const (
 	// TestMapChannelPath is the constant representing the 'TestMapChannel' channel path.
-	TestMapChannelPath = "issue164.testMap"
+	TestMapChannelPath = "v3.issue164.testMap"
 )
 
 // ChannelsPaths is an array of all channels paths

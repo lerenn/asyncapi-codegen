@@ -160,7 +160,7 @@ func (c *AppController) SubscribeToPingOperation(
 	fn func(ctx context.Context, msg PingMessage) error,
 ) error {
 	// Get channel address
-	addr := "issue130.ping"
+	addr := "v3.issue130.ping"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -247,7 +247,7 @@ func (c *AppController) UnsubscribeFromPingOperation(
 	ctx context.Context,
 ) {
 	// Get channel address
-	addr := "issue130.ping"
+	addr := "v3.issue130.ping"
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -277,7 +277,7 @@ func (c *AppController) SubscribeToPingWithIDOperation(
 	fn func(ctx context.Context, msg PingWithIDMessage) error,
 ) error {
 	// Get channel address
-	addr := "issue130.pingWithID"
+	addr := "v3.issue130.pingWithID"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -370,7 +370,7 @@ func (c *AppController) UnsubscribeFromPingWithIDOperation(
 	ctx context.Context,
 ) {
 	// Get channel address
-	addr := "issue130.pingWithID"
+	addr := "v3.issue130.pingWithID"
 
 	// Check if there receivers for this channel
 	sub, exists := c.subscriptions[addr]
@@ -399,7 +399,7 @@ func (c *AppController) SendAsReplyToPingOperation(
 	msg PongMessage,
 ) error {
 	// Set channel address
-	addr := "issue130.pong"
+	addr := "v3.issue130.pong"
 
 	// Set context
 	ctx = addAppContextValues(ctx, addr)
@@ -429,7 +429,7 @@ func (c *AppController) SendAsReplyToPingWithIDOperation(
 	msg PongWithIDMessage,
 ) error {
 	// Set channel address
-	addr := "issue130.pongWithID"
+	addr := "v3.issue130.pongWithID"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
@@ -566,7 +566,7 @@ func (c *UserController) SendToPingOperation(
 	msg PingMessage,
 ) error {
 	// Set channel address
-	addr := "issue130.ping"
+	addr := "v3.issue130.ping"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -601,7 +601,7 @@ func (c *UserController) RequestToPingOperation(
 	msg PingMessage,
 ) (PongMessage, error) {
 	// Get receiving channel address
-	addr := "issue130.pong"
+	addr := "v3.issue130.pong"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -675,7 +675,7 @@ func (c *UserController) SendToPingWithIDOperation(
 	msg PingWithIDMessage,
 ) error {
 	// Set channel address
-	addr := "issue130.pingWithID"
+	addr := "v3.issue130.pingWithID"
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
@@ -716,7 +716,7 @@ func (c *UserController) RequestToPingWithIDOperation(
 	msg PingWithIDMessage,
 ) (PongWithIDMessage, error) {
 	// Get receiving channel address
-	addr := "issue130.pongWithID"
+	addr := "v3.issue130.pongWithID"
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
@@ -1182,13 +1182,13 @@ func (msg *PongWithIDMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 
 const (
 	// PingChannelPath is the constant representing the 'PingChannel' channel path.
-	PingChannelPath = "issue130.ping"
+	PingChannelPath = "v3.issue130.ping"
 	// PingWithIDChannelPath is the constant representing the 'PingWithIDChannel' channel path.
-	PingWithIDChannelPath = "issue130.pingWithID"
+	PingWithIDChannelPath = "v3.issue130.pingWithID"
 	// PongChannelPath is the constant representing the 'PongChannel' channel path.
-	PongChannelPath = "issue130.pong"
+	PongChannelPath = "v3.issue130.pong"
 	// PongWithIDChannelPath is the constant representing the 'PongWithIDChannel' channel path.
-	PongWithIDChannelPath = "issue130.pongWithID"
+	PongWithIDChannelPath = "v3.issue130.pongWithID"
 )
 
 // ChannelsPaths is an array of all channels paths

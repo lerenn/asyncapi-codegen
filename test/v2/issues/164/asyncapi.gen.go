@@ -13,8 +13,8 @@ import (
 
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
-	// Issue164TestMap subscribes to messages placed on the 'issue164.testMap' channel
-	Issue164TestMap(ctx context.Context, msg TestMapMessage) error
+	// V2Issue164TestMap subscribes to messages placed on the 'v2.issue164.testMap' channel
+	V2Issue164TestMap(ctx context.Context, msg TestMapMessage) error
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -125,7 +125,7 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 		return extensions.ErrNilAppSubscriber
 	}
 
-	if err := c.SubscribeIssue164TestMap(ctx, as.Issue164TestMap); err != nil {
+	if err := c.SubscribeV2Issue164TestMap(ctx, as.V2Issue164TestMap); err != nil {
 		return err
 	}
 
@@ -134,18 +134,18 @@ func (c *AppController) SubscribeAll(ctx context.Context, as AppSubscriber) erro
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *AppController) UnsubscribeAll(ctx context.Context) {
-	c.UnsubscribeIssue164TestMap(ctx)
+	c.UnsubscribeV2Issue164TestMap(ctx)
 }
 
-// SubscribeIssue164TestMap will subscribe to new messages from 'issue164.testMap' channel.
+// SubscribeV2Issue164TestMap will subscribe to new messages from 'v2.issue164.testMap' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeIssue164TestMap(
+func (c *AppController) SubscribeV2Issue164TestMap(
 	ctx context.Context,
 	fn func(ctx context.Context, msg TestMapMessage) error,
 ) error {
 	// Get channel path
-	path := "issue164.testMap"
+	path := "v2.issue164.testMap"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -213,11 +213,11 @@ func (c *AppController) SubscribeIssue164TestMap(
 	return nil
 }
 
-// UnsubscribeIssue164TestMap will unsubscribe messages from 'issue164.testMap' channel.
+// UnsubscribeV2Issue164TestMap will unsubscribe messages from 'v2.issue164.testMap' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeIssue164TestMap(ctx context.Context) {
+func (c *AppController) UnsubscribeV2Issue164TestMap(ctx context.Context) {
 	// Get channel path
-	path := "issue164.testMap"
+	path := "v2.issue164.testMap"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -335,13 +335,13 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishIssue164TestMap will publish messages to 'issue164.testMap' channel
-func (c *UserController) PublishIssue164TestMap(
+// PublishV2Issue164TestMap will publish messages to 'v2.issue164.testMap' channel
+func (c *UserController) PublishV2Issue164TestMap(
 	ctx context.Context,
 	msg TestMapMessage,
 ) error {
 	// Get channel path
-	path := "issue164.testMap"
+	path := "v2.issue164.testMap"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -474,7 +474,7 @@ type TestMapSchema struct {
 	AdditionalProperties map[string]string `json:"-"`
 }
 
-// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
+// MarshalJSON marshals the schema into JSON with support for additional properties.
 func (t TestMapSchema) MarshalJSON() ([]byte, error) {
 	type alias TestMapSchema
 
@@ -496,7 +496,7 @@ func (t TestMapSchema) MarshalJSON() ([]byte, error) {
 	return append(b, []byte("}")...), nil
 }
 
-// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
+// UnmarshalJSON unmarshals schema from JSON with support for additional properties.
 func (t *TestMapSchema) UnmarshalJSON(data []byte) error {
 	type alias TestMapSchema
 
@@ -529,11 +529,11 @@ func (t *TestMapSchema) UnmarshalJSON(data []byte) error {
 }
 
 const (
-	// Issue164TestMapPath is the constant representing the 'Issue164TestMap' channel path.
-	Issue164TestMapPath = "issue164.testMap"
+	// V2Issue164TestMapPath is the constant representing the 'V2Issue164TestMap' channel path.
+	V2Issue164TestMapPath = "v2.issue164.testMap"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	Issue164TestMapPath,
+	V2Issue164TestMapPath,
 }

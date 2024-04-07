@@ -1,0 +1,22 @@
+asyncapi: 3.0.0
+
+components:
+  messages:
+    type1:
+      payload:
+        type: object
+      traits:
+        - $ref: "#/components/messageTraits/withCorrelationID"
+    type2:
+      payload:
+        type: object
+      traits:
+        - $ref: "#/components/messageTraits/withCorrelationID"
+  messageTraits:
+    withCorrelationID:
+      headers:
+        type: object
+        properties:
+          correlationId:
+            description: Correlation ID set by client
+            type: string
