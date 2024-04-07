@@ -2,12 +2,14 @@ package natsjetstream
 
 import (
 	"context"
-	"github.com/nats-io/nats.go/jetstream"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+
+	"github.com/nats-io/nats.go/jetstream"
+	"github.com/stretchr/testify/assert"
 )
 
+//nolint:funlen // this is only for testing
 func TestValidateAckMechanism(t *testing.T) {
 	subj := "ValidateAckMechanism"
 
