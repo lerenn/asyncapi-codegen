@@ -1,10 +1,11 @@
 package nats
 
 import (
-	"github.com/nats-io/nats.go"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+
+	"github.com/nats-io/nats.go"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateAckMechanism(t *testing.T) {
@@ -21,7 +22,7 @@ func TestValidateAckMechanism(t *testing.T) {
 			err := msg.Ack()
 			assert.ErrorIs(t, err, nats.ErrMsgNoReply, "core NATS should not support acks")
 		})
-		defer sub.Drain()
+		defer assert.NoError(t, sub.Drain())
 		assert.NoError(t, err, "subscribe should not return error")
 
 		wg.Add(1)
@@ -39,7 +40,7 @@ func TestValidateAckMechanism(t *testing.T) {
 			err := msg.Nak()
 			assert.ErrorIs(t, err, nats.ErrMsgNoReply, "core NATS should not support naks")
 		})
-		defer sub.Drain()
+		defer assert.NoError(t, sub.Drain())
 		assert.NoError(t, err, "subscribe should not return error")
 
 		wg.Add(1)

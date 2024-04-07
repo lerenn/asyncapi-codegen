@@ -3,6 +3,7 @@ package nats
 import (
 	"context"
 	"fmt"
+
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/nats-io/nats.go"
@@ -102,7 +103,7 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 	return sub, nil
 }
 
-func (c *Controller) messagesHandler(ctx context.Context, sub extensions.BrokerChannelSubscription) nats.MsgHandler {
+func (c *Controller) messagesHandler(_ context.Context, sub extensions.BrokerChannelSubscription) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		// Get headers
 		headers := make(map[string][]byte, len(msg.Header))
