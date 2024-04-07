@@ -488,7 +488,7 @@ type TestMapSchema struct {
 	AdditionalProperties map[string]string `json:"-"`
 }
 
-// MarshalJSON will override the marshal as this is not a normal 'time.Time' type
+// MarshalJSON marshals the schema into JSON with support for additional properties.
 func (t TestMapSchema) MarshalJSON() ([]byte, error) {
 	type alias TestMapSchema
 
@@ -510,7 +510,7 @@ func (t TestMapSchema) MarshalJSON() ([]byte, error) {
 	return append(b, []byte("}")...), nil
 }
 
-// UnmarshalJSON will override the unmarshal as this is not a normal 'time.Time' type
+// UnmarshalJSON unmarshals schema from JSON with support for additional properties.
 func (t *TestMapSchema) UnmarshalJSON(data []byte) error {
 	type alias TestMapSchema
 
