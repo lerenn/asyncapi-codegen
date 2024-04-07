@@ -166,7 +166,6 @@ Here are the options that you can use with the NATS controller:
 
 * `WithLogger`: specify the logger that will be used by the controller. If not specified, a silent logger is used that won't log anything.
 * `WithQueueGroup`: specify the queue group that will be used by the controller. If not specified, default queue name (`asyncapi`) will be used.
-* `WithNakDelay`: specify the delay for retry nak messages. If not specified, default nak delay (`time.Second * 5`) will be used.
 
 ### NATS JetStream
 
@@ -188,7 +187,6 @@ Consumer for the user controller can be either created/updated with `WithConsume
 
 #### Limitations
 
-* the messages will be ack'd once received
 * the messages will be ack'd from the consumer even though the subscription was not setup (this will be logged)
 
 ### Custom broker
