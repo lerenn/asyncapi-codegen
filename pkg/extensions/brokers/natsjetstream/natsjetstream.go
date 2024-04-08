@@ -25,93 +25,10 @@ type Controller struct {
 	consumerName   string
 	consumeContext jetstream.ConsumeContext
 	channels       map[string]chan jetstream.Msg
+	streamConfig   jetstream.StreamConfig
+	consumerConfig jetstream.ConsumerConfig
 
 	nakDelay time.Duration
-}
-
-// ControllerOption is a function that can be used to configure a NATS controller.
-type ControllerOption func(controller *Controller) error
-
-// WithLogger set a custom logger that will log operations on broker controller.
-func WithLogger(logger extensions.Logger) ControllerOption {
-	return func(controller *Controller) error {
-		controller.logger = logger
-		return nil
-	}
-}
-
-// WithStreamConfig creates or updates a stream based on the given stream configuration.
-func WithStreamConfig(config jetstream.StreamConfig) ControllerOption {
-	return func(controller *Controller) error {
-		if config.Name == "" {
-			return fmt.Errorf("stream name is required")
-		}
-		controller.streamName = config.Name
-
-		if _, err := controller.jetStream.CreateStream(context.Background(), config); err != nil {
-			if !errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
-				return fmt.Errorf("could not create stream: %w", err)
-			}
-			if _, err = controller.jetStream.UpdateStream(context.Background(), config); err != nil {
-				return fmt.Errorf("could not create or update stream: %w", err)
-			}
-		}
-
-		return nil
-	}
-}
-
-// WithStream uses the given stream name (the stream has to be created before initializing).
-func WithStream(name string) ControllerOption {
-	return func(controller *Controller) error {
-		controller.streamName = name
-		return nil
-	}
-}
-
-// WithConsumerConfig creates or updates a consumer based on the given consumer configuration.
-func WithConsumerConfig(config jetstream.ConsumerConfig) ControllerOption {
-	return func(controller *Controller) error {
-		if config.Name == "" {
-			return fmt.Errorf("consumer name is required")
-		}
-		controller.consumerName = config.Name
-
-		_, err := controller.jetStream.CreateOrUpdateConsumer(context.Background(), controller.streamName, config)
-		if err != nil {
-			return fmt.Errorf("could not create or update consumer: %w", err)
-		}
-
-		return nil
-	}
-}
-
-// WithConsumer uses the given consumer name (the consumer has to be created before initializing).
-func WithConsumer(name string) ControllerOption {
-	return func(controller *Controller) error {
-		controller.consumerName = name
-		return nil
-	}
-}
-
-// WithNakDelay set the delay when redeliver messages via nak.
-func WithNakDelay(duration time.Duration) ControllerOption {
-	return func(controller *Controller) error {
-		controller.nakDelay = duration
-		return nil
-	}
-}
-
-// WithConnectionOpts set the nats.Options to connect to nats.
-func WithConnectionOpts(opts ...nats.Option) ControllerOption {
-	return func(controller *Controller) error {
-		nc, err := nats.Connect(controller.url, opts...)
-		if err != nil {
-			return fmt.Errorf("could not connect to nats: %w", err)
-		}
-		controller.natsConn = nc
-		return nil
-	}
 }
 
 // NewController creates a new NATS JetStream controller.
@@ -150,7 +67,113 @@ func NewController(url string, options ...ControllerOption) (*Controller, error)
 
 	controller.jetStream = js
 
+	if err := controller.registerStream(); err != nil {
+		return nil, err
+	}
+	if err := controller.registerConsumer(); err != nil {
+		return nil, err
+	}
+
 	return controller, nil
+}
+
+// ControllerOption is a function that can be used to configure a NATS controller.
+type ControllerOption func(controller *Controller) error
+
+// WithLogger set a custom logger that will log operations on broker controller.
+func WithLogger(logger extensions.Logger) ControllerOption {
+	return func(controller *Controller) error {
+		controller.logger = logger
+		return nil
+	}
+}
+
+// WithStreamConfig add the stream configuration for creating or updating a stream based on the given configuration.
+func WithStreamConfig(config jetstream.StreamConfig) ControllerOption {
+	return func(controller *Controller) error {
+		controller.streamConfig = config
+		return nil
+	}
+}
+
+// WithStream uses the given stream name (the stream has to be created before initializing).
+func WithStream(name string) ControllerOption {
+	return func(controller *Controller) error {
+		controller.streamName = name
+		return nil
+	}
+}
+
+// WithConsumerConfig set consumer configuration for creating or updating a consumer based on the given config.
+func WithConsumerConfig(config jetstream.ConsumerConfig) ControllerOption {
+	return func(controller *Controller) error {
+		controller.consumerConfig = config
+		return nil
+	}
+}
+
+// WithConsumer uses the given consumer name (the consumer has to be created before initializing).
+func WithConsumer(name string) ControllerOption {
+	return func(controller *Controller) error {
+		controller.consumerName = name
+		return nil
+	}
+}
+
+// WithNakDelay set the delay when redeliver messages via nak.
+func WithNakDelay(duration time.Duration) ControllerOption {
+	return func(controller *Controller) error {
+		controller.nakDelay = duration
+		return nil
+	}
+}
+
+// WithConnectionOpts set the nats.Options to connect to nats.
+func WithConnectionOpts(opts ...nats.Option) ControllerOption {
+	return func(controller *Controller) error {
+		nc, err := nats.Connect(controller.url, opts...)
+		if err != nil {
+			return fmt.Errorf("could not connect to nats: %w", err)
+		}
+		controller.natsConn = nc
+		return nil
+	}
+}
+
+// registerConsumer set consumer configuration for creates or updates a consumer based on the given config at the broker.
+func (c *Controller) registerConsumer() error {
+
+	if c.consumerConfig.Name == "" {
+		return fmt.Errorf("consumer name is required")
+	}
+	c.consumerName = c.consumerConfig.Name
+
+	_, err := c.jetStream.CreateOrUpdateConsumer(context.Background(), c.streamName, c.consumerConfig)
+	if err != nil {
+		return fmt.Errorf("could not create or update consumer: %w", err)
+	}
+
+	return nil
+}
+
+// registerStream creates or updates a stream based on the given configuration at the broker.
+func (c *Controller) registerStream() error {
+
+	if c.streamConfig.Name == "" {
+		return fmt.Errorf("stream name is required")
+	}
+	c.streamName = c.streamConfig.Name
+
+	if _, err := c.jetStream.CreateStream(context.Background(), c.streamConfig); err != nil {
+		if !errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
+			return fmt.Errorf("could not create stream: %w", err)
+		}
+		if _, err = c.jetStream.UpdateStream(context.Background(), c.streamConfig); err != nil {
+			return fmt.Errorf("could not create or update stream: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // Publish a message to the broker.
