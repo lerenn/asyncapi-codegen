@@ -212,32 +212,22 @@ func (s *Schema) referenceFrom(ref []string) *Schema {
 // MergeWith merges the given Schema structure with another one
 // (basically for AllOf, AnyOf, OneOf, etc).
 func (s *Schema) MergeWith(spec Specification, s2 Schema) error {
+	if s == nil {
+		return nil
+	}
+
 	s.Type = SchemaTypeIsObject.String()
 
-	// Getting merged with reference
-	if err := s.mergeWithMessageFromReference(s2, spec); err != nil {
+	// Getting schema merged with reference
+	if err := s2.mergeWithReference(spec); err != nil {
 		return err
 	}
 
-	// Merge AllOf
-	if err := s.mergeWithMessageAllOf(s2); err != nil {
-		return err
-	}
-
-	// Merge AnyOf
-	if err := s.mergeWithMessageAnyOf(s2); err != nil {
-		return err
-	}
-
-	// Merge OneOf
-	if err := s.mergeWithMessageOneOf(s2); err != nil {
-		return err
-	}
-
-	// Merge properties
-	if err := s.mergeWithMessageProperties(s2); err != nil {
-		return err
-	}
+	// Merge with other fields
+	s.mergeWithSchemaAllOf(s2)
+	s.mergeWithSchemaAnyOf(s2)
+	s.mergeWithSchemaOneOf(s2)
+	s.mergeWithSchemaProperties(s2)
 
 	// Merge requirements
 	s.Required = append(s.Required, s2.Required...)
@@ -255,70 +245,68 @@ func (s *Schema) Follow() *Schema {
 	return s
 }
 
-func (s *Schema) mergeWithMessageFromReference(s2 Schema, spec Specification) error {
-	if s2.Reference != "" {
-		refAny2, err := spec.ReferenceSchema(s2.Reference)
-		if err != nil {
-			return err
-		}
-
-		if err := s2.MergeWith(spec, *refAny2); err != nil {
-			return err
-		}
+func (s *Schema) mergeWithReference(spec Specification) error {
+	if s.Reference == "" {
+		return nil
 	}
 
-	return nil
+	refAny2, err := spec.ReferenceSchema(s.Reference)
+	if err != nil {
+		return err
+	}
+
+	return s.MergeWith(spec, *refAny2)
 }
 
-func (s *Schema) mergeWithMessageAllOf(s2 Schema) error {
-	if s2.AllOf != nil {
-		if s.AllOf == nil {
-			copy(s2.AllOf, s.AllOf)
-		} else {
-			s.AllOf = append(s.AllOf, s2.AllOf...)
-		}
+func (s *Schema) mergeWithSchemaAllOf(s2 Schema) {
+	if s2.AllOf == nil {
+		return
 	}
 
-	return nil
+	if s.AllOf == nil {
+		copy(s2.AllOf, s.AllOf)
+	} else {
+		s.AllOf = append(s.AllOf, s2.AllOf...)
+	}
 }
 
-func (s *Schema) mergeWithMessageAnyOf(s2 Schema) error {
-	if s2.AnyOf != nil {
-		if s.AnyOf == nil {
-			copy(s2.AnyOf, s.AnyOf)
-		} else {
-			s.AnyOf = append(s.AnyOf, s2.AnyOf...)
-		}
+func (s *Schema) mergeWithSchemaAnyOf(s2 Schema) {
+	if s2.AnyOf == nil {
+		return
 	}
 
-	return nil
+	if s.AnyOf == nil {
+		copy(s2.AnyOf, s.AnyOf)
+	} else {
+		s.AnyOf = append(s.AnyOf, s2.AnyOf...)
+	}
 }
 
-func (s *Schema) mergeWithMessageOneOf(s2 Schema) error {
-	if s2.OneOf != nil {
-		if s.OneOf == nil {
-			copy(s2.OneOf, s.OneOf)
-		} else {
-			s.OneOf = append(s.OneOf, s2.OneOf...)
-		}
+func (s *Schema) mergeWithSchemaOneOf(s2 Schema) {
+	if s2.OneOf == nil {
+		return
 	}
 
-	return nil
+	if s.OneOf == nil {
+		copy(s2.OneOf, s.OneOf)
+	} else {
+		s.OneOf = append(s.OneOf, s2.OneOf...)
+	}
 }
 
-func (s *Schema) mergeWithMessageProperties(s2 Schema) error {
-	if s2.Properties != nil {
-		if s.Properties == nil {
-			s.Properties = make(map[string]*Schema)
-		}
-
-		for k, v := range s2.Properties {
-			_, exists := s.Properties[k]
-			if !exists {
-				s.Properties[k] = v
-			}
-		}
+func (s *Schema) mergeWithSchemaProperties(s2 Schema) {
+	if s2.Properties == nil {
+		return
 	}
 
-	return nil
+	if s.Properties == nil {
+		s.Properties = make(map[string]*Schema)
+	}
+
+	for k, v := range s2.Properties {
+		_, exists := s.Properties[k]
+		if !exists {
+			s.Properties[k] = v
+		}
+	}
 }

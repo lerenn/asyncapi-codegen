@@ -266,55 +266,88 @@ func (s *Schema) MergeWith(spec Specification, s2 Schema) error {
 
 	s.Type = SchemaTypeIsObject.String()
 
-	// Getting merged with reference
-	if s2.Reference != "" {
-		refAny2, err := spec.ReferenceSchema(s2.Reference)
-		if err != nil {
-			return err
-		}
-
-		if err := s2.MergeWith(spec, *refAny2); err != nil {
-			return err
-		}
+	// Getting schema merged with reference
+	if err := s2.mergeWithReference(spec); err != nil {
+		return err
 	}
 
-	// Merge AnyOf
-	if s2.AnyOf != nil {
-		if s.AnyOf == nil {
-			copy(s2.AnyOf, s.AnyOf)
-		} else {
-			s.AnyOf = append(s.AnyOf, s2.AnyOf...)
-		}
-	}
-
-	// Merge OneOf
-	if s2.OneOf != nil {
-		if s.OneOf == nil {
-			copy(s2.OneOf, s.OneOf)
-		} else {
-			s.OneOf = append(s.OneOf, s2.OneOf...)
-		}
-	}
-
-	// Merge properties
-	if s2.Properties != nil {
-		if s.Properties == nil {
-			s.Properties = make(map[string]*Schema)
-		}
-
-		for k, v := range s2.Properties {
-			_, exists := s.Properties[k]
-			if !exists {
-				s.Properties[k] = v
-			}
-		}
-	}
+	// Merge with other fields
+	s.mergeWithSchemaAllOf(s2)
+	s.mergeWithSchemaAnyOf(s2)
+	s.mergeWithSchemaOneOf(s2)
+	s.mergeWithSchemaProperties(s2)
 
 	// Merge requirements
 	s.Required = append(s.Required, s2.Required...)
 	s.Required = utils.RemoveDuplicateFromSlice(s.Required)
 
 	return nil
+}
+
+func (s *Schema) mergeWithReference(spec Specification) error {
+	if s.Reference == "" {
+		return nil
+	}
+
+	refAny2, err := spec.ReferenceSchema(s.Reference)
+	if err != nil {
+		return err
+	}
+
+	return s.MergeWith(spec, *refAny2)
+}
+
+func (s *Schema) mergeWithSchemaAllOf(s2 Schema) {
+	if s2.AllOf == nil {
+		return
+	}
+
+	if s.AllOf == nil {
+		copy(s2.AllOf, s.AllOf)
+	} else {
+		s.AllOf = append(s.AllOf, s2.AllOf...)
+	}
+}
+
+func (s *Schema) mergeWithSchemaAnyOf(s2 Schema) {
+	if s2.AnyOf == nil {
+		return
+	}
+
+	if s.AnyOf == nil {
+		copy(s2.AnyOf, s.AnyOf)
+	} else {
+		s.AnyOf = append(s.AnyOf, s2.AnyOf...)
+	}
+}
+
+func (s *Schema) mergeWithSchemaOneOf(s2 Schema) {
+	if s2.OneOf == nil {
+		return
+	}
+
+	if s.OneOf == nil {
+		copy(s2.OneOf, s.OneOf)
+	} else {
+		s.OneOf = append(s.OneOf, s2.OneOf...)
+	}
+}
+
+func (s *Schema) mergeWithSchemaProperties(s2 Schema) {
+	if s2.Properties == nil {
+		return
+	}
+
+	if s.Properties == nil {
+		s.Properties = make(map[string]*Schema)
+	}
+
+	for k, v := range s2.Properties {
+		_, exists := s.Properties[k]
+		if !exists {
+			s.Properties[k] = v
+		}
+	}
 }
 
 // Follow returns referenced schema if specified or the actual schema.
