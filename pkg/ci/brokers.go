@@ -66,11 +66,7 @@ func BrokerKafka(client *dagger.Client) *dagger.Service {
 
 // BrokerKafkaSecure returns a service for the Kafka broker secured with TLS.
 func BrokerKafkaSecure(client *dagger.Client) *dagger.Service {
-	cakey, cacert, err := generateSelfSignedCACertificate()
-	if err != nil {
-		panic(fmt.Errorf("failed to generate self signed ca cert: %w", err))
-	}
-	key, cert, err := generateSelfSignedTestCertificateFromCA("kafka-tls", cacert, cakey)
+	key, cert, cacert, err := generateSelfSignedCertificateWithCA("kafka-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -113,11 +109,7 @@ func BrokerKafkaSecure(client *dagger.Client) *dagger.Service {
 
 // BrokerKafkaSecureBasicAuth returns a service for the Kafka broker secured with TLS and basic auth.
 func BrokerKafkaSecureBasicAuth(client *dagger.Client) *dagger.Service {
-	cakey, cacert, err := generateSelfSignedCACertificate()
-	if err != nil {
-		panic(fmt.Errorf("failed to generate self signed ca cert: %w", err))
-	}
-	key, cert, err := generateSelfSignedTestCertificateFromCA("kafka-tls-basic-auth", cacert, cakey)
+	key, cert, cacert, err := generateSelfSignedCertificateWithCA("kafka-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -178,7 +170,7 @@ func BrokerNATS(client *dagger.Client) *dagger.Service {
 
 // BrokerNATS returns a service for the NATS broker secured with TLS.
 func BrokerNATSSecure(client *dagger.Client) *dagger.Service {
-	key, cert, err := generateSelfSignedTestCertificate("nats-tls")
+	key, cert, err := generateSelfSignedCertificate("nats-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -199,7 +191,7 @@ func BrokerNATSSecure(client *dagger.Client) *dagger.Service {
 
 // BrokerNATSSecureBasicAuth returns a service for the NATS broker secured with TLS and basic auth user: user password: password.
 func BrokerNATSSecureBasicAuth(client *dagger.Client) *dagger.Service {
-	key, cert, err := generateSelfSignedTestCertificate("nats-tls-basic-auth")
+	key, cert, err := generateSelfSignedCertificate("nats-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -233,7 +225,7 @@ func BrokerNATSJetstream(client *dagger.Client) *dagger.Service {
 
 // BrokerNATSJetstreamSecure returns a service for the NATS broker secured with TLS.
 func BrokerNATSJetstreamSecure(client *dagger.Client) *dagger.Service {
-	key, cert, err := generateSelfSignedTestCertificate("nats-jetstream-tls-basic-auth")
+	key, cert, err := generateSelfSignedCertificate("nats-jetstream-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -254,7 +246,7 @@ func BrokerNATSJetstreamSecure(client *dagger.Client) *dagger.Service {
 
 // BrokerNATSJetstreamSecureBasicAuth returns a service for the NATS broker secured with TLS and basic auth user: user password: password.
 func BrokerNATSJetstreamSecureBasicAuth(client *dagger.Client) *dagger.Service {
-	key, cert, err := generateSelfSignedTestCertificate("nats-jetstream-tls")
+	key, cert, err := generateSelfSignedCertificate("nats-jetstream-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -273,15 +265,8 @@ func BrokerNATSJetstreamSecureBasicAuth(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-func generateSelfSignedTestCertificate(name string) ([]byte, []byte, error) {
-	// Generate private key
-	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Create a self-signed certificate
-	template := x509.Certificate{
+func certificateTemplateForHost(name string) x509.Certificate {
+	return x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
 			Organization:       []string{"asyncapi-codegen"},
@@ -295,7 +280,18 @@ func generateSelfSignedTestCertificate(name string) ([]byte, []byte, error) {
 		BasicConstraintsValid: true,
 		DNSNames:              []string{name, "localhost", "127.0.0.1"},
 	}
+}
 
+func generateSelfSignedCertificate(name string) ([]byte, []byte, error) {
+	// Generate private key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	template := certificateTemplateForHost(name)
+
+	// Generate self-signed certificate
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
 		return nil, nil, err
@@ -310,15 +306,15 @@ func generateSelfSignedTestCertificate(name string) ([]byte, []byte, error) {
 	return keyBytes, certBytes, nil
 }
 
-func generateSelfSignedCACertificate() ([]byte, []byte, error) {
+func generateSelfSignedCertificateWithCA(name string) ([]byte, []byte, []byte, error) {
 	// Generate private key for CA
 	caPrivateKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Create a self-signed CA certificate
-	template := x509.Certificate{
+	caCertTemplate := x509.Certificate{
 		SerialNumber: big.NewInt(2), // Use a different serial number for the CA certificate
 		Subject: pkix.Name{
 			Organization: []string{"asyncapi-codegen"},
@@ -331,72 +327,40 @@ func generateSelfSignedCACertificate() ([]byte, []byte, error) {
 		BasicConstraintsValid: true,
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &caPrivateKey.PublicKey, caPrivateKey)
+	// Generate self-signed CA certificate
+	caDERBytes, err := x509.CreateCertificate(rand.Reader, &caCertTemplate, &caCertTemplate, &caPrivateKey.PublicKey, caPrivateKey)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	// Encode private key to PEM format
-	caKeyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(caPrivateKey)})
-
-	// Encode CA certificate to PEM format
-	caCertBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-
-	return caKeyBytes, caCertBytes, nil
-}
-
-func generateSelfSignedTestCertificateFromCA(name string, caCertPEM []byte, caKeyPEM []byte) ([]byte, []byte, error) {
-	// Decode CA certificate and key
-	caCert, _ := pem.Decode(caCertPEM)
-	caKey, _ := pem.Decode(caKeyPEM)
-
-	// Parse CA certificate and key
-	parsedCACert, err := x509.ParseCertificate(caCert.Bytes)
-	if err != nil {
-		return nil, nil, err
-	}
-	parsedCAKey, err := x509.ParsePKCS1PrivateKey(caKey.Bytes)
-	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Generate private key for server
 	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	// Create a self-signed server certificate
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization:       []string{"asyncapi-codegen"},
-			OrganizationalUnit: []string{"localtest"},
-			CommonName:         name,
-		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(0, 0, 1), // Valid for 1 day
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
-		DNSNames:              []string{name, "localhost", "127.0.0.1"},
-	}
+	// Create server certificate signed by CA
+	certTemplate := certificateTemplateForHost(name)
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, parsedCACert, &privateKey.PublicKey, parsedCAKey)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &certTemplate, &caCertTemplate, &privateKey.PublicKey, caPrivateKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	b, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	// Convert private key to PKCS #8
+	privatKeyPKC8Bytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	// Encode private key to PEM format
-	keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: b})
+	// Encode server private key to PEM format
+	keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: privatKeyPKC8Bytes})
 
-	// Encode certificate to PEM format
+	// Encode server certificate to PEM format
 	certBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 
-	return keyBytes, certBytes, nil
+	// Encode CA certificate to PEM format
+	caCertBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caDERBytes})
+
+	return keyBytes, certBytes, caCertBytes, nil
 }
