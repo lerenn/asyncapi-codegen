@@ -28,6 +28,8 @@ type Controller struct {
 	maxBytes   int
 	autoCommit bool
 
+	connectionTest bool
+
 	logger extensions.Logger
 }
 
@@ -46,18 +48,35 @@ type ControllerOption func(controller *Controller)
 func NewController(hosts []string, options ...ControllerOption) (*Controller, error) {
 	// Create default controller
 	controller := &Controller{
-		hosts:      hosts,
-		logger:     extensions.DummyLogger{},
-		groupID:    brokers.DefaultQueueGroupID,
-		dialer:     kafka.DefaultDialer,
-		partition:  0,
-		maxBytes:   10e6, // 10MB
-		autoCommit: true,
+		hosts:          hosts,
+		logger:         extensions.DummyLogger{},
+		groupID:        brokers.DefaultQueueGroupID,
+		dialer:         kafka.DefaultDialer,
+		partition:      0,
+		maxBytes:       10e6, // 10MB
+		autoCommit:     true,
+		connectionTest: true,
 	}
 
 	// Execute options
 	for _, option := range options {
 		option(controller)
+	}
+
+	// kafka has no ping or something like this to test if dialer can create a successful connection to kafka
+	// so if connectionTest is enabled create a connection and try to list brokers from kafka and validate
+	// we can make a connection to kafka
+	if controller.connectionTest {
+		conn, err := controller.dialer.Dial("tcp", controller.hosts[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to create dialer for kafka: %w", err)
+		}
+
+		_, err = conn.Brokers()
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to kafka: %w", err)
+		}
+		conn.Close()
 	}
 
 	return controller, nil
@@ -113,6 +132,13 @@ func WithSasl(sasl sasl.Mechanism) ControllerOption {
 	}
 }
 
+// WithConnectionTest set the connectionTest feature toggle to configure if NewController should validate the connection on creation
+func WithConnectionTest(enabled bool) ControllerOption {
+	return func(controller *Controller) {
+		controller.connectionTest = enabled
+	}
+}
+
 // Publish a message to the broker.
 func (c *Controller) Publish(ctx context.Context, channel string, um extensions.BrokerMessage) error {
 	// Create new writer
@@ -123,7 +149,7 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 		Transport: &kafka.Transport{
 			// reuse the optionally TLS and SASLMechanism from dialer provided by the user to pass it to the writer
 			// it can be nil
-			TLS:  c.dialer.TLS,
+			TLS:  c.dialer.TLS.Clone(),
 			SASL: c.dialer.SASLMechanism,
 		},
 	}

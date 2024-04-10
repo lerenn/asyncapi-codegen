@@ -148,6 +148,7 @@ Here are the options that you can use with the Kafka controller:
 * `WithAutoCommit`: specify if the broker should use auto-commit for incoming messages or manual commits. Note that commits are managed by the broker implementation regardless, with manual commits they are executed after the message is complete processed. Subscribers retain the option to manually handle errors via the ErrorHandler, to use mechanisms such as dead letter or retry topics. The default value is `true`
 * `WithSasl`: specify sasl mechanism to connect to the broker. Per default no mechanism will be used.
 * `WithTLS`: specify tls config to connect to the broker. Per default no tls config will be used.
+* `WithConnectionTest`: specify if the controller should make a connection test on creation. The default value is `true`
 
 #### Authentication and TLS
 
