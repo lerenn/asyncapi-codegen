@@ -100,9 +100,8 @@ func (suite *Suite) TestIssue169App() {
 
 	// validate msg
 	//nolint:contextcheck
-	err := suite.app.SubscribeIssue169Msg(context.Background(), func(_ context.Context, msg Issue169MsgMessage) error {
-		//nolint:contextcheck
-		suite.app.UnsubscribeIssue169Msg(context.Background())
+	err := suite.app.SubscribeIssue169Msg(context.Background(), func(ctx context.Context, msg Issue169MsgMessage) error {
+		suite.app.UnsubscribeIssue169Msg(ctx)
 		suite.Require().Equal(sent, msg)
 		suite.wg.Done()
 		return nil
@@ -126,8 +125,9 @@ func (suite *Suite) TestIssue169User() {
 	}
 
 	// validate message
-	err := suite.user.SubscribeIssue169Msg(context.Background(), func(_ context.Context, msg Issue169MsgMessage) error {
-		suite.user.UnsubscribeIssue169Msg(context.Background())
+	//nolint:contextcheck
+	err := suite.user.SubscribeIssue169Msg(context.Background(), func(ctx context.Context, msg Issue169MsgMessage) error {
+		suite.user.UnsubscribeIssue169Msg(ctx)
 		suite.Require().Equal(sent, msg)
 		suite.wg.Done()
 		return nil
