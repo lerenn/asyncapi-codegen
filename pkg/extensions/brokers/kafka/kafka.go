@@ -132,7 +132,7 @@ func WithSasl(sasl sasl.Mechanism) ControllerOption {
 	}
 }
 
-// WithConnectionTest set the connectionTest feature toggle to configure if NewController should validate the connection on creation
+// WithConnectionTest set the connectionTest feature toggle to configure if NewController should validate the connection on creation.
 func WithConnectionTest(enabled bool) ControllerOption {
 	return func(controller *Controller) {
 		controller.connectionTest = enabled

@@ -9,7 +9,6 @@ import (
 	"testing"
 )
 
-//nolint:funlen // this is only for testing
 func TestValidateAckMechanism(t *testing.T) {
 	subj := "CoreNatsValidateAckMechanism"
 	nb, err := NewController("nats://nats:4222", WithQueueGroup(subj))
@@ -76,8 +75,8 @@ func TestSecureConnectionToNATSCore(t *testing.T) {
 		nb, err := NewController("nats://nats-tls:4222", WithQueueGroup("secureConnectTest"),
 			// just for testing use tls.Config with InsecureSkipVerify: true to skip server certificate validation for our self signed certificate
 			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true})))
-		defer nb.Close()
 		assert.NoError(t, err, "new connection to TLS secured NATS broker with TLS config should return no error")
+		defer nb.Close()
 	})
 
 	t.Run("test connection is not successfully to TLS secured core NATS broker with TLS config and missing credentials", func(t *testing.T) {
@@ -91,7 +90,7 @@ func TestSecureConnectionToNATSCore(t *testing.T) {
 		nb, err := NewController("nats://nats-tls-basic-auth:4222", WithQueueGroup("secureConnectTest"),
 			// just for testing use tls.Config with InsecureSkipVerify: true to skip server certificate validation for our self signed certificate
 			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true}), nats.UserInfo("user", "password")))
-		defer nb.Close()
 		assert.NoError(t, err, "new connection to TLS secured NATS broker with TLS config and basic credentials should return no error")
+		defer nb.Close()
 	})
 }

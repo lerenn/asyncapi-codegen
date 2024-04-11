@@ -28,12 +28,12 @@ func TestSuite(t *testing.T) {
 			natsio.UserInfo("user", "password"),
 		),
 	)
-	defer natsBrokerTLSBasicAuth.Close()
 	assert.NoError(t, err, "new controller should not return error")
+	defer natsBrokerTLSBasicAuth.Close()
 	suite.Run(t, NewSuite(natsBrokerTLSBasicAuth))
 
 	// nats jetstream with TLS and basic auth
-	natsJSBrokerTlsBasicAuth, err := natsjetstream.NewController(
+	natsJSBrokerTLSBasicAuth, err := natsjetstream.NewController(
 		"nats://nats-jetstream-tls-basic-auth:4222",
 		natsjetstream.WithStreamConfig(jetstream.StreamConfig{
 			Name:     name,
@@ -44,9 +44,9 @@ func TestSuite(t *testing.T) {
 			natsio.UserInfo("user", "password"),
 		),
 	)
-	defer natsJSBrokerTlsBasicAuth.Close()
 	assert.NoError(t, err, "new controller should not return error")
-	suite.Run(t, NewSuite(natsJSBrokerTlsBasicAuth))
+	defer natsJSBrokerTLSBasicAuth.Close()
+	suite.Run(t, NewSuite(natsJSBrokerTLSBasicAuth))
 
 	// kafka with TLS and basic auth
 	sha512Mechanism, err := scram.Mechanism(scram.SHA512, "user", "password")
@@ -99,7 +99,9 @@ func (suite *Suite) TestIssue169App() {
 	}
 
 	// validate msg
+	//nolint:contextcheck
 	err := suite.app.SubscribeIssue169Msg(context.Background(), func(_ context.Context, msg Issue169MsgMessage) error {
+		//nolint:contextcheck
 		suite.app.UnsubscribeIssue169Msg(context.Background())
 		suite.Require().Equal(sent, msg)
 		suite.wg.Done()

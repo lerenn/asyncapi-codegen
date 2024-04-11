@@ -23,7 +23,6 @@ func TestValidateAckMechanism(t *testing.T) {
 		WithConsumerConfig(jetstream.ConsumerConfig{Name: "natsJetstreamValidateAckMechanism"}),
 	)
 	assert.NoError(t, err, "new controller should not return error")
-	//defer broker.Close()
 
 	t.Run("validate ack is supported in NATS jetstream", func(t *testing.T) {
 		wg := sync.WaitGroup{}
@@ -106,8 +105,8 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 			// just for testing use tls.Config with InsecureSkipVerify: true to skip server certificate validation for our self signed certificate
 			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true})),
 		)
-		defer jc.Close()
 		assert.NoError(t, err, "new connection to TLS secured NATS jetstream broker with TLS config should not return a error")
+		defer jc.Close()
 	})
 
 	t.Run("test connection is not successfully to TLS secured NATS jetstream broker with TLS config and missing credentials", func(t *testing.T) {
@@ -129,7 +128,7 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 	t.Run("test connection is successfully to TLS secured NATS jetstream broker with TLS config and credentials", func(t *testing.T) {
 		subj := "secureConnectTestWithTLSConfigAndCredentials"
 
-		_, err := NewController(
+		jc, err := NewController(
 			"nats://nats-jetstream-tls-basic-auth:4222",
 			WithStreamConfig(jetstream.StreamConfig{
 				Name:     subj,
@@ -140,5 +139,6 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true}), nats.UserInfo("user", "password")),
 		)
 		assert.NoError(t, err, "new connection to TLS secured NATS jetstream broker with TLS config and  credentials should return no error")
+		defer jc.Close()
 	})
 }

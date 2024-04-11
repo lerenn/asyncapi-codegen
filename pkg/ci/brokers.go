@@ -139,8 +139,8 @@ func BrokerKafkaSecureBasicAuth(client *dagger.Client) *dagger.Service {
 		WithEnvVariable("KAFKA_TLS_TYPE", "PEM").
 
 		// add basic auth user and pw
-		//WithEnvVariable("KAFKA_CLIENT_USERS", "user").
-		//WithEnvVariable("KAFKA_CLIENT_PASSWORDS", "password").
+		// WithEnvVariable("KAFKA_CLIENT_USERS", "user").
+		// WithEnvVariable("KAFKA_CLIENT_PASSWORDS", "password").
 		WithEnvVariable("KAFKA_INTER_BROKER_USER", "user").
 		WithEnvVariable("KAFKA_INTER_BROKER_PASSWORD", "password").
 		// disable client cert
@@ -168,7 +168,7 @@ func BrokerNATS(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerNATS returns a service for the NATS broker secured with TLS.
+// BrokerNATSSecure returns a service for the NATS broker secured with TLS.
 func BrokerNATSSecure(client *dagger.Client) *dagger.Service {
 	key, cert, err := generateSelfSignedCertificate("nats-tls")
 	if err != nil {
