@@ -5,12 +5,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/segmentio/kafka-go/sasl"
 	"io"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/sasl"
 )
 
 // Check that it still fills the interface.
@@ -132,7 +132,8 @@ func WithSasl(sasl sasl.Mechanism) ControllerOption {
 	}
 }
 
-// WithConnectionTest set the connectionTest feature toggle to configure if NewController should validate the connection on creation.
+// WithConnectionTest set the connectionTest feature toggle to configure if NewController
+// should validate the connection on creation.
 func WithConnectionTest(enabled bool) ControllerOption {
 	return func(controller *Controller) {
 		controller.connectionTest = enabled

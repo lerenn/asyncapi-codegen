@@ -5,11 +5,12 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"dagger.io/dagger"
 	"encoding/pem"
 	"fmt"
 	"math/big"
 	"time"
+
+	"dagger.io/dagger"
 )
 
 // BindBrokers is used as a helper to bind brokers to a container.
@@ -189,7 +190,8 @@ func BrokerNATSSecure(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerNATSSecureBasicAuth returns a service for the NATS broker secured with TLS and basic auth user: user password: password.
+// BrokerNATSSecureBasicAuth returns a service for the NATS broker secured with TLS
+// and basic auth user: user password: password.
 func BrokerNATSSecureBasicAuth(client *dagger.Client) *dagger.Service {
 	key, cert, err := generateSelfSignedCertificate("nats-tls-basic-auth")
 	if err != nil {
@@ -205,7 +207,7 @@ func BrokerNATSSecureBasicAuth(client *dagger.Client) *dagger.Service {
 		// Add server cert and key directory
 		WithDirectory("./tls", tlsDir).
 		// Start NATS with tls and credentials
-		WithExec([]string{"--tls", "--tlscert=/tls/server-cert.pem", "--tlskey=/tls/server-key.pem", "--user", "user", "--pass", "password"}).
+		WithExec([]string{"--tls", "--tlscert=/tls/server-cert.pem", "--tlskey=/tls/server-key.pem", "--user", "user", "--pass", "password"}). //nolint:lll
 		// Return container as a service
 		AsService()
 }
@@ -244,7 +246,8 @@ func BrokerNATSJetstreamSecure(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerNATSJetstreamSecureBasicAuth returns a service for the NATS broker secured with TLS and basic auth user: user password: password.
+// BrokerNATSJetstreamSecureBasicAuth returns a service for the NATS broker secured with TLS
+// and basic auth user: user password: password.
 func BrokerNATSJetstreamSecureBasicAuth(client *dagger.Client) *dagger.Service {
 	key, cert, err := generateSelfSignedCertificate("nats-jetstream-tls")
 	if err != nil {
@@ -260,7 +263,7 @@ func BrokerNATSJetstreamSecureBasicAuth(client *dagger.Client) *dagger.Service {
 		// Add server cert and key directory
 		WithDirectory("./tls", tlsDir).
 		// Start NATS jetstream with tls and credentials
-		WithExec([]string{"-js", "--tls", "--tlscert=/tls/server-cert.pem", "--tlskey=/tls/server-key.pem", "--user", "user", "--pass", "password"}).
+		WithExec([]string{"-js", "--tls", "--tlscert=/tls/server-cert.pem", "--tlskey=/tls/server-key.pem", "--user", "user", "--pass", "password"}). //nolint:lll
 		// Return container as a service
 		AsService()
 }
@@ -328,7 +331,8 @@ func generateSelfSignedCertificateWithCA(name string) ([]byte, []byte, []byte, e
 	}
 
 	// Generate self-signed CA certificate
-	caDERBytes, err := x509.CreateCertificate(rand.Reader, &caCertTemplate, &caCertTemplate, &caPrivateKey.PublicKey, caPrivateKey)
+	caDERBytes, err := x509.CreateCertificate(rand.Reader, &caCertTemplate, &caCertTemplate,
+		&caPrivateKey.PublicKey, caPrivateKey)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -342,7 +346,8 @@ func generateSelfSignedCertificateWithCA(name string) ([]byte, []byte, []byte, e
 	// Create server certificate signed by CA
 	certTemplate := certificateTemplateForHost(name)
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &certTemplate, &caCertTemplate, &privateKey.PublicKey, caPrivateKey)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &certTemplate, &caCertTemplate,
+		&privateKey.PublicKey, caPrivateKey)
 	if err != nil {
 		return nil, nil, nil, err
 	}

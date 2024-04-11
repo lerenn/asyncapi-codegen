@@ -26,7 +26,6 @@ type ControllerOption func(controller *Controller) error
 
 // NewController creates a new NATS controller.
 func NewController(url string, options ...ControllerOption) (*Controller, error) {
-
 	// Creates default controller
 	controller := &Controller{
 		url:        url,

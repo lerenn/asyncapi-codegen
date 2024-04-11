@@ -5,18 +5,18 @@ package issue169
 import (
 	"context"
 	"crypto/tls"
+	"sync"
+	"testing"
+
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
+	natsio "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/segmentio/kafka-go/sasl/scram"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"sync"
-	"testing"
-
-	natsio "github.com/nats-io/nats.go"
 )
 
 func TestSuite(t *testing.T) {
@@ -99,12 +99,13 @@ func (suite *Suite) TestIssue169App() {
 	}
 
 	// validate msg
-	err := suite.app.SubscribeIssue169Msg(context.Background(), func(ctx context.Context, msg Issue169MsgSubscribeMessage) error {
-		defer suite.wg.Done()
-		suite.app.UnsubscribeIssue169Msg(ctx)
-		suite.Require().Equal(sent.Payload, msg.Payload)
-		return nil
-	})
+	err := suite.app.SubscribeIssue169Msg(context.Background(),
+		func(ctx context.Context, msg Issue169MsgSubscribeMessage) error {
+			defer suite.wg.Done()
+			suite.app.UnsubscribeIssue169Msg(ctx)
+			suite.Require().Equal(sent.Payload, msg.Payload)
+			return nil
+		})
 	suite.Require().NoError(err)
 
 	suite.wg.Add(1)
@@ -113,7 +114,6 @@ func (suite *Suite) TestIssue169App() {
 	err = suite.app.PublishIssue169Msg(context.Background(), sent)
 	suite.Require().NoError(err)
 
-	// Wait for errorhandler is called
 	suite.wg.Wait()
 }
 
@@ -124,12 +124,13 @@ func (suite *Suite) TestIssue169User() {
 	}
 
 	// validate message
-	err := suite.user.SubscribeIssue169Msg(context.Background(), func(ctx context.Context, msg Issue169MsgSubscribeMessage) error {
-		defer suite.wg.Done()
-		suite.user.UnsubscribeIssue169Msg(ctx)
-		suite.Require().Equal(sent.Payload, msg.Payload)
-		return nil
-	})
+	err := suite.user.SubscribeIssue169Msg(context.Background(),
+		func(ctx context.Context, msg Issue169MsgSubscribeMessage) error {
+			defer suite.wg.Done()
+			suite.user.UnsubscribeIssue169Msg(ctx)
+			suite.Require().Equal(sent.Payload, msg.Payload)
+			return nil
+		})
 	suite.Require().NoError(err)
 
 	suite.wg.Add(1)
@@ -138,6 +139,5 @@ func (suite *Suite) TestIssue169User() {
 	err = suite.user.PublishIssue169Msg(context.Background(), sent)
 	suite.Require().NoError(err)
 
-	// Wait for errorhandler is called
 	suite.wg.Wait()
 }

@@ -3,10 +3,11 @@ package nats
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/nats-io/nats.go"
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+
+	"github.com/nats-io/nats.go"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateAckMechanism(t *testing.T) {
@@ -65,32 +66,43 @@ func TestValidateAckMechanism(t *testing.T) {
 }
 
 func TestSecureConnectionToNATSCore(t *testing.T) {
+	// for testing with InsecureSkipVerify to skip server certificate validation for our self-signed certificate
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
 
 	t.Run("test connection is not successfully to TLS secured core NATS broker without TLS config", func(t *testing.T) {
-		_, err := NewController("nats://nats-tls:4222", WithQueueGroup("secureConnectTest"))
+		_, err := NewController("nats://nats-tls:4222",
+			WithQueueGroup("secureConnectTest"))
 		assert.Error(t, err, "new connection to TLS secured NATS broker without TLS config should return a error")
 	})
 
 	t.Run("test connection is successfully to TLS secured core NATS broker with TLS config", func(t *testing.T) {
-		nb, err := NewController("nats://nats-tls:4222", WithQueueGroup("secureConnectTest"),
-			// just for testing use tls.Config with InsecureSkipVerify: true to skip server certificate validation for our self signed certificate
-			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true})))
+		nb, err := NewController("nats://nats-tls:4222",
+			WithQueueGroup("secureConnectTest"),
+			WithConnectionOpts(nats.Secure(tlsConfig)))
 		assert.NoError(t, err, "new connection to TLS secured NATS broker with TLS config should return no error")
 		defer nb.Close()
 	})
 
-	t.Run("test connection is not successfully to TLS secured core NATS broker with TLS config and missing credentials", func(t *testing.T) {
-		_, err := NewController("nats://nats-tls-basic-auth:4222", WithQueueGroup("secureConnectTest"),
-			// just for testing use tls.Config with InsecureSkipVerify: true to skip server certificate validation for our self signed certificate
-			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true})))
-		assert.Error(t, err, "new connection to TLS secured NATS broker with TLS config and missing credentials should return a error")
-	})
+	t.Run("test connection is not successfully to TLS secured core NATS broker with TLS config and missing credentials",
+		func(t *testing.T) {
+			_, err := NewController("nats://nats-tls-basic-auth:4222",
+				WithQueueGroup("secureConnectTest"),
+				WithConnectionOpts(nats.Secure(tlsConfig)),
+			)
+			assert.Error(t, err, "new connection to TLS secured NATS broker with TLS config and missing credentials should return a error") //nolint:lll
+		})
 
-	t.Run("test connection is successfully to TLS secured core NATS broker with TLS config and credentials", func(t *testing.T) {
-		nb, err := NewController("nats://nats-tls-basic-auth:4222", WithQueueGroup("secureConnectTest"),
-			// just for testing use tls.Config with InsecureSkipVerify: true to skip server certificate validation for our self signed certificate
-			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true}), nats.UserInfo("user", "password")))
-		assert.NoError(t, err, "new connection to TLS secured NATS broker with TLS config and basic credentials should return no error")
-		defer nb.Close()
-	})
+	t.Run("test connection is successfully to TLS secured core NATS broker with TLS config and credentials",
+		func(t *testing.T) {
+			nb, err := NewController("nats://nats-tls-basic-auth:4222",
+				WithQueueGroup("secureConnectTest"),
+				WithConnectionOpts(
+					nats.Secure(tlsConfig),
+					nats.UserInfo("user", "password"),
+				),
+			)
+			assert.NoError(t, err,
+				"new connection to TLS secured NATS broker with TLS config and basic credentials should return no error")
+			defer nb.Close()
+		})
 }

@@ -140,9 +140,9 @@ func WithConnectionOpts(opts ...nats.Option) ControllerOption {
 	}
 }
 
-// registerConsumer set consumer configuration for creates or updates a consumer based on the given config at the broker.
+// registerConsumer set consumer configuration for creates or updates a consumer based on the given configuration
+// at the broker.
 func (c *Controller) registerConsumer() error {
-
 	if c.consumerConfig.Name == "" {
 		return fmt.Errorf("consumer name is required")
 	}
@@ -158,7 +158,6 @@ func (c *Controller) registerConsumer() error {
 
 // registerStream creates or updates a stream based on the given configuration at the broker.
 func (c *Controller) registerStream() error {
-
 	if c.streamConfig.Name == "" {
 		return fmt.Errorf("stream name is required")
 	}

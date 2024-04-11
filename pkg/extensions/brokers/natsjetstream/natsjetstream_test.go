@@ -3,11 +3,12 @@ package natsjetstream
 import (
 	"context"
 	"crypto/tls"
+	"sync"
+	"testing"
+
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
-	"sync"
-	"testing"
 )
 
 //nolint:funlen // this is only for testing
@@ -76,21 +77,25 @@ func TestValidateAckMechanism(t *testing.T) {
 	})
 }
 
+//nolint:funlen
 func TestSecureConnectionToNATSJetstream(t *testing.T) {
+	// for testing with InsecureSkipVerify to skip server certificate validation for our self-signed certificate
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
 
-	t.Run("test connection is not successfully to TLS secured NATS jetstream broker without TLS config", func(t *testing.T) {
-		subj := "secureConnectTestWithoutTLSConfig"
+	t.Run("test connection is not successfully to TLS secured NATS jetstream broker without TLS config",
+		func(t *testing.T) {
+			subj := "secureConnectTestWithoutTLSConfig"
 
-		_, err := NewController(
-			"nats://nats-jetstream-tls:4222",
-			WithStreamConfig(jetstream.StreamConfig{
-				Name:     subj,
-				Subjects: []string{subj},
-			}),
-			WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithoutTLSConfig"}),
-		)
-		assert.Error(t, err, "new connection to TLS secured NATS broker without TLS config should return a error")
-	})
+			_, err := NewController(
+				"nats://nats-jetstream-tls:4222",
+				WithStreamConfig(jetstream.StreamConfig{
+					Name:     subj,
+					Subjects: []string{subj},
+				}),
+				WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithoutTLSConfig"}),
+			)
+			assert.Error(t, err, "new connection to TLS secured NATS broker without TLS config should return a error")
+		})
 
 	t.Run("test connection is successfully to TLS secured NATS jetstream broker with TLS config", func(t *testing.T) {
 		subj := "secureConnectTestWithTLSConfig"
@@ -102,43 +107,47 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 				Subjects: []string{subj},
 			}),
 			WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithoutTLSConfig"}),
-			// just for testing use tls.Config with InsecureSkipVerify: true to skip server certificate validation for our self signed certificate
-			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true})),
+			WithConnectionOpts(nats.Secure(tlsConfig)),
 		)
-		assert.NoError(t, err, "new connection to TLS secured NATS jetstream broker with TLS config should not return a error")
+		assert.NoError(t, err,
+			"new connection to TLS secured NATS jetstream broker with TLS config should not return a error")
 		defer jc.Close()
 	})
 
-	t.Run("test connection is not successfully to TLS secured NATS jetstream broker with TLS config and missing credentials", func(t *testing.T) {
-		subj := "secureConnectTestWithTLSConfigAndWithoutCredentials"
+	t.Run("test connection is not successfully to TLS secured NATS jetstream broker with TLS config and missing credentials", //nolint:lll
+		func(t *testing.T) {
+			subj := "secureConnectTestWithTLSConfigAndWithoutCredentials"
 
-		_, err := NewController(
-			"nats://nats-jetstream-tls-basic-auth:4222",
-			WithStreamConfig(jetstream.StreamConfig{
-				Name:     subj,
-				Subjects: []string{subj},
-			}),
-			WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithTLSConfigAndMissingBasicAuth"}),
-			// just for testing use tls.Config with InsecureSkipVerify: true to skip server certificate validation for our self signed certificate
-			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true})),
-		)
-		assert.Error(t, err, "new connection to TLS secured NATS jetstream broker with TLS config and missing credentials should return a error")
-	})
+			_, err := NewController(
+				"nats://nats-jetstream-tls-basic-auth:4222",
+				WithStreamConfig(jetstream.StreamConfig{
+					Name:     subj,
+					Subjects: []string{subj},
+				}),
+				WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithTLSConfigAndMissingBasicAuth"}),
+				WithConnectionOpts(nats.Secure(tlsConfig)),
+			)
+			assert.Error(t, err,
+				"new connection to TLS secured NATS jetstream broker with TLS config and missing credentials should return a error")
+		})
 
-	t.Run("test connection is successfully to TLS secured NATS jetstream broker with TLS config and credentials", func(t *testing.T) {
-		subj := "secureConnectTestWithTLSConfigAndCredentials"
+	t.Run("test connection is successfully to TLS secured NATS jetstream broker with TLS config and credentials",
+		func(t *testing.T) {
+			subj := "secureConnectTestWithTLSConfigAndCredentials"
 
-		jc, err := NewController(
-			"nats://nats-jetstream-tls-basic-auth:4222",
-			WithStreamConfig(jetstream.StreamConfig{
-				Name:     subj,
-				Subjects: []string{subj},
-			}),
-			WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithTLSConfigAndMissingBasicAuth"}),
-			// just for testing use tls.Config with InsecureSkipVerify: true to skip server certificate validation for our self signed certificate
-			WithConnectionOpts(nats.Secure(&tls.Config{InsecureSkipVerify: true}), nats.UserInfo("user", "password")),
-		)
-		assert.NoError(t, err, "new connection to TLS secured NATS jetstream broker with TLS config and  credentials should return no error")
-		defer jc.Close()
-	})
+			jc, err := NewController(
+				"nats://nats-jetstream-tls-basic-auth:4222",
+				WithStreamConfig(jetstream.StreamConfig{
+					Name:     subj,
+					Subjects: []string{subj},
+				}),
+				WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithTLSConfigAndMissingBasicAuth"}),
+				WithConnectionOpts(
+					nats.Secure(tlsConfig),
+					nats.UserInfo("user", "password"),
+				),
+			)
+			assert.NoError(t, err, "new connection to TLS secured NATS jetstream broker with TLS config and  credentials should return no error") //nolint:lll
+			defer jc.Close()
+		})
 }
