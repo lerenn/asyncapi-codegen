@@ -94,16 +94,15 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestIssue169App() {
 	// Test message
-	sent := Issue169MsgMessage{
+	sent := Issue169MsgPublishMessage{
 		Payload: "some test msg",
 	}
 
 	// validate msg
-	//nolint:contextcheck
-	err := suite.app.SubscribeIssue169Msg(context.Background(), func(ctx context.Context, msg Issue169MsgMessage) error {
+	err := suite.app.SubscribeIssue169Msg(context.Background(), func(ctx context.Context, msg Issue169MsgSubscribeMessage) error {
+		defer suite.wg.Done()
 		suite.app.UnsubscribeIssue169Msg(ctx)
-		suite.Require().Equal(sent, msg)
-		suite.wg.Done()
+		suite.Require().Equal(sent.Payload, msg.Payload)
 		return nil
 	})
 	suite.Require().NoError(err)
@@ -120,16 +119,15 @@ func (suite *Suite) TestIssue169App() {
 
 func (suite *Suite) TestIssue169User() {
 	// Test message
-	sent := Issue169MsgMessage{
+	sent := Issue169MsgPublishMessage{
 		Payload: "some test msg",
 	}
 
 	// validate message
-	//nolint:contextcheck
-	err := suite.user.SubscribeIssue169Msg(context.Background(), func(ctx context.Context, msg Issue169MsgMessage) error {
+	err := suite.user.SubscribeIssue169Msg(context.Background(), func(ctx context.Context, msg Issue169MsgSubscribeMessage) error {
+		defer suite.wg.Done()
 		suite.user.UnsubscribeIssue169Msg(ctx)
-		suite.Require().Equal(sent, msg)
-		suite.wg.Done()
+		suite.Require().Equal(sent.Payload, msg.Payload)
 		return nil
 	})
 	suite.Require().NoError(err)

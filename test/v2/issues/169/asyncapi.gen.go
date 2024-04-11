@@ -13,7 +13,7 @@ import (
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// Issue169Msg subscribes to messages placed on the 'issue169.msg' channel
-	Issue169Msg(ctx context.Context, msg Issue169MsgMessage) error
+	Issue169Msg(ctx context.Context, msg Issue169MsgSubscribeMessage) error
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -139,7 +139,10 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue169Msg will subscribe to new messages from 'issue169.msg' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *AppController) SubscribeIssue169Msg(ctx context.Context, fn func(ctx context.Context, msg Issue169MsgMessage) error) error {
+func (c *AppController) SubscribeIssue169Msg(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue169MsgSubscribeMessage) error,
+) error {
 	// Get channel path
 	path := "issue169.msg"
 
@@ -181,7 +184,7 @@ func (c *AppController) SubscribeIssue169Msg(ctx context.Context, fn func(ctx co
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newIssue169MsgMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := newIssue169MsgSubscribeMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -234,7 +237,10 @@ func (c *AppController) UnsubscribeIssue169Msg(ctx context.Context) {
 }
 
 // PublishIssue169Msg will publish messages to 'issue169.msg' channel
-func (c *AppController) PublishIssue169Msg(ctx context.Context, msg Issue169MsgMessage) error {
+func (c *AppController) PublishIssue169Msg(
+	ctx context.Context,
+	msg Issue169MsgPublishMessage,
+) error {
 	// Get channel path
 	path := "issue169.msg"
 
@@ -260,7 +266,7 @@ func (c *AppController) PublishIssue169Msg(ctx context.Context, msg Issue169MsgM
 // UserSubscriber represents all handlers that are expecting messages for User
 type UserSubscriber interface {
 	// Issue169Msg subscribes to messages placed on the 'issue169.msg' channel
-	Issue169Msg(ctx context.Context, msg Issue169MsgMessage) error
+	Issue169Msg(ctx context.Context, msg Issue169MsgSubscribeMessage) error
 }
 
 // UserController is the structure that provides publishing capabilities to the
@@ -386,7 +392,10 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 // SubscribeIssue169Msg will subscribe to new messages from 'issue169.msg' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeIssue169Msg(ctx context.Context, fn func(ctx context.Context, msg Issue169MsgMessage) error) error {
+func (c *UserController) SubscribeIssue169Msg(
+	ctx context.Context,
+	fn func(ctx context.Context, msg Issue169MsgSubscribeMessage) error,
+) error {
 	// Get channel path
 	path := "issue169.msg"
 
@@ -428,7 +437,7 @@ func (c *UserController) SubscribeIssue169Msg(ctx context.Context, fn func(ctx c
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newIssue169MsgMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := newIssue169MsgSubscribeMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -481,7 +490,10 @@ func (c *UserController) UnsubscribeIssue169Msg(ctx context.Context) {
 }
 
 // PublishIssue169Msg will publish messages to 'issue169.msg' channel
-func (c *UserController) PublishIssue169Msg(ctx context.Context, msg Issue169MsgMessage) error {
+func (c *UserController) PublishIssue169Msg(
+	ctx context.Context,
+	msg Issue169MsgPublishMessage,
+) error {
 	// Get channel path
 	path := "issue169.msg"
 
@@ -562,21 +574,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Issue169MsgMessage is the message expected for 'Issue169Msg' channel
-type Issue169MsgMessage struct {
+// Issue169MsgSubscribeMessage is the message expected for 'Issue169MsgSubscribeMessage' channel.
+type Issue169MsgSubscribeMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewIssue169MsgMessage() Issue169MsgMessage {
-	var msg Issue169MsgMessage
+func NewIssue169MsgSubscribeMessage() Issue169MsgSubscribeMessage {
+	var msg Issue169MsgSubscribeMessage
 
 	return msg
 }
 
-// newIssue169MsgMessageFromBrokerMessage will fill a new Issue169MsgMessage with data from generic broker message
-func newIssue169MsgMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue169MsgMessage, error) {
-	var msg Issue169MsgMessage
+// newIssue169MsgSubscribeMessageFromBrokerMessage will fill a new Issue169MsgSubscribeMessage with data from generic broker message
+func newIssue169MsgSubscribeMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue169MsgSubscribeMessage, error) {
+	var msg Issue169MsgSubscribeMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -587,8 +599,8 @@ func newIssue169MsgMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issu
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Issue169MsgMessage data
-func (msg Issue169MsgMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from Issue169MsgSubscribeMessage data
+func (msg Issue169MsgSubscribeMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -603,21 +615,21 @@ func (msg Issue169MsgMessage) toBrokerMessage() (extensions.BrokerMessage, error
 	}, nil
 }
 
-// Message is the message expected for ” channel
-type Message struct {
+// Issue169MsgPublishMessage is the message expected for 'Issue169MsgPublishMessage' channel.
+type Issue169MsgPublishMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewMessage() Message {
-	var msg Message
+func NewIssue169MsgPublishMessage() Issue169MsgPublishMessage {
+	var msg Issue169MsgPublishMessage
 
 	return msg
 }
 
-// newMessageFromBrokerMessage will fill a new Message with data from generic broker message
-func newMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Message, error) {
-	var msg Message
+// newIssue169MsgPublishMessageFromBrokerMessage will fill a new Issue169MsgPublishMessage with data from generic broker message
+func newIssue169MsgPublishMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue169MsgPublishMessage, error) {
+	var msg Issue169MsgPublishMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -628,8 +640,8 @@ func newMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Message, error)
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Message data
-func (msg Message) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from Issue169MsgPublishMessage data
+func (msg Issue169MsgPublishMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -645,7 +657,7 @@ func (msg Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 }
 
 const (
-	// Issue169MsgPath is the constant representing the 'Issue169.msg' channel path.
+	// Issue169MsgPath is the constant representing the 'Issue169Msg' channel path.
 	Issue169MsgPath = "issue169.msg"
 )
 
