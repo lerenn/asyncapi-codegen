@@ -422,7 +422,15 @@ func (e *Error) Error() string {
 }
 
 // TestMessagePayload is a schema from the AsyncAPI specification required in messages
-type TestMessagePayload struct{}
+type TestMessagePayload struct {
+	Obj1 TestSchemaObj1 `json:"obj1"`
+}
+
+// TestSchemaObj1 is a schema from the AsyncAPI specification required in messages
+type TestSchemaObj1 struct {
+	// Description: reference ID.
+	ReferenceId string `json:"reference_id"`
+}
 
 // TestMessage is the message expected for 'TestMessage' channel.
 // NOTE: test message

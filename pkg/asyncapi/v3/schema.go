@@ -257,8 +257,6 @@ func (s *Schema) referenceFrom(ref []string) *Schema {
 
 // MergeWith merges the given Schema structure with another one
 // (basically for AllOf, AnyOf, OneOf, etc).
-//
-//nolint:cyclop
 func (s *Schema) MergeWith(spec Specification, s2 Schema) error {
 	if s == nil {
 		return nil
