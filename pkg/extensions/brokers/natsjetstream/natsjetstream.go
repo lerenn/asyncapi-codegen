@@ -25,8 +25,8 @@ type Controller struct {
 	consumerName   string
 	consumeContext jetstream.ConsumeContext
 	channels       map[string]chan jetstream.Msg
-	streamConfig   jetstream.StreamConfig
-	consumerConfig jetstream.ConsumerConfig
+	streamConfig   *jetstream.StreamConfig
+	consumerConfig *jetstream.ConsumerConfig
 
 	nakDelay time.Duration
 }
@@ -67,11 +67,18 @@ func NewController(url string, options ...ControllerOption) (*Controller, error)
 
 	controller.jetStream = js
 
-	if err := controller.registerStream(); err != nil {
-		return nil, err
+	// if a StreamConfig was configured by the user via WithSteamConfig register the stream
+	if controller.streamConfig != nil {
+		if err := controller.registerStream(); err != nil {
+			return nil, err
+		}
 	}
-	if err := controller.registerConsumer(); err != nil {
-		return nil, err
+
+	// if a ConsumerConfig was configured by the user via WithConsumerConfig register the consumer
+	if controller.consumerConfig != nil {
+		if err := controller.registerConsumer(); err != nil {
+			return nil, err
+		}
 	}
 
 	return controller, nil
@@ -91,7 +98,7 @@ func WithLogger(logger extensions.Logger) ControllerOption {
 // WithStreamConfig add the stream configuration for creating or updating a stream based on the given configuration.
 func WithStreamConfig(config jetstream.StreamConfig) ControllerOption {
 	return func(controller *Controller) error {
-		controller.streamConfig = config
+		controller.streamConfig = &config
 		return nil
 	}
 }
@@ -107,7 +114,7 @@ func WithStream(name string) ControllerOption {
 // WithConsumerConfig set consumer configuration for creating or updating a consumer based on the given config.
 func WithConsumerConfig(config jetstream.ConsumerConfig) ControllerOption {
 	return func(controller *Controller) error {
-		controller.consumerConfig = config
+		controller.consumerConfig = &config
 		return nil
 	}
 }
@@ -148,7 +155,7 @@ func (c *Controller) registerConsumer() error {
 	}
 	c.consumerName = c.consumerConfig.Name
 
-	_, err := c.jetStream.CreateOrUpdateConsumer(context.Background(), c.streamName, c.consumerConfig)
+	_, err := c.jetStream.CreateOrUpdateConsumer(context.Background(), c.streamName, *c.consumerConfig)
 	if err != nil {
 		return fmt.Errorf("could not create or update consumer: %w", err)
 	}
@@ -163,11 +170,11 @@ func (c *Controller) registerStream() error {
 	}
 	c.streamName = c.streamConfig.Name
 
-	if _, err := c.jetStream.CreateStream(context.Background(), c.streamConfig); err != nil {
+	if _, err := c.jetStream.CreateStream(context.Background(), *c.streamConfig); err != nil {
 		if !errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
 			return fmt.Errorf("could not create stream: %w", err)
 		}
-		if _, err = c.jetStream.UpdateStream(context.Background(), c.streamConfig); err != nil {
+		if _, err = c.jetStream.UpdateStream(context.Background(), *c.streamConfig); err != nil {
 			return fmt.Errorf("could not create or update stream: %w", err)
 		}
 	}
