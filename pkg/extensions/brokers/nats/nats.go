@@ -14,6 +14,7 @@ var _ extensions.BrokerController = (*Controller)(nil)
 
 // Controller is the Controller implementation for asyncapi-codegen.
 type Controller struct {
+	url        string
 	connection *nats.Conn
 	logger     extensions.Logger
 	queueGroup string
@@ -21,26 +22,32 @@ type Controller struct {
 
 // ControllerOption is a function that can be used to configure a NATS controller
 // Examples: WithQueueGroup(), WithLogger().
-type ControllerOption func(controller *Controller)
+type ControllerOption func(controller *Controller) error
 
 // NewController creates a new NATS controller.
 func NewController(url string, options ...ControllerOption) (*Controller, error) {
-	// Connect to NATS
-	nc, err := nats.Connect(url)
-	if err != nil {
-		return nil, fmt.Errorf("could not connect to nats: %w", err)
-	}
-
 	// Creates default controller
 	controller := &Controller{
-		connection: nc,
+		url:        url,
 		queueGroup: brokers.DefaultQueueGroupID,
 		logger:     extensions.DummyLogger{},
 	}
 
 	// Execute options
 	for _, option := range options {
-		option(controller)
+		if err := option(controller); err != nil {
+			return nil, fmt.Errorf("could not apply option to controller: %w", err)
+		}
+	}
+
+	// If connection not already created with WithConnectionOpts, connect to NATS
+	if controller.connection == nil {
+		nc, err := nats.Connect(url)
+		if err != nil {
+			return nil, fmt.Errorf("could not connect to nats: %w", err)
+		}
+
+		controller.connection = nc
 	}
 
 	return controller, nil
@@ -48,15 +55,29 @@ func NewController(url string, options ...ControllerOption) (*Controller, error)
 
 // WithQueueGroup set a custom queue group for channel subscription.
 func WithQueueGroup(name string) ControllerOption {
-	return func(controller *Controller) {
+	return func(controller *Controller) error {
 		controller.queueGroup = name
+		return nil
 	}
 }
 
 // WithLogger set a custom logger that will log operations on broker controller.
 func WithLogger(logger extensions.Logger) ControllerOption {
-	return func(controller *Controller) {
+	return func(controller *Controller) error {
 		controller.logger = logger
+		return nil
+	}
+}
+
+// WithConnectionOpts set the nats.Options to connect to nats.
+func WithConnectionOpts(opts ...nats.Option) ControllerOption {
+	return func(controller *Controller) error {
+		nc, err := nats.Connect(controller.url, opts...)
+		if err != nil {
+			return fmt.Errorf("could not connect to nats: %w", err)
+		}
+		controller.connection = nc
+		return nil
 	}
 }
 
