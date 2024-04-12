@@ -9,7 +9,7 @@
 {{namify $.Name }} {{template "schema-name" $.Schema}}
 
 {{- /* Set parameter from reference if defined */}}
-{{- else if .Reference }}
+{{- else if .ReferenceTo }}
 {{- template "parameter" $.ReferenceTo}}
 {{end -}}
 

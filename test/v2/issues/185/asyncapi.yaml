@@ -1,0 +1,36 @@
+asyncapi: 2.6.0
+
+components:
+  schemas:
+    BaseEvent:
+      type: object
+      properties:
+        time:
+          type: string
+          format: date-time
+      required:
+        - time
+    BaseEventInfo:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContentData'
+      required:
+        - data
+    ContentData:
+      type: object
+      properties:
+        contentId:
+          type: string
+      required:
+        - contentId
+    EventPayload:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - $ref: '#/components/schemas/BaseEventInfo'
+        - type: object
+          properties:
+            id:
+              type: string
+          required:
+            - id

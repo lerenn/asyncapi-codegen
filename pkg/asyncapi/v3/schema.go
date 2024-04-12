@@ -257,8 +257,6 @@ func (s *Schema) referenceFrom(ref []string) *Schema {
 
 // MergeWith merges the given Schema structure with another one
 // (basically for AllOf, AnyOf, OneOf, etc).
-//
-//nolint:cyclop
 func (s *Schema) MergeWith(spec Specification, s2 Schema) error {
 	if s == nil {
 		return nil
@@ -266,55 +264,145 @@ func (s *Schema) MergeWith(spec Specification, s2 Schema) error {
 
 	s.Type = SchemaTypeIsObject.String()
 
-	// Getting merged with reference
-	if s2.Reference != "" {
-		refAny2, err := spec.ReferenceSchema(s2.Reference)
-		if err != nil {
-			return err
-		}
-
-		if err := s2.MergeWith(spec, *refAny2); err != nil {
-			return err
-		}
-	}
-
-	// Merge AnyOf
-	if s2.AnyOf != nil {
-		if s.AnyOf == nil {
-			copy(s2.AnyOf, s.AnyOf)
-		} else {
-			s.AnyOf = append(s.AnyOf, s2.AnyOf...)
-		}
-	}
-
-	// Merge OneOf
-	if s2.OneOf != nil {
-		if s.OneOf == nil {
-			copy(s2.OneOf, s.OneOf)
-		} else {
-			s.OneOf = append(s.OneOf, s2.OneOf...)
-		}
-	}
-
-	// Merge properties
-	if s2.Properties != nil {
-		if s.Properties == nil {
-			s.Properties = make(map[string]*Schema)
-		}
-
-		for k, v := range s2.Properties {
-			_, exists := s.Properties[k]
-			if !exists {
-				s.Properties[k] = v
-			}
-		}
-	}
+	// Merge with other fields
+	s.mergeWithSchemaAllOf(s2)
+	s.mergeWithSchemaAnyOf(s2)
+	s.mergeWithSchemaOneOf(s2)
+	s.mergeWithSchemaProperties(s2)
 
 	// Merge requirements
 	s.Required = append(s.Required, s2.Required...)
 	s.Required = utils.RemoveDuplicateFromSlice(s.Required)
 
 	return nil
+}
+
+func (s *Schema) mergeWithSchemaAllOf(s2 Schema) {
+	// Return if there are no AllOf to merge
+	if s2.AllOf == nil && (s2.ReferenceTo == nil || s2.ReferenceTo.AllOf == nil) {
+		return
+	}
+
+	// Initialize AllOf if they are nil
+	if s.AllOf == nil {
+		s.AllOf = make([]*Schema, 0)
+	}
+
+	// Add AllOf from s2 to s
+	if s2.AllOf != nil {
+		s.AllOf = append(s.AllOf, s2.AllOf...)
+	}
+
+	// Add AllOf from s2 reference to s
+	if s2.ReferenceTo != nil && s2.ReferenceTo.AllOf != nil {
+		for _, v := range s2.ReferenceTo.AllOf {
+			s.AllOf = append(s.AllOf, &Schema{ReferenceTo: v})
+		}
+	}
+}
+
+func (s *Schema) mergeWithSchemaAnyOf(s2 Schema) {
+	// Return if there are no AnyOf to merge
+	if s2.AnyOf == nil && (s2.ReferenceTo == nil || s2.ReferenceTo.AnyOf == nil) {
+		return
+	}
+
+	// Initialize AnyOf if they are nil
+	if s.AnyOf == nil {
+		s.AnyOf = make([]*Schema, 0)
+	}
+
+	// Add AnyOf from s2 to s
+	if s2.AnyOf != nil {
+		s.AnyOf = append(s.AnyOf, s2.AnyOf...)
+	}
+
+	// Add AnyOf from s2 reference to s
+	if s2.ReferenceTo != nil && s2.ReferenceTo.AnyOf != nil {
+		for _, v := range s2.ReferenceTo.AnyOf {
+			s.AnyOf = append(s.AnyOf, &Schema{ReferenceTo: v})
+		}
+	}
+}
+
+func (s *Schema) mergeWithSchemaOneOf(s2 Schema) {
+	// Return if there are no OneOf to merge
+	if s2.OneOf == nil && (s2.ReferenceTo == nil || s2.ReferenceTo.OneOf == nil) {
+		return
+	}
+
+	// Initialize OneOf if they are nil
+	if s.OneOf == nil {
+		s.OneOf = make([]*Schema, 0)
+	}
+
+	// Add OneOf from s2 to s
+	if s2.OneOf != nil {
+		s.OneOf = append(s.OneOf, s2.OneOf...)
+	}
+
+	// Add OneOf from s2 reference to s
+	if s2.ReferenceTo != nil && s2.ReferenceTo.OneOf != nil {
+		for _, v := range s2.ReferenceTo.OneOf {
+			s.OneOf = append(s.OneOf, &Schema{ReferenceTo: v})
+		}
+	}
+}
+
+func (s *Schema) mergeWithSchemaProperties(s2 Schema) {
+	// Return if there are no properties to merge
+	if s2.Properties == nil && (s2.ReferenceTo == nil || s2.ReferenceTo.Properties == nil) {
+		return
+	}
+
+	// Initialize properties if they are nil
+	if s.Properties == nil {
+		s.Properties = make(map[string]*Schema)
+	}
+
+	// Add properties from s2 to s
+	for k, v := range s2.Properties {
+		_, exists := s.Properties[k]
+		if exists {
+			continue
+		}
+
+		s.Properties[k] = v
+	}
+
+	// Add properties from s2 reference to s
+	s.mergeWithSchemaReferenceProperties(s2)
+}
+
+func (s *Schema) mergeWithSchemaReferenceProperties(s2 Schema) {
+	// Return if there are no properties to merge
+	if s2.ReferenceTo == nil || s2.ReferenceTo.Properties == nil {
+		return
+	}
+
+	// Add properties from s2 reference to s
+	for k, v := range s2.ReferenceTo.Properties {
+		// Skip if the property already exists
+		_, exists := s.Properties[k]
+		if exists {
+			continue
+		}
+
+		// Add the property
+		if v.Type == "object" {
+			s.Properties[k] = &Schema{
+				IsRequired:  v.IsRequired,
+				ReferenceTo: v,
+			}
+		} else {
+			s.Properties[k] = v
+		}
+
+		// Add to required if it is required
+		if v.IsRequired {
+			s.Required = append(s.Required, k)
+		}
+	}
 }
 
 // Follow returns referenced schema if specified or the actual schema.
