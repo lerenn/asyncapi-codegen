@@ -19,11 +19,14 @@ type Parameter struct {
 	ReferenceTo *Parameter `json:"-"`
 }
 
-// Process processes the Parameter structure to make it ready for code generation.
-func (p *Parameter) Process(name string, spec Specification) error {
+// generateMetadata generate metadata for the parameter.
+func (p *Parameter) generateMetadata(name string) {
 	// Add parameter name
 	p.Name = template.Namify(name)
+}
 
+// setDependencies set dependencies for the parameter from specification.
+func (p *Parameter) setDependencies(spec Specification) error {
 	// Add pointer to reference if there is one
 	if p.Reference != "" {
 		refTo, err := spec.ReferenceParameter(p.Reference)

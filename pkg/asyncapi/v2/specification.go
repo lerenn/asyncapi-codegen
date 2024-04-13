@@ -34,13 +34,33 @@ type Specification struct {
 
 // Process processes the Specification to make it ready for code generation.
 func (s *Specification) Process() error {
+	if err := s.generateMetadata(); err != nil {
+		return err
+	}
+
+	return s.setDependencies()
+}
+
+// generateMetadata generate metadata for the Specification and its children.
+func (s *Specification) generateMetadata() error {
 	for path, ch := range s.Channels {
-		if err := ch.Process(path, *s); err != nil {
+		if err := ch.generateMetadata(path); err != nil {
 			return err
 		}
 	}
 
-	return s.Components.Process(*s)
+	return s.Components.generateMetadata()
+}
+
+// setDependencies set dependencies between the different elements of the Specification.
+func (s *Specification) setDependencies() error {
+	for _, ch := range s.Channels {
+		if err := ch.setDependencies(*s); err != nil {
+			return err
+		}
+	}
+
+	return s.Components.setDependencies(*s)
 }
 
 // GetPublishSubscribeCount gets the count of 'publish' channels and the count

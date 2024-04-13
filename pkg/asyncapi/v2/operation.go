@@ -20,8 +20,8 @@ type Operation struct {
 	Name string `json:"-"`
 }
 
-// Process processes the Operation structure to make it ready for code generation.
-func (op *Operation) Process(name string, spec Specification) error {
+// generateMetadata generate metadata for the operation and its children.
+func (op *Operation) generateMetadata(name string) error {
 	op.Name = template.Namify(name)
 
 	// Get message name
@@ -32,6 +32,12 @@ func (op *Operation) Process(name string, spec Specification) error {
 		msgName = op.Name
 	}
 
-	// Process message
-	return op.Message.Process(msgName+MessageSuffix, spec)
+	// Generate message metadata
+	return op.Message.generateMetadata(msgName + MessageSuffix)
+}
+
+// setDependencies set dependencies for the operation and its children from specification.
+func (op *Operation) setDependencies(spec Specification) error {
+	// Set message dependencies
+	return op.Message.setDependencies(spec)
 }
