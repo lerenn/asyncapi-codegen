@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 func run() int {
@@ -18,6 +19,11 @@ func run() int {
 
 	opt, err := flags.ToCodegenOptions()
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+		return 255
+	}
+
+	if err := template.SetConvertKeyFn(opt.ConvertKeys); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 		return 255
 	}
