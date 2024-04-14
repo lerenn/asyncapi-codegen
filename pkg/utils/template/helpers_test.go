@@ -14,12 +14,12 @@ type HelpersSuite struct {
 	suite.Suite
 }
 
-type stringConvertCase struct {
+type namifyCases struct {
 	In  string
 	Out string
 }
 
-var namifyBaseCases = []stringConvertCase{
+var namifyBaseCases = []namifyCases{
 	// Nothing
 	{In: "", Out: ""},
 	// Remove leading digits
@@ -54,7 +54,7 @@ func (suite *HelpersSuite) TestNamify() {
 }
 
 func (suite *HelpersSuite) TestNamifyWithoutParams() {
-	cases := []stringConvertCase{
+	cases := []namifyCases{
 		// With argument
 		{In: "name.{id}", Out: "Name"},
 	}
