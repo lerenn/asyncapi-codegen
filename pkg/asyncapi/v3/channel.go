@@ -41,8 +41,8 @@ type Channel struct {
 	ReferenceTo *Channel `json:"-"`
 }
 
-// Process processes the Channel to make it ready for code generation.
-func (ch *Channel) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the Channel.
+func (ch *Channel) generateMetadata(name string) error {
 	// Prevent modification if nil
 	if ch == nil {
 		return nil
@@ -51,43 +51,78 @@ func (ch *Channel) Process(name string, spec Specification) error {
 	// Set name
 	ch.Name = template.Namify(name)
 
-	// Process reference
-	if err := ch.processReference(spec); err != nil {
+	// Generate metadata
+	if err := ch.generateMessagesMetadata(); err != nil {
+		return err
+	}
+	if err := ch.generateServersMetadata(); err != nil {
 		return err
 	}
 
-	// Process messages
-	if err := ch.processMessages(spec); err != nil {
-		return err
-	}
+	// Generate parameters metadata
+	ch.generateParametersMetadata()
 
-	// Process servers
-	if err := ch.processServers(spec); err != nil {
-		return err
-	}
+	// Generate tags metadata
+	ch.generateTagsMetadata()
 
-	// Process parameters
-	if err := ch.processParameters(spec); err != nil {
-		return err
-	}
+	// Generate external documentation metadata
+	ch.ExternalDocs.generateMetadata(ch.Name + ExternalDocsNameSuffix)
 
-	// Process tags
-	if err := ch.processTags(spec); err != nil {
-		return err
-	}
-
-	// Process external documentation
-	if err := ch.ExternalDocs.Process(ch.Name+ExternalDocsNameSuffix, spec); err != nil {
-		return err
-	}
-
-	// Process Bindings
-	return ch.Bindings.Process(ch.Name+BindingsSuffix, spec)
+	// Generate Bindings metadata
+	ch.Bindings.generateMetadata(ch.Name + BindingsSuffix)
+	return nil
 }
 
-func (ch *Channel) processParameters(spec Specification) error {
+// setDependencies sets dependencies between the different elements of the Channel.
+func (ch *Channel) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if ch == nil {
+		return nil
+	}
+
+	// Set reference
+	if err := ch.setReference(spec); err != nil {
+		return err
+	}
+
+	// Set messages dependencies
+	if err := ch.setMessagesDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set servers dependencies
+	if err := ch.setServersDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set parameters dependencies
+	if err := ch.setParametersDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set tags dependencies
+	if err := ch.setTagsDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set external documentation dependencies
+	if err := ch.ExternalDocs.setDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set Bindings dependencies
+	return ch.Bindings.setDependencies(spec)
+}
+
+func (ch *Channel) generateParametersMetadata() {
 	for name, param := range ch.Parameters {
-		if err := param.Process(name+"Parameter", spec); err != nil {
+		param.generateMetadata(name + "Parameter")
+	}
+}
+
+func (ch *Channel) setParametersDependencies(spec Specification) error {
+	for _, param := range ch.Parameters {
+		if err := param.setDependencies(spec); err != nil {
 			return err
 		}
 	}
@@ -95,9 +130,17 @@ func (ch *Channel) processParameters(spec Specification) error {
 	return nil
 }
 
-func (ch *Channel) processServers(spec Specification) error {
+func (ch *Channel) generateServersMetadata() error {
 	for i, srv := range ch.Servers {
-		if err := srv.Process(fmt.Sprintf("%sServer%d", ch.Name, i), spec); err != nil {
+		srv.generateMetadata(fmt.Sprintf("%sServer%d", ch.Name, i))
+	}
+
+	return nil
+}
+
+func (ch *Channel) setServersDependencies(spec Specification) error {
+	for _, srv := range ch.Servers {
+		if err := srv.setDependencies(spec); err != nil {
 			return err
 		}
 	}
@@ -105,9 +148,9 @@ func (ch *Channel) processServers(spec Specification) error {
 	return nil
 }
 
-func (ch *Channel) processMessages(spec Specification) error {
+func (ch *Channel) generateMessagesMetadata() error {
 	for name, msg := range ch.Messages {
-		if err := msg.Process(name+"Message", spec); err != nil {
+		if err := msg.generateMetadata(name + "Message"); err != nil {
 			return err
 		}
 	}
@@ -115,9 +158,25 @@ func (ch *Channel) processMessages(spec Specification) error {
 	return nil
 }
 
-func (ch *Channel) processTags(spec Specification) error {
+func (ch *Channel) setMessagesDependencies(spec Specification) error {
+	for _, msg := range ch.Messages {
+		if err := msg.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (ch *Channel) generateTagsMetadata() {
 	for i, t := range ch.Tags {
-		if err := t.Process(fmt.Sprintf("%sTag%d", ch.Name, i), spec); err != nil {
+		t.generateMetadata(fmt.Sprintf("%sTag%d", ch.Name, i))
+	}
+}
+
+func (ch *Channel) setTagsDependencies(spec Specification) error {
+	for _, t := range ch.Tags {
+		if err := t.setDependencies(spec); err != nil {
 			return err
 		}
 	}
@@ -125,7 +184,7 @@ func (ch *Channel) processTags(spec Specification) error {
 	return nil
 }
 
-func (ch *Channel) processReference(spec Specification) error {
+func (ch *Channel) setReference(spec Specification) error {
 	if ch.Reference == "" {
 		return nil
 	}

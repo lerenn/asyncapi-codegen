@@ -37,15 +37,21 @@ type ChannelBindings struct {
 	ReferenceTo *ChannelBindings `json:"-"`
 }
 
-// Process processes the ChannelBindings to make it ready for code generation.
-func (chb *ChannelBindings) Process(name string, spec Specification) error { // Return if empty
+func (chb *ChannelBindings) generateMetadata(name string) {
 	// Prevent modification if nil
 	if chb == nil {
-		return nil
+		return
 	}
 
 	// Set name
 	chb.Name = template.Namify(name)
+}
+
+func (chb *ChannelBindings) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if chb == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if chb.Reference != "" {

@@ -36,8 +36,8 @@ type MessageTrait struct {
 	CorrelationIDRequired bool   `json:"-"`
 }
 
-// Process processes the MessageTrait to make it ready for code generation.
-func (mt *MessageTrait) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the MessageTrait.
+func (mt *MessageTrait) generateMetadata(name string) error {
 	// Prevent modification if nil
 	if mt == nil {
 		return nil
@@ -50,45 +50,81 @@ func (mt *MessageTrait) Process(name string, spec Specification) error {
 		mt.Name = template.Namify(mt.Name)
 	}
 
-	// Process reference
-	if err := mt.processReference(spec); err != nil {
+	// Generate Headers and Payload metadata
+	if err := mt.Headers.generateMetadata(name+MessageHeadersSuffix, false); err != nil {
+		return err
+	}
+	if err := mt.Payload.generateMetadata(name+MessagePayloadSuffix, false); err != nil {
 		return err
 	}
 
-	// Process Headers and Payload
-	if err := mt.Headers.Process(name+MessageHeadersSuffix, spec, false); err != nil {
-		return err
+	// Generate tags metadata
+	mt.generateTagsMetadata()
+
+	// Generate external documentation metadata
+	mt.ExternalDocs.generateMetadata(mt.Name + ExternalDocsNameSuffix)
+
+	// Generate Bindings metadata
+	mt.Bindings.generateMetadata(mt.Name + BindingsSuffix)
+
+	// Generate Message Examples metadata
+	mt.generateExamplesMetadata()
+
+	return nil
+}
+
+// setDependencies sets dependencies between the different elements of the MessageTrait.
+func (mt *MessageTrait) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if mt == nil {
+		return nil
 	}
-	if err := mt.Payload.Process(name+MessagePayloadSuffix, spec, false); err != nil {
+
+	// Set reference
+	if err := mt.setReference(spec); err != nil {
 		return err
 	}
 
-	// Process tags
-	if err := mt.processTags(spec); err != nil {
+	// Set Headers and Payload depencies
+	if err := mt.Headers.setDependencies(spec); err != nil {
+		return err
+	}
+	if err := mt.Payload.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process external documentation
-	if err := mt.ExternalDocs.Process(mt.Name+ExternalDocsNameSuffix, spec); err != nil {
+	// Set tags dependencies
+	if err := mt.setTagsDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process Bindings
-	if err := mt.Bindings.Process(mt.Name+BindingsSuffix, spec); err != nil {
+	// Set external documentation dependencies
+	if err := mt.ExternalDocs.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process Message Examples
-	if err := mt.processExamples(spec); err != nil {
+	// Set Bindings dependencies
+	if err := mt.Bindings.setDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set Message Examples dependencies
+	if err := mt.setExamplesDependencies(spec); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (mt *MessageTrait) processExamples(spec Specification) error {
+func (mt *MessageTrait) generateExamplesMetadata() {
 	for i, e := range mt.Examples {
-		if err := e.Process(fmt.Sprintf("%sExample%d", mt.Name, i), spec); err != nil {
+		e.generateMetadata(fmt.Sprintf("%sExample%d", mt.Name, i))
+	}
+}
+
+func (mt *MessageTrait) setExamplesDependencies(spec Specification) error {
+	for _, e := range mt.Examples {
+		if err := e.setDependencies(spec); err != nil {
 			return err
 		}
 	}
@@ -96,9 +132,15 @@ func (mt *MessageTrait) processExamples(spec Specification) error {
 	return nil
 }
 
-func (mt *MessageTrait) processTags(spec Specification) error {
+func (mt *MessageTrait) generateTagsMetadata() {
 	for i, t := range mt.Tags {
-		if err := t.Process(fmt.Sprintf("%sTag%d", mt.Name, i), spec); err != nil {
+		t.generateMetadata(fmt.Sprintf("%sTag%d", mt.Name, i))
+	}
+}
+
+func (mt *MessageTrait) setTagsDependencies(spec Specification) error {
+	for _, t := range mt.Tags {
+		if err := t.setDependencies(spec); err != nil {
 			return err
 		}
 	}
@@ -106,7 +148,7 @@ func (mt *MessageTrait) processTags(spec Specification) error {
 	return nil
 }
 
-func (mt *MessageTrait) processReference(spec Specification) error {
+func (mt *MessageTrait) setReference(spec Specification) error {
 	// check reference exists
 	if mt.Reference == "" {
 		return nil

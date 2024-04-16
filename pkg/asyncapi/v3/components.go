@@ -1,5 +1,7 @@
 package asyncapiv3
 
+import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+
 // Components is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#componentsObject
@@ -29,35 +31,69 @@ type Components struct {
 	// --- Non AsyncAPI fields -------------------------------------------------
 }
 
-// Process processes the Components structure to make it ready for code generation.
-func (c *Components) Process(spec Specification) error {
+// generateMetadata generates metadata for the Components.
+func (c *Components) generateMetadata() error {
 	// Prevent modification if nil
 	if c == nil {
 		return nil
 	}
 
-	// Process schemas
+	// Generate schemas metadata
 	for name, schema := range c.Schemas {
-		if err := schema.Process(name+"Schema", spec, false); err != nil {
+		if err := schema.generateMetadata(name+"Schema", false); err != nil {
 			return err
 		}
 	}
 
-	// Process mapped structured
-	if err := c.processMaps(spec); err != nil {
+	// Generate mapped structured metadata
+	if err := c.generateMetadataFromMaps(); err != nil {
 		return err
 	}
 
-	// Process reply operations
+	// Generate reply operations metadata
 	for name, reply := range c.Replies {
-		if err := reply.Process(name+"Reply", &Operation{}, spec); err != nil {
+		if err := reply.generateMetadata(name + "Reply"); err != nil {
 			return err
 		}
 	}
 
-	// Process reply addresses
+	// Generate reply addresses metadata
 	for name, repAddr := range c.ReplyAddresses {
-		if err := repAddr.Process(name+"ReplyAddress", &Operation{}, spec); err != nil {
+		repAddr.generateMetadata(name + "ReplyAddress")
+	}
+
+	return nil
+}
+
+// setDependencies sets dependencies between the different elements of the Components.
+func (c *Components) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if c == nil {
+		return nil
+	}
+
+	// Set schemas dependencies
+	for _, schema := range c.Schemas {
+		if err := schema.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set mapped structured dependencies
+	if err := c.setDependenciesFromMaps(spec); err != nil {
+		return err
+	}
+
+	// Set reply operations dependencies
+	for _, reply := range c.Replies {
+		if err := reply.setDependencies(&Operation{}, spec); err != nil {
+			return err
+		}
+	}
+
+	// Set reply addresses dependencies
+	for _, repAddr := range c.ReplyAddresses {
+		if err := repAddr.setDependencies(&Operation{}, spec); err != nil {
 			return err
 		}
 	}
@@ -66,66 +102,179 @@ func (c *Components) Process(spec Specification) error {
 }
 
 //nolint:cyclop,funlen
-func (c *Components) processMaps(spec Specification) error {
-	if err := processMap(spec, c.Servers, "Server"); err != nil {
-		return err
+func (c *Components) generateMetadataFromMaps() error {
+	for name, entity := range c.Servers {
+		entity.generateMetadata(template.Namify(name) + "Server")
 	}
 
-	if err := processMap(spec, c.Channels, "Channel"); err != nil {
-		return err
+	for name, entity := range c.Channels {
+		if err := entity.generateMetadata(template.Namify(name) + "Channel"); err != nil {
+			return err
+		}
 	}
 
-	if err := processMap(spec, c.Operations, "Operation"); err != nil {
-		return err
+	for name, entity := range c.Operations {
+		if err := entity.generateMetadata(template.Namify(name) + "Operation"); err != nil {
+			return err
+		}
 	}
 
-	if err := processMap(spec, c.Messages, "Message"); err != nil {
-		return err
+	for name, entity := range c.Messages {
+		if err := entity.generateMetadata(template.Namify(name) + "Message"); err != nil {
+			return err
+		}
 	}
 
-	if err := processMap(spec, c.SecuritySchemes, "SecurityScheme"); err != nil {
-		return err
+	for name, entity := range c.SecuritySchemes {
+		entity.generateMetadata(template.Namify(name) + "SecurityScheme")
 	}
 
-	if err := processMap(spec, c.ServerVariables, "ServerVariable"); err != nil {
-		return err
+	for name, entity := range c.ServerVariables {
+		entity.generateMetadata(template.Namify(name) + "ServerVariable")
 	}
 
-	if err := processMap(spec, c.Parameters, "Parameter"); err != nil {
-		return err
+	for name, entity := range c.Parameters {
+		entity.generateMetadata(template.Namify(name) + "Parameter")
 	}
 
-	if err := processMap(spec, c.CorrelationIDs, "CorrelationID"); err != nil {
-		return err
+	for name, entity := range c.CorrelationIDs {
+		entity.generateMetadata(template.Namify(name) + "CorrelationID")
 	}
 
-	if err := processMap(spec, c.ExternalDocs, ExternalDocsNameSuffix); err != nil {
-		return err
+	for name, entity := range c.ExternalDocs {
+		entity.generateMetadata(template.Namify(name) + ExternalDocsNameSuffix)
 	}
 
-	if err := processMap(spec, c.Tags, "Tag"); err != nil {
-		return err
+	for name, entity := range c.Tags {
+		entity.generateMetadata(template.Namify(name) + "Tag")
 	}
 
-	if err := processMap(spec, c.OperationTraits, "OperationTrait"); err != nil {
-		return err
+	for name, entity := range c.OperationTraits {
+		entity.generateMetadata(template.Namify(name) + "OperationTrait")
 	}
 
-	if err := processMap(spec, c.MessageTraits, "MessageTrait"); err != nil {
-		return err
+	for name, entity := range c.MessageTraits {
+		if err := entity.generateMetadata(template.Namify(name) + "MessageTrait"); err != nil {
+			return err
+		}
 	}
 
-	if err := processMap(spec, c.ServerBindings, "ServerBinding"); err != nil {
-		return err
+	for name, entity := range c.ServerBindings {
+		entity.generateMetadata(template.Namify(name) + "ServerBinding")
 	}
 
-	if err := processMap(spec, c.ChannelBindings, "ChannelBinding"); err != nil {
-		return err
+	for name, entity := range c.ChannelBindings {
+		entity.generateMetadata(template.Namify(name) + "ChannelBinding")
 	}
 
-	if err := processMap(spec, c.OperationBindings, "OperationBinding"); err != nil {
-		return err
+	for name, entity := range c.OperationBindings {
+		entity.generateMetadata(template.Namify(name) + "OperationBinding")
 	}
 
-	return processMap(spec, c.MessageBindings, "MessageBinding")
+	for name, entity := range c.MessageBindings {
+		entity.generateMetadata(template.Namify(name) + "MessageBinding")
+	}
+
+	return nil
+}
+
+//nolint:cyclop,funlen
+func (c *Components) setDependenciesFromMaps(spec Specification) error {
+	for _, entity := range c.Servers {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.Channels {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.Operations {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.Messages {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.SecuritySchemes {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.ServerVariables {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.Parameters {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.CorrelationIDs {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.ExternalDocs {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.Tags {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.OperationTraits {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.MessageTraits {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.ServerBindings {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.ChannelBindings {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.OperationBindings {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	for _, entity := range c.MessageBindings {
+		if err := entity.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

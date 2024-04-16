@@ -35,15 +35,23 @@ type ServerBindings struct {
 	ReferenceTo *ServerBindings `json:"-"`
 }
 
-// Process processes the ServerBindings to make it ready for code generation.
-func (ob *ServerBindings) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the ServerBindings.
+func (ob *ServerBindings) generateMetadata(name string) {
 	// Prevent modification if nil
 	if ob == nil {
-		return nil
+		return
 	}
 
 	// Set name
 	ob.Name = template.Namify(name)
+}
+
+// setDependencies sets dependencies between the different elements of the ServerBindings.
+func (ob *ServerBindings) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if ob == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if ob.Reference != "" {
