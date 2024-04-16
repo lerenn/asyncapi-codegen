@@ -198,6 +198,7 @@ func (s *Schema) generateaAnyOfMetadata() error {
 
 func (s *Schema) setAnyOfDependencies(spec Specification) error {
 	for _, v := range s.AnyOf {
+		// Set dependencies
 		if err := v.setDependencies(spec); err != nil {
 			return err
 		}
@@ -223,6 +224,7 @@ func (s *Schema) generateOneOfMetadata() error {
 
 func (s *Schema) setOneOfDependencies(spec Specification) error {
 	for _, v := range s.OneOf {
+		// Set dependencies
 		if err := v.setDependencies(spec); err != nil {
 			return err
 		}
@@ -248,6 +250,7 @@ func (s *Schema) generateAllOfMetadata() error {
 
 func (s *Schema) setAllOfDependencies(spec Specification) error {
 	for _, v := range s.AllOf {
+		// Set dependencies
 		if err := v.setDependencies(spec); err != nil {
 			return err
 		}

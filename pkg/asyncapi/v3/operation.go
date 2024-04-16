@@ -69,7 +69,9 @@ func (op *Operation) generateMetadata(name string) error {
 	}
 
 	// Generate securities metadata
-	op.generateSecuritiesMetadata()
+	for i, sec := range op.Security {
+		sec.generateMetadata(fmt.Sprintf("%sSecurity%d", op.Name, i))
+	}
 
 	// Generate external doc metadata if there is one
 	op.ExternalDocs.generateMetadata(op.Name + ExternalDocsNameSuffix)
@@ -78,11 +80,15 @@ func (op *Operation) generateMetadata(name string) error {
 	op.Bindings.generateMetadata(op.Name + BindingsSuffix)
 
 	// Generate traits metadata
-	op.generateTraitsMetadata()
+	for i, t := range op.Traits {
+		t.generateMetadata(fmt.Sprintf("%sTrait%d", op.Name, i))
+	}
 
 	// Generate messages metadata
-	if err := op.generateMessagesMetadata(); err != nil {
-		return err
+	for i, msg := range op.Messages {
+		if err := msg.generateMetadata(fmt.Sprintf("%sMessage%d", op.Name, i)); err != nil {
+			return err
+		}
 	}
 
 	// Generate reply metadata if there is one
@@ -94,6 +100,8 @@ func (op *Operation) generateMetadata(name string) error {
 }
 
 // setDependencies sets dependencies between the different elements of the Operation.
+//
+//nolint:cyclop
 func (op *Operation) setDependencies(spec Specification) error {
 	// Prevent modification if nil
 	if op == nil {
@@ -111,8 +119,10 @@ func (op *Operation) setDependencies(spec Specification) error {
 	}
 
 	// Set securities dependencies
-	if err := op.setSecuritiesDependencies(spec); err != nil {
-		return err
+	for _, sec := range op.Security {
+		if err := sec.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
 	// Set external doc dependencies if there is one
@@ -131,8 +141,10 @@ func (op *Operation) setDependencies(spec Specification) error {
 	}
 
 	// Set messages dependencies
-	if err := op.setMessagesDependencies(spec); err != nil {
-		return err
+	for _, msg := range op.Messages {
+		if err := msg.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
 	// Set reply dependencies if there is one
@@ -142,42 +154,6 @@ func (op *Operation) setDependencies(spec Specification) error {
 
 	// Generate reply
 	op.generateReply()
-
-	return nil
-}
-
-func (op *Operation) generateSecuritiesMetadata() {
-	for i, sec := range op.Security {
-		sec.generateMetadata(fmt.Sprintf("%sSecurity%d", op.Name, i))
-	}
-}
-
-func (op *Operation) setSecuritiesDependencies(spec Specification) error {
-	for _, sec := range op.Security {
-		if err := sec.setDependencies(spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (op *Operation) generateMessagesMetadata() error {
-	for i, msg := range op.Messages {
-		if err := msg.generateMetadata(fmt.Sprintf("%sMessage%d", op.Name, i)); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (op *Operation) setMessagesDependencies(spec Specification) error {
-	for _, msg := range op.Messages {
-		if err := msg.setDependencies(spec); err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
@@ -195,12 +171,6 @@ func (op *Operation) setReference(spec Specification) error {
 	op.ReferenceTo = refTo
 
 	return nil
-}
-
-func (op *Operation) generateTraitsMetadata() {
-	for i, t := range op.Traits {
-		t.generateMetadata(fmt.Sprintf("%sTrait%d", op.Name, i))
-	}
 }
 
 func (op *Operation) setTraitsDependenciesAndApply(spec Specification) error {

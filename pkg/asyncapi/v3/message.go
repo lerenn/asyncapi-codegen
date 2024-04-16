@@ -569,7 +569,9 @@ func (msg *Message) mergeHeaders(spec Specification, headers *Schema) error {
 	if msg.Headers == nil {
 		newHeaders := utils.ToValue(headers.Follow())
 		msg.Headers = &newHeaders
-		newHeaders.generateMetadata(msg.Name+MessageHeadersSuffix, false)
+		if err := newHeaders.generateMetadata(msg.Name+MessageHeadersSuffix, false); err != nil {
+			return err
+		}
 		return newHeaders.setDependencies(spec)
 	}
 
@@ -587,7 +589,9 @@ func (msg *Message) mergePayload(spec Specification, payload *Schema) error {
 	if msg.Payload == nil {
 		newPayload := utils.ToValue(payload.Follow())
 		msg.Payload = &newPayload
-		newPayload.generateMetadata(msg.Name+MessagePayloadSuffix, false)
+		if err := newPayload.generateMetadata(msg.Name+MessagePayloadSuffix, false); err != nil {
+			return err
+		}
 		return newPayload.setDependencies(spec)
 	}
 

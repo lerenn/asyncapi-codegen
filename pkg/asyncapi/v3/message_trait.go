@@ -50,16 +50,20 @@ func (mt *MessageTrait) generateMetadata(name string) error {
 		mt.Name = template.Namify(mt.Name)
 	}
 
-	// Generate Headers and Payload metadata
+	// Generate Headers metadata
 	if err := mt.Headers.generateMetadata(name+MessageHeadersSuffix, false); err != nil {
 		return err
 	}
+
+	// generate Payload metadata
 	if err := mt.Payload.generateMetadata(name+MessagePayloadSuffix, false); err != nil {
 		return err
 	}
 
 	// Generate tags metadata
-	mt.generateTagsMetadata()
+	for i, t := range mt.Tags {
+		t.generateMetadata(fmt.Sprintf("%sTag%d", mt.Name, i))
+	}
 
 	// Generate external documentation metadata
 	mt.ExternalDocs.generateMetadata(mt.Name + ExternalDocsNameSuffix)
@@ -68,12 +72,16 @@ func (mt *MessageTrait) generateMetadata(name string) error {
 	mt.Bindings.generateMetadata(mt.Name + BindingsSuffix)
 
 	// Generate Message Examples metadata
-	mt.generateExamplesMetadata()
+	for i, e := range mt.Examples {
+		e.generateMetadata(fmt.Sprintf("%sExample%d", mt.Name, i))
+	}
 
 	return nil
 }
 
 // setDependencies sets dependencies between the different elements of the MessageTrait.
+//
+//nolint:cyclop
 func (mt *MessageTrait) setDependencies(spec Specification) error {
 	// Prevent modification if nil
 	if mt == nil {
@@ -94,8 +102,10 @@ func (mt *MessageTrait) setDependencies(spec Specification) error {
 	}
 
 	// Set tags dependencies
-	if err := mt.setTagsDependencies(spec); err != nil {
-		return err
+	for _, t := range mt.Tags {
+		if err := t.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
 	// Set external documentation dependencies
@@ -109,38 +119,8 @@ func (mt *MessageTrait) setDependencies(spec Specification) error {
 	}
 
 	// Set Message Examples dependencies
-	if err := mt.setExamplesDependencies(spec); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (mt *MessageTrait) generateExamplesMetadata() {
-	for i, e := range mt.Examples {
-		e.generateMetadata(fmt.Sprintf("%sExample%d", mt.Name, i))
-	}
-}
-
-func (mt *MessageTrait) setExamplesDependencies(spec Specification) error {
 	for _, e := range mt.Examples {
 		if err := e.setDependencies(spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (mt *MessageTrait) generateTagsMetadata() {
-	for i, t := range mt.Tags {
-		t.generateMetadata(fmt.Sprintf("%sTag%d", mt.Name, i))
-	}
-}
-
-func (mt *MessageTrait) setTagsDependencies(spec Specification) error {
-	for _, t := range mt.Tags {
-		if err := t.setDependencies(spec); err != nil {
 			return err
 		}
 	}

@@ -105,8 +105,10 @@ func (s *Schema) generateMetadata(name string, isRequired bool) error {
 	s.Name = template.Namify(name)
 
 	// Generate Properties metadata
-	if err := s.generatePropertiesMetadata(); err != nil {
-		return err
+	for n, p := range s.Properties {
+		if err := p.generateMetadata(n+"Property", utils.IsInSlice(s.Required, n)); err != nil {
+			return err
+		}
 	}
 
 	// Generate Pattern Properties metadata
@@ -143,18 +145,24 @@ func (s *Schema) generateMetadata(name string, isRequired bool) error {
 	}
 
 	// Generate AnyOf metadata
-	if err := s.generateAnyOfMetadata(); err != nil {
-		return err
+	for _, v := range s.AnyOf {
+		if err := v.generateMetadata(s.Name+"AnyOf", false); err != nil {
+			return err
+		}
 	}
 
 	// Generate OneOf metadata
-	if err := s.generateOneOfMetadata(); err != nil {
-		return err
+	for _, v := range s.OneOf {
+		if err := v.generateMetadata(s.Name+"OneOf", false); err != nil {
+			return err
+		}
 	}
 
 	// Generate AllOf metadata
-	if err := s.generateAllOfMetadata(); err != nil {
-		return err
+	for _, v := range s.AllOf {
+		if err := v.generateMetadata(s.Name+"AllOf", false); err != nil {
+			return err
+		}
 	}
 
 	// Generate Not metadata
@@ -182,8 +190,10 @@ func (s *Schema) setDependencies(spec Specification) error {
 	}
 
 	// Set Properties dependencies
-	if err := s.setPropertiesDependencies(spec); err != nil {
-		return err
+	for _, p := range s.Properties {
+		if err := p.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
 	// Set Pattern Properties dependencies
@@ -220,17 +230,17 @@ func (s *Schema) setDependencies(spec Specification) error {
 	}
 
 	// Set AnyOf dependencies
-	if err := s.setAnyOfDependencies(spec); err != nil {
+	if err := s.setAnyOfDependenciesAndMerge(spec); err != nil {
 		return err
 	}
 
 	// Set OneOf dependencies
-	if err := s.setOneOfDependencies(spec); err != nil {
+	if err := s.setOneOfDependenciesAndMerge(spec); err != nil {
 		return err
 	}
 
 	// Set AllOf dependencies
-	if err := s.setAllOfDependencies(spec); err != nil {
+	if err := s.setAllOfDependenciesAndMerge(spec); err != nil {
 		return err
 	}
 
@@ -242,16 +252,7 @@ func (s *Schema) setDependencies(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) generateAllOfMetadata() error {
-	for _, v := range s.AllOf {
-		if err := v.generateMetadata(s.Name+"AllOf", false); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Schema) setAllOfDependencies(spec Specification) error {
+func (s *Schema) setAllOfDependenciesAndMerge(spec Specification) error {
 	for _, v := range s.AllOf {
 		if err := v.setDependencies(spec); err != nil {
 			return err
@@ -266,17 +267,7 @@ func (s *Schema) setAllOfDependencies(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) generateOneOfMetadata() error {
-	for _, v := range s.OneOf {
-		if err := v.generateMetadata(s.Name+"OneOf", false); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *Schema) setOneOfDependencies(spec Specification) error {
+func (s *Schema) setOneOfDependenciesAndMerge(spec Specification) error {
 	for _, v := range s.OneOf {
 		if err := v.setDependencies(spec); err != nil {
 			return err
@@ -291,17 +282,7 @@ func (s *Schema) setOneOfDependencies(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) generateAnyOfMetadata() error {
-	for _, v := range s.AnyOf {
-		if err := v.generateMetadata(s.Name+"AnyOf", false); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *Schema) setAnyOfDependencies(spec Specification) error {
+func (s *Schema) setAnyOfDependenciesAndMerge(spec Specification) error {
 	for _, v := range s.AnyOf {
 		if err := v.setDependencies(spec); err != nil {
 			return err
@@ -313,24 +294,6 @@ func (s *Schema) setAnyOfDependencies(spec Specification) error {
 		}
 	}
 
-	return nil
-}
-
-func (s *Schema) generatePropertiesMetadata() error {
-	for n, p := range s.Properties {
-		if err := p.generateMetadata(n+"Property", utils.IsInSlice(s.Required, n)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Schema) setPropertiesDependencies(spec Specification) error {
-	for _, p := range s.Properties {
-		if err := p.setDependencies(spec); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

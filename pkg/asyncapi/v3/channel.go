@@ -51,19 +51,27 @@ func (ch *Channel) generateMetadata(name string) error {
 	// Set name
 	ch.Name = template.Namify(name)
 
-	// Generate metadata
-	if err := ch.generateMessagesMetadata(); err != nil {
-		return err
+	// Generate messages metadata
+	for name, msg := range ch.Messages {
+		if err := msg.generateMetadata(name + "Message"); err != nil {
+			return err
+		}
 	}
-	if err := ch.generateServersMetadata(); err != nil {
-		return err
+
+	// Generate servers metadata
+	for i, srv := range ch.Servers {
+		srv.generateMetadata(fmt.Sprintf("%sServer%d", ch.Name, i))
 	}
 
 	// Generate parameters metadata
-	ch.generateParametersMetadata()
+	for name, param := range ch.Parameters {
+		param.generateMetadata(name + "Parameter")
+	}
 
 	// Generate tags metadata
-	ch.generateTagsMetadata()
+	for i, t := range ch.Tags {
+		t.generateMetadata(fmt.Sprintf("%sTag%d", ch.Name, i))
+	}
 
 	// Generate external documentation metadata
 	ch.ExternalDocs.generateMetadata(ch.Name + ExternalDocsNameSuffix)
@@ -74,6 +82,8 @@ func (ch *Channel) generateMetadata(name string) error {
 }
 
 // setDependencies sets dependencies between the different elements of the Channel.
+//
+//nolint:cyclop
 func (ch *Channel) setDependencies(spec Specification) error {
 	// Prevent modification if nil
 	if ch == nil {
@@ -86,23 +96,31 @@ func (ch *Channel) setDependencies(spec Specification) error {
 	}
 
 	// Set messages dependencies
-	if err := ch.setMessagesDependencies(spec); err != nil {
-		return err
+	for _, msg := range ch.Messages {
+		if err := msg.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
 	// Set servers dependencies
-	if err := ch.setServersDependencies(spec); err != nil {
-		return err
+	for _, srv := range ch.Servers {
+		if err := srv.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
 	// Set parameters dependencies
-	if err := ch.setParametersDependencies(spec); err != nil {
-		return err
+	for _, param := range ch.Parameters {
+		if err := param.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
 	// Set tags dependencies
-	if err := ch.setTagsDependencies(spec); err != nil {
-		return err
+	for _, t := range ch.Tags {
+		if err := t.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
 	// Set external documentation dependencies
@@ -112,76 +130,6 @@ func (ch *Channel) setDependencies(spec Specification) error {
 
 	// Set Bindings dependencies
 	return ch.Bindings.setDependencies(spec)
-}
-
-func (ch *Channel) generateParametersMetadata() {
-	for name, param := range ch.Parameters {
-		param.generateMetadata(name + "Parameter")
-	}
-}
-
-func (ch *Channel) setParametersDependencies(spec Specification) error {
-	for _, param := range ch.Parameters {
-		if err := param.setDependencies(spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (ch *Channel) generateServersMetadata() error {
-	for i, srv := range ch.Servers {
-		srv.generateMetadata(fmt.Sprintf("%sServer%d", ch.Name, i))
-	}
-
-	return nil
-}
-
-func (ch *Channel) setServersDependencies(spec Specification) error {
-	for _, srv := range ch.Servers {
-		if err := srv.setDependencies(spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (ch *Channel) generateMessagesMetadata() error {
-	for name, msg := range ch.Messages {
-		if err := msg.generateMetadata(name + "Message"); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (ch *Channel) setMessagesDependencies(spec Specification) error {
-	for _, msg := range ch.Messages {
-		if err := msg.setDependencies(spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (ch *Channel) generateTagsMetadata() {
-	for i, t := range ch.Tags {
-		t.generateMetadata(fmt.Sprintf("%sTag%d", ch.Name, i))
-	}
-}
-
-func (ch *Channel) setTagsDependencies(spec Specification) error {
-	for _, t := range ch.Tags {
-		if err := t.setDependencies(spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (ch *Channel) setReference(spec Specification) error {
