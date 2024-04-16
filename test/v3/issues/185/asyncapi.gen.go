@@ -80,7 +80,7 @@ type BaseEventInfoSchema struct {
 
 // ContentDataSchema is a schema from the AsyncAPI specification required in messages
 type ContentDataSchema struct {
-	ContentId string `json:"content_id"`
+	ContentId string `json:"contentId"`
 }
 
 // EventPayloadSchema is a schema from the AsyncAPI specification required in messages
