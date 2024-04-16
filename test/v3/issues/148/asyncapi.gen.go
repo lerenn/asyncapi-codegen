@@ -563,7 +563,7 @@ func (e *Error) Error() string {
 
 // RequestMessageHeaders is a schema from the AsyncAPI specification required in messages
 type RequestMessageHeaders struct {
-	ReplyTo *string `json:"reply_to"`
+	ReplyTo *string `json:"replyTo"`
 }
 
 // RequestMessage is the message expected for 'RequestMessage' channel.

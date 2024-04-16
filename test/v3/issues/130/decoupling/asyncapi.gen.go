@@ -432,7 +432,7 @@ func (e *Error) Error() string {
 // UserMessagePayload is a schema from the AsyncAPI specification required in messages
 type UserMessagePayload struct {
 	// Description: Name of the user
-	DisplayName *string `json:"display_name"`
+	DisplayName *string `json:"displayName"`
 }
 
 // UserMessage is the message expected for 'UserMessage' channel.

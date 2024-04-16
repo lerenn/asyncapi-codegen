@@ -928,7 +928,7 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // PingWithIDMessageHeaders is a schema from the AsyncAPI specification required in messages
 type PingWithIDMessageHeaders struct {
 	// Description: Correlation ID set by user
-	CorrelationId *string `json:"correlation_id"`
+	CorrelationId *string `json:"correlationId"`
 }
 
 // PingWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
@@ -1081,7 +1081,7 @@ func (msg PongMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // PongWithIDMessageHeaders is a schema from the AsyncAPI specification required in messages
 type PongWithIDMessageHeaders struct {
 	// Description: Correlation ID set by user
-	CorrelationId *string `json:"correlation_id"`
+	CorrelationId *string `json:"correlationId"`
 }
 
 // PongWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
