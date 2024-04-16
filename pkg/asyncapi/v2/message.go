@@ -55,9 +55,40 @@ type Message struct {
 	CorrelationIDRequired bool   `json:"-"`
 }
 
-// Process processes the Message to make it ready for code generation.
-func (msg *Message) Process(name string, spec Specification) error {
+// generateMetadata generates the metadata for the Message and its children.
+func (msg *Message) generateMetadata(name string) error {
 	msg.Name = template.Namify(name)
+
+	// Generate Payload metadata
+	if msg.Payload != nil {
+		if err := msg.Payload.generateMetadata(msg.Name+"Payload", false); err != nil {
+			return err
+		}
+	}
+
+	// Generate Headers metadata
+	if err := msg.generateHeadersMetadata(); err != nil {
+		return err
+	}
+
+	// Generate OneOf metadata
+	if err := msg.generateOneOfMetadata(); err != nil {
+		return err
+	}
+
+	// Generate CorrelationID metadata
+	msg.generateCorrelationIDMetadata()
+	return nil
+}
+
+// setDependencies sets the dependencies for the Message and its children from the specification.
+func (msg *Message) setDependencies(spec Specification) error {
+	// Set Payload dependencies
+	if msg.Payload != nil {
+		if err := msg.Payload.setDependencies(spec); err != nil {
+			return err
+		}
+	}
 
 	// Add pointer to reference if there is one
 	if msg.Reference != "" {
@@ -68,35 +99,40 @@ func (msg *Message) Process(name string, spec Specification) error {
 		msg.ReferenceTo = refTo
 	}
 
-	// Process Payload
-	if msg.Payload != nil {
-		if err := msg.Payload.Process(msg.Name+"Payload", spec, false); err != nil {
-			return err
-		}
-	}
-
-	// Process Headers
-	if err := msg.processHeaders(spec); err != nil {
+	// Set Headers dependencies
+	if err := msg.setHeadersDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process OneOf
-	if err := msg.processOneOf(spec); err != nil {
+	// Set OneOf dependencies
+	if err := msg.setOneOfDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process correlation ID
-	return msg.processCorrelationID(spec)
+	// Set CorrelationID dependencies
+	return msg.setCorrelationIDDependencies(spec)
 }
 
-func (msg *Message) processHeaders(spec Specification) error {
+func (msg *Message) generateHeadersMetadata() error {
 	// check headers exists
 	if msg.Headers == nil {
 		return nil
 	}
 
 	// Process headers
-	if err := msg.Headers.Process(msg.Name+"Headers", spec, false); err != nil {
+	if err := msg.Headers.generateMetadata(msg.Name+"Headers", false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (msg *Message) setHeadersDependencies(spec Specification) error {
+	if msg.Headers == nil {
+		return nil
+	}
+
+	if err := msg.Headers.setDependencies(spec); err != nil {
 		return err
 	}
 
@@ -110,9 +146,12 @@ func (msg *Message) processHeaders(spec Specification) error {
 	return nil
 }
 
-func (msg *Message) processCorrelationID(spec Specification) error {
+func (msg *Message) generateCorrelationIDMetadata() {
 	msg.createCorrelationIDFieldIfMissing()
 	msg.CorrelationIDRequired = msg.isCorrelationIDRequired()
+}
+
+func (msg *Message) setCorrelationIDDependencies(spec Specification) error {
 	loc, err := msg.getCorrelationIDLocation(spec)
 	if err != nil {
 		return err
@@ -122,10 +161,20 @@ func (msg *Message) processCorrelationID(spec Specification) error {
 	return nil
 }
 
-func (msg *Message) processOneOf(spec Specification) error {
+func (msg *Message) generateOneOfMetadata() error {
 	for k, v := range msg.OneOf {
 		// Process the OneOf
-		if err := v.Process(msg.Name+MessageSuffix+strconv.Itoa(k), spec); err != nil {
+		if err := v.generateMetadata(msg.Name + MessageSuffix + strconv.Itoa(k)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (msg *Message) setOneOfDependencies(spec Specification) error {
+	for _, v := range msg.OneOf {
+		if err := v.setDependencies(spec); err != nil {
 			return err
 		}
 

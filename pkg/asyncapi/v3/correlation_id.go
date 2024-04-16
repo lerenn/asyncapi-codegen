@@ -18,15 +18,23 @@ type CorrelationID struct {
 	ReferenceTo *Channel `json:"-"`
 }
 
-// Process processes the CorrelationID to make it ready for code generation.
-func (c *CorrelationID) Process(path string, spec Specification) error {
+// generateMetadata generates metadata for the CorrelationID.
+func (c *CorrelationID) generateMetadata(path string) {
 	// Prevent modification if nil
 	if c == nil {
-		return nil
+		return
 	}
 
 	// Set name
 	c.Name = template.Namify(path)
+}
+
+// setDependencies sets dependencies between the different elements of the CorrelationID.
+func (c *CorrelationID) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if c == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if c.Reference != "" {

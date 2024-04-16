@@ -18,15 +18,31 @@ type Tag struct {
 	ReferenceTo *Tag `json:"-"`
 }
 
-// Process processes the Tag to make it ready for code generation.
-func (t *Tag) Process(path string, spec Specification) error {
+// generateMetadata generates metadata for the Tag.
+func (t *Tag) generateMetadata(path string) {
+	// Prevent modification if nil
+	if t == nil {
+		return
+	}
+
+	// Set name
+	t.Name = template.Namify(path)
+
+	// Generate ExternalDocs metadata
+	t.ExternalDocs.generateMetadata(path + ExternalDocsNameSuffix)
+}
+
+// setDependencies sets dependencies between the different elements of the Tag.
+func (t *Tag) setDependencies(spec Specification) error {
 	// Prevent modification if nil
 	if t == nil {
 		return nil
 	}
 
-	// Set name
-	t.Name = template.Namify(path)
+	// Process external documentation
+	if err := t.ExternalDocs.setDependencies(spec); err != nil {
+		return err
+	}
 
 	// Add pointer to reference if there is one
 	if t.Reference != "" {
