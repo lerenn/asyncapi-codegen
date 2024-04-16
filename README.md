@@ -324,20 +324,10 @@ Payload:
 ```
 
 Here are the generated JSON sent, given by the different options:
-
-```json
-/* No conversion (none) */
-{ "This_is a-Property": "value" }
-
-/* Camel case (camel) */
-{ "ThisIsAProperty": "value" }
-
-/* Kebab case (kebab) */
-{ "this-is-a-property": "value" }
-
-/* Snale case (snake) */
-{ "this_is_a_property": "value" }
-```
+* No conversion (`none`): `{ "This_is a-Property": "value" }`
+* Camel case (`camel`): `{ "ThisIsAProperty": "value" }`
+* Kebab case (`kebab`): `{ "this-is-a-property": "value" }`
+* Snake case (`snake`): `{ "this_is_a_property": "value" }`
 
 ## Advanced topics
 

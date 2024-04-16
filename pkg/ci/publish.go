@@ -30,9 +30,9 @@ var (
 // Note: if this is not 'main' branch, then it will just push docker image with
 // git tag.
 func Publish(ctx context.Context, client *dagger.Client, tag string) error {
-	if err := tagAndPush(tag); err != nil {
-		return err
-	}
+	// if err := tagAndPush(tag); err != nil {
+	// 	return err
+	// }
 
 	if err := publishDocker(ctx, client, tag); err != nil {
 		return err
