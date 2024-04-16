@@ -20,15 +20,23 @@ type ServerVariable struct {
 	ReferenceTo *ServerVariable `json:"-"`
 }
 
-// Process processes the ServerVariable to make it ready for code generation.
-func (sv *ServerVariable) Process(path string, spec Specification) error {
+// generateMetadata generates metadata for the ServerVariable.
+func (sv *ServerVariable) generateMetadata(path string) {
 	// Prevent modification if nil
 	if sv == nil {
-		return nil
+		return
 	}
 
 	// Set name
 	sv.Name = template.Namify(path)
+}
+
+// setDependencies sets dependencies between the different elements of the ServerVariable.
+func (sv *ServerVariable) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if sv == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if sv.Reference != "" {

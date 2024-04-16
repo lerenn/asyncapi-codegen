@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/sasl"
 )
 
 // Check that it still fills the interface.
@@ -16,15 +18,19 @@ var _ extensions.BrokerController = (*Controller)(nil)
 
 // Controller is the Kafka implementation for asyncapi-codegen.
 type Controller struct {
-	hosts     []string
-	partition int
-	maxBytes  int
-
+	hosts []string
 	// Reception only
 	groupID string
 
-	logger     extensions.Logger
+	dialer *kafka.Dialer
+
+	partition  int
+	maxBytes   int
 	autoCommit bool
+
+	connectionTest bool
+
+	logger extensions.Logger
 }
 
 // MessagesHandler is a function that can be used to process messages from the broker.
@@ -42,17 +48,35 @@ type ControllerOption func(controller *Controller)
 func NewController(hosts []string, options ...ControllerOption) (*Controller, error) {
 	// Create default controller
 	controller := &Controller{
-		logger:     extensions.DummyLogger{},
-		groupID:    brokers.DefaultQueueGroupID,
-		hosts:      hosts,
-		partition:  0,
-		maxBytes:   10e6, // 10MB
-		autoCommit: true,
+		hosts:          hosts,
+		logger:         extensions.DummyLogger{},
+		groupID:        brokers.DefaultQueueGroupID,
+		dialer:         kafka.DefaultDialer,
+		partition:      0,
+		maxBytes:       10e6, // 10MB
+		autoCommit:     true,
+		connectionTest: true,
 	}
 
 	// Execute options
 	for _, option := range options {
 		option(controller)
+	}
+
+	// kafka has no ping or something like this to test if dialer can create a successful connection to kafka
+	// so if connectionTest is enabled create a connection and try to list brokers from kafka and validate
+	// we can make a connection to kafka
+	if controller.connectionTest {
+		conn, err := controller.dialer.Dial("tcp", controller.hosts[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to create dialer for kafka: %w", err)
+		}
+
+		_, err = conn.Brokers()
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to kafka: %w", err)
+		}
+		conn.Close()
 	}
 
 	return controller, nil
@@ -94,14 +118,44 @@ func WithAutoCommit(enabled bool) ControllerOption {
 	}
 }
 
+// WithTLS set the tls.Config that will be used for kafka.Dial, kafka.Reader and kafka.Writer.
+func WithTLS(tls *tls.Config) ControllerOption {
+	return func(controller *Controller) {
+		controller.dialer.TLS = tls
+	}
+}
+
+// WithSasl set the sasl.Mechanism that will be used for kafka.Dial, kafka.Reader and kafka.Writer.
+func WithSasl(sasl sasl.Mechanism) ControllerOption {
+	return func(controller *Controller) {
+		controller.dialer.SASLMechanism = sasl
+	}
+}
+
+// WithConnectionTest set the connectionTest feature toggle to configure if NewController
+// should validate the connection on creation.
+func WithConnectionTest(enabled bool) ControllerOption {
+	return func(controller *Controller) {
+		controller.connectionTest = enabled
+	}
+}
+
 // Publish a message to the broker.
 func (c *Controller) Publish(ctx context.Context, channel string, um extensions.BrokerMessage) error {
 	// Create new writer
-	w := kafka.NewWriter(kafka.WriterConfig{
-		Brokers:  c.hosts,
+	w := kafka.Writer{
+		Addr:     kafka.TCP(c.hosts...),
 		Topic:    channel,
 		Balancer: &kafka.LeastBytes{},
-	})
+		Transport: &kafka.Transport{
+			// reuse the optionally TLS and SASLMechanism from dialer provided by the user to pass it to the writer
+			// it can be nil
+			TLS:  c.dialer.TLS.Clone(),
+			SASL: c.dialer.SASLMechanism,
+		},
+	}
+
+	defer w.Close()
 
 	// Create the message
 	msg := kafka.Message{
@@ -153,6 +207,7 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 		Partition: c.partition,
 		MaxBytes:  c.maxBytes,
 		GroupID:   c.groupID,
+		Dialer:    c.dialer,
 	})
 
 	// Create subscription
@@ -180,7 +235,7 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 
 func (c *Controller) checkTopicExistOrCreateIt(ctx context.Context, topic string) error {
 	// Get connection to first host
-	conn, err := kafka.Dial("tcp", c.hosts[0])
+	conn, err := c.dialer.Dial("tcp", c.hosts[0])
 	if err != nil {
 		return err
 	}

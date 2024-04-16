@@ -52,15 +52,22 @@ type SecurityScheme struct {
 	ReferenceTo *SecurityScheme `json:"-"`
 }
 
-// Process processes the SecurityScheme to make it ready for code generation.
-func (s *SecurityScheme) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the SecurityScheme.
+func (s *SecurityScheme) generateMetadata(name string) {
 	// Prevent modification if nil
 	if s == nil {
-		return nil
+		return
 	}
 
 	// Set name
 	s.Name = template.Namify(name)
+}
+
+func (s *SecurityScheme) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if s == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if s.Reference != "" {

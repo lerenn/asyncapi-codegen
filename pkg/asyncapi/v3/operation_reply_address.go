@@ -23,15 +23,23 @@ type OperationReplyAddress struct {
 	LocationRequired bool                   `json:"-"`
 }
 
-// Process processes the OperationReplyAddress to make it ready for code generation.
-func (ora *OperationReplyAddress) Process(name string, op *Operation, spec Specification) error {
+// generateMetadata generates metadata for the OperationReplyAddress.
+func (ora *OperationReplyAddress) generateMetadata(name string) {
 	// Prevent modification if nil
 	if ora == nil {
-		return nil
+		return
 	}
 
 	// Set name
 	ora.Name = template.Namify(name)
+}
+
+// setDependencies sets dependencies between the different elements of the OperationReplyAddress.
+func (ora *OperationReplyAddress) setDependencies(op *Operation, spec Specification) error {
+	// Prevent modification if nil
+	if ora == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if ora.Reference != "" {

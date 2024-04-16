@@ -1,6 +1,8 @@
 package nats
 
 import (
+	"crypto/tls"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -9,20 +11,26 @@ import (
 )
 
 func TestValidateAckMechanism(t *testing.T) {
-	nb, err := NewController("nats://nats:4222", WithQueueGroup("ValidateAckMechanism"))
+	subj := "CoreNatsValidateAckMechanism"
+	nb, err := NewController("nats://nats:4222", WithQueueGroup(subj))
 	assert.NoError(t, err, "new controller should not return error")
-
-	subj := "ValidateAckMechanism"
 
 	t.Run("validate ack is not supported in core NATS", func(t *testing.T) {
 		wg := sync.WaitGroup{}
+		subj = fmt.Sprintf("%s/%s", subj, "ack")
 
 		sub, err := nb.connection.Subscribe(subj, func(msg *nats.Msg) {
 			defer wg.Done()
 			err := msg.Ack()
 			assert.ErrorIs(t, err, nats.ErrMsgNoReply, "core NATS should not support acks")
 		})
-		defer assert.NoError(t, sub.Drain())
+
+		// for some reason calling drain with defer assert.NoError(t, sub.Drain()) breaks the test so wrapping in a closure
+		defer func(sub *nats.Subscription) {
+			err := sub.Drain()
+			assert.NoError(t, err, "Drain should not return a error")
+		}(sub)
+
 		assert.NoError(t, err, "subscribe should not return error")
 
 		wg.Add(1)
@@ -34,13 +42,19 @@ func TestValidateAckMechanism(t *testing.T) {
 
 	t.Run("validate nak is not supported in core NATS", func(t *testing.T) {
 		wg := sync.WaitGroup{}
+		subj = fmt.Sprintf("%s/%s", subj, "nak")
 
 		sub, err := nb.connection.Subscribe(subj, func(msg *nats.Msg) {
 			defer wg.Done()
 			err := msg.Nak()
 			assert.ErrorIs(t, err, nats.ErrMsgNoReply, "core NATS should not support naks")
 		})
-		defer assert.NoError(t, sub.Drain())
+
+		// for some reason calling drain with defer assert.NoError(t, sub.Drain()) breaks the test so wrapping in a closure
+		defer func(sub *nats.Subscription) {
+			err := sub.Drain()
+			assert.NoError(t, err, "Drain should not return a error")
+		}(sub)
 		assert.NoError(t, err, "subscribe should not return error")
 
 		wg.Add(1)
@@ -49,4 +63,46 @@ func TestValidateAckMechanism(t *testing.T) {
 
 		wg.Wait()
 	})
+}
+
+func TestSecureConnectionToNATSCore(t *testing.T) {
+	// for testing with InsecureSkipVerify to skip server certificate validation for our self-signed certificate
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+
+	t.Run("test connection is not successfully to TLS secured core NATS broker without TLS config", func(t *testing.T) {
+		_, err := NewController("nats://nats-tls:4222",
+			WithQueueGroup("secureConnectTest"))
+		assert.Error(t, err, "new connection to TLS secured NATS broker without TLS config should return a error")
+	})
+
+	t.Run("test connection is successfully to TLS secured core NATS broker with TLS config", func(t *testing.T) {
+		nb, err := NewController("nats://nats-tls:4222",
+			WithQueueGroup("secureConnectTest"),
+			WithConnectionOpts(nats.Secure(tlsConfig)))
+		assert.NoError(t, err, "new connection to TLS secured NATS broker with TLS config should return no error")
+		defer nb.Close()
+	})
+
+	t.Run("test connection is not successfully to TLS secured core NATS broker with TLS config and missing credentials",
+		func(t *testing.T) {
+			_, err := NewController("nats://nats-tls-basic-auth:4222",
+				WithQueueGroup("secureConnectTest"),
+				WithConnectionOpts(nats.Secure(tlsConfig)),
+			)
+			assert.Error(t, err, "new connection to TLS secured NATS broker with TLS config and missing credentials should return a error") //nolint:lll
+		})
+
+	t.Run("test connection is successfully to TLS secured core NATS broker with TLS config and credentials",
+		func(t *testing.T) {
+			nb, err := NewController("nats://nats-tls-basic-auth:4222",
+				WithQueueGroup("secureConnectTest"),
+				WithConnectionOpts(
+					nats.Secure(tlsConfig),
+					nats.UserInfo("user", "password"),
+				),
+			)
+			assert.NoError(t, err,
+				"new connection to TLS secured NATS broker with TLS config and basic credentials should return no error")
+			defer nb.Close()
+		})
 }

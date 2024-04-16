@@ -23,15 +23,23 @@ type ExternalDocumentation struct {
 	ReferenceTo *ExternalDocumentation `json:"-"`
 }
 
-// Process processes the ExternalDocumentation to make it ready for code generation.
-func (doc *ExternalDocumentation) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the ExternalDocumentation.
+func (doc *ExternalDocumentation) generateMetadata(name string) {
 	// Return if empty
 	if doc == nil {
-		return nil
+		return
 	}
 
 	// Set name
 	doc.Name = template.Namify(name)
+}
+
+// setDependencies sets dependencies between the different elements of the ExternalDocumentation.
+func (doc *ExternalDocumentation) setDependencies(spec Specification) error {
+	// Return if empty
+	if doc == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if doc.Reference != "" {
