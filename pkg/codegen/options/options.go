@@ -24,4 +24,8 @@ type Options struct {
 	// DisableFormatting states if the formatting should be disabled when
 	// writing the generated code
 	DisableFormatting bool
+
+	// ConvertKeys defines a schema property keys conversion strategy.
+	// Supported values: snake, camel, kebab, none
+	ConvertKeys string
 }

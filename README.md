@@ -288,7 +288,9 @@ your broker to the generated code.
 
 ## CLI options
 
-The default options for oapi-codegen will generate everything; user, application,
+### Generation parts (`-g`)
+
+The default options for asyncapi-codegen will generate everything; user, application,
 and type definitions but you can generate subsets of those via the -generate
 flag. It defaults to user,application,types
 but you can specify any combination of those.
@@ -302,6 +304,40 @@ Here are the universal parts that you can generate:
 * `types`: all type definitions for all types in the AsyncAPI spec.
   This will be everything under `#components`, as well as request parameter,
   request body, and response type objects.
+
+### JSON keys conversion (`--convert-keys`)
+
+By default, the generation will use the key specified in the asyncapi codegen.
+This is also called the `none` convertion. You can also convert your keys to
+`snake`, `camel`, or `kebab`.
+
+#### Example
+
+Given this schema:
+
+```yaml
+Payload:
+  type: object
+  properties:
+    This_is a-Property:
+      type: string
+```
+
+Here are the generated JSON sent, given by the different options:
+
+```json
+/* No conversion (none) */
+{ "This_is a-Property": "value" }
+
+/* Camel case (camel) */
+{ "ThisIsAProperty": "value" }
+
+/* Kebab case (kebab) */
+{ "this-is-a-property": "value" }
+
+/* Snale case (snake) */
+{ "this_is_a_property": "value" }
+```
 
 ## Advanced topics
 

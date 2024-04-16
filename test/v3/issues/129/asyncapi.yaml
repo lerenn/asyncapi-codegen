@@ -1,0 +1,23 @@
+asyncapi: 3.0.0
+
+channels:
+  test: 
+    address: v3.issue129.test
+    messages:
+      test:
+        payload:
+          $ref: '#/components/schemas/Test'
+
+operations:
+  receiveTest:
+    action: receive
+    channel:
+      $ref: '#/channels/test'
+
+components:
+  schemas:
+    Test:
+      type: object
+      properties:
+        This_is a-Property:
+          type: string
