@@ -27,7 +27,7 @@ func BindBrokers(brokers map[string]*dagger.Service) func(r *dagger.Container) *
 func Brokers(client *dagger.Client) map[string]*dagger.Service {
 	brokers := make(map[string]*dagger.Service)
 
-	brokers["kafka"] = BrokerKafka(client)
+	brokers["kafka"] = BrokerRedPandaAsKafka(client)
 	brokers["kafka-tls"] = BrokerKafkaSecure(client)
 	brokers["kafka-tls-basic-auth"] = BrokerKafkaSecureBasicAuth(client)
 	brokers["nats"] = BrokerNATS(client)
@@ -40,26 +40,25 @@ func Brokers(client *dagger.Client) map[string]*dagger.Service {
 	return brokers
 }
 
-// BrokerKafka returns a service for the Kafka broker.
-func BrokerKafka(client *dagger.Client) *dagger.Service {
+func BrokerRedPandaAsKafka(client *dagger.Client) *dagger.Service {
 	return client.Container().
 		//	Set container image
-		From(KafkaImage).
+		From(RedPandaImage).
 
-		// Add environment variables
-		WithEnvVariable("KAFKA_CFG_NODE_ID", "0").
-		WithEnvVariable("KAFKA_CFG_PROCESS_ROLES", "controller,broker").
-		WithEnvVariable("KAFKA_CFG_LISTENERS", "INTERNAL://:9092,CONTROLLER://:9093").
-		WithEnvVariable("KAFKA_CFG_ADVERTISED_LISTENERS", "INTERNAL://kafka:9092").
-		WithEnvVariable("KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP",
-			"CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT").
-		WithEnvVariable("KAFKA_CFG_CONTROLLER_QUORUM_VOTERS", "0@:9093").
-		WithEnvVariable("KAFKA_CFG_CONTROLLER_LISTENER_NAMES", "CONTROLLER").
-		WithEnvVariable("KAFKA_CFG_INTER_BROKER_LISTENER_NAME", "INTERNAL").
-
-		// Add exposed ports
-		WithExposedPort(9092).
-		WithExposedPort(9093).
+		// Add Command
+		WithExec([]string{
+			"redpanda",
+			"start",
+			"--kafka-addr internal://0.0.0.0:9092,controller://0.0.0.0:9093",
+			"--advertise-kafka-addr internal://kafka:9092,external://localhost:9093",
+			// Mode dev-container uses well-known configuration properties
+			// for development in containers.
+			"--mode dev-container",
+			// Tells Seastar (the framework Redpanda uses under the hood) to
+			// use 1 core on the system.
+			"--smp 1",
+			"--default-log-level=info",
+		}).
 
 		// Return container as a service
 		AsService()
