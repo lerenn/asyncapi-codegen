@@ -16,6 +16,15 @@ endif
 ci: ## Run the CI
 	@${DAGGER_COMMAND} all
 
+.PHONY: dev/up
+dev/up: ## Start the development environment
+	@go run ./tools/generate-certs
+	@docker-compose up -d
+
+.PHONY: dev/down
+dev/down: ## Stop the development environment
+	@docker-compose down
+
 .PHONY: lint
 lint: ## Lint the code
 	@${DAGGER_COMMAND} linter

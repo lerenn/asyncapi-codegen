@@ -12,6 +12,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
+	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 	natsio "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/segmentio/kafka-go/sasl/scram"
@@ -22,8 +23,15 @@ import (
 func TestSuite(t *testing.T) {
 	name := "issue169"
 
-	// core nats with TLS and basic auth
-	natsBrokerTLSBasicAuth, err := nats.NewController("nats://nats-tls-basic-auth:4222", nats.WithQueueGroup(name),
+	// NATS Core with TLS and basic auth
+	natsBrokerTLSBasicAuth, err := nats.NewController(
+		testutil.BrokerAddress(testutil.BrokerAddressParams{
+			Schema:         "nats",
+			DockerizedAddr: "nats-tls-basic-auth",
+			DockerizedPort: "4222",
+			LocalPort:      "4224",
+		}),
+		nats.WithQueueGroup(name),
 		nats.WithConnectionOpts(natsio.Secure(&tls.Config{InsecureSkipVerify: true}),
 			natsio.UserInfo("user", "password"),
 		),
@@ -32,9 +40,14 @@ func TestSuite(t *testing.T) {
 	defer natsBrokerTLSBasicAuth.Close()
 	suite.Run(t, NewSuite(natsBrokerTLSBasicAuth))
 
-	// nats jetstream with TLS and basic auth
+	// NATS jetstream with TLS and basic auth
 	natsJSBrokerTLSBasicAuth, err := natsjetstream.NewController(
-		"nats://nats-jetstream-tls-basic-auth:4222",
+		testutil.BrokerAddress(testutil.BrokerAddressParams{
+			Schema:         "nats",
+			DockerizedAddr: "nats-jetstream-tls-basic-auth",
+			DockerizedPort: "4222",
+			LocalPort:      "4227",
+		}),
 		natsjetstream.WithStreamConfig(jetstream.StreamConfig{
 			Name:     name,
 			Subjects: ChannelsPaths,
@@ -48,10 +61,17 @@ func TestSuite(t *testing.T) {
 	defer natsJSBrokerTLSBasicAuth.Close()
 	suite.Run(t, NewSuite(natsJSBrokerTLSBasicAuth))
 
-	// kafka with TLS and basic auth
+	// Kafka with TLS and basic auth
 	sha512Mechanism, err := scram.Mechanism(scram.SHA512, "user", "password")
 	assert.NoError(t, err, "new scram.SHA512 should not return a error")
-	kafkaBrokerTLSBasicAuth, err := kafka.NewController([]string{"kafka-tls-basic-auth:9092"},
+	kafkaBrokerTLSBasicAuth, err := kafka.NewController(
+		[]string{
+			testutil.BrokerAddress(testutil.BrokerAddressParams{
+				DockerizedAddr: "kafka-tls-basic-auth",
+				DockerizedPort: "9092",
+				LocalPort:      "9096",
+			}),
+		},
 		kafka.WithGroupID(name),
 		kafka.WithTLS(&tls.Config{InsecureSkipVerify: true}),
 		kafka.WithSasl(sha512Mechanism),
@@ -65,8 +85,6 @@ type Suite struct {
 	app    *AppController
 	user   *UserController
 	suite.Suite
-
-	wg sync.WaitGroup
 }
 
 func NewSuite(broker extensions.BrokerController) *Suite {
@@ -92,52 +110,28 @@ func (suite *Suite) TearDownTest() {
 	suite.user.Close(context.Background())
 }
 
-func (suite *Suite) TestIssue169App() {
+func (suite *Suite) TestIssue169() {
+	var wg sync.WaitGroup
+
 	// Test message
-	sent := Issue169MsgPublishMessage{
+	sent := Issue169MsgMessage{
 		Payload: "some test msg",
 	}
 
-	// validate msg
+	// Validate msg
 	err := suite.app.SubscribeIssue169Msg(context.Background(),
-		func(ctx context.Context, msg Issue169MsgSubscribeMessage) error {
-			defer suite.wg.Done()
-			suite.app.UnsubscribeIssue169Msg(ctx)
+		func(ctx context.Context, msg Issue169MsgMessage) error {
 			suite.Require().Equal(sent.Payload, msg.Payload)
+			wg.Done()
 			return nil
 		})
 	suite.Require().NoError(err)
-
-	suite.wg.Add(1)
-
-	// Publish the message
-	err = suite.app.PublishIssue169Msg(context.Background(), sent)
-	suite.Require().NoError(err)
-
-	suite.wg.Wait()
-}
-
-func (suite *Suite) TestIssue169User() {
-	// Test message
-	sent := Issue169MsgPublishMessage{
-		Payload: "some test msg",
-	}
-
-	// validate message
-	err := suite.user.SubscribeIssue169Msg(context.Background(),
-		func(ctx context.Context, msg Issue169MsgSubscribeMessage) error {
-			defer suite.wg.Done()
-			suite.user.UnsubscribeIssue169Msg(ctx)
-			suite.Require().Equal(sent.Payload, msg.Payload)
-			return nil
-		})
-	suite.Require().NoError(err)
-
-	suite.wg.Add(1)
+	defer suite.app.UnsubscribeIssue169Msg(context.Background())
 
 	// Publish the message
+	wg.Add(1)
 	err = suite.user.PublishIssue169Msg(context.Background(), sent)
 	suite.Require().NoError(err)
 
-	suite.wg.Wait()
+	wg.Wait()
 }

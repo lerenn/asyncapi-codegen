@@ -62,13 +62,13 @@ func (suite *Suite) TestParameter() {
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromReceiveUserSignedUpOperation(context.Background(), params)
-	wg.Add(1)
 
 	// Set a new message
 	var msg UserMessage
 	msg.Payload.Name = utils.ToPointer("testing")
 
 	// Send the new message
+	wg.Add(1)
 	err = suite.user.SendToReceiveUserSignedUpOperation(context.Background(), params, msg)
 	suite.Require().NoError(err)
 

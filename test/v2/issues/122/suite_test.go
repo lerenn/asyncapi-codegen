@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
+	testutil "github.com/lerenn/asyncapi-codegen/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -18,7 +18,7 @@ import (
 var errTest = errors.New("some test error")
 
 func TestSuite(t *testing.T) {
-	brokers, cleanup := asyncapi_test.BrokerControllers(t)
+	brokers, cleanup := testutil.BrokerControllers(t)
 	defer cleanup()
 
 	// Only do it with one broker as this is not testing the broker
@@ -76,10 +76,10 @@ func (suite *Suite) TestErrorHandlerForApp() {
 			return errTest
 		})
 	suite.Require().NoError(err)
-
-	suite.wg.Add(1)
+	defer suite.app.UnsubscribeV2Issue122Msg(context.Background())
 
 	// Publish the message
+	suite.wg.Add(1)
 	err = suite.user.PublishV2Issue122Msg(context.Background(), sent)
 	suite.Require().NoError(err)
 
@@ -100,10 +100,10 @@ func (suite *Suite) TestErrorHandlerForUser() {
 			return errTest
 		})
 	suite.Require().NoError(err)
-
-	suite.wg.Add(1)
+	defer suite.user.UnsubscribeV2Issue122Msg(context.Background())
 
 	// Publish the message
+	suite.wg.Add(1)
 	err = suite.user.PublishV2Issue122Msg(context.Background(), sent)
 	suite.Require().NoError(err)
 
