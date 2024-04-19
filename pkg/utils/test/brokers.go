@@ -4,6 +4,7 @@ import (
 	"os"
 )
 
+// BrokerAddressParams is the parameters for the BrokerAddress function.
 type BrokerAddressParams struct {
 	Schema string
 	Port   string
@@ -27,28 +28,24 @@ func BrokerAddress(params BrokerAddressParams) string {
 	}
 
 	// Set address based on environment
-	if os.Getenv("ASYNCAPI_DOCKERIZED") != "" {
+	dockerized := (os.Getenv("ASYNCAPI_DOCKERIZED") != "")
+	switch {
+	case dockerized:
 		url += params.DockerizedAddr
+	case params.LocalAddr != "":
+		url += params.LocalAddr
+	default:
+		url += "localhost"
+	}
 
-		// Set port if not empty
-		if params.DockerizedPort != "" {
-			url += ":" + params.DockerizedPort
-		} else if params.Port != "" {
-			url += ":" + params.Port
-		}
-	} else {
-		if params.LocalAddr != "" {
-			url += params.LocalAddr
-		} else {
-			url += "localhost"
-		}
-
-		// Set port if not empty
-		if params.LocalPort != "" {
-			url += ":" + params.LocalPort
-		} else if params.Port != "" {
-			url += ":" + params.Port
-		}
+	// Set port if not empty
+	switch {
+	case dockerized && params.DockerizedPort != "":
+		url += ":" + params.DockerizedPort
+	case !dockerized && params.LocalPort != "":
+		url += ":" + params.LocalPort
+	case params.Port != "":
+		url += ":" + params.Port
 	}
 
 	return url

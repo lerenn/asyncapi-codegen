@@ -25,8 +25,14 @@ func createNATSCerts() {
 	if err := os.MkdirAll(basePath, os.ModePerm); err != nil {
 		panic(err)
 	}
-	os.WriteFile(filepath.Join(basePath, "server-key.pem"), key, os.ModePerm)
-	os.WriteFile(filepath.Join(basePath, "server-cert.pem"), cert, os.ModePerm)
+
+	if err := os.WriteFile(filepath.Join(basePath, "server-key.pem"), key, os.ModePerm); err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(basePath, "server-cert.pem"), cert, os.ModePerm); err != nil {
+		panic(err)
+	}
 }
 
 func createKafkaCerts() {
@@ -41,7 +47,16 @@ func createKafkaCerts() {
 	if err := os.MkdirAll(basePath, os.ModePerm); err != nil {
 		panic(err)
 	}
-	os.WriteFile(filepath.Join(basePath, "kafka.keystore.key"), key, os.ModePerm)
-	os.WriteFile(filepath.Join(basePath, "kafka.keystore.pem"), cert, os.ModePerm)
-	os.WriteFile(filepath.Join(basePath, "kafka.truststore.pem"), cacert, os.ModePerm)
+
+	if err := os.WriteFile(filepath.Join(basePath, "kafka.keystore.key"), key, os.ModePerm); err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(basePath, "kafka.keystore.pem"), cert, os.ModePerm); err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(basePath, "kafka.truststore.pem"), cacert, os.ModePerm); err != nil {
+		panic(err)
+	}
 }

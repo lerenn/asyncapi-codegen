@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"dagger.io/dagger"
-
 	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 

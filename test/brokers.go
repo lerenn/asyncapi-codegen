@@ -10,6 +10,7 @@ import (
 	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 
+// BrokerAddressParams is the parameters for the BrokerAddress function.
 type BrokerAddressParams struct {
 	Schema string
 	Port   string

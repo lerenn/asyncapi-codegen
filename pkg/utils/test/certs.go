@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// GenerateSelfSignedCertificate generates a self-signed certificate.
 func GenerateSelfSignedCertificate(name string) ([]byte, []byte, error) {
 	// Generate private key
 	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
@@ -34,6 +35,7 @@ func GenerateSelfSignedCertificate(name string) ([]byte, []byte, error) {
 	return keyBytes, certBytes, nil
 }
 
+// GenerateSelfSignedCertificateWithCA generates a self-signed certificate with a CA certificate.
 func GenerateSelfSignedCertificateWithCA(name string) ([]byte, []byte, []byte, error) {
 	// Generate private key for CA
 	caPrivateKey, err := rsa.GenerateKey(rand.Reader, 4096)

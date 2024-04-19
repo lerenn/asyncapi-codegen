@@ -72,6 +72,7 @@ func TestValidateAckMechanism(t *testing.T) {
 	})
 }
 
+//nolint:funlen
 func TestSecureConnectionToNATSCore(t *testing.T) {
 	// for testing with InsecureSkipVerify to skip server certificate validation for our self-signed certificate
 	tlsConfig := &tls.Config{InsecureSkipVerify: true}

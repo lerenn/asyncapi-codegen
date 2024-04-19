@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:funlen
 func TestSecureConnectionToKafka(t *testing.T) {
 	// for testing with InsecureSkipVerify to skip server certificate validation for our self-signed certificate
 	tlsConfig := &tls.Config{InsecureSkipVerify: true}
