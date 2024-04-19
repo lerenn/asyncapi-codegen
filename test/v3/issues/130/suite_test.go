@@ -5,7 +5,7 @@ package issue130
 import (
 	"testing"
 
-	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
+	testutil "github.com/lerenn/asyncapi-codegen/test"
 	"github.com/lerenn/asyncapi-codegen/test/v3/issues/130/decoupling"
 	"github.com/lerenn/asyncapi-codegen/test/v3/issues/130/parameters"
 	"github.com/lerenn/asyncapi-codegen/test/v3/issues/130/requestreply"
@@ -14,7 +14,7 @@ import (
 )
 
 func TestSuite(t *testing.T) {
-	brokers, cleanup := asyncapi_test.BrokerControllers(t)
+	brokers, cleanup := testutil.BrokerControllers(t)
 	defer cleanup()
 
 	for _, b := range brokers {

@@ -24,7 +24,7 @@ func (suite *ParseSuite) TestCorrectVersions() {
 	suite.Require().Equal(len(correctVersions), len(SupportedVersions))
 
 	for _, v := range correctVersions {
-		b := []byte(fmt.Sprintf("{\"version\":\"%s\"}", v))
+		b := []byte(fmt.Sprintf("{\"asyncapi\":\"%s\"}", v))
 		_, err := FromJSON(b)
 		suite.Require().NoError(err)
 	}
@@ -37,7 +37,7 @@ func (suite *ParseSuite) TestIncorrectVersions() {
 	}
 
 	for _, v := range correctVersions {
-		b := []byte(fmt.Sprintf("{\"version\":\"%s\"}", v))
+		b := []byte(fmt.Sprintf("{\"asyncapi\":\"%s\"}", v))
 		_, err := FromJSON(b)
 		suite.Require().Error(err)
 		suite.Require().ErrorIs(err, ErrInvalidVersion)

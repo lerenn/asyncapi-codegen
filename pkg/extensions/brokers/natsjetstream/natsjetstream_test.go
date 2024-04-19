@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,12 @@ func TestValidateAckMechanism(t *testing.T) {
 	subj := "NatsJetstreamValidateAckMechanism"
 
 	broker, err := NewController(
-		"nats://nats-jetstream:4222",
+		testutil.BrokerAddress(testutil.BrokerAddressParams{
+			Schema:         "nats",
+			DockerizedAddr: "nats-jetstream",
+			DockerizedPort: "4222",
+			LocalPort:      "4225",
+		}),
 		WithStreamConfig(jetstream.StreamConfig{
 			Name:     subj,
 			Subjects: []string{subj},
@@ -87,7 +93,12 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 			subj := "secureConnectTestWithoutTLSConfig"
 
 			_, err := NewController(
-				"nats://nats-jetstream-tls:4222",
+				testutil.BrokerAddress(testutil.BrokerAddressParams{
+					Schema:         "nats",
+					DockerizedAddr: "nats-jetstream-tls",
+					DockerizedPort: "4222",
+					LocalPort:      "4226",
+				}),
 				WithStreamConfig(jetstream.StreamConfig{
 					Name:     subj,
 					Subjects: []string{subj},
@@ -101,7 +112,12 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 		subj := "secureConnectTestWithTLSConfig"
 
 		jc, err := NewController(
-			"nats://nats-jetstream-tls:4222",
+			testutil.BrokerAddress(testutil.BrokerAddressParams{
+				Schema:         "nats",
+				DockerizedAddr: "nats-jetstream-tls",
+				DockerizedPort: "4222",
+				LocalPort:      "4226",
+			}),
 			WithStreamConfig(jetstream.StreamConfig{
 				Name:     subj,
 				Subjects: []string{subj},
@@ -119,7 +135,12 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 			subj := "secureConnectTestWithTLSConfigAndWithoutCredentials"
 
 			_, err := NewController(
-				"nats://nats-jetstream-tls-basic-auth:4222",
+				testutil.BrokerAddress(testutil.BrokerAddressParams{
+					Schema:         "nats",
+					DockerizedAddr: "nats-jetstream-tls-basic-auth",
+					DockerizedPort: "4222",
+					LocalPort:      "4227",
+				}),
 				WithStreamConfig(jetstream.StreamConfig{
 					Name:     subj,
 					Subjects: []string{subj},
@@ -136,7 +157,12 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 			subj := "secureConnectTestWithTLSConfigAndCredentials"
 
 			jc, err := NewController(
-				"nats://nats-jetstream-tls-basic-auth:4222",
+				testutil.BrokerAddress(testutil.BrokerAddressParams{
+					Schema:         "nats",
+					DockerizedAddr: "nats-jetstream-tls-basic-auth",
+					DockerizedPort: "4222",
+					LocalPort:      "4227",
+				}),
 				WithStreamConfig(jetstream.StreamConfig{
 					Name:     subj,
 					Subjects: []string{subj},

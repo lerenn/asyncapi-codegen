@@ -7,11 +7,7 @@ info:
   title: Sample App
   version: 1.0.0
 channels:
-  issue169.msg: # channel that has the two operations
-    subscribe:
-      message:
-        payload:
-          type: string
+  issue169.msg:
     publish:
       message:
         payload:

@@ -12,7 +12,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
-	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
+	testutil "github.com/lerenn/asyncapi-codegen/test"
 	"github.com/lerenn/asyncapi-codegen/test/v2/issues/129/camel"
 	"github.com/lerenn/asyncapi-codegen/test/v2/issues/129/kebab"
 	"github.com/lerenn/asyncapi-codegen/test/v2/issues/129/none"
@@ -21,7 +21,7 @@ import (
 )
 
 func TestSuite(t *testing.T) {
-	brokers, cleanup := asyncapi_test.BrokerControllers(t)
+	brokers, cleanup := testutil.BrokerControllers(t)
 	defer cleanup()
 
 	for _, b := range brokers {

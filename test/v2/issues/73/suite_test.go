@@ -14,14 +14,14 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/versioning"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
-	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
+	testutil "github.com/lerenn/asyncapi-codegen/test"
 	v1 "github.com/lerenn/asyncapi-codegen/test/v2/issues/73/v1"
 	v2 "github.com/lerenn/asyncapi-codegen/test/v2/issues/73/v2"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestSuite(t *testing.T) {
-	brokers, cleanup := asyncapi_test.BrokerControllers(t)
+	brokers, cleanup := testutil.BrokerControllers(t)
 	defer cleanup()
 
 	for _, b := range brokers {
@@ -97,7 +97,6 @@ func (suite *Suite) TestV1Reception() {
 
 	// Check what the app receive and translate
 	var recvMsg v1.V2Issue73HelloMessage
-	wg.Add(1)
 	err := suite.v1.app.SubscribeV2Issue73Hello(
 		context.Background(),
 		func(_ context.Context, msg v1.V2Issue73HelloMessage) error {
@@ -117,6 +116,7 @@ func (suite *Suite) TestV1Reception() {
 	suite.Require().NoError(err)
 
 	// Publish the message
+	wg.Add(1)
 	err = suite.v1.user.PublishV2Issue73Hello(context.Background(), sent)
 	suite.Require().NoError(err)
 
@@ -158,7 +158,6 @@ func (suite *Suite) TestV2Reception() {
 
 	// Check what the app receive and translate
 	var recvMsg v2.V2Issue73HelloMessage
-	wg.Add(1)
 	err = suite.v2.app.SubscribeV2Issue73Hello(
 		context.Background(),
 		func(_ context.Context, msg v2.V2Issue73HelloMessage) error {
@@ -169,6 +168,7 @@ func (suite *Suite) TestV2Reception() {
 	suite.Require().NoError(err)
 
 	// Publish the message
+	wg.Add(1)
 	err = suite.v2.user.PublishV2Issue73Hello(context.Background(), sent)
 	suite.Require().NoError(err)
 

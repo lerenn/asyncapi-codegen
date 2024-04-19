@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 
 	"dagger.io/dagger"
@@ -21,11 +20,6 @@ var (
 	testFlag    string
 
 	brokers map[string]*dagger.Service
-
-	generator func(context.Context) error
-	linter    *dagger.Container
-	examples  map[string]*dagger.Container
-	tests     map[string]*dagger.Container
 )
 
 var rootCmd = &cobra.Command{
@@ -42,12 +36,6 @@ var rootCmd = &cobra.Command{
 		// Create services
 		brokers = ci.Brokers(client)
 
-		// Create containers
-		generator = ci.Generator(client)
-		linter = ci.Linter(client)
-		examples = ci.Examples(client, brokers)
-		tests = ci.Tests(client, brokers)
-
 		return nil
 	},
 }
@@ -57,9 +45,10 @@ var allCmd = &cobra.Command{
 	Aliases: []string{"a"},
 	Short:   "Execute all CI",
 	Run: func(cmd *cobra.Command, args []string) {
-		execute(context.Background(), generator)
-		executeContainers(context.Background(), []*dagger.Container{linter})
-		executeContainers(context.Background(), utils.MapToList(tests), utils.MapToList(examples))
+		execute(context.Background(), ci.Generator(client))
+		executeContainers(context.Background(), ci.Linter(client))
+		executeContainers(context.Background(), ci.Tests(client, brokers, "./..."))
+		executeContainers(context.Background(), ci.Tests(client, brokers, "./..."))
 	},
 }
 
@@ -68,14 +57,16 @@ var examplesCmd = &cobra.Command{
 	Aliases: []string{"g"},
 	Short:   "Execute examples step of the CI",
 	Run: func(cmd *cobra.Command, args []string) {
+		examples := ci.Examples(client, brokers)
+
 		if exampleFlag != "" {
 			_, exists := examples[exampleFlag]
 			if !exists {
 				panic(fmt.Errorf("example %q doesn't exist", exampleFlag))
 			}
-			executeContainers(context.Background(), []*dagger.Container{examples[exampleFlag]})
+			executeContainers(context.Background(), examples[exampleFlag])
 		} else {
-			executeContainers(context.Background(), utils.MapToList(examples))
+			executeContainers(context.Background(), utils.MapToList(examples)...)
 		}
 	},
 }
@@ -85,7 +76,7 @@ var generatorCmd = &cobra.Command{
 	Aliases: []string{"g"},
 	Short:   "Execute generator step of the CI",
 	Run: func(cmd *cobra.Command, args []string) {
-		execute(context.Background(), generator)
+		execute(context.Background(), ci.Generator(client))
 	},
 }
 
@@ -94,7 +85,7 @@ var linterCmd = &cobra.Command{
 	Aliases: []string{"g"},
 	Short:   "Execute linter step of the CI",
 	Run: func(cmd *cobra.Command, args []string) {
-		executeContainers(context.Background(), []*dagger.Container{linter})
+		executeContainers(context.Background(), ci.Linter(client))
 	},
 }
 
@@ -112,19 +103,11 @@ var testCmd = &cobra.Command{
 	Aliases: []string{"g"},
 	Short:   "Execute tests step of the CI",
 	Run: func(cmd *cobra.Command, args []string) {
-		if testFlag != "" {
-			if !strings.HasPrefix(testFlag, "./") {
-				testFlag = "./" + testFlag
-			}
-
-			_, exists := tests[testFlag]
-			if !exists {
-				panic(fmt.Errorf("test %q doesn't exist in %+v", testFlag, tests))
-			}
-			executeContainers(context.Background(), []*dagger.Container{tests[testFlag]})
-		} else {
-			executeContainers(context.Background(), utils.MapToList(tests))
+		if testFlag == "" {
+			testFlag = "./..."
 		}
+
+		executeContainers(context.Background(), ci.Tests(client, brokers, testFlag))
 	},
 }
 
@@ -150,24 +133,22 @@ func main() {
 	}
 }
 
-func executeContainers(ctx context.Context, containers ...[]*dagger.Container) {
+func executeContainers(ctx context.Context, containers ...*dagger.Container) {
 	// Regroup arg
 	funcs := make([]func(context.Context) error, 0)
 	for _, l1 := range containers {
-		for _, l2 := range l1 {
-			if l2 == nil {
-				continue
-			}
-
-			// Note: create a new local variable to store value of actual l2
-			callback := l2
-
-			fn := func(ctx context.Context) error {
-				_, err := callback.Stderr(ctx)
-				return err
-			}
-			funcs = append(funcs, fn)
+		if l1 == nil {
+			continue
 		}
+
+		// Note: create a new local variable to store value of actual l2
+		callback := l1
+
+		fn := func(ctx context.Context) error {
+			_, err := callback.Stderr(ctx)
+			return err
+		}
+		funcs = append(funcs, fn)
 	}
 
 	execute(ctx, funcs...)
