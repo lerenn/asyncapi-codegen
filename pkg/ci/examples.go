@@ -1,8 +1,6 @@
 package ci
 
 import (
-	"strings"
-
 	"dagger.io/dagger"
 )
 
@@ -12,16 +10,13 @@ func Examples(client *dagger.Client, brokers map[string]*dagger.Service) map[str
 
 	// Set examples
 	for _, p := range directoriesAtSublevel(2, "./examples") {
-		// Get corresponding broker
-		brokerName := strings.Split(p, "/")[4]
-
 		// Set app container
 		app := client.Container().
 			From(GolangImage).
 			// Add source code as work directory
 			With(sourceAsWorkdir(client)).
 			// Set broker as dependency
-			WithServiceBinding(brokerName, brokers[brokerName]).
+			With(BindBrokers(brokers)).
 			// Execute command
 			WithExec([]string{"go", "run", p + "/app"}).
 			// Add exposed port to let know when the service is ready
@@ -36,7 +31,7 @@ func Examples(client *dagger.Client, brokers map[string]*dagger.Service) map[str
 			// Add source code as work directory
 			With(sourceAsWorkdir(client)).
 			// Set broker as dependency
-			WithServiceBinding(brokerName, brokers[brokerName]).
+			With(BindBrokers(brokers)).
 			// Add app as dependency of user
 			WithServiceBinding("app", app).
 			// Execute command
