@@ -30,32 +30,11 @@ var (
 // Note: if this is not 'main' branch, then it will just push docker image with
 // git tag.
 func Publish(ctx context.Context, client *dagger.Client, tag string) error {
-	if err := tagAndPush(tag); err != nil {
-		return err
-	}
-
 	if err := publishDocker(ctx, client, tag); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func tagAndPush(tag string) error {
-	// Stop here if this not main branch
-	if name, err := git.ActualBranchName("."); err != nil {
-		return err
-	} else if name != "main" {
-		return nil
-	}
-
-	// Tag commit
-	if err := git.TagCommit(".", tag); err != nil {
-		return err
-	}
-
-	// Push the result
-	return git.PushTags(".", tag)
 }
 
 func publishDocker(ctx context.Context, client *dagger.Client, tag string) error {

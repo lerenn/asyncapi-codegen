@@ -4,17 +4,20 @@ ifndef EXAMPLE
 	EXAMPLE=""
 endif
 
-ifndef TEST
-	TEST=""
-endif
-
 ifndef TAG
 	TAG=""
 endif
 
+.PHONY: all
+all: generate lint examples test ## Run all the checks
+
 .PHONY: ci
 ci: ## Run the CI
 	@${DAGGER_COMMAND} all
+
+.PHONY: clean
+clean: dev/down ## Clean the project
+	@rm -rf ./tmp/certs
 
 .PHONY: dev/up
 dev/up: ## Start the development environment
@@ -27,22 +30,23 @@ dev/down: ## Stop the development environment
 
 .PHONY: lint
 lint: ## Lint the code
-	@${DAGGER_COMMAND} linter
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55 run ./...
 
 .PHONY: examples
 examples: ## Perform examples
 	@${DAGGER_COMMAND} examples -e ${EXAMPLE}
 
 .PHONY: test
-test: ## Perform tests
-	@${DAGGER_COMMAND} test -t ${TEST}
+test: dev/up ## Perform tests
+	@go test ./...
 
 .PHONY: generate
 generate: ## Generate files
-	@${DAGGER_COMMAND} generator
+	@go generate ./...
 
 .PHONY: publish
 publish: ## Publish with tag on git, docker hub, etc.
+	@git tag ${TAG} && git push origin ${TAG}
 	@${DAGGER_COMMAND} publish --tag ${TAG}
 
 .PHONY: help

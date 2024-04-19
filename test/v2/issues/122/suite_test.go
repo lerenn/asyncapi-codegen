@@ -63,44 +63,20 @@ func (suite *Suite) TearDownTest() {
 	suite.user.Close(context.Background())
 }
 
-func (suite *Suite) TestErrorHandlerForApp() {
+func (suite *Suite) TestErrorHandler() {
 	// Test message
-	sent := V2Issue122MsgPublishMessage{
+	sent := V2Issue122MsgMessage{
 		Payload: "test some errors",
 	}
 
 	// return some error on message
 	err := suite.app.SubscribeV2Issue122Msg(
 		context.Background(),
-		func(_ context.Context, msg V2Issue122MsgSubscribeMessage) error {
+		func(_ context.Context, msg V2Issue122MsgMessage) error {
 			return errTest
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeV2Issue122Msg(context.Background())
-
-	// Publish the message
-	suite.wg.Add(1)
-	err = suite.user.PublishV2Issue122Msg(context.Background(), sent)
-	suite.Require().NoError(err)
-
-	// Wait for errorhandler is called
-	suite.wg.Wait()
-}
-
-func (suite *Suite) TestErrorHandlerForUser() {
-	// Test message
-	sent := V2Issue122MsgPublishMessage{
-		Payload: "test some errors",
-	}
-
-	// return some error on message
-	err := suite.user.SubscribeV2Issue122Msg(
-		context.Background(),
-		func(_ context.Context, msg V2Issue122MsgSubscribeMessage) error {
-			return errTest
-		})
-	suite.Require().NoError(err)
-	defer suite.user.UnsubscribeV2Issue122Msg(context.Background())
 
 	// Publish the message
 	suite.wg.Add(1)
