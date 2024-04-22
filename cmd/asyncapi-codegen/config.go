@@ -35,6 +35,10 @@ type Flags struct {
 	// DisableFormatting states if the formatting should be disabled when
 	// writing the generated code
 	DisableFormatting bool
+
+	// ConvertKeys defines a schema property keys conversion strategy.
+	// Supported values: snake, camel, kebab, none
+	ConvertKeys string
 }
 
 // ProcessFlags processes command line flags and fill the Flags structure with them.
@@ -46,6 +50,8 @@ func ProcessFlags() Flags {
 	flag.StringVar(&f.PackageName, "p", "asyncapi", "Golang package name")
 	flag.StringVar(&f.Generate, "g", "user,application,types", "Generation options")
 	flag.BoolVar(&f.DisableFormatting, "disable-formatting", false, "Disables the code generation formatting")
+	flag.StringVar(&f.ConvertKeys, "convert-keys", "none",
+		"Schema property key names conversion strategy. Supported values: snake, camel, kebab, none")
 
 	flag.Parse()
 
@@ -58,6 +64,7 @@ func (f Flags) ToCodegenOptions() (options.Options, error) {
 		OutputPath:        f.OutputPath,
 		PackageName:       f.PackageName,
 		DisableFormatting: f.DisableFormatting,
+		ConvertKeys:       f.ConvertKeys,
 	}
 
 	if f.Generate != "" {

@@ -604,7 +604,7 @@ func (msg ReplyMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // RequestMessageHeaders is a schema from the AsyncAPI specification required in messages
 type RequestMessageHeaders struct {
 	// Description: Channel used to respond to request
-	ReplyTo string `json:"reply_to"`
+	ReplyTo string `json:"replyTo"`
 }
 
 // RequestMessage is the message expected for 'RequestMessage' channel.

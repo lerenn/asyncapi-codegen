@@ -146,6 +146,52 @@ Here are the options that you can use with the Kafka controller:
 * `WithMaxBytes`: specify the maximum size of a message that will be received. If not specified, default value (`10e6`, meaning `10MB`) will be used.
 * `WithLogger`: specify the logger that will be used by the controller. If not specified, a silent logger is used that won't log anything.
 * `WithAutoCommit`: specify if the broker should use auto-commit for incoming messages or manual commits. Note that commits are managed by the broker implementation regardless, with manual commits they are executed after the message is complete processed. Subscribers retain the option to manually handle errors via the ErrorHandler, to use mechanisms such as dead letter or retry topics. The default value is `true`
+* `WithSasl`: specify sasl mechanism to connect to the broker. Per default no mechanism will be used.
+* `WithTLS`: specify tls config to connect to the broker. Per default no tls config will be used.
+* `WithConnectionTest`: specify if the controller should make a connection test on creation. The default value is `true`
+
+#### Authentication and TLS
+
+To use a TLS connection and or authentication for the connection to the kafka broker the following options can be used:
+
+```golang
+// Plain mechanism
+kafkaController, err := kafka.NewController([]string{"<host>:<port>"},
+    kafka.WithGroupID(queueGroupID),
+    kafka.WithSasl(plain.Mechanism{Username: "<user>", Password: "<password>"}),
+)
+
+// Sha256 mechanism
+sha256Mechanism, err := scram.Mechanism(scram.SHA256, "<user>", "<password>")
+if err != nil {
+    // handle error
+}
+
+kafkaController, err := kafka.NewController([]string{"<host>:<port>"},
+    kafka.WithGroupID(queueGroupID),
+    kafka.WithSasl(sha256Mechanism),
+)
+
+// Sha512 mechanism
+sha512Mechanism, err := scram.Mechanism(scram.SHA512, "<user>", "<password>")
+if err != nil {
+    // handle error
+}
+
+kafkaController, err := kafka.NewController([]string{"<host>:<port>"},
+    kafka.WithGroupID(queueGroupID),
+    kafka.WithSasl(sha512Mechanism),
+)
+
+// TLS
+// configure tls.config
+myTLSConfig := &tls.Config{}
+
+kafkaController, err := kafka.NewController([]string{"<host>:<port>"},
+    kafka.WithGroupID(queueGroupID),
+    kafka.WithTLS(myTLSConfig),
+)
+```
 
 ### NATS
 
@@ -166,6 +212,32 @@ Here are the options that you can use with the NATS controller:
 
 * `WithLogger`: specify the logger that will be used by the controller. If not specified, a silent logger is used that won't log anything.
 * `WithQueueGroup`: specify the queue group that will be used by the controller. If not specified, default queue name (`asyncapi`) will be used.
+* `WithConnectionOpts`: specify connection Options for establishing connection with nats see [Nats Options](https://pkg.go.dev/github.com/nats-io/go-nats#Option) for more information. If not specified, no options will be used.
+
+#### Authentication and TLS
+
+To use a TLS connection and or authentication for the connection to the nats broker the following nats options can be used:
+
+```golang
+import (
+"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+
+// import natsio go client option
+natsio "github.com/nats-io/nats.go"
+
+)
+
+func main(){
+
+    myTLSConfig := &tls.Config{}
+
+    natsController, err := nats.NewController("nats://<host>:<port>",
+		nats.WithQueueGroup(queueGroupID),
+		nats.WithConnectionOpts(natsio.UserCredentials("<user.jwt>", "<user.nk>"), natsio.Secure(myTLSConfig))
+	)
+
+}
+```
 
 ### NATS JetStream
 
@@ -216,7 +288,9 @@ your broker to the generated code.
 
 ## CLI options
 
-The default options for oapi-codegen will generate everything; user, application,
+### Generation parts (`-g`)
+
+The default options for asyncapi-codegen will generate everything; user, application,
 and type definitions but you can generate subsets of those via the -generate
 flag. It defaults to user,application,types
 but you can specify any combination of those.
@@ -230,6 +304,30 @@ Here are the universal parts that you can generate:
 * `types`: all type definitions for all types in the AsyncAPI spec.
   This will be everything under `#components`, as well as request parameter,
   request body, and response type objects.
+
+### JSON keys conversion (`--convert-keys`)
+
+By default, the generation will use the key specified in the asyncapi codegen.
+This is also called the `none` convertion. You can also convert your keys to
+`snake`, `camel`, or `kebab`.
+
+#### Example
+
+Given this schema:
+
+```yaml
+Payload:
+  type: object
+  properties:
+    This_is a-Property:
+      type: string
+```
+
+Here are the generated JSON sent, given by the different options:
+* No conversion (`none`): `{ "This_is a-Property": "value" }`
+* Camel case (`camel`): `{ "ThisIsAProperty": "value" }`
+* Kebab case (`kebab`): `{ "this-is-a-property": "value" }`
+* Snake case (`snake`): `{ "this_is_a_property": "value" }`
 
 ## Advanced topics
 

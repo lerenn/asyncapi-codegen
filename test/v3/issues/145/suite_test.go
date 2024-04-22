@@ -9,12 +9,12 @@ import (
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
-	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
+	testutil "github.com/lerenn/asyncapi-codegen/test"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestSuite(t *testing.T) {
-	brokers, cleanup := asyncapi_test.BrokerControllers(t)
+	brokers, cleanup := testutil.BrokerControllers(t)
 	defer cleanup()
 
 	for _, b := range brokers {
@@ -108,7 +108,6 @@ func (suite *Suite) TestRequestReplyOnRawChannel() {
 
 		wg.Done()
 	}()
-	wg.Add(1)
 
 	// Set a new ping
 	var msg PingMessage
@@ -116,6 +115,7 @@ func (suite *Suite) TestRequestReplyOnRawChannel() {
 	msg.Headers.ReplyTo = utils.ToPointer("issue145.pong.2345")
 
 	// Send a request
+	wg.Add(1)
 	err = suite.user.SendToPingRequestOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 

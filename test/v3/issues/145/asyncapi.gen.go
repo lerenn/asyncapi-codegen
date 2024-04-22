@@ -575,10 +575,10 @@ func (e *Error) Error() string {
 // PingMessageHeaders is a schema from the AsyncAPI specification required in messages
 type PingMessageHeaders struct {
 	// Description: Provide path to which reply must be provided
-	ReplyTo *string `json:"reply_to"`
+	ReplyTo *string `json:"replyTo"`
 
 	// Description: Provide request id that you will use to identify the reply match
-	RequestId *string `json:"request_id"`
+	RequestId *string `json:"requestId"`
 }
 
 // PingMessagePayload is a schema from the AsyncAPI specification required in messages
@@ -660,7 +660,7 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // PongMessageHeaders is a schema from the AsyncAPI specification required in messages
 type PongMessageHeaders struct {
 	// Description: Reply message must contain id of the request message
-	RequestId *string `json:"request_id"`
+	RequestId *string `json:"requestId"`
 }
 
 // PongMessagePayload is a schema from the AsyncAPI specification required in messages

@@ -8,13 +8,23 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
+	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 
 func main() {
+	// Get broker address based on the environment, it will returns an address like "nats://nats-jetstream:4222"
+	// Note: this is not needed in your application, you can directly use the address
+	addr := testutil.BrokerAddress(testutil.BrokerAddressParams{
+		Schema:         "nats",
+		DockerizedAddr: "nats-jetstream",
+		DockerizedPort: "4222",
+		LocalPort:      "4225",
+	})
+
 	// Instantiate a NATS controller with a logger
 	logger := loggers.NewText()
 	broker, err := natsjetstream.NewController(
-		"nats://nats-jetstream:4222",         // Set URL to broker
+		addr,                                 // Set URL to broker
 		natsjetstream.WithLogger(logger),     // Attach an internal logger
 		natsjetstream.WithStream("pingv2"),   // Set the stream used
 		natsjetstream.WithConsumer("pingv2"), // Create the corresponding consumer

@@ -1,0 +1,14 @@
+# Issue: https://github.com/lerenn/asyncapi-codegen/issues/169
+
+# Support configuration of broker authentication and TLS
+
+asyncapi: 2.6.0
+info:
+  title: Sample App
+  version: 1.0.0
+channels:
+  issue169.msg:
+    publish:
+      message:
+        payload:
+          type: string

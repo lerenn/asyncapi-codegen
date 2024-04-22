@@ -14,5 +14,5 @@ func Linter(client *dagger.Client) *dagger.Container {
 		// Add golangci-lint cache
 		WithMountedCache("/root/.cache/golangci-lint", client.CacheVolume("golangci-lint")).
 		// Add command
-		WithExec([]string{"golangci-lint", "run"})
+		WithExec([]string{"golangci-lint", "run", "--timeout=10m"})
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
+	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 
 var _ AppSubscriber = (*ServerSubscriber)(nil)
@@ -36,10 +37,18 @@ func (s ServerSubscriber) Ping(ctx context.Context, req PingMessage) error {
 }
 
 func main() {
+	// Get broker address based on the environment, it will returns an address like "nats://nats:4222"
+	// Note: this is not needed in your application, you can directly use the address
+	addr := testutil.BrokerAddress(testutil.BrokerAddressParams{
+		Schema:         "nats",
+		DockerizedAddr: "nats",
+		Port:           "4222",
+	})
+
 	// Instantiate a NATS controller with a logger
 	logger := loggers.NewText()
 	broker, err := nats.NewController(
-		"nats://nats:4222",               // Set URL to broker
+		addr,                             // Set URL to broker
 		nats.WithLogger(logger),          // Attach an internal logger
 		nats.WithQueueGroup("ping-apps"), // Set a specific queue group to avoid collisions
 	)

@@ -63,8 +63,8 @@ type Message struct {
 	CorrelationIDRequired bool `json:"-"`
 }
 
-// Process processes the Message to make it ready for code generation.
-func (msg *Message) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the Message.
+func (msg *Message) generateMetadata(name string) error {
 	// Prevent modification if nil
 	if msg == nil {
 		return nil
@@ -77,8 +77,35 @@ func (msg *Message) Process(name string, spec Specification) error {
 		msg.Name = template.Namify(msg.Name)
 	}
 
-	// Process asyncapi fields
-	if err := msg.processAsyncAPIFields(spec); err != nil {
+	// Generate Payload metadata
+	if err := msg.Payload.generateMetadata(msg.Name+MessagePayloadSuffix, false); err != nil {
+		return err
+	}
+
+	// Generate Headers metadata
+	if err := msg.generateHeadersMetadata(); err != nil {
+		return err
+	}
+
+	// Generate OneOf metadata
+	if err := msg.generateOneOfMetadata(); err != nil {
+		return err
+	}
+
+	// Generate tags metadata
+	msg.generateTagsMetadata()
+
+	// Generate external documentation metadata
+	msg.ExternalDocs.generateMetadata(msg.Name + ExternalDocsNameSuffix)
+
+	// Generate Bindings metadata
+	msg.Bindings.generateMetadata(msg.Name + BindingsSuffix)
+
+	// Generate Message Examples metadata
+	msg.generateExamplesMetadata()
+
+	// Generate traits metadata
+	if err := msg.generateTraitsMetadata(); err != nil {
 		return err
 	}
 
@@ -89,52 +116,58 @@ func (msg *Message) Process(name string, spec Specification) error {
 	return nil
 }
 
-func (msg *Message) processAsyncAPIFields(spec Specification) error {
+// setDependencies sets dependencies between the different elements of the Message.
+func (msg *Message) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if msg == nil {
+		return nil
+	}
+
 	// Add pointer to reference if there is one
-	if err := msg.processReference(spec); err != nil {
+	if err := msg.setReference(spec); err != nil {
 		return err
 	}
 
-	// Process Payload
-	if err := msg.Payload.Process(msg.Name+MessagePayloadSuffix, spec, false); err != nil {
+	// Set Payload dependencies
+	if err := msg.Payload.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process Headers
-	if err := msg.processHeaders(spec); err != nil {
+	// Set Headers dependencies
+	if err := msg.setHeadersDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process OneOf
-	if err := msg.processOneOf(spec); err != nil {
+	// Set OneOf dependencies
+	if err := msg.setOneOfDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process tags
-	if err := msg.processTags(spec); err != nil {
+	// Set tags dependencies
+	if err := msg.setTagsDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process external documentation
-	if err := msg.ExternalDocs.Process(msg.Name+ExternalDocsNameSuffix, spec); err != nil {
+	// Set external documentation dependencies
+	if err := msg.ExternalDocs.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process Bindings
-	if err := msg.Bindings.Process(msg.Name+BindingsSuffix, spec); err != nil {
+	// Set Bindings dependencies
+	if err := msg.Bindings.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process Message Examples
-	if err := msg.processExamples(spec); err != nil {
+	// Set Message Examples dependencies
+	if err := msg.setExamplesDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process traits
-	return msg.processTraits(spec)
+	// Set traits dependencies
+	return msg.setTraitsDependencies(spec)
 }
 
-func (msg *Message) processReference(spec Specification) error {
+func (msg *Message) setReference(spec Specification) error {
 	if msg.Reference == "" {
 		return nil
 	}
@@ -148,9 +181,15 @@ func (msg *Message) processReference(spec Specification) error {
 	return nil
 }
 
-func (msg *Message) processTags(spec Specification) error {
+func (msg *Message) generateTagsMetadata() {
 	for i, t := range msg.Tags {
-		if err := t.Process(fmt.Sprintf("%sTag%d", msg.Name, i), spec); err != nil {
+		t.generateMetadata(fmt.Sprintf("%sTag%d", msg.Name, i))
+	}
+}
+
+func (msg *Message) setTagsDependencies(spec Specification) error {
+	for _, t := range msg.Tags {
+		if err := t.setDependencies(spec); err != nil {
 			return err
 		}
 	}
@@ -158,9 +197,15 @@ func (msg *Message) processTags(spec Specification) error {
 	return nil
 }
 
-func (msg *Message) processExamples(spec Specification) error {
+func (msg *Message) generateExamplesMetadata() {
 	for i, ex := range msg.Examples {
-		if err := ex.Process(fmt.Sprintf("%sExample%d", msg.Name, i), spec); err != nil {
+		ex.generateMetadata(fmt.Sprintf("%sExample%d", msg.Name, i))
+	}
+}
+
+func (msg *Message) setExamplesDependencies(spec Specification) error {
+	for _, ex := range msg.Examples {
+		if err := ex.setDependencies(spec); err != nil {
 			return err
 		}
 	}
@@ -168,12 +213,12 @@ func (msg *Message) processExamples(spec Specification) error {
 	return nil
 }
 
-func (msg *Message) processHeaders(spec Specification) error {
+func (msg *Message) generateHeadersMetadata() error {
 	if msg.Headers == nil {
 		return nil
 	}
 
-	if err := msg.Headers.Process(msg.Name+MessageHeadersSuffix, spec, false); err != nil {
+	if err := msg.Headers.generateMetadata(msg.Name+MessageHeadersSuffix, false); err != nil {
 		return err
 	}
 
@@ -186,10 +231,28 @@ func (msg *Message) processHeaders(spec Specification) error {
 	return nil
 }
 
-func (msg *Message) processOneOf(spec Specification) error {
+func (msg *Message) setHeadersDependencies(spec Specification) error {
+	if msg.Headers == nil {
+		return nil
+	}
+
+	return msg.Headers.setDependencies(spec)
+}
+
+func (msg *Message) generateOneOfMetadata() error {
 	for i, v := range msg.OneOf {
-		// Process the OneOf
-		if err := v.Process(fmt.Sprintf("%sOneOf%d", msg.Name, i), spec); err != nil {
+		if err := v.generateMetadata(fmt.Sprintf("%sOneOf%d", msg.Name, i)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (msg *Message) setOneOfDependencies(spec Specification) error {
+	for _, v := range msg.OneOf {
+		// Set OneOf dependencies
+		if err := v.setDependencies(spec); err != nil {
 			return err
 		}
 
@@ -202,9 +265,19 @@ func (msg *Message) processOneOf(spec Specification) error {
 	return nil
 }
 
-func (msg *Message) processTraits(spec Specification) error {
+func (msg *Message) generateTraitsMetadata() error {
 	for i, t := range msg.Traits {
-		if err := t.Process(fmt.Sprintf("%sTrait%d", msg.Name, i), spec); err != nil {
+		if err := t.generateMetadata(fmt.Sprintf("%sTrait%d", msg.Name, i)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (msg *Message) setTraitsDependencies(spec Specification) error {
+	for _, t := range msg.Traits {
+		if err := t.setDependencies(spec); err != nil {
 			return err
 		}
 		if err := msg.ApplyTrait(t.Follow(), spec); err != nil {
@@ -496,7 +569,10 @@ func (msg *Message) mergeHeaders(spec Specification, headers *Schema) error {
 	if msg.Headers == nil {
 		newHeaders := utils.ToValue(headers.Follow())
 		msg.Headers = &newHeaders
-		return newHeaders.Process(msg.Name+MessageHeadersSuffix, spec, false)
+		if err := newHeaders.generateMetadata(msg.Name+MessageHeadersSuffix, false); err != nil {
+			return err
+		}
+		return newHeaders.setDependencies(spec)
 	}
 
 	// Merge headers
@@ -513,7 +589,10 @@ func (msg *Message) mergePayload(spec Specification, payload *Schema) error {
 	if msg.Payload == nil {
 		newPayload := utils.ToValue(payload.Follow())
 		msg.Payload = &newPayload
-		return newPayload.Process(msg.Name+MessagePayloadSuffix, spec, false)
+		if err := newPayload.generateMetadata(msg.Name+MessagePayloadSuffix, false); err != nil {
+			return err
+		}
+		return newPayload.setDependencies(spec)
 	}
 
 	// Merge payload

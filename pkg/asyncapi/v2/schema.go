@@ -59,42 +59,37 @@ func NewSchema() Schema {
 	}
 }
 
-// Process processes the Schema structure to make it ready for code generation.
-func (s *Schema) Process(name string, spec Specification, isRequired bool) error {
+// generateMetadata generates metadata for the schema and its children.
+func (s *Schema) generateMetadata(name string, isRequired bool) error {
 	s.Name = template.Namify(name)
 
-	// Add pointer to reference if there is one
-	if err := s.processReference(spec); err != nil {
+	// Generate Properties metadata
+	if err := s.generatePropertiesMetadata(); err != nil {
 		return err
 	}
 
-	// Process Properties
-	if err := s.processProperties(spec); err != nil {
+	// Generate Items metadata
+	if err := s.generateItemsMetadata(); err != nil {
 		return err
 	}
 
-	// Process Items
-	if err := s.processItems(spec); err != nil {
+	// Generate AnyOf metadata
+	if err := s.generateaAnyOfMetadata(); err != nil {
 		return err
 	}
 
-	// Process AnyOf
-	if err := s.processAnyOf(spec); err != nil {
+	// Generate OneOf metadata
+	if err := s.generateOneOfMetadata(); err != nil {
 		return err
 	}
 
-	// Process OneOf
-	if err := s.processOneOf(spec); err != nil {
+	// Generate AllOf metadata
+	if err := s.generateAllOfMetadata(); err != nil {
 		return err
 	}
 
-	// Process AllOf
-	if err := s.processAllOf(spec); err != nil {
-		return err
-	}
-
-	// Process AdditionalProperties
-	if err := s.processAdditionalProperties(spec); err != nil {
+	// Generate AdditionalProperties metadata
+	if err := s.generateAdditionalPropertiesMetadata(); err != nil {
 		return err
 	}
 
@@ -104,7 +99,9 @@ func (s *Schema) Process(name string, spec Specification, isRequired bool) error
 	return nil
 }
 
-func (s *Schema) processReference(spec Specification) error {
+// setDependencies sets dependencies for the schema from the specification.
+func (s *Schema) setDependencies(spec Specification) error {
+	// Reference to another schema if specified
 	if s.Reference != "" {
 		refTo, err := spec.ReferenceSchema(s.Reference)
 		if err != nil {
@@ -113,14 +110,43 @@ func (s *Schema) processReference(spec Specification) error {
 		s.ReferenceTo = refTo
 	}
 
+	// Set properties dependencies
+	if err := s.setPropertiesDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set items dependencies
+	if err := s.setItemsDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set AnyOf links
+	if err := s.setAnyOfDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set OneOf links
+	if err := s.setOneOfDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set AllOf links
+	if err := s.setAllOfDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set AdditionalProperties links
+	if err := s.setAdditionalPropertiesDependencies(spec); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (s *Schema) processProperties(spec Specification) error {
+func (s *Schema) generatePropertiesMetadata() error {
 	for n, p := range s.Properties {
-		if err := p.Process(
+		if err := p.generateMetadata(
 			s.Name+template.Namify(n),
-			spec,
 			utils.IsInSlice(s.Required, n),
 		); err != nil {
 			return err
@@ -130,9 +156,19 @@ func (s *Schema) processProperties(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) processItems(spec Specification) error {
+func (s *Schema) setPropertiesDependencies(spec Specification) error {
+	for _, p := range s.Properties {
+		if err := p.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) generateItemsMetadata() error {
 	if s.Items != nil {
-		if err := s.Items.Process(s.Name+"Item", spec, false); err != nil {
+		if err := s.Items.generateMetadata(s.Name+"Item", false); err != nil {
 			return err
 		}
 	}
@@ -140,9 +176,30 @@ func (s *Schema) processItems(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) processAnyOf(spec Specification) error {
+func (s *Schema) setItemsDependencies(spec Specification) error {
+	if s.Items != nil {
+		if err := s.Items.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) generateaAnyOfMetadata() error {
 	for _, v := range s.AnyOf {
-		if err := v.Process(s.Name+"AnyOf", spec, false); err != nil {
+		if err := v.generateMetadata(s.Name+"AnyOf", false); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) setAnyOfDependencies(spec Specification) error {
+	for _, v := range s.AnyOf {
+		// Set dependencies
+		if err := v.setDependencies(spec); err != nil {
 			return err
 		}
 
@@ -155,15 +212,9 @@ func (s *Schema) processAnyOf(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) processOneOf(spec Specification) error {
+func (s *Schema) generateOneOfMetadata() error {
 	for _, v := range s.OneOf {
-		// Process the OneOf
-		if err := v.Process(s.Name+"OneOf", spec, false); err != nil {
-			return err
-		}
-
-		// Merge the OneOf as one payload
-		if err := s.MergeWith(spec, *v); err != nil {
+		if err := v.generateMetadata(s.Name+"OneOf", false); err != nil {
 			return err
 		}
 	}
@@ -171,9 +222,10 @@ func (s *Schema) processOneOf(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) processAllOf(spec Specification) error {
-	for _, v := range s.AllOf {
-		if err := v.Process(s.Name+"AllOf", spec, false); err != nil {
+func (s *Schema) setOneOfDependencies(spec Specification) error {
+	for _, v := range s.OneOf {
+		// Set dependencies
+		if err := v.setDependencies(spec); err != nil {
 			return err
 		}
 
@@ -186,9 +238,45 @@ func (s *Schema) processAllOf(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) processAdditionalProperties(spec Specification) error {
+func (s *Schema) generateAllOfMetadata() error {
+	for _, v := range s.AllOf {
+		if err := v.generateMetadata(s.Name+"AllOf", false); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) setAllOfDependencies(spec Specification) error {
+	for _, v := range s.AllOf {
+		// Set dependencies
+		if err := v.setDependencies(spec); err != nil {
+			return err
+		}
+
+		// Merge with other fields as one struct (invalidate references)
+		if err := s.MergeWith(spec, *v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) generateAdditionalPropertiesMetadata() error {
 	if s.AdditionalProperties != nil {
-		if err := s.AdditionalProperties.Process(s.Name+"AdditionalProperties", spec, false); err != nil {
+		if err := s.AdditionalProperties.generateMetadata(s.Name+"AdditionalProperties", false); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) setAdditionalPropertiesDependencies(spec Specification) error {
+	if s.AdditionalProperties != nil {
+		if err := s.AdditionalProperties.setDependencies(spec); err != nil {
 			return err
 		}
 	}

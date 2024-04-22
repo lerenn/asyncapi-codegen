@@ -71,7 +71,7 @@ func (e *Error) Error() string {
 // Type1MessageHeaders is a schema from the AsyncAPI specification required in messages
 type Type1MessageHeaders struct {
 	// Description: Correlation ID set by client
-	CorrelationId *string `json:"correlation_id"`
+	CorrelationId *string `json:"correlationId"`
 }
 
 // Type1MessagePayload is a schema from the AsyncAPI specification required in messages
@@ -145,7 +145,7 @@ func (msg Type1Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 // Type2MessageHeaders is a schema from the AsyncAPI specification required in messages
 type Type2MessageHeaders struct {
 	// Description: Correlation ID set by client
-	CorrelationId *string `json:"correlation_id"`
+	CorrelationId *string `json:"correlationId"`
 }
 
 // Type2MessagePayload is a schema from the AsyncAPI specification required in messages

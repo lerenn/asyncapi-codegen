@@ -500,7 +500,7 @@ func (msg TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // Description: header
 type HeaderSchema struct {
 	// Description: Date in UTC format "YYYY-MM-DDThh:mm:ss.sZ".
-	DateTime time.Time `json:"date_time"`
+	DateTime time.Time `json:"dateTime"`
 
 	// Description: Schema version
 	Version string `json:"version"`
@@ -514,7 +514,7 @@ type TestSchema struct {
 // TestSchemaObj1 is a schema from the AsyncAPI specification required in messages
 type TestSchemaObj1 struct {
 	// Description: reference ID.
-	ReferenceId string `json:"reference_id"`
+	ReferenceId string `json:"referenceId"`
 }
 
 const (

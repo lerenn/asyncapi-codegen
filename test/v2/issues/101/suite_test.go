@@ -8,12 +8,12 @@ import (
 	"testing"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
+	testutil "github.com/lerenn/asyncapi-codegen/test"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestSuite(t *testing.T) {
-	brokers, cleanup := asyncapi_test.BrokerControllers(t)
+	brokers, cleanup := testutil.BrokerControllers(t)
 	defer cleanup()
 
 	// Only do it with one broker as this is not testing the broker
@@ -70,7 +70,6 @@ func (suite *Suite) TestAddingHeader() {
 	}
 
 	// Check what the app receive
-	wg.Add(1)
 	err := suite.app.SubscribeV2Issue101Test(
 		context.Background(),
 		func(_ context.Context, msg V2Issue101TestMessage) error {
@@ -80,6 +79,7 @@ func (suite *Suite) TestAddingHeader() {
 	suite.Require().NoError(err)
 
 	// Publish the message
+	wg.Add(1)
 	err = suite.user.PublishV2Issue101Test(context.Background(), sent)
 	suite.Require().NoError(err)
 

@@ -1,0 +1,122 @@
+services:
+  # NATS variants
+  nats:
+    image: nats:latest
+    ports:
+      - 4222:4222
+  nats-tls:
+    image: nats:latest
+    ports:
+      - "4223:4222"
+    command: [
+      "--tls",
+      "--tlscert", "/certs/server-cert.pem",
+      "--tlskey", "/certs/server-key.pem",
+    ]
+    volumes:
+      - ./tmp/certs/nats:/certs
+  nats-tls-basic-auth:
+    image: nats:latest
+    ports:
+      - 4224:4222
+    command: [
+      "--tls",
+      "--tlscert", "/certs/server-cert.pem",
+      "--tlskey", "/certs/server-key.pem",
+      "--user", "user",
+      "--pass", "password",
+    ]
+    volumes:
+      - ./tmp/certs/nats:/certs
+  
+  # NATS Jetstream variants
+  nats-jetstream:
+    image: nats:latest
+    ports:
+      - 4225:4222
+    command: [
+      "-js",
+    ]
+  nats-jetstream-tls:
+    image: nats:latest
+    ports:
+      - 4226:4222
+    command: [
+      "-js",
+      "--tls",
+      "--tlscert", "/certs/server-cert.pem",
+      "--tlskey", "/certs/server-key.pem",
+    ]
+    volumes:
+      - ./tmp/certs/nats:/certs
+  nats-jetstream-tls-basic-auth:
+    image: nats:latest
+    ports:
+      - 4227:4222
+    command: [
+      "-js",
+      "--tls",
+      "--tlscert", "/certs/server-cert.pem",
+      "--tlskey", "/certs/server-key.pem",
+      "--user", "user",
+      "--pass", "password",
+    ]
+    volumes:
+      - ./tmp/certs/nats:/certs
+
+  # Kafka variants
+  kafka:
+    image: bitnami/kafka:3.5.1
+    ports:
+      - 9092:9092
+      - 9093:9093
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://localhost:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+  kafka-tls:
+    image: bitnami/kafka:3.5.1
+    ports:
+      - 9094:9094
+      - 9095:9095
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9094,CONTROLLER://:9095
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:SSL
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9095
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_TLS_TYPE=PEM
+      - KAFKA_TLS_CLIENT_AUTH=none
+    volumes:
+      - ./tmp/certs/kafka:/bitnami/kafka/config/certs/
+  kafka-tls-basic-auth:
+    image: bitnami/kafka:3.5.1
+    ports:
+      - 9096:9096
+      - 9097:9097
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9096,CONTROLLER://:9097
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://localhost:9096
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:SASL_SSL
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9097
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=SCRAM-SHA-512
+      - KAFKA_TLS_TYPE=PEM
+      - KAFKA_TLS_CLIENT_AUTH=none
+      - KAFKA_INTER_BROKER_USER=user
+      - KAFKA_INTER_BROKER_PASSWORD=password
+    volumes:
+      - ./tmp/certs/kafka:/bitnami/kafka/config/certs/
+    
+  

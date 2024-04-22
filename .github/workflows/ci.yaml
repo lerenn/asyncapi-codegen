@@ -24,7 +24,21 @@ jobs:
           verb: run
           args: go run ./build/ci/dagger.go test
           version: "0.11.0"      
-
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - uses: actions/setup-go@v5.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run examples
+        uses: dagger/dagger-for-github@v5
+        with:
+          verb: run
+          args: go run ./build/ci/dagger.go examples
+          version: "0.11.0"
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -51,7 +65,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Lint
+      - name: Run generator
         uses: dagger/dagger-for-github@v5
         with:
           verb: run

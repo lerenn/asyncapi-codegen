@@ -32,54 +32,81 @@ type Server struct {
 	ReferenceTo *Server `json:"-"`
 }
 
-// Process processes the Server to make it ready for code generation.
-func (srv *Server) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the Server.
+func (srv *Server) generateMetadata(name string) {
 	// Prevent modification if nil
 	if srv == nil {
-		return nil
+		return
 	}
 
 	// Set name
 	srv.Name = template.Namify(name)
 
-	// Process references
-	if err := srv.processReference(spec); err != nil {
-		return err
-	}
-
-	// Process variables
+	// Generate variables metadata
 	for n, s := range srv.Variables {
-		if err := s.Process(n+"Variable", spec); err != nil {
-			return err
-		}
+		s.generateMetadata(n + "Variable")
 	}
 
-	// Process security
-	if err := srv.Security.Process(srv.Name+"Security", spec); err != nil {
-		return err
-	}
+	// Generate security metadata
+	srv.Security.generateMetadata(srv.Name + "Security")
 
-	// Process tags
+	// Generate tags metadata
 	for i, t := range srv.Tags {
-		if err := t.Process(fmt.Sprintf("%sTag%d", srv.Name, i), spec); err != nil {
+		t.generateMetadata(fmt.Sprintf("%sTag%d", srv.Name, i))
+	}
+
+	// Generate external documentation metadata
+	srv.ExternalDocs.generateMetadata(srv.Name + ExternalDocsNameSuffix)
+
+	// Generate Bindings metadata
+	srv.Bindings.generateMetadata(srv.Name + BindingsSuffix)
+}
+
+// setDependencies sets dependencies between the different elements of the Server.
+func (srv *Server) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if srv == nil {
+		return nil
+	}
+
+	// Set references
+	if err := srv.setReference(spec); err != nil {
+		return err
+	}
+
+	// Set variables dependencies
+	for _, s := range srv.Variables {
+		if err := s.setDependencies(spec); err != nil {
 			return err
 		}
 	}
 
-	// Process external documentation
-	if err := srv.ExternalDocs.Process(srv.Name+ExternalDocsNameSuffix, spec); err != nil {
+	// Set security dependencies
+	if err := srv.Security.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process Bindings
-	if err := srv.Bindings.Process(srv.Name+BindingsSuffix, spec); err != nil {
+	// Set tags dependencies
+	for _, t := range srv.Tags {
+		if err := t.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set external documentation dependencies
+	if err := srv.ExternalDocs.setDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set Bindings dependencies
+	if err := srv.Bindings.setDependencies(spec); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (srv *Server) processReference(spec Specification) error {
+func (srv *Server) setReference(spec Specification) error {
 	// check reference exists
 	if srv.Reference == "" {
 		return nil

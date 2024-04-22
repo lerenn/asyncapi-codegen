@@ -19,15 +19,23 @@ type MessageExample struct {
 	ReferenceTo *MessageExample `json:"-"`
 }
 
-// Process processes the MessageExample to make it ready for code generation.
-func (me *MessageExample) Process(path string, spec Specification) error {
+// generateMetadata generates metadata for the MessageExample.
+func (me *MessageExample) generateMetadata(path string) {
 	// Prevent modification if nil
 	if me == nil {
-		return nil
+		return
 	}
 
 	// Set name
 	me.Name = template.Namify(path)
+}
+
+// setDependencies sets dependencies between the different elements of the MessageExample.
+func (me *MessageExample) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if me == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if me.Reference != "" {

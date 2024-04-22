@@ -44,10 +44,10 @@ func (t *{{ .Name }}) UnmarshalJSON(data []byte) error {
     t.AdditionalProperties = make(map[string]{{template "schema-name" .AdditionalProperties}}, len(m))
     for k, v := range m {
         switch k {
-            {{- range $key, $value := .Properties -}}
-                case "{{snakeCase $key}}":
+            {{ range $key, $value := .Properties -}}
+                case "{{convertKey $key}}":
                     continue
-            {{- end}}
+            {{ end -}}
         default:
             t.AdditionalProperties[k] = v
         }

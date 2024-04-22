@@ -38,38 +38,86 @@ type Specification struct {
 
 // Process processes the Specification to make it ready for code generation.
 func (s *Specification) Process() error {
+	if err := s.generateMetadata(); err != nil {
+		return err
+	}
+
+	return s.setDependencies()
+}
+
+// generateMetadata generate metadata for the Specification and its children.
+func (s *Specification) generateMetadata() error {
 	// Prevent modification if nil
 	if s == nil {
 		return nil
 	}
 
-	// Process components
-	if err := s.Components.Process(*s); err != nil {
+	// Generate metadata for components
+	if err := s.Components.generateMetadata(); err != nil {
 		return err
 	}
 
-	// Process info
-	if err := s.Info.Process(*s); err != nil {
+	// Generate metadata for info
+	if err := s.Info.generateMetadata(); err != nil {
 		return err
 	}
 
-	// Process servers
+	// Generate servers metadata
 	for i, srv := range s.Servers {
-		if err := srv.Process(fmt.Sprintf("Server%d", i), *s); err != nil {
-			return err
-		}
+		srv.generateMetadata(fmt.Sprintf("Server%d", i))
 	}
 
-	// Process channels
+	// Generate metadata for channels
 	for name, ch := range s.Channels {
-		if err := ch.Process(name+ChannelSuffix, *s); err != nil {
+		if err := ch.generateMetadata(name + ChannelSuffix); err != nil {
 			return err
 		}
 	}
 
-	// Process operations
+	// Generate metadata for operations
 	for name, op := range s.Operations {
-		if err := op.Process(name+"Operation", *s); err != nil {
+		if err := op.generateMetadata(name + "Operation"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// setDependencies set dependencies between the different elements of the Specification.
+func (s *Specification) setDependencies() error {
+	// Prevent modification if nil
+	if s == nil {
+		return nil
+	}
+
+	// Set dependencies for components
+	if err := s.Components.setDependencies(*s); err != nil {
+		return err
+	}
+
+	// Set dependencies for info
+	if err := s.Info.setDependencies(*s); err != nil {
+		return err
+	}
+
+	// Set dependencies for servers
+	for _, srv := range s.Servers {
+		if err := srv.setDependencies(*s); err != nil {
+			return err
+		}
+	}
+
+	// Set dependencies for channels
+	for _, ch := range s.Channels {
+		if err := ch.setDependencies(*s); err != nil {
+			return err
+		}
+	}
+
+	// Set dependencies for operations
+	for _, op := range s.Operations {
+		if err := op.setDependencies(*s); err != nil {
 			return err
 		}
 	}

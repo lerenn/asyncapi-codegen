@@ -19,8 +19,8 @@ type Channel struct {
 	Path string `json:"-"`
 }
 
-// Process processes the Channel to make it ready for code generation.
-func (c *Channel) Process(path string, spec Specification) error {
+// generateMetadata generate metadata for the channel and its children.
+func (c *Channel) generateMetadata(path string) error {
 	// Set channel name and path
 	c.Name = template.Namify(path)
 	c.Path = path
@@ -32,23 +32,47 @@ func (c *Channel) Process(path string, spec Specification) error {
 		suffixSubscribe = "Subscribe"
 	}
 
-	// Process subscribe operation
+	// Generate subscribe operation metadata
 	if c.Subscribe != nil {
-		if err := c.Subscribe.Process(c.Name+suffixSubscribe, spec); err != nil {
+		if err := c.Subscribe.generateMetadata(c.Name + suffixSubscribe); err != nil {
 			return err
 		}
 	}
 
-	// Process publish operation
+	// Generate publish operation metadata
 	if c.Publish != nil {
-		if err := c.Publish.Process(c.Name+suffixPublish, spec); err != nil {
+		if err := c.Publish.generateMetadata(c.Name + suffixPublish); err != nil {
 			return err
 		}
 	}
 
-	// Process parameters
+	// Generate parameters metadata
 	for n, p := range c.Parameters {
-		if err := p.Process(n, spec); err != nil {
+		p.generateMetadata(n)
+	}
+
+	return nil
+}
+
+// setDependencies set dependencies for the channel and its children from specification.
+func (c *Channel) setDependencies(spec Specification) error {
+	// Set subscribe operation dependencies if present
+	if c.Subscribe != nil {
+		if err := c.Subscribe.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set publish operation dependencies if present
+	if c.Publish != nil {
+		if err := c.Publish.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set parameters dependencies
+	for _, p := range c.Parameters {
+		if err := p.setDependencies(spec); err != nil {
 			return err
 		}
 	}

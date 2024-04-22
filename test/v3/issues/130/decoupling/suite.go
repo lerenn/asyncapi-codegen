@@ -56,13 +56,13 @@ func (suite *Suite) TestSendReceive() {
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromConsumeUserSignupOperation(context.Background())
-	wg.Add(1)
 
 	// Set a new message
 	var msg UserMessage
 	msg.Payload.DisplayName = utils.ToPointer("testing")
 
 	// Send the new message
+	wg.Add(1)
 	err = suite.user.SendToConsumeUserSignupOperation(context.Background(), msg)
 	suite.Require().NoError(err)
 
