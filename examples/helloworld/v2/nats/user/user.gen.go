@@ -205,8 +205,8 @@ func NewHelloMessage() HelloMessage {
 	return msg
 }
 
-// newHelloMessageFromBrokerMessage will fill a new HelloMessage with data from generic broker message
-func newHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (HelloMessage, error) {
+// brokerMessageToHelloMessage will fill a new HelloMessage with data from generic broker message
+func brokerMessageToHelloMessage(bMsg extensions.BrokerMessage) (HelloMessage, error) {
 	var msg HelloMessage
 
 	// Convert to string

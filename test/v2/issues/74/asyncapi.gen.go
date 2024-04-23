@@ -186,7 +186,7 @@ func (c *AppController) SubscribeV2Issue74TestChannel(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newTestMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToTestMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -442,8 +442,8 @@ func NewTestMessage() TestMessage {
 	return msg
 }
 
-// newTestMessageFromBrokerMessage will fill a new TestMessage with data from generic broker message
-func newTestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (TestMessage, error) {
+// brokerMessageToTestMessage will fill a new TestMessage with data from generic broker message
+func brokerMessageToTestMessage(bMsg extensions.BrokerMessage) (TestMessage, error) {
 	var msg TestMessage
 
 	// Unmarshal payload to expected message payload format

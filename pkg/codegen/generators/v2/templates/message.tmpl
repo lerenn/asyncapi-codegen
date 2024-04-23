@@ -41,8 +41,8 @@ func New{{namify .Name}}() {{namify .Name}} {
     return msg
 }
 
-// new{{namify .Name}}FromBrokerMessage will fill a new {{namify .Name}} with data from generic broker message
-func new{{namify .Name}}FromBrokerMessage(bMsg extensions.BrokerMessage) ({{namify .Name}}, error) {
+// brokerMessageTo{{namify .Name}} will fill a new {{namify .Name}} with data from generic broker message
+func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .Name}}, error) {
     var msg {{namify .Name}}
 
     {{/* Get payload by reference, or not*/}}

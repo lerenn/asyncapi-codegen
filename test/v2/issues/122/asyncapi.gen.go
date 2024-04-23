@@ -184,7 +184,7 @@ func (c *AppController) SubscribeV2Issue122Msg(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newV2Issue122MsgMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToV2Issue122MsgMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -431,8 +431,8 @@ func NewV2Issue122MsgMessage() V2Issue122MsgMessage {
 	return msg
 }
 
-// newV2Issue122MsgMessageFromBrokerMessage will fill a new V2Issue122MsgMessage with data from generic broker message
-func newV2Issue122MsgMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue122MsgMessage, error) {
+// brokerMessageToV2Issue122MsgMessage will fill a new V2Issue122MsgMessage with data from generic broker message
+func brokerMessageToV2Issue122MsgMessage(bMsg extensions.BrokerMessage) (V2Issue122MsgMessage, error) {
 	var msg V2Issue122MsgMessage
 
 	// Convert to string

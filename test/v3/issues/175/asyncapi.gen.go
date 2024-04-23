@@ -69,10 +69,10 @@ func (e *Error) Error() string {
 }
 
 // Type1MessagePayload is a schema from the AsyncAPI specification required in messages
-type Type1MessagePayload []Type1MessagePayloadItem
+type Type1MessagePayload []ItemSchemaForType1MessagePayload
 
-// Type1MessagePayloadItem is a schema from the AsyncAPI specification required in messages
-type Type1MessagePayloadItem struct {
+// ItemSchemaForType1MessagePayload is a schema from the AsyncAPI specification required in messages
+type ItemSchemaForType1MessagePayload struct {
 	Age   *int64  `json:"age"`
 	Email *string `json:"email"`
 	Name  *string `json:"name"`
@@ -81,7 +81,7 @@ type Type1MessagePayloadItem struct {
 // Type1Message is the message expected for 'Type1Message' channel.
 type Type1Message struct {
 	// Payload will be inserted in the message payload
-	Payload []Type1MessagePayloadItem
+	Payload []ItemSchemaForType1MessagePayload
 }
 
 func NewType1Message() Type1Message {
@@ -90,8 +90,8 @@ func NewType1Message() Type1Message {
 	return msg
 }
 
-// newType1MessageFromBrokerMessage will fill a new Type1Message with data from generic broker message
-func newType1MessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Type1Message, error) {
+// brokerMessageToType1Message will fill a new Type1Message with data from generic broker message
+func brokerMessageToType1Message(bMsg extensions.BrokerMessage) (Type1Message, error) {
 	var msg Type1Message
 
 	// Unmarshal payload to expected message payload format
@@ -136,8 +136,8 @@ func NewType2Message() Type2Message {
 	return msg
 }
 
-// newType2MessageFromBrokerMessage will fill a new Type2Message with data from generic broker message
-func newType2MessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Type2Message, error) {
+// brokerMessageToType2Message will fill a new Type2Message with data from generic broker message
+func brokerMessageToType2Message(bMsg extensions.BrokerMessage) (Type2Message, error) {
 	var msg Type2Message
 
 	// Unmarshal payload to expected message payload format
@@ -185,8 +185,8 @@ func NewType3Message() Type3Message {
 	return msg
 }
 
-// newType3MessageFromBrokerMessage will fill a new Type3Message with data from generic broker message
-func newType3MessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Type3Message, error) {
+// brokerMessageToType3Message will fill a new Type3Message with data from generic broker message
+func brokerMessageToType3Message(bMsg extensions.BrokerMessage) (Type3Message, error) {
 	var msg Type3Message
 
 	// Unmarshal payload to expected message payload format
@@ -220,10 +220,10 @@ func (msg Type3Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 }
 
 // ArrayPayloadSchema is a schema from the AsyncAPI specification required in messages
-type ArrayPayloadSchema []ArrayPayloadSchemaItem
+type ArrayPayloadSchema []ItemSchemaForArrayPayloadSchema
 
-// ArrayPayloadSchemaItem is a schema from the AsyncAPI specification required in messages
-type ArrayPayloadSchemaItem struct {
+// ItemSchemaForArrayPayloadSchema is a schema from the AsyncAPI specification required in messages
+type ItemSchemaForArrayPayloadSchema struct {
 	Age   *int64  `json:"age"`
 	Email *string `json:"email"`
 	Name  *string `json:"name"`

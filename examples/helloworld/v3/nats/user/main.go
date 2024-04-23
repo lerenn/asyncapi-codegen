@@ -36,7 +36,7 @@ func main() {
 	// Send HelloWorld
 	// Note: it will indefinitely wait to publish as context has no timeout
 	log.Println("Publishing 'hello world' message")
-	if err := ctrl.SendToReceiveHelloOperation(context.Background(), SayHelloMessage{
+	if err := ctrl.SendToReceiveHelloOperation(context.Background(), SayHelloMessageFromHelloChannel{
 		Payload: "HelloWorld!",
 	}); err != nil {
 		panic(err)

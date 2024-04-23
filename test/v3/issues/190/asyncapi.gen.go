@@ -68,32 +68,32 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// BarMessagePayload is a schema from the AsyncAPI specification required in messages
-type BarMessagePayload struct {
-	Data *DataProperty `json:"data"`
+// BarMessageFromFooChannelPayload is a schema from the AsyncAPI specification required in messages
+type BarMessageFromFooChannelPayload struct {
+	Data *DataPropertyFromBarMessageFromFooChannelPayload `json:"data"`
 }
 
-// DataProperty is a schema from the AsyncAPI specification required in messages
-type DataProperty struct {
+// DataPropertyFromBarMessageFromFooChannelPayload is a schema from the AsyncAPI specification required in messages
+type DataPropertyFromBarMessageFromFooChannelPayload struct {
 	Bar *string `json:"bar"`
 	Id  *string `json:"id"`
 }
 
-// BarMessage is the message expected for 'BarMessage' channel.
-type BarMessage struct {
+// BarMessageFromFooChannel is the message expected for 'BarMessageFromFooChannel' channel.
+type BarMessageFromFooChannel struct {
 	// Payload will be inserted in the message payload
-	Payload BarMessagePayload
+	Payload BarMessageFromFooChannelPayload
 }
 
-func NewBarMessage() BarMessage {
-	var msg BarMessage
+func NewBarMessageFromFooChannel() BarMessageFromFooChannel {
+	var msg BarMessageFromFooChannel
 
 	return msg
 }
 
-// newBarMessageFromBrokerMessage will fill a new BarMessage with data from generic broker message
-func newBarMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (BarMessage, error) {
-	var msg BarMessage
+// brokerMessageToBarMessageFromFooChannel will fill a new BarMessageFromFooChannel with data from generic broker message
+func brokerMessageToBarMessageFromFooChannel(bMsg extensions.BrokerMessage) (BarMessageFromFooChannel, error) {
+	var msg BarMessageFromFooChannel
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -106,8 +106,8 @@ func newBarMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (BarMessage, 
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from BarMessage data
-func (msg BarMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from BarMessageFromFooChannel data
+func (msg BarMessageFromFooChannel) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -125,32 +125,32 @@ func (msg BarMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// SayHelloMessagePayload is a schema from the AsyncAPI specification required in messages
-type SayHelloMessagePayload struct {
-	Data *DataProperty `json:"data"`
+// SayHelloMessageFromHelloChannelPayload is a schema from the AsyncAPI specification required in messages
+type SayHelloMessageFromHelloChannelPayload struct {
+	Data *DataPropertyFromSayHelloMessageFromHelloChannelPayload `json:"data"`
 }
 
-// DataProperty is a schema from the AsyncAPI specification required in messages
-type DataProperty struct {
+// DataPropertyFromSayHelloMessageFromHelloChannelPayload is a schema from the AsyncAPI specification required in messages
+type DataPropertyFromSayHelloMessageFromHelloChannelPayload struct {
 	Hello *string `json:"hello"`
 	Id    *string `json:"id"`
 }
 
-// SayHelloMessage is the message expected for 'SayHelloMessage' channel.
-type SayHelloMessage struct {
+// SayHelloMessageFromHelloChannel is the message expected for 'SayHelloMessageFromHelloChannel' channel.
+type SayHelloMessageFromHelloChannel struct {
 	// Payload will be inserted in the message payload
-	Payload SayHelloMessagePayload
+	Payload SayHelloMessageFromHelloChannelPayload
 }
 
-func NewSayHelloMessage() SayHelloMessage {
-	var msg SayHelloMessage
+func NewSayHelloMessageFromHelloChannel() SayHelloMessageFromHelloChannel {
+	var msg SayHelloMessageFromHelloChannel
 
 	return msg
 }
 
-// newSayHelloMessageFromBrokerMessage will fill a new SayHelloMessage with data from generic broker message
-func newSayHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (SayHelloMessage, error) {
-	var msg SayHelloMessage
+// brokerMessageToSayHelloMessageFromHelloChannel will fill a new SayHelloMessageFromHelloChannel with data from generic broker message
+func brokerMessageToSayHelloMessageFromHelloChannel(bMsg extensions.BrokerMessage) (SayHelloMessageFromHelloChannel, error) {
+	var msg SayHelloMessageFromHelloChannel
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -163,8 +163,8 @@ func newSayHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (SayHell
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from SayHelloMessage data
-func (msg SayHelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from SayHelloMessageFromHelloChannel data
+func (msg SayHelloMessageFromHelloChannel) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON

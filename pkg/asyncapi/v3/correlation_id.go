@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 // CorrelationID is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#correlationIdObject
@@ -19,14 +17,14 @@ type CorrelationID struct {
 }
 
 // generateMetadata generates metadata for the CorrelationID.
-func (c *CorrelationID) generateMetadata(path string) {
+func (c *CorrelationID) generateMetadata(parentName, name string) {
 	// Prevent modification if nil
 	if c == nil {
 		return
 	}
 
 	// Set name
-	c.Name = template.Namify(path)
+	c.Name = generateFullName(parentName, name, "CorrelationID", nil)
 }
 
 // setDependencies sets dependencies between the different elements of the CorrelationID.

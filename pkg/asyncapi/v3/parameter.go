@@ -17,14 +17,14 @@ type Parameter struct {
 }
 
 // generateMetadata generates metadata for the Parameter.
-func (p *Parameter) generateMetadata(name string) {
+func (p *Parameter) generateMetadata(parentName, name string) {
 	// Prevent modification if nil
 	if p == nil {
 		return
 	}
 
 	// Set name
-	p.Name = name
+	p.Name = generateFullName(parentName, name, "Parameter", nil)
 }
 
 // setDependencies sets dependencies between the different elements of the Parameter.

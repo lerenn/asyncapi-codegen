@@ -48,7 +48,7 @@ func (suite *Suite) TestSendReceive() {
 	// Listen to new messages
 	err := suite.app.SubscribeToConsumeUserSignupOperation(
 		context.Background(),
-		func(ctx context.Context, msg UserMessage) error {
+		func(ctx context.Context, msg UserMessageFromUserSignupChannel) error {
 			suite.Require().NotNil(msg.Payload.DisplayName)
 			suite.Require().Equal("testing", *msg.Payload.DisplayName)
 			wg.Done()
@@ -58,7 +58,7 @@ func (suite *Suite) TestSendReceive() {
 	defer suite.app.UnsubscribeFromConsumeUserSignupOperation(context.Background())
 
 	// Set a new message
-	var msg UserMessage
+	var msg UserMessageFromUserSignupChannel
 	msg.Payload.DisplayName = utils.ToPointer("testing")
 
 	// Send the new message

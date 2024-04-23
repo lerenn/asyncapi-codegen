@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "fmt"
-
 // Info is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#infoObject
@@ -21,7 +19,7 @@ type Info struct {
 }
 
 // generateMetadata generates metadata for the Info.
-func (info *Info) generateMetadata() error {
+func (info *Info) generateMetadata(parentName string) error {
 	// Prevent modification if nil
 	if info == nil {
 		return nil
@@ -29,11 +27,11 @@ func (info *Info) generateMetadata() error {
 
 	// Process tags
 	for i, t := range info.Tags {
-		t.generateMetadata(fmt.Sprintf("InfoTag%d", i))
+		t.generateMetadata(parentName, "", &i)
 	}
 
 	// Process external documentation
-	info.ExternalDocs.generateMetadata("InfoExternalDocs")
+	info.ExternalDocs.generateMetadata(parentName, ExternalDocsNameSuffix)
 
 	return nil
 }

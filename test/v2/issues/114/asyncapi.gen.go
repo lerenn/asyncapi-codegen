@@ -79,8 +79,8 @@ func NewV2Issue114StatusMessage() V2Issue114StatusMessage {
 	return msg
 }
 
-// newV2Issue114StatusMessageFromBrokerMessage will fill a new V2Issue114StatusMessage with data from generic broker message
-func newV2Issue114StatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue114StatusMessage, error) {
+// brokerMessageToV2Issue114StatusMessage will fill a new V2Issue114StatusMessage with data from generic broker message
+func brokerMessageToV2Issue114StatusMessage(bMsg extensions.BrokerMessage) (V2Issue114StatusMessage, error) {
 	var msg V2Issue114StatusMessage
 
 	// Convert to string

@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 // Components is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#componentsObject
@@ -40,7 +38,7 @@ func (c *Components) generateMetadata() error {
 
 	// Generate schemas metadata
 	for name, schema := range c.Schemas {
-		if err := schema.generateMetadata(name+"Schema", false); err != nil {
+		if err := schema.generateMetadata("", name+"Schema", nil, false); err != nil {
 			return err
 		}
 	}
@@ -52,14 +50,14 @@ func (c *Components) generateMetadata() error {
 
 	// Generate reply operations metadata
 	for name, reply := range c.Replies {
-		if err := reply.generateMetadata(name + "Reply"); err != nil {
+		if err := reply.generateMetadata("", name); err != nil {
 			return err
 		}
 	}
 
 	// Generate reply addresses metadata
 	for name, repAddr := range c.ReplyAddresses {
-		repAddr.generateMetadata(name + "ReplyAddress")
+		repAddr.generateMetadata("", name)
 	}
 
 	return nil
@@ -105,90 +103,90 @@ func (c *Components) setDependencies(spec Specification) error {
 func (c *Components) generateMetadataFromMaps() error {
 	// Generate metadata for servers
 	for name, entity := range c.Servers {
-		entity.generateMetadata(template.Namify(name) + "Server")
+		entity.generateMetadata("", name, nil)
 	}
 
 	// Generate metadata for channels
 	for name, entity := range c.Channels {
-		if err := entity.generateMetadata(template.Namify(name) + "Channel"); err != nil {
+		if err := entity.generateMetadata("", name); err != nil {
 			return err
 		}
 	}
 
 	// Generate metadata for operations
 	for name, entity := range c.Operations {
-		if err := entity.generateMetadata(template.Namify(name) + "Operation"); err != nil {
+		if err := entity.generateMetadata("", name); err != nil {
 			return err
 		}
 	}
 
 	// Generate metadata for messages
 	for name, entity := range c.Messages {
-		if err := entity.generateMetadata(template.Namify(name) + "Message"); err != nil {
+		if err := entity.generateMetadata("", name, nil); err != nil {
 			return err
 		}
 	}
 
 	// Generate metadata for security schemes
 	for name, entity := range c.SecuritySchemes {
-		entity.generateMetadata(template.Namify(name) + "SecurityScheme")
+		entity.generateMetadata("", name, nil)
 	}
 
 	// Generate metadata for server variables
 	for name, entity := range c.ServerVariables {
-		entity.generateMetadata(template.Namify(name) + "ServerVariable")
+		entity.generateMetadata("", name)
 	}
 
 	// Generate metadata for parameters
 	for name, entity := range c.Parameters {
-		entity.generateMetadata(template.Namify(name) + "Parameter")
+		entity.generateMetadata("", name)
 	}
 
 	// Generate metadata for correlation IDs
 	for name, entity := range c.CorrelationIDs {
-		entity.generateMetadata(template.Namify(name) + "CorrelationID")
+		entity.generateMetadata("", name)
 	}
 
 	// Generate metadata for external docs
 	for name, entity := range c.ExternalDocs {
-		entity.generateMetadata(template.Namify(name) + ExternalDocsNameSuffix)
+		entity.generateMetadata("", name)
 	}
 
 	// Generate metadata for tags
 	for name, entity := range c.Tags {
-		entity.generateMetadata(template.Namify(name) + "Tag")
+		entity.generateMetadata("", name, nil)
 	}
 
 	// Generate metadata for operation traits
 	for name, entity := range c.OperationTraits {
-		entity.generateMetadata(template.Namify(name) + "OperationTrait")
+		entity.generateMetadata("", name, nil)
 	}
 
 	// Generate metadata for message traits
 	for name, entity := range c.MessageTraits {
-		if err := entity.generateMetadata(template.Namify(name) + "MessageTrait"); err != nil {
+		if err := entity.generateMetadata("", name, nil); err != nil {
 			return err
 		}
 	}
 
 	// Generate metadata for server bindings
 	for name, entity := range c.ServerBindings {
-		entity.generateMetadata(template.Namify(name) + "ServerBinding")
+		entity.generateMetadata("", name)
 	}
 
 	// Generate metadata for channel bindings
 	for name, entity := range c.ChannelBindings {
-		entity.generateMetadata(template.Namify(name) + "ChannelBinding")
+		entity.generateMetadata("", name)
 	}
 
 	// Generate metadata for operation bindings
 	for name, entity := range c.OperationBindings {
-		entity.generateMetadata(template.Namify(name) + "OperationBinding")
+		entity.generateMetadata("", name)
 	}
 
 	// Generate metadata for message bindings
 	for name, entity := range c.MessageBindings {
-		entity.generateMetadata(template.Namify(name) + "MessageBinding")
+		entity.generateMetadata("", name)
 	}
 
 	return nil

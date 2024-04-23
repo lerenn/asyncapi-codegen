@@ -6,7 +6,6 @@ import (
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 	"github.com/mohae/deepcopy"
 )
 
@@ -64,21 +63,18 @@ type Message struct {
 }
 
 // generateMetadata generates metadata for the Message.
-func (msg *Message) generateMetadata(name string) error {
+func (msg *Message) generateMetadata(parentName, name string, number *int) error {
 	// Prevent modification if nil
 	if msg == nil {
 		return nil
 	}
 
 	// Set name
-	if msg.Name == "" {
-		msg.Name = template.Namify(name)
-	} else {
-		msg.Name = template.Namify(msg.Name)
-	}
+	msg.Name = generateFullName(parentName, name, "Message", number)
 
 	// Generate Payload metadata
-	if err := msg.Payload.generateMetadata(msg.Name+MessagePayloadSuffix, false); err != nil {
+	// NOTE: Suffix Message name with payload for name and set no parent
+	if err := msg.Payload.generateMetadata("", msg.Name+"Payload", nil, false); err != nil {
 		return err
 	}
 
@@ -96,10 +92,10 @@ func (msg *Message) generateMetadata(name string) error {
 	msg.generateTagsMetadata()
 
 	// Generate external documentation metadata
-	msg.ExternalDocs.generateMetadata(msg.Name + ExternalDocsNameSuffix)
+	msg.ExternalDocs.generateMetadata(msg.Name, ExternalDocsNameSuffix)
 
 	// Generate Bindings metadata
-	msg.Bindings.generateMetadata(msg.Name + BindingsSuffix)
+	msg.Bindings.generateMetadata(msg.Name, "")
 
 	// Generate Message Examples metadata
 	msg.generateExamplesMetadata()
@@ -183,7 +179,7 @@ func (msg *Message) setReference(spec Specification) error {
 
 func (msg *Message) generateTagsMetadata() {
 	for i, t := range msg.Tags {
-		t.generateMetadata(fmt.Sprintf("%sTag%d", msg.Name, i))
+		t.generateMetadata(msg.Name, "", &i)
 	}
 }
 
@@ -199,7 +195,7 @@ func (msg *Message) setTagsDependencies(spec Specification) error {
 
 func (msg *Message) generateExamplesMetadata() {
 	for i, ex := range msg.Examples {
-		ex.generateMetadata(fmt.Sprintf("%sExample%d", msg.Name, i))
+		ex.generateMetadata(msg.Name, "", &i)
 	}
 }
 
@@ -218,7 +214,7 @@ func (msg *Message) generateHeadersMetadata() error {
 		return nil
 	}
 
-	if err := msg.Headers.generateMetadata(msg.Name+MessageHeadersSuffix, false); err != nil {
+	if err := msg.Headers.generateMetadata(msg.Name, "Headers", nil, false); err != nil {
 		return err
 	}
 
@@ -241,7 +237,7 @@ func (msg *Message) setHeadersDependencies(spec Specification) error {
 
 func (msg *Message) generateOneOfMetadata() error {
 	for i, v := range msg.OneOf {
-		if err := v.generateMetadata(fmt.Sprintf("%sOneOf%d", msg.Name, i)); err != nil {
+		if err := v.generateMetadata(msg.Name, "", &i); err != nil {
 			return err
 		}
 	}
@@ -267,7 +263,7 @@ func (msg *Message) setOneOfDependencies(spec Specification) error {
 
 func (msg *Message) generateTraitsMetadata() error {
 	for i, t := range msg.Traits {
-		if err := t.generateMetadata(fmt.Sprintf("%sTrait%d", msg.Name, i)); err != nil {
+		if err := t.generateMetadata(msg.Name, "", &i); err != nil {
 			return err
 		}
 	}
@@ -569,7 +565,7 @@ func (msg *Message) mergeHeaders(spec Specification, headers *Schema) error {
 	if msg.Headers == nil {
 		newHeaders := utils.ToValue(headers.Follow())
 		msg.Headers = &newHeaders
-		if err := newHeaders.generateMetadata(msg.Name+MessageHeadersSuffix, false); err != nil {
+		if err := newHeaders.generateMetadata(msg.Name, "Headers", nil, false); err != nil {
 			return err
 		}
 		return newHeaders.setDependencies(spec)
@@ -589,7 +585,7 @@ func (msg *Message) mergePayload(spec Specification, payload *Schema) error {
 	if msg.Payload == nil {
 		newPayload := utils.ToValue(payload.Follow())
 		msg.Payload = &newPayload
-		if err := newPayload.generateMetadata(msg.Name+MessagePayloadSuffix, false); err != nil {
+		if err := newPayload.generateMetadata(msg.Name, "Payload", nil, false); err != nil {
 			return err
 		}
 		return newPayload.setDependencies(spec)

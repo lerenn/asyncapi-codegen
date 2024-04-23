@@ -1,10 +1,7 @@
 package asyncapiv3
 
 import (
-	"fmt"
-
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 // SchemaType is a structure that represents the type of a field.
@@ -95,78 +92,80 @@ func NewSchema() Schema {
 // generateMetadata generates metadata for the Schema and its children.
 //
 //nolint:funlen,cyclop // Not necessary to reduce length and cyclop
-func (s *Schema) generateMetadata(name string, isRequired bool) error {
+func (s *Schema) generateMetadata(parentName, name string, number *int, isRequired bool) error {
 	// Prevent modification if nil
 	if s == nil {
 		return nil
 	}
 
 	// Set name
-	s.Name = template.Namify(name)
+	// NOTE: do not specify the type "schema" in the name
+	s.Name = generateFullName(parentName, name, "", number)
 
 	// Generate Properties metadata
 	for n, p := range s.Properties {
-		if err := p.generateMetadata(n+"Property", utils.IsInSlice(s.Required, n)); err != nil {
+		if err := p.generateMetadata(s.Name, n+"Property", nil, utils.IsInSlice(s.Required, n)); err != nil {
 			return err
 		}
 	}
 
 	// Generate Pattern Properties metadata
 	for n, p := range s.PatternProperties {
-		if err := p.generateMetadata(n+"PatternProperty", utils.IsInSlice(s.Required, n)); err != nil {
+		if err := p.generateMetadata(s.Name, n+"PatternProperty", nil, utils.IsInSlice(s.Required, n)); err != nil {
 			return err
 		}
 	}
 
 	// Generate AdditionalProperties metadata
 	if s.AdditionalProperties != nil {
-		if err := s.AdditionalProperties.generateMetadata(s.Name+"AdditionalProperties", false); err != nil {
+		if err := s.AdditionalProperties.generateMetadata(s.Name, "AdditionalProperties", nil, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate Additional Items metadata
 	for i, item := range s.AdditionalItems {
-		if err := item.generateMetadata(fmt.Sprintf("%sAdditionalItem%d", s.Name, i), false); err != nil {
+		if err := item.generateMetadata(s.Name, "AdditionalItem", &i, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate Items metadata
-	if err := s.Items.generateMetadata(s.Name+"Item", false); err != nil {
+	// NOTE: give the name of the parent to the items
+	if err := s.Items.generateMetadata("", "ItemSchemaFor"+s.Name, nil, false); err != nil {
 		return err
 	}
 
 	// Generate Contains metadata
 	for i, item := range s.Contains {
-		if err := item.generateMetadata(fmt.Sprintf("%sContains%d", name, i), false); err != nil {
+		if err := item.generateMetadata("", s.Name+"Content", &i, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate AnyOf metadata
 	for _, v := range s.AnyOf {
-		if err := v.generateMetadata(s.Name+"AnyOf", false); err != nil {
+		if err := v.generateMetadata(s.Name, "AnyOf", nil, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate OneOf metadata
 	for _, v := range s.OneOf {
-		if err := v.generateMetadata(s.Name+"OneOf", false); err != nil {
+		if err := v.generateMetadata(s.Name, "OneOf", nil, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate AllOf metadata
 	for _, v := range s.AllOf {
-		if err := v.generateMetadata(s.Name+"AllOf", false); err != nil {
+		if err := v.generateMetadata(s.Name, "AllOf", nil, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate Not metadata
-	if err := s.Not.generateMetadata(s.Name+"Not", false); err != nil {
+	if err := s.Not.generateMetadata(s.Name, "NotSchema", nil, false); err != nil {
 		return err
 	}
 

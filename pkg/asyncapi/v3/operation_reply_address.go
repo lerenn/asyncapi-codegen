@@ -2,8 +2,6 @@ package asyncapiv3
 
 import (
 	"strings"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 // OperationReplyAddress is a representation of the corresponding asyncapi object
@@ -24,14 +22,14 @@ type OperationReplyAddress struct {
 }
 
 // generateMetadata generates metadata for the OperationReplyAddress.
-func (ora *OperationReplyAddress) generateMetadata(name string) {
+func (ora *OperationReplyAddress) generateMetadata(parentName, name string) {
 	// Prevent modification if nil
 	if ora == nil {
 		return
 	}
 
 	// Set name
-	ora.Name = template.Namify(name)
+	ora.Name = generateFullName(parentName, name, "Address", nil)
 }
 
 // setDependencies sets dependencies between the different elements of the OperationReplyAddress.

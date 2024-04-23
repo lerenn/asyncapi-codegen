@@ -184,7 +184,7 @@ func (c *AppController) SubscribeIssue169Msg(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newIssue169MsgMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToIssue169MsgMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -431,8 +431,8 @@ func NewIssue169MsgMessage() Issue169MsgMessage {
 	return msg
 }
 
-// newIssue169MsgMessageFromBrokerMessage will fill a new Issue169MsgMessage with data from generic broker message
-func newIssue169MsgMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Issue169MsgMessage, error) {
+// brokerMessageToIssue169MsgMessage will fill a new Issue169MsgMessage with data from generic broker message
+func brokerMessageToIssue169MsgMessage(bMsg extensions.BrokerMessage) (Issue169MsgMessage, error) {
 	var msg Issue169MsgMessage
 
 	// Convert to string

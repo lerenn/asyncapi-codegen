@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 const (
 	// ExternalDocsNameSuffix is the suffix that is added to the name of external docs.
 	ExternalDocsNameSuffix = "ExternalDocs"
@@ -24,14 +22,14 @@ type ExternalDocumentation struct {
 }
 
 // generateMetadata generates metadata for the ExternalDocumentation.
-func (doc *ExternalDocumentation) generateMetadata(name string) {
+func (doc *ExternalDocumentation) generateMetadata(parentName, name string) {
 	// Return if empty
 	if doc == nil {
 		return
 	}
 
 	// Set name
-	doc.Name = template.Namify(name)
+	doc.Name = generateFullName(parentName, name, ExternalDocsNameSuffix, nil)
 }
 
 // setDependencies sets dependencies between the different elements of the ExternalDocumentation.

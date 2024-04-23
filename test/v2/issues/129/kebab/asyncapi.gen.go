@@ -206,8 +206,8 @@ func NewV2Issue129TestMessage() V2Issue129TestMessage {
 	return msg
 }
 
-// newV2Issue129TestMessageFromBrokerMessage will fill a new V2Issue129TestMessage with data from generic broker message
-func newV2Issue129TestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue129TestMessage, error) {
+// brokerMessageToV2Issue129TestMessage will fill a new V2Issue129TestMessage with data from generic broker message
+func brokerMessageToV2Issue129TestMessage(bMsg extensions.BrokerMessage) (V2Issue129TestMessage, error) {
 	var msg V2Issue129TestMessage
 
 	// Unmarshal payload to expected message payload format

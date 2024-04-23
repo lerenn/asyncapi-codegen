@@ -1,11 +1,5 @@
 package asyncapiv3
 
-import (
-	"fmt"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-)
-
 // MessageTrait is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#messageTraitObject
@@ -37,43 +31,39 @@ type MessageTrait struct {
 }
 
 // generateMetadata generates metadata for the MessageTrait.
-func (mt *MessageTrait) generateMetadata(name string) error {
+func (mt *MessageTrait) generateMetadata(parentName, name string, number *int) error {
 	// Prevent modification if nil
 	if mt == nil {
 		return nil
 	}
 
 	// Set name
-	if mt.Name == "" {
-		mt.Name = template.Namify(name)
-	} else {
-		mt.Name = template.Namify(mt.Name)
-	}
+	mt.Name = generateFullName(parentName, name, "Trait", number)
 
 	// Generate Headers metadata
-	if err := mt.Headers.generateMetadata(name+MessageHeadersSuffix, false); err != nil {
+	if err := mt.Headers.generateMetadata(mt.Name, "Headers", nil, false); err != nil {
 		return err
 	}
 
 	// generate Payload metadata
-	if err := mt.Payload.generateMetadata(name+MessagePayloadSuffix, false); err != nil {
+	if err := mt.Payload.generateMetadata(mt.Name, "Payload", nil, false); err != nil {
 		return err
 	}
 
 	// Generate tags metadata
 	for i, t := range mt.Tags {
-		t.generateMetadata(fmt.Sprintf("%sTag%d", mt.Name, i))
+		t.generateMetadata(mt.Name, "", &i)
 	}
 
 	// Generate external documentation metadata
-	mt.ExternalDocs.generateMetadata(mt.Name + ExternalDocsNameSuffix)
+	mt.ExternalDocs.generateMetadata(mt.Name, ExternalDocsNameSuffix)
 
 	// Generate Bindings metadata
-	mt.Bindings.generateMetadata(mt.Name + BindingsSuffix)
+	mt.Bindings.generateMetadata(mt.Name, "")
 
 	// Generate Message Examples metadata
 	for i, e := range mt.Examples {
-		e.generateMetadata(fmt.Sprintf("%sExample%d", mt.Name, i))
+		e.generateMetadata(mt.Name, "", &i)
 	}
 
 	return nil

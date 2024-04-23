@@ -378,7 +378,7 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadArray(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newReferencePayloadArrayMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToReferencePayloadArrayMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -478,7 +478,7 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadObject(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newReferencePayloadObjectMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToReferencePayloadObjectMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -578,7 +578,7 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadString(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newReferencePayloadStringMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToReferencePayloadStringMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -700,8 +700,8 @@ func NewReferencePayloadArrayMessage() ReferencePayloadArrayMessage {
 	return msg
 }
 
-// newReferencePayloadArrayMessageFromBrokerMessage will fill a new ReferencePayloadArrayMessage with data from generic broker message
-func newReferencePayloadArrayMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (ReferencePayloadArrayMessage, error) {
+// brokerMessageToReferencePayloadArrayMessage will fill a new ReferencePayloadArrayMessage with data from generic broker message
+func brokerMessageToReferencePayloadArrayMessage(bMsg extensions.BrokerMessage) (ReferencePayloadArrayMessage, error) {
 	var msg ReferencePayloadArrayMessage
 
 	// Unmarshal payload to expected message payload format
@@ -746,8 +746,8 @@ func NewReferencePayloadObjectMessage() ReferencePayloadObjectMessage {
 	return msg
 }
 
-// newReferencePayloadObjectMessageFromBrokerMessage will fill a new ReferencePayloadObjectMessage with data from generic broker message
-func newReferencePayloadObjectMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (ReferencePayloadObjectMessage, error) {
+// brokerMessageToReferencePayloadObjectMessage will fill a new ReferencePayloadObjectMessage with data from generic broker message
+func brokerMessageToReferencePayloadObjectMessage(bMsg extensions.BrokerMessage) (ReferencePayloadObjectMessage, error) {
 	var msg ReferencePayloadObjectMessage
 
 	// Unmarshal payload to expected message payload format
@@ -792,8 +792,8 @@ func NewReferencePayloadStringMessage() ReferencePayloadStringMessage {
 	return msg
 }
 
-// newReferencePayloadStringMessageFromBrokerMessage will fill a new ReferencePayloadStringMessage with data from generic broker message
-func newReferencePayloadStringMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (ReferencePayloadStringMessage, error) {
+// brokerMessageToReferencePayloadStringMessage will fill a new ReferencePayloadStringMessage with data from generic broker message
+func brokerMessageToReferencePayloadStringMessage(bMsg extensions.BrokerMessage) (ReferencePayloadStringMessage, error) {
 	var msg ReferencePayloadStringMessage
 
 	// Convert to string

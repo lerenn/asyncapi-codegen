@@ -109,13 +109,13 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// SendToReceiveTestOperation will send a Test message on Test channel.
+// SendToReceiveTestOperation will send a TestMessageFromTestChannel message on Test channel.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *UserController) SendToReceiveTestOperation(
 	ctx context.Context,
-	msg TestMessage,
+	msg TestMessageFromTestChannel,
 ) error {
 	// Set channel address
 	addr := "v3.issue129.test"
@@ -197,21 +197,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// TestMessage is the message expected for 'TestMessage' channel.
-type TestMessage struct {
+// TestMessageFromTestChannel is the message expected for 'TestMessageFromTestChannel' channel.
+type TestMessageFromTestChannel struct {
 	// Payload will be inserted in the message payload
 	Payload TestSchema
 }
 
-func NewTestMessage() TestMessage {
-	var msg TestMessage
+func NewTestMessageFromTestChannel() TestMessageFromTestChannel {
+	var msg TestMessageFromTestChannel
 
 	return msg
 }
 
-// newTestMessageFromBrokerMessage will fill a new TestMessage with data from generic broker message
-func newTestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (TestMessage, error) {
-	var msg TestMessage
+// brokerMessageToTestMessageFromTestChannel will fill a new TestMessageFromTestChannel with data from generic broker message
+func brokerMessageToTestMessageFromTestChannel(bMsg extensions.BrokerMessage) (TestMessageFromTestChannel, error) {
+	var msg TestMessageFromTestChannel
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -224,8 +224,8 @@ func newTestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (TestMessage
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from TestMessage data
-func (msg TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from TestMessageFromTestChannel data
+func (msg TestMessageFromTestChannel) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON

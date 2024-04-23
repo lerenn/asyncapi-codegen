@@ -182,7 +182,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(
             // Execute middlewares before handling the message
             if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
                 // Process message
-                msg, err := new{{(channelToMessage $value "subscribe").Name}}FromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+                msg, err := brokerMessageTo{{(channelToMessage $value "subscribe").Name}}(acknowledgeableBrokerMessage.BrokerMessage)
                 if err != nil {
                     return err
                 }
@@ -346,7 +346,7 @@ func (c *UserController) WaitFor{{operationName $value}}(
             }
 
             // Get new message
-            msg, err := new{{(channelToMessage $value "subscribe").Name}}FromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+            msg, err := brokerMessageTo{{(channelToMessage $value "subscribe").Name}}(acknowledgeableBrokerMessage.BrokerMessage)
             if err != nil {
                 c.logger.Error(ctx, err.Error())
             }
@@ -370,7 +370,7 @@ func (c *UserController) WaitFor{{operationName $value}}(
 
             // Return the message to the caller from the broker that could have
             // been modified by middlewares
-            return new{{(channelToMessage $value "subscribe").Name}}FromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+            return brokerMessageTo{{(channelToMessage $value "subscribe").Name}}(acknowledgeableBrokerMessage.BrokerMessage)
         case <-ctx.Done(): // Set corrsponding error if context is done
             c.logger.Error(ctx, "Context done before getting message")
             return {{(channelToMessage $value "subscribe").Name}}{}, extensions.ErrContextCanceled

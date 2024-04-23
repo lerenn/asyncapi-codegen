@@ -68,8 +68,8 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Type1MessageHeaders is a schema from the AsyncAPI specification required in messages
-type Type1MessageHeaders struct {
+// HeadersFromType1Message is a schema from the AsyncAPI specification required in messages
+type HeadersFromType1Message struct {
 	// Description: Correlation ID set by client
 	CorrelationId *string `json:"correlationId"`
 }
@@ -80,7 +80,7 @@ type Type1MessagePayload struct{}
 // Type1Message is the message expected for 'Type1Message' channel.
 type Type1Message struct {
 	// Headers will be used to fill the message headers
-	Headers Type1MessageHeaders
+	Headers HeadersFromType1Message
 
 	// Payload will be inserted in the message payload
 	Payload Type1MessagePayload
@@ -92,8 +92,8 @@ func NewType1Message() Type1Message {
 	return msg
 }
 
-// newType1MessageFromBrokerMessage will fill a new Type1Message with data from generic broker message
-func newType1MessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Type1Message, error) {
+// brokerMessageToType1Message will fill a new Type1Message with data from generic broker message
+func brokerMessageToType1Message(bMsg extensions.BrokerMessage) (Type1Message, error) {
 	var msg Type1Message
 
 	// Unmarshal payload to expected message payload format
@@ -142,8 +142,8 @@ func (msg Type1Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// Type2MessageHeaders is a schema from the AsyncAPI specification required in messages
-type Type2MessageHeaders struct {
+// HeadersFromType2Message is a schema from the AsyncAPI specification required in messages
+type HeadersFromType2Message struct {
 	// Description: Correlation ID set by client
 	CorrelationId *string `json:"correlationId"`
 }
@@ -154,7 +154,7 @@ type Type2MessagePayload struct{}
 // Type2Message is the message expected for 'Type2Message' channel.
 type Type2Message struct {
 	// Headers will be used to fill the message headers
-	Headers Type2MessageHeaders
+	Headers HeadersFromType2Message
 
 	// Payload will be inserted in the message payload
 	Payload Type2MessagePayload
@@ -166,8 +166,8 @@ func NewType2Message() Type2Message {
 	return msg
 }
 
-// newType2MessageFromBrokerMessage will fill a new Type2Message with data from generic broker message
-func newType2MessageFromBrokerMessage(bMsg extensions.BrokerMessage) (Type2Message, error) {
+// brokerMessageToType2Message will fill a new Type2Message with data from generic broker message
+func brokerMessageToType2Message(bMsg extensions.BrokerMessage) (Type2Message, error) {
 	var msg Type2Message
 
 	// Unmarshal payload to expected message payload format

@@ -101,7 +101,7 @@ func (suite *Suite) TestRequestReplyOnRawChannel() {
 	var wg sync.WaitGroup
 	go func() {
 		rawReply := <-sub.MessagesChannel()
-		reply, err := newPongMessageFromBrokerMessage(rawReply.BrokerMessage)
+		reply, err := brokerMessageToPingMessage(rawReply.BrokerMessage)
 		suite.Require().NoError(err)
 		suite.Require().NotNil(reply.Payload.Event)
 		suite.Require().Equal("testing.2345", *reply.Payload.Event)
