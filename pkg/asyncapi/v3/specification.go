@@ -146,7 +146,10 @@ func (s Specification) GetOperationCountByAction() (sendCount, receiveCount uint
 // ReferenceChannel returns the Channel struct corresponding to the given reference.
 func (s Specification) ReferenceChannel(ref string) (*Channel, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to channel
 	channel, ok := obj.(*Channel)
@@ -167,7 +170,10 @@ func (s Specification) ReferenceChannel(ref string) (*Channel, error) {
 // ReferenceChannelBindings returns the ChannelBindings struct corresponding to the given reference.
 func (s Specification) ReferenceChannelBindings(ref string) (*ChannelBindings, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to channel bindings
 	bindings, ok := obj.(*ChannelBindings)
@@ -188,7 +194,10 @@ func (s Specification) ReferenceChannelBindings(ref string) (*ChannelBindings, e
 // ReferenceExternalDocumentation returns the ExternalDocumentation struct corresponding to the given reference.
 func (s Specification) ReferenceExternalDocumentation(ref string) (*ExternalDocumentation, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to external documentation
 	doc, ok := obj.(*ExternalDocumentation)
@@ -209,7 +218,10 @@ func (s Specification) ReferenceExternalDocumentation(ref string) (*ExternalDocu
 // ReferenceMessage returns the Message struct corresponding to the given reference.
 func (s Specification) ReferenceMessage(ref string) (*Message, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to message
 	msg, ok := obj.(*Message)
@@ -230,7 +242,10 @@ func (s Specification) ReferenceMessage(ref string) (*Message, error) {
 // ReferenceMessageBindings returns the MessageBindings struct corresponding to the given reference.
 func (s Specification) ReferenceMessageBindings(ref string) (*MessageBindings, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to message bindings
 	bindings, ok := obj.(*MessageBindings)
@@ -251,7 +266,10 @@ func (s Specification) ReferenceMessageBindings(ref string) (*MessageBindings, e
 // ReferenceMessageExample returns the MessageExample struct corresponding to the given reference.
 func (s Specification) ReferenceMessageExample(ref string) (*MessageExample, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to message example
 	example, ok := obj.(*MessageExample)
@@ -272,7 +290,10 @@ func (s Specification) ReferenceMessageExample(ref string) (*MessageExample, err
 // ReferenceMessageTrait returns the MessageTrait struct corresponding to the given reference.
 func (s Specification) ReferenceMessageTrait(ref string) (*MessageTrait, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to message trait
 	trait, ok := obj.(*MessageTrait)
@@ -293,7 +314,10 @@ func (s Specification) ReferenceMessageTrait(ref string) (*MessageTrait, error) 
 // ReferenceOperation returns the Operation struct corresponding to the given reference.
 func (s Specification) ReferenceOperation(ref string) (*Operation, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to operation
 	operation, ok := obj.(*Operation)
@@ -314,7 +338,10 @@ func (s Specification) ReferenceOperation(ref string) (*Operation, error) {
 // ReferenceOperationBindings returns the OperationBindings struct corresponding to the given reference.
 func (s Specification) ReferenceOperationBindings(ref string) (*OperationBindings, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to operation bindings
 	bindings, ok := obj.(*OperationBindings)
@@ -335,7 +362,10 @@ func (s Specification) ReferenceOperationBindings(ref string) (*OperationBinding
 // ReferenceOperationReply returns the OperationReply struct corresponding to the given reference.
 func (s Specification) ReferenceOperationReply(ref string) (*OperationReply, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to operation reply
 	reply, ok := obj.(*OperationReply)
@@ -356,7 +386,10 @@ func (s Specification) ReferenceOperationReply(ref string) (*OperationReply, err
 // ReferenceOperationReplyAddress returns the OperationReplyAddress struct corresponding to the given reference.
 func (s Specification) ReferenceOperationReplyAddress(ref string) (*OperationReplyAddress, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to operation reply address
 	address, ok := obj.(*OperationReplyAddress)
@@ -377,7 +410,10 @@ func (s Specification) ReferenceOperationReplyAddress(ref string) (*OperationRep
 // ReferenceOperationTrait returns the OperationTrait struct corresponding to the given reference.
 func (s Specification) ReferenceOperationTrait(ref string) (*OperationTrait, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to operation trait
 	trait, ok := obj.(*OperationTrait)
@@ -398,7 +434,10 @@ func (s Specification) ReferenceOperationTrait(ref string) (*OperationTrait, err
 // ReferenceParameter returns the Parameter struct corresponding to the given reference.
 func (s Specification) ReferenceParameter(ref string) (*Parameter, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to parameter
 	param, ok := obj.(*Parameter)
@@ -419,7 +458,10 @@ func (s Specification) ReferenceParameter(ref string) (*Parameter, error) {
 // ReferenceSecurity returns the SecurityScheme struct corresponding to the given reference.
 func (s Specification) ReferenceSecurity(ref string) (*SecurityScheme, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to security scheme
 	security, ok := obj.(*SecurityScheme)
@@ -440,7 +482,10 @@ func (s Specification) ReferenceSecurity(ref string) (*SecurityScheme, error) {
 // ReferenceSchema returns the Schema struct corresponding to the given reference.
 func (s Specification) ReferenceSchema(ref string) (*Schema, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to schema
 	schema, ok := obj.(*Schema)
@@ -461,7 +506,10 @@ func (s Specification) ReferenceSchema(ref string) (*Schema, error) {
 // ReferenceServer returns the Server struct corresponding to the given reference.
 func (s Specification) ReferenceServer(ref string) (*Server, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to server
 	server, ok := obj.(*Server)
@@ -482,7 +530,10 @@ func (s Specification) ReferenceServer(ref string) (*Server, error) {
 // ReferenceServerBindings returns the ServerBindings struct corresponding to the given reference.
 func (s Specification) ReferenceServerBindings(ref string) (*ServerBindings, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to server bindings
 	bindings, ok := obj.(*ServerBindings)
@@ -503,7 +554,10 @@ func (s Specification) ReferenceServerBindings(ref string) (*ServerBindings, err
 // ReferenceServerVariable returns the ServerVariable struct corresponding to the given reference.
 func (s Specification) ReferenceServerVariable(ref string) (*ServerVariable, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to server variable
 	variable, ok := obj.(*ServerVariable)
@@ -524,7 +578,10 @@ func (s Specification) ReferenceServerVariable(ref string) (*ServerVariable, err
 // ReferenceTag returns the Tag struct corresponding to the given reference.
 func (s Specification) ReferenceTag(ref string) (*Tag, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to tag
 	tag, ok := obj.(*Tag)
@@ -543,7 +600,7 @@ func (s Specification) ReferenceTag(ref string) (*Tag, error) {
 }
 
 //nolint:funlen,cyclop // Not necessary to reduce statements and cyclop
-func (s Specification) reference(ref string) any {
+func (s Specification) reference(ref string) (any, error) {
 	refPath := strings.Split(ref, "/")[1:]
 
 	switch refPath[0] {
@@ -551,51 +608,51 @@ func (s Specification) reference(ref string) any {
 		switch refPath[1] {
 		case "schemas":
 			schema := s.Components.Schemas[refPath[2]]
-			return schema.referenceFrom(refPath[3:])
+			return schema.referenceFrom(refPath[3:]), nil
 		case "servers":
-			return s.Components.Servers[refPath[2]]
+			return s.Components.Servers[refPath[2]], nil
 		case "channels":
-			return s.Components.Channels[refPath[2]]
+			return s.Components.Channels[refPath[2]], nil
 		case "operations":
-			return s.Components.Operations[refPath[2]]
+			return s.Components.Operations[refPath[2]], nil
 		case "messages":
 			msg := s.Components.Messages[refPath[2]]
-			return msg.referenceFrom(refPath[3:])
+			return msg.referenceFrom(refPath[3:]), nil
 		case "securitySchemes":
-			return s.Components.SecuritySchemes[refPath[2]]
+			return s.Components.SecuritySchemes[refPath[2]], nil
 		case "serverVariables":
-			return s.Components.ServerVariables[refPath[2]]
+			return s.Components.ServerVariables[refPath[2]], nil
 		case "parameters":
-			return s.Components.Parameters[refPath[2]]
+			return s.Components.Parameters[refPath[2]], nil
 		case "correlationIds":
-			return s.Components.CorrelationIDs[refPath[2]]
+			return s.Components.CorrelationIDs[refPath[2]], nil
 		case "replies":
-			return s.Components.Replies[refPath[2]]
+			return s.Components.Replies[refPath[2]], nil
 		case "replyAddresses":
-			return s.Components.ReplyAddresses[refPath[2]]
+			return s.Components.ReplyAddresses[refPath[2]], nil
 		case "externalDocs":
-			return s.Components.ExternalDocs[refPath[2]]
+			return s.Components.ExternalDocs[refPath[2]], nil
 		case "tags":
-			return s.Components.Tags[refPath[2]]
+			return s.Components.Tags[refPath[2]], nil
 		case "operationTraits":
-			return s.Components.OperationTraits[refPath[2]]
+			return s.Components.OperationTraits[refPath[2]], nil
 		case "messageTraits":
-			return s.Components.MessageTraits[refPath[2]]
+			return s.Components.MessageTraits[refPath[2]], nil
 		case "serverBindings":
-			return s.Components.ServerBindings[refPath[2]]
+			return s.Components.ServerBindings[refPath[2]], nil
 		case "channelBindings":
-			return s.Components.ChannelBindings[refPath[2]]
+			return s.Components.ChannelBindings[refPath[2]], nil
 		case "operationBindings":
-			return s.Components.OperationBindings[refPath[2]]
+			return s.Components.OperationBindings[refPath[2]], nil
 		case "messageBindings":
-			return s.Components.MessageBindings[refPath[2]]
+			return s.Components.MessageBindings[refPath[2]], nil
 		default:
-			return fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[1], ref)
+			return nil, fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[1], ref)
 		}
 	case "channels":
-		return s.Channels[refPath[1]]
+		return s.Channels[refPath[1]], nil
 	default:
-		return fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[0], ref)
+		return nil, fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[0], ref)
 	}
 }
 

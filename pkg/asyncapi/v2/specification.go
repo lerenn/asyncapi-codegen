@@ -84,7 +84,10 @@ func (s Specification) GetPublishSubscribeCount() (publishCount, subscribeCount 
 // ReferenceParameter returns the Parameter struct corresponding to the given reference.
 func (s Specification) ReferenceParameter(ref string) (*Parameter, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to parameter
 	param, ok := obj.(*Parameter)
@@ -105,7 +108,10 @@ func (s Specification) ReferenceParameter(ref string) (*Parameter, error) {
 // ReferenceMessage returns the Message struct corresponding to the given reference.
 func (s Specification) ReferenceMessage(ref string) (*Message, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to message
 	msg, ok := obj.(*Message)
@@ -126,7 +132,10 @@ func (s Specification) ReferenceMessage(ref string) (*Message, error) {
 // ReferenceSchema returns the Any struct corresponding to the given reference.
 func (s Specification) ReferenceSchema(ref string) (*Schema, error) {
 	// Get object pointed by reference
-	obj := s.reference(ref)
+	obj, err := s.reference(ref)
+	if err != nil {
+		return nil, err
+	}
 
 	// Cast to schema
 	schema, ok := obj.(*Schema)
@@ -144,7 +153,7 @@ func (s Specification) ReferenceSchema(ref string) (*Schema, error) {
 	return schema, nil
 }
 
-func (s Specification) reference(ref string) any {
+func (s Specification) reference(ref string) (any, error) {
 	refPath := strings.Split(ref, "/")[1:]
 
 	switch refPath[0] {
@@ -152,17 +161,17 @@ func (s Specification) reference(ref string) any {
 		switch refPath[1] {
 		case "messages":
 			msg := s.Components.Messages[refPath[2]]
-			return msg.referenceFrom(refPath[3:])
+			return msg.referenceFrom(refPath[3:]), nil
 		case "schemas":
 			schema := s.Components.Schemas[refPath[2]]
-			return schema.referenceFrom(refPath[3:])
+			return schema.referenceFrom(refPath[3:]), nil
 		case "parameters":
-			return s.Components.Parameters[refPath[2]]
+			return s.Components.Parameters[refPath[2]], nil
 		default:
-			return fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[1], ref)
+			return nil, fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[1], ref)
 		}
 	default:
-		return fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[0], ref)
+		return nil, fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[0], ref)
 	}
 }
 
