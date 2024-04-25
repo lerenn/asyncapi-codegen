@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 // OAuthFlow is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#oauthFlowObject
@@ -53,14 +51,14 @@ type SecurityScheme struct {
 }
 
 // generateMetadata generates metadata for the SecurityScheme.
-func (s *SecurityScheme) generateMetadata(name string) {
+func (s *SecurityScheme) generateMetadata(parentName, name string, number *int) {
 	// Prevent modification if nil
 	if s == nil {
 		return
 	}
 
 	// Set name
-	s.Name = template.Namify(name)
+	s.Name = generateFullName(parentName, name, "SecurityScheme", number)
 }
 
 func (s *SecurityScheme) setDependencies(spec Specification) error {

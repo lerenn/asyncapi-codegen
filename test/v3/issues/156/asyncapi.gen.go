@@ -80,8 +80,8 @@ func NewTestingMessage() TestingMessage {
 	return msg
 }
 
-// newTestingMessageFromBrokerMessage will fill a new TestingMessage with data from generic broker message
-func newTestingMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (TestingMessage, error) {
+// brokerMessageToTestingMessage will fill a new TestingMessage with data from generic broker message
+func brokerMessageToTestingMessage(bMsg extensions.BrokerMessage) (TestingMessage, error) {
 	var msg TestingMessage
 
 	// Unmarshal payload to expected message payload format

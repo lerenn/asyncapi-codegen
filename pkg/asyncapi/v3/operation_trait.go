@@ -1,11 +1,5 @@
 package asyncapiv3
 
-import (
-	"fmt"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-)
-
 // OperationTrait is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#msgerationTraitObject
@@ -28,30 +22,30 @@ type OperationTrait struct {
 }
 
 // generateMetadata generates metadata for the OperationTrait.
-func (ot *OperationTrait) generateMetadata(name string) {
+func (ot *OperationTrait) generateMetadata(parentName, name string, number *int) {
 	// Prevent modification if nil
 	if ot == nil {
 		return
 	}
 
 	// Set name
-	ot.Name = template.Namify(name)
+	ot.Name = generateFullName(parentName, name, "Trait", number)
 
 	// Generate securities metadata
 	for i, s := range ot.Security {
-		s.generateMetadata(fmt.Sprintf("%sSecurity%d", name, i))
+		s.generateMetadata(ot.Name, "", &i)
 	}
 
 	// Generate external doc metadata if there is one
-	ot.ExternalDocs.generateMetadata(name + ExternalDocsNameSuffix)
+	ot.ExternalDocs.generateMetadata(ot.Name, ExternalDocsNameSuffix)
 
 	// Generate tags metadata
 	for i, t := range ot.Tags {
-		t.generateMetadata(fmt.Sprintf("%sTag%d", ot.Name, i))
+		t.generateMetadata(ot.Name, "", &i)
 	}
 
 	// Generate bindings metadata if there is one
-	ot.Bindings.generateMetadata(name + BindingsSuffix)
+	ot.Bindings.generateMetadata(ot.Name, "")
 }
 
 // setDependencies sets dependencies for the OperationTrait.

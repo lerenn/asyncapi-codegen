@@ -1,11 +1,5 @@
 package asyncapiv3
 
-import (
-	"fmt"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-)
-
 // OperationReply is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#operationReplyObject
@@ -24,29 +18,17 @@ type OperationReply struct {
 }
 
 // generateMetadata generates metadata for the OperationReply.
-func (or *OperationReply) generateMetadata(name string) error {
+func (or *OperationReply) generateMetadata(parentName, name string) error {
 	// Prevent modification if nil
 	if or == nil {
 		return nil
 	}
 
 	// Set name
-	or.Name = template.Namify(name)
-
-	// Generate channel metadata if there is one
-	if err := or.Channel.generateMetadata(name + ChannelSuffix); err != nil {
-		return err
-	}
-
-	// Generate messages metadata
-	for i, msg := range or.Messages {
-		if err := msg.generateMetadata(fmt.Sprintf("%s%d", name, i)); err != nil {
-			return err
-		}
-	}
+	or.Name = generateFullName(parentName, name, "Reply", nil)
 
 	// Generate address metadata
-	or.Address.generateMetadata(name + "Address")
+	or.Address.generateMetadata(or.Name, "")
 
 	return nil
 }

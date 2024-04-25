@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 const (
@@ -42,42 +41,45 @@ type Channel struct {
 }
 
 // generateMetadata generates metadata for the Channel.
-func (ch *Channel) generateMetadata(name string) error {
+// It generates the name of the channel and the metadata of its elements.
+func (ch *Channel) generateMetadata(parentName, name string) error {
 	// Prevent modification if nil
 	if ch == nil {
 		return nil
 	}
 
 	// Set name
-	ch.Name = template.Namify(name)
+	ch.Name = generateFullName(parentName, name, ChannelSuffix, nil)
 
 	// Generate messages metadata
 	for name, msg := range ch.Messages {
-		if err := msg.generateMetadata(name + "Message"); err != nil {
+		if err := msg.generateMetadata(ch.Name, name, nil); err != nil {
 			return err
 		}
 	}
 
 	// Generate servers metadata
 	for i, srv := range ch.Servers {
-		srv.generateMetadata(fmt.Sprintf("%sServer%d", ch.Name, i))
+		srv.generateMetadata(ch.Name, "", &i)
 	}
 
 	// Generate parameters metadata
 	for name, param := range ch.Parameters {
-		param.generateMetadata(name + "Parameter")
+		param.generateMetadata(ch.Name, name)
 	}
 
 	// Generate tags metadata
 	for i, t := range ch.Tags {
-		t.generateMetadata(fmt.Sprintf("%sTag%d", ch.Name, i))
+		t.generateMetadata(ch.Name, "", &i)
 	}
 
 	// Generate external documentation metadata
-	ch.ExternalDocs.generateMetadata(ch.Name + ExternalDocsNameSuffix)
+	fullname := generateFullName(ch.Name, "", ExternalDocsNameSuffix, nil)
+	ch.ExternalDocs.generateMetadata(ch.Name, fullname)
 
 	// Generate Bindings metadata
-	ch.Bindings.generateMetadata(ch.Name + BindingsSuffix)
+	ch.Bindings.generateMetadata(ch.Name, "")
+
 	return nil
 }
 

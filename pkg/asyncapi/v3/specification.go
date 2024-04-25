@@ -58,25 +58,25 @@ func (s *Specification) generateMetadata() error {
 	}
 
 	// Generate metadata for info
-	if err := s.Info.generateMetadata(); err != nil {
+	if err := s.Info.generateMetadata("Specification"); err != nil {
 		return err
 	}
 
 	// Generate servers metadata
 	for i, srv := range s.Servers {
-		srv.generateMetadata(fmt.Sprintf("Server%d", i))
+		srv.generateMetadata("", "Server", &i)
 	}
 
 	// Generate metadata for channels
 	for name, ch := range s.Channels {
-		if err := ch.generateMetadata(name + ChannelSuffix); err != nil {
+		if err := ch.generateMetadata("", name); err != nil {
 			return err
 		}
 	}
 
 	// Generate metadata for operations
 	for name, op := range s.Operations {
-		if err := op.generateMetadata(name + "Operation"); err != nil {
+		if err := op.generateMetadata("", name); err != nil {
 			return err
 		}
 	}

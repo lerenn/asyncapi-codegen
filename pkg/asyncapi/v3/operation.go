@@ -1,11 +1,5 @@
 package asyncapiv3
 
-import (
-	"fmt"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-)
-
 // OperationAction represents an OperationAction.
 type OperationAction string
 
@@ -54,45 +48,33 @@ type Operation struct {
 	ReferenceTo *Operation `json:"-"`
 }
 
-func (op *Operation) generateMetadata(name string) error {
+func (op *Operation) generateMetadata(parentName, name string) error {
 	// Prevent modification if nil
 	if op == nil {
 		return nil
 	}
 
 	// Set name
-	op.Name = template.Namify(name)
-
-	// Generate channel metadata if there is one
-	if err := op.Channel.generateMetadata(op.Name + ChannelSuffix); err != nil {
-		return err
-	}
+	op.Name = generateFullName(parentName, name, "Operation", nil)
 
 	// Generate securities metadata
 	for i, sec := range op.Security {
-		sec.generateMetadata(fmt.Sprintf("%sSecurity%d", op.Name, i))
+		sec.generateMetadata(op.Name, "", &i)
 	}
 
 	// Generate external doc metadata if there is one
-	op.ExternalDocs.generateMetadata(op.Name + ExternalDocsNameSuffix)
+	op.ExternalDocs.generateMetadata(op.Name, ExternalDocsNameSuffix)
 
 	// Generate bindings metadata if there is one
-	op.Bindings.generateMetadata(op.Name + BindingsSuffix)
+	op.Bindings.generateMetadata(op.Name, "")
 
 	// Generate traits metadata
 	for i, t := range op.Traits {
-		t.generateMetadata(fmt.Sprintf("%sTrait%d", op.Name, i))
-	}
-
-	// Generate messages metadata
-	for i, msg := range op.Messages {
-		if err := msg.generateMetadata(fmt.Sprintf("%sMessage%d", op.Name, i)); err != nil {
-			return err
-		}
+		t.generateMetadata(op.Name, "", &i)
 	}
 
 	// Generate reply metadata if there is one
-	if err := op.Reply.generateMetadata(op.Name + "Reply"); err != nil {
+	if err := op.Reply.generateMetadata(op.Name, ""); err != nil {
 		return err
 	}
 

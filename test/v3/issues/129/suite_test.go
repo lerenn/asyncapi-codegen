@@ -53,7 +53,7 @@ func (suite *Suite) TestWithNoneKeyConversion() {
 	defer user.Close(context.Background())
 
 	// Send the message
-	err = user.SendToReceiveTestOperation(context.Background(), none.TestMessage{
+	err = user.SendToReceiveTestOperation(context.Background(), none.TestMessageFromTestChannel{
 		Payload: none.TestSchema{
 			ThisIsAProperty: utils.ToPointer("value"),
 		},
@@ -79,7 +79,7 @@ func (suite *Suite) TestWithSnakeKeyConversion() {
 	defer user.Close(context.Background())
 
 	// Send the message
-	err = user.SendToReceiveTestOperation(context.Background(), snake.TestMessage{
+	err = user.SendToReceiveTestOperation(context.Background(), snake.TestMessageFromTestChannel{
 		Payload: snake.TestSchema{
 			ThisIsAProperty: utils.ToPointer("value"),
 		},
@@ -105,7 +105,7 @@ func (suite *Suite) TestWithKebabKeyConversion() {
 	defer user.Close(context.Background())
 
 	// Send the message
-	err = user.SendToReceiveTestOperation(context.Background(), kebab.TestMessage{
+	err = user.SendToReceiveTestOperation(context.Background(), kebab.TestMessageFromTestChannel{
 		Payload: kebab.TestSchema{
 			ThisIsAProperty: utils.ToPointer("value"),
 		},
@@ -131,7 +131,7 @@ func (suite *Suite) TestWithCamelKeyConversion() {
 	defer user.Close(context.Background())
 
 	// Send the message
-	err = user.SendToReceiveTestOperation(context.Background(), camel.TestMessage{
+	err = user.SendToReceiveTestOperation(context.Background(), camel.TestMessageFromTestChannel{
 		Payload: camel.TestSchema{
 			ThisIsAProperty: utils.ToPointer("value"),
 		},

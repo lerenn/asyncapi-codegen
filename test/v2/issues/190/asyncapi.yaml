@@ -1,0 +1,31 @@
+asyncapi: 2.6.0
+info:
+  title: Sample App
+  version: 1.0.0
+channels:
+  issue169.msg1:
+    publish:
+      message:
+        payload:
+          type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id:
+                  type: string
+                hello:
+                  type: string
+  issue169.msg2:
+    publish:
+      message:
+        payload:
+          type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id:
+                  type: string
+                bar:
+                  type: string

@@ -184,7 +184,7 @@ func (c *AppController) SubscribeV2Issue49Chat(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newV2Issue49ChatSubscribeMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToV2Issue49ChatSubscribeMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -471,7 +471,7 @@ func (c *UserController) SubscribeV2Issue49Chat(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newV2Issue49ChatSubscribeMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToV2Issue49ChatSubscribeMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -571,7 +571,7 @@ func (c *UserController) SubscribeV2Issue49Status(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newV2Issue49StatusMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToV2Issue49StatusMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -720,8 +720,8 @@ func NewV2Issue49ChatSubscribeMessage() V2Issue49ChatSubscribeMessage {
 	return msg
 }
 
-// newV2Issue49ChatSubscribeMessageFromBrokerMessage will fill a new V2Issue49ChatSubscribeMessage with data from generic broker message
-func newV2Issue49ChatSubscribeMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue49ChatSubscribeMessage, error) {
+// brokerMessageToV2Issue49ChatSubscribeMessage will fill a new V2Issue49ChatSubscribeMessage with data from generic broker message
+func brokerMessageToV2Issue49ChatSubscribeMessage(bMsg extensions.BrokerMessage) (V2Issue49ChatSubscribeMessage, error) {
 	var msg V2Issue49ChatSubscribeMessage
 
 	// Convert to string
@@ -761,8 +761,8 @@ func NewV2Issue49ChatPublishMessage() V2Issue49ChatPublishMessage {
 	return msg
 }
 
-// newV2Issue49ChatPublishMessageFromBrokerMessage will fill a new V2Issue49ChatPublishMessage with data from generic broker message
-func newV2Issue49ChatPublishMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue49ChatPublishMessage, error) {
+// brokerMessageToV2Issue49ChatPublishMessage will fill a new V2Issue49ChatPublishMessage with data from generic broker message
+func brokerMessageToV2Issue49ChatPublishMessage(bMsg extensions.BrokerMessage) (V2Issue49ChatPublishMessage, error) {
 	var msg V2Issue49ChatPublishMessage
 
 	// Convert to string
@@ -802,8 +802,8 @@ func NewV2Issue49StatusMessage() V2Issue49StatusMessage {
 	return msg
 }
 
-// newV2Issue49StatusMessageFromBrokerMessage will fill a new V2Issue49StatusMessage with data from generic broker message
-func newV2Issue49StatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue49StatusMessage, error) {
+// brokerMessageToV2Issue49StatusMessage will fill a new V2Issue49StatusMessage with data from generic broker message
+func brokerMessageToV2Issue49StatusMessage(bMsg extensions.BrokerMessage) (V2Issue49StatusMessage, error) {
 	var msg V2Issue49StatusMessage
 
 	// Convert to string

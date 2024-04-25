@@ -190,7 +190,7 @@ func (c *AppController) SubscribeToGetServiceInfoOperation(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newRequestMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToRequestMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -219,10 +219,10 @@ func (c *AppController) SubscribeToGetServiceInfoOperation(
 }
 
 // ReplyToGetServiceInfoOperation is a helper function to
-// reply to a Request message with a Reply message on Reply channel.
-func (c *AppController) ReplyToGetServiceInfoOperation(ctx context.Context, recvMsg RequestMessage, fn func(replyMsg *ReplyMessage)) error {
+// reply to a Request message with a ReplyMessageFromReplyChannel message on Reply channel.
+func (c *AppController) ReplyToGetServiceInfoOperation(ctx context.Context, recvMsg RequestMessage, fn func(replyMsg *ReplyMessageFromReplyChannel)) error {
 	// Create reply message
-	replyMsg := NewReplyMessage()
+	replyMsg := NewReplyMessageFromReplyChannel()
 
 	// Execute callback function
 	fn(&replyMsg)
@@ -259,14 +259,14 @@ func (c *AppController) UnsubscribeFromGetServiceInfoOperation(
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// SendAsReplyToGetServiceInfoOperation will send a Reply message on Reply channel.
+// SendAsReplyToGetServiceInfoOperation will send a ReplyMessageFromReplyChannel message on Reply channel.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *AppController) SendAsReplyToGetServiceInfoOperation(
 	ctx context.Context,
 	chanAddr string,
-	msg ReplyMessage,
+	msg ReplyMessageFromReplyChannel,
 ) error {
 	// Set channel address
 	addr := chanAddr
@@ -420,7 +420,7 @@ func (c *UserController) SendToGetServiceInfoOperation(
 }
 
 // RequestToGetServiceInfoOperation will send a Request message on Request channel
-// and wait for a Reply message from Reply channel.
+// and wait for a ReplyMessageFromReplyChannel message from Reply channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
 // reply with the same correlation ID. Otherwise, it will returns the first
@@ -431,7 +431,7 @@ func (c *UserController) SendToGetServiceInfoOperation(
 func (c *UserController) RequestToGetServiceInfoOperation(
 	ctx context.Context,
 	msg RequestMessage,
-) (ReplyMessage, error) {
+) (ReplyMessageFromReplyChannel, error) {
 	// Get receiving channel address
 	addr := msg.Headers.ReplyTo
 
@@ -442,7 +442,7 @@ func (c *UserController) RequestToGetServiceInfoOperation(
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
 		c.logger.Error(ctx, err.Error())
-		return ReplyMessage{}, err
+		return ReplyMessageFromReplyChannel{}, err
 	}
 	c.logger.Info(ctx, "Subscribed to channel")
 
@@ -458,7 +458,7 @@ func (c *UserController) RequestToGetServiceInfoOperation(
 	// Send the message
 	if err := c.SendToGetServiceInfoOperation(ctx, msg); err != nil {
 		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
-		return ReplyMessage{}, fmt.Errorf("error happened when sending message: %w", err)
+		return ReplyMessageFromReplyChannel{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
 
 	// Wait for corresponding response
@@ -470,7 +470,7 @@ func (c *UserController) RequestToGetServiceInfoOperation(
 			// receiving the expected message
 			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
 				c.logger.Error(ctx, "Channel closed before getting message")
-				return ReplyMessage{}, extensions.ErrSubscriptionCanceled
+				return ReplyMessageFromReplyChannel{}, extensions.ErrSubscriptionCanceled
 			}
 
 			// There is correlation no ID, so it will automatically return at
@@ -482,17 +482,17 @@ func (c *UserController) RequestToGetServiceInfoOperation(
 
 			// Execute middlewares before returning
 			if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, nil); err != nil {
-				return ReplyMessage{}, err
+				return ReplyMessageFromReplyChannel{}, err
 			}
 
 			// Return the message to the caller
 			//
 			// NOTE: it is transformed from the broker again, as it could have
 			// been modified by middlewares
-			return newReplyMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+			return brokerMessageToReplyMessageFromReplyChannel(acknowledgeableBrokerMessage.BrokerMessage)
 		case <-ctx.Done(): // Set corrsponding error if context is done
 			c.logger.Error(ctx, "Context done before getting message")
-			return ReplyMessage{}, extensions.ErrContextCanceled
+			return ReplyMessageFromReplyChannel{}, extensions.ErrContextCanceled
 		}
 	}
 }
@@ -555,21 +555,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// ReplyMessage is the message expected for 'ReplyMessage' channel.
-type ReplyMessage struct {
+// ReplyMessageFromReplyChannel is the message expected for 'ReplyMessageFromReplyChannel' channel.
+type ReplyMessageFromReplyChannel struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewReplyMessage() ReplyMessage {
-	var msg ReplyMessage
+func NewReplyMessageFromReplyChannel() ReplyMessageFromReplyChannel {
+	var msg ReplyMessageFromReplyChannel
 
 	return msg
 }
 
-// newReplyMessageFromBrokerMessage will fill a new ReplyMessage with data from generic broker message
-func newReplyMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (ReplyMessage, error) {
-	var msg ReplyMessage
+// brokerMessageToReplyMessageFromReplyChannel will fill a new ReplyMessageFromReplyChannel with data from generic broker message
+func brokerMessageToReplyMessageFromReplyChannel(bMsg extensions.BrokerMessage) (ReplyMessageFromReplyChannel, error) {
+	var msg ReplyMessageFromReplyChannel
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -580,8 +580,8 @@ func newReplyMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (ReplyMessa
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from ReplyMessage data
-func (msg ReplyMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from ReplyMessageFromReplyChannel data
+func (msg ReplyMessageFromReplyChannel) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -596,13 +596,13 @@ func (msg ReplyMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// Message 'RequestMessage' reference another one at '#/components/messages/request'.
+// Message 'RequestMessageFromRequestChannel' reference another one at '#/components/messages/request'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// RequestMessageHeaders is a schema from the AsyncAPI specification required in messages
-type RequestMessageHeaders struct {
+// HeadersFromRequestMessage is a schema from the AsyncAPI specification required in messages
+type HeadersFromRequestMessage struct {
 	// Description: Channel used to respond to request
 	ReplyTo string `json:"replyTo"`
 }
@@ -610,7 +610,7 @@ type RequestMessageHeaders struct {
 // RequestMessage is the message expected for 'RequestMessage' channel.
 type RequestMessage struct {
 	// Headers will be used to fill the message headers
-	Headers RequestMessageHeaders
+	Headers HeadersFromRequestMessage
 
 	// Payload will be inserted in the message payload
 	Payload string
@@ -622,8 +622,8 @@ func NewRequestMessage() RequestMessage {
 	return msg
 }
 
-// newRequestMessageFromBrokerMessage will fill a new RequestMessage with data from generic broker message
-func newRequestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (RequestMessage, error) {
+// brokerMessageToRequestMessage will fill a new RequestMessage with data from generic broker message
+func brokerMessageToRequestMessage(bMsg extensions.BrokerMessage) (RequestMessage, error) {
 	var msg RequestMessage
 
 	// Convert to string

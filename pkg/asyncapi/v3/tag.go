@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 // Tag is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#tagsObject
@@ -19,17 +17,17 @@ type Tag struct {
 }
 
 // generateMetadata generates metadata for the Tag.
-func (t *Tag) generateMetadata(path string) {
+func (t *Tag) generateMetadata(parentName, name string, number *int) {
 	// Prevent modification if nil
 	if t == nil {
 		return
 	}
 
 	// Set name
-	t.Name = template.Namify(path)
+	t.Name = generateFullName(parentName, name, "Tag", number)
 
 	// Generate ExternalDocs metadata
-	t.ExternalDocs.generateMetadata(path + ExternalDocsNameSuffix)
+	t.ExternalDocs.generateMetadata(name, ExternalDocsNameSuffix)
 }
 
 // setDependencies sets dependencies between the different elements of the Tag.

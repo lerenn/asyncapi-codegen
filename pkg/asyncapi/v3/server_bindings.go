@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 // ServerBindings is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#serverBindingsObject
@@ -36,14 +34,14 @@ type ServerBindings struct {
 }
 
 // generateMetadata generates metadata for the ServerBindings.
-func (ob *ServerBindings) generateMetadata(name string) {
+func (ob *ServerBindings) generateMetadata(parentName, name string) {
 	// Prevent modification if nil
 	if ob == nil {
 		return
 	}
 
 	// Set name
-	ob.Name = template.Namify(name)
+	ob.Name = generateFullName(parentName, name, BindingsSuffix, nil)
 }
 
 // setDependencies sets dependencies between the different elements of the ServerBindings.

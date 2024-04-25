@@ -188,7 +188,7 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{ namify $value.Follow.Name }}(
             // Execute middlewares before handling the message
             if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
                 // Process message
-                msg, err := new{{opToMsgTypeName $value}}FromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+                msg, err := brokerMessageTo{{opToMsgTypeName $value}}(acknowledgeableBrokerMessage.BrokerMessage)
                 if err != nil {
                     return err
                 }
@@ -426,7 +426,7 @@ func (c *{{ $.Prefix }}Controller) Request{{ if eq $.Prefix "User" }}To{{else}}A
 
             {{if $value.GetMessage.HaveCorrelationID -}}
             // Get new message
-            rmsg, err := new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+            rmsg, err := brokerMessageTo{{channelToMessageTypeName .Reply.Channel}}(acknowledgeableBrokerMessage.BrokerMessage)
             if err != nil {
                 c.logger.Error(ctx, err.Error())
             }
@@ -458,7 +458,7 @@ func (c *{{ $.Prefix }}Controller) Request{{ if eq $.Prefix "User" }}To{{else}}A
             //
             // NOTE: it is transformed from the broker again, as it could have
             // been modified by middlewares
-            return new{{channelToMessageTypeName .Reply.Channel}}FromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+            return brokerMessageTo{{channelToMessageTypeName .Reply.Channel}}(acknowledgeableBrokerMessage.BrokerMessage)
         case <-ctx.Done(): // Set corrsponding error if context is done
             c.logger.Error(ctx, "Context done before getting message")
             return {{channelToMessageTypeName .Reply.Channel}}{}, extensions.ErrContextCanceled

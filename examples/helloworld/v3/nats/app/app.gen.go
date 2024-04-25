@@ -12,8 +12,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// ReceiveHelloOperationReceived receive all SayHello messages from Hello channel.
-	ReceiveHelloOperationReceived(ctx context.Context, msg SayHelloMessage) error
+	// ReceiveHelloOperationReceived receive all SayHelloMessageFromHelloChannel messages from Hello channel.
+	ReceiveHelloOperationReceived(ctx context.Context, msg SayHelloMessageFromHelloChannel) error
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -137,7 +137,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 	c.UnsubscribeFromReceiveHelloOperation(ctx)
 }
 
-// SubscribeToReceiveHelloOperation will receive SayHello messages from Hello channel.
+// SubscribeToReceiveHelloOperation will receive SayHelloMessageFromHelloChannel messages from Hello channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -147,7 +147,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 // If you need support for other messages, please raise an issue.
 func (c *AppController) SubscribeToReceiveHelloOperation(
 	ctx context.Context,
-	fn func(ctx context.Context, msg SayHelloMessage) error,
+	fn func(ctx context.Context, msg SayHelloMessageFromHelloChannel) error,
 ) error {
 	// Get channel address
 	addr := "hello"
@@ -190,7 +190,7 @@ func (c *AppController) SubscribeToReceiveHelloOperation(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newSayHelloMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToSayHelloMessageFromHelloChannel(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -216,7 +216,7 @@ func (c *AppController) SubscribeToReceiveHelloOperation(
 	c.subscriptions[addr] = sub
 
 	return nil
-} // UnsubscribeFromReceiveHelloOperation will stop the reception of SayHello messages from Hello channel.
+} // UnsubscribeFromReceiveHelloOperation will stop the reception of SayHelloMessageFromHelloChannel messages from Hello channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeFromReceiveHelloOperation(
 	ctx context.Context,
@@ -300,21 +300,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// SayHelloMessage is the message expected for 'SayHelloMessage' channel.
-type SayHelloMessage struct {
+// SayHelloMessageFromHelloChannel is the message expected for 'SayHelloMessageFromHelloChannel' channel.
+type SayHelloMessageFromHelloChannel struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewSayHelloMessage() SayHelloMessage {
-	var msg SayHelloMessage
+func NewSayHelloMessageFromHelloChannel() SayHelloMessageFromHelloChannel {
+	var msg SayHelloMessageFromHelloChannel
 
 	return msg
 }
 
-// newSayHelloMessageFromBrokerMessage will fill a new SayHelloMessage with data from generic broker message
-func newSayHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (SayHelloMessage, error) {
-	var msg SayHelloMessage
+// brokerMessageToSayHelloMessageFromHelloChannel will fill a new SayHelloMessageFromHelloChannel with data from generic broker message
+func brokerMessageToSayHelloMessageFromHelloChannel(bMsg extensions.BrokerMessage) (SayHelloMessageFromHelloChannel, error) {
+	var msg SayHelloMessageFromHelloChannel
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -325,8 +325,8 @@ func newSayHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (SayHell
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from SayHelloMessage data
-func (msg SayHelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from SayHelloMessageFromHelloChannel data
+func (msg SayHelloMessageFromHelloChannel) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte

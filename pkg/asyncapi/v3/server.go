@@ -1,11 +1,5 @@
 package asyncapiv3
 
-import (
-	"fmt"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-)
-
 // Server is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#serverObject
@@ -33,33 +27,33 @@ type Server struct {
 }
 
 // generateMetadata generates metadata for the Server.
-func (srv *Server) generateMetadata(name string) {
+func (srv *Server) generateMetadata(parentName, name string, number *int) {
 	// Prevent modification if nil
 	if srv == nil {
 		return
 	}
 
 	// Set name
-	srv.Name = template.Namify(name)
+	srv.Name = generateFullName(parentName, name, "Server", number)
 
 	// Generate variables metadata
 	for n, s := range srv.Variables {
-		s.generateMetadata(n + "Variable")
+		s.generateMetadata(srv.Name, n)
 	}
 
 	// Generate security metadata
-	srv.Security.generateMetadata(srv.Name + "Security")
+	srv.Security.generateMetadata(srv.Name, "", nil)
 
 	// Generate tags metadata
 	for i, t := range srv.Tags {
-		t.generateMetadata(fmt.Sprintf("%sTag%d", srv.Name, i))
+		t.generateMetadata(srv.Name, "", &i)
 	}
 
 	// Generate external documentation metadata
-	srv.ExternalDocs.generateMetadata(srv.Name + ExternalDocsNameSuffix)
+	srv.ExternalDocs.generateMetadata(srv.Name, ExternalDocsNameSuffix)
 
 	// Generate Bindings metadata
-	srv.Bindings.generateMetadata(srv.Name + BindingsSuffix)
+	srv.Bindings.generateMetadata(srv.Name, "")
 }
 
 // setDependencies sets dependencies between the different elements of the Server.
