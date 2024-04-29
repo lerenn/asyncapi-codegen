@@ -1,0 +1,18 @@
+asyncapi: 3.0.0
+
+components:
+  schemas:
+    distant:
+      $ref: './openapi.yaml#/components/schemas/object'
+    local:
+      $ref: '#/components/schemas/object'
+    object:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            hello:
+              type: string
+            world:
+              type: string

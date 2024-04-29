@@ -2,7 +2,7 @@
 package trait
 
 import (
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi/parser"
 	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 	"github.com/stretchr/testify/suite"
 )
@@ -17,7 +17,9 @@ func NewSuite() *Suite {
 
 func (suite *Suite) TestGenerateWithTrait() {
 	// Generate codegen from file
-	agnosticSpec, err := asyncapi.FromFile("./trait/asyncapi.yaml")
+	agnosticSpec, err := parser.FromFile(parser.FromFileParams{
+		Path: "./trait/asyncapi.yaml",
+	})
 	suite.Require().NoError(err)
 
 	// Process it to apply traits

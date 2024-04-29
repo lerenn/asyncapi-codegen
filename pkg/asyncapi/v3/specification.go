@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
@@ -34,6 +35,19 @@ type Specification struct {
 	Components         Components            `json:"components"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
+
+	// specificationReferenced is a map of all the outside specifications that
+	// are referenced in this specification.
+	dependencies map[string]*Specification
+}
+
+// NewSpecification creates a new Specification struct.
+func NewSpecification() *Specification {
+	return &Specification{
+		Channels:     make(map[string]*Channel),
+		Operations:   make(map[string]*Operation),
+		dependencies: make(map[string]*Specification),
+	}
 }
 
 // Process processes the Specification to make it ready for code generation.
@@ -45,11 +59,39 @@ func (s *Specification) Process() error {
 	return s.setDependencies()
 }
 
+// AddDependency adds a specification dependency to the Specification.
+func (s *Specification) AddDependency(path string, spec asyncapi.Specification) error {
+	// Cast to Specification v3
+	specV3, ok := spec.(*Specification)
+	if !ok {
+		return fmt.Errorf(
+			"%w: cannot cast %q into 'Specification' (type is %q)",
+			extensions.ErrAsyncAPI, path, reflect.TypeOf(spec))
+	}
+
+	// Remove local prefix './' if present
+	path = strings.TrimPrefix(path, "./")
+
+	// Set in dependencies
+	s.dependencies[path] = specV3
+
+	return nil
+}
+
 // generateMetadata generate metadata for the Specification and its children.
+//
+//nolint:cyclop // Not necessary to reduce statements
 func (s *Specification) generateMetadata() error {
 	// Prevent modification if nil
 	if s == nil {
 		return nil
+	}
+
+	// Generate metadata for dependencies
+	for _, spec := range s.dependencies {
+		if err := spec.generateMetadata(); err != nil {
+			return err
+		}
 	}
 
 	// Generate metadata for components
@@ -85,10 +127,19 @@ func (s *Specification) generateMetadata() error {
 }
 
 // setDependencies set dependencies between the different elements of the Specification.
+//
+//nolint:cyclop // Not necessary to reduce statements
 func (s *Specification) setDependencies() error {
 	// Prevent modification if nil
 	if s == nil {
 		return nil
+	}
+
+	// Set dependencies for dependencies
+	for _, spec := range s.dependencies {
+		if err := spec.setDependencies(); err != nil {
+			return err
+		}
 	}
 
 	// Set dependencies for components
@@ -599,58 +650,93 @@ func (s Specification) ReferenceTag(ref string) (*Tag, error) {
 	return tag, nil
 }
 
+func (s Specification) getDependencyBasedOnRef(ref string) (*Specification, string, error) {
+	// Separate file from path
+	fileAndPath := strings.Split(ref, "#")
+	if len(fileAndPath) != 2 {
+		return nil, "", fmt.Errorf("%w: invalid reference %q", ErrInvalidReference, ref)
+	}
+	file, ref := fileAndPath[0], fileAndPath[1]
+
+	// If the file if not empty, it should be the file where the reference is
+	if file == "" {
+		return &s, ref, nil
+	}
+
+	// Remove local prefix './' if present
+	file = strings.TrimPrefix(file, "./")
+
+	// Get corresponding dependency
+	s2, ok := s.dependencies[file]
+	if !ok {
+		return nil, "", fmt.Errorf(
+			"%w: file %q is not referenced in dependencies %+v",
+			ErrInvalidReference, file, s.dependencies)
+	}
+
+	return s2, ref, nil
+}
+
 //nolint:funlen,cyclop // Not necessary to reduce statements and cyclop
 func (s Specification) reference(ref string) (any, error) {
-	refPath := strings.Split(ref, "/")[1:]
+	// Separate file from path
+	usedSpec, ref, err := s.getDependencyBasedOnRef(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	// Separate each part of the reference
+	ref = strings.TrimPrefix(ref, "/")
+	refPath := strings.Split(ref, "/")
 
 	switch refPath[0] {
 	case "components":
 		switch refPath[1] {
 		case "schemas":
-			schema := s.Components.Schemas[refPath[2]]
+			schema := usedSpec.Components.Schemas[refPath[2]]
 			return schema.referenceFrom(refPath[3:]), nil
 		case "servers":
-			return s.Components.Servers[refPath[2]], nil
+			return usedSpec.Components.Servers[refPath[2]], nil
 		case "channels":
-			return s.Components.Channels[refPath[2]], nil
+			return usedSpec.Components.Channels[refPath[2]], nil
 		case "operations":
-			return s.Components.Operations[refPath[2]], nil
+			return usedSpec.Components.Operations[refPath[2]], nil
 		case "messages":
-			msg := s.Components.Messages[refPath[2]]
+			msg := usedSpec.Components.Messages[refPath[2]]
 			return msg.referenceFrom(refPath[3:]), nil
 		case "securitySchemes":
-			return s.Components.SecuritySchemes[refPath[2]], nil
+			return usedSpec.Components.SecuritySchemes[refPath[2]], nil
 		case "serverVariables":
-			return s.Components.ServerVariables[refPath[2]], nil
+			return usedSpec.Components.ServerVariables[refPath[2]], nil
 		case "parameters":
-			return s.Components.Parameters[refPath[2]], nil
+			return usedSpec.Components.Parameters[refPath[2]], nil
 		case "correlationIds":
-			return s.Components.CorrelationIDs[refPath[2]], nil
+			return usedSpec.Components.CorrelationIDs[refPath[2]], nil
 		case "replies":
-			return s.Components.Replies[refPath[2]], nil
+			return usedSpec.Components.Replies[refPath[2]], nil
 		case "replyAddresses":
-			return s.Components.ReplyAddresses[refPath[2]], nil
+			return usedSpec.Components.ReplyAddresses[refPath[2]], nil
 		case "externalDocs":
-			return s.Components.ExternalDocs[refPath[2]], nil
+			return usedSpec.Components.ExternalDocs[refPath[2]], nil
 		case "tags":
-			return s.Components.Tags[refPath[2]], nil
+			return usedSpec.Components.Tags[refPath[2]], nil
 		case "operationTraits":
-			return s.Components.OperationTraits[refPath[2]], nil
+			return usedSpec.Components.OperationTraits[refPath[2]], nil
 		case "messageTraits":
-			return s.Components.MessageTraits[refPath[2]], nil
+			return usedSpec.Components.MessageTraits[refPath[2]], nil
 		case "serverBindings":
-			return s.Components.ServerBindings[refPath[2]], nil
+			return usedSpec.Components.ServerBindings[refPath[2]], nil
 		case "channelBindings":
-			return s.Components.ChannelBindings[refPath[2]], nil
+			return usedSpec.Components.ChannelBindings[refPath[2]], nil
 		case "operationBindings":
-			return s.Components.OperationBindings[refPath[2]], nil
+			return usedSpec.Components.OperationBindings[refPath[2]], nil
 		case "messageBindings":
-			return s.Components.MessageBindings[refPath[2]], nil
+			return usedSpec.Components.MessageBindings[refPath[2]], nil
 		default:
 			return nil, fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[1], ref)
 		}
 	case "channels":
-		return s.Channels[refPath[1]], nil
+		return usedSpec.Channels[refPath[1]], nil
 	default:
 		return nil, fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[0], ref)
 	}
@@ -660,4 +746,15 @@ func (s Specification) reference(ref string) (any, error) {
 // This function is used mainly by the interface.
 func (s Specification) MajorVersion() int {
 	return MajorVersion
+}
+
+// FromUnknownVersion returns an AsyncAPI specification V3 from interface, if compatible.
+// Note: Before using this, you should make sure that parsed data is in version 3.
+func FromUnknownVersion(s asyncapi.Specification) (*Specification, error) {
+	spec, ok := s.(*Specification)
+	if !ok {
+		return nil, fmt.Errorf("unknown spec format: should have been a v3 format")
+	}
+
+	return spec, nil
 }

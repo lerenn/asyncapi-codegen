@@ -2,11 +2,11 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -16,8 +16,8 @@ var (
 
 // Flags contains all command line flags.
 type Flags struct {
-	// InputPath is the path of the AsyncAPI specification file
-	InputPath string
+	// InputPaths are the path of the AsyncAPI specification file and its dependencies
+	InputPaths []string
 
 	// OutputPath is the path of the generated code file
 	OutputPath string
@@ -41,21 +41,17 @@ type Flags struct {
 	ConvertKeys string
 }
 
-// ProcessFlags processes command line flags and fill the Flags structure with them.
-func ProcessFlags() Flags {
-	var f Flags
-
-	flag.StringVar(&f.InputPath, "i", "asyncapi.yaml", "AsyncAPI specification file to use")
-	flag.StringVar(&f.OutputPath, "o", "asyncapi.gen.go", "Destination file")
-	flag.StringVar(&f.PackageName, "p", "asyncapi", "Golang package name")
-	flag.StringVar(&f.Generate, "g", "user,application,types", "Generation options")
-	flag.BoolVar(&f.DisableFormatting, "disable-formatting", false, "Disables the code generation formatting")
-	flag.StringVar(&f.ConvertKeys, "convert-keys", "none",
-		"Schema property key names conversion strategy. Supported values: snake, camel, kebab, none")
-
-	flag.Parse()
-
-	return f
+// SetToCommand adds the flags to a cobra command.
+func (f *Flags) SetToCommand(cmd *cobra.Command) {
+	cmd.Flags().StringSliceVarP(
+		&f.InputPaths, "input", "i", []string{"asyncapi.yaml"},
+		"AsyncAPI specification file to use, and its dependencies")
+	cmd.Flags().StringVarP(&f.OutputPath, "output", "o", "asyncapi.gen.go", "Destination file")
+	cmd.Flags().StringVarP(&f.PackageName, "package", "p", "asyncapi", "Golang package name")
+	cmd.Flags().StringVarP(&f.Generate, "generate", "g", "user,application,types", "Generation options")
+	cmd.Flags().BoolVarP(&f.DisableFormatting, "disable-formatting", "f", false, "Disables the code generation formatting")
+	cmd.Flags().StringVarP(&f.ConvertKeys, "convert-keys", "c", "none",
+		"Schema property key names conversion strategy.\nSupported values: snake, camel, kebab, none.")
 }
 
 // ToCodegenOptions processes command line flags structure to code generation tool options.
