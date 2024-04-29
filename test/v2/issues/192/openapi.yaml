@@ -1,0 +1,15 @@
+openapi: 2.6.0
+
+components:
+  schemas:
+    object:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            hello:
+              type: string
+            world:
+              type: string
+      
