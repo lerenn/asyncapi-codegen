@@ -311,6 +311,8 @@ func (c *Controller) ConsumeMessage(ctx context.Context) jetstream.MessageHandle
 				extensions.LogInfo{Key: "msg.data", Value: msg.Data()},
 			)
 			_ = msg.Ack()
+
+			return
 		}
 		c.channels[msg.Subject()] <- msg
 	}
