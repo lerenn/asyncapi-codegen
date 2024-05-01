@@ -103,7 +103,7 @@ func (c *Components) setDependencies(spec Specification) error {
 func (c *Components) generateMetadataFromMaps() error {
 	// Generate metadata for servers
 	for name, entity := range c.Servers {
-		entity.generateMetadata("", name, nil)
+		entity.generateMetadata("", name)
 	}
 
 	// Generate metadata for channels

@@ -27,14 +27,14 @@ type Server struct {
 }
 
 // generateMetadata generates metadata for the Server.
-func (srv *Server) generateMetadata(parentName, name string, number *int) {
+func (srv *Server) generateMetadata(parentName, name string) {
 	// Prevent modification if nil
 	if srv == nil {
 		return
 	}
 
 	// Set name
-	srv.Name = generateFullName(parentName, name, "Server", number)
+	srv.Name = generateFullName(parentName, name, "Server", nil)
 
 	// Generate variables metadata
 	for n, s := range srv.Variables {
