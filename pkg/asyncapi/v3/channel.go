@@ -27,7 +27,7 @@ type Channel struct {
 	Title        string                 `json:"title"`
 	Summary      string                 `json:"summary"`
 	Description  string                 `json:"description"`
-	Servers      []*Server              `json:"servers"`
+	Servers      []*Server              `json:"servers"` // Reference only
 	Parameters   map[string]*Parameter  `json:"parameters"`
 	Tags         []*Tag                 `json:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs"`
@@ -56,11 +56,6 @@ func (ch *Channel) generateMetadata(parentName, name string) error {
 		if err := msg.generateMetadata(ch.Name, name, nil); err != nil {
 			return err
 		}
-	}
-
-	// Generate servers metadata
-	for i, srv := range ch.Servers {
-		srv.generateMetadata(ch.Name, "", &i)
 	}
 
 	// Generate parameters metadata

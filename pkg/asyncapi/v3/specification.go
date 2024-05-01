@@ -28,7 +28,7 @@ type Specification struct {
 	Version            string                `json:"asyncapi"`
 	ID                 string                `json:"id"`
 	Info               Info                  `json:"info"`
-	Servers            []*Server             `json:"servers"`
+	Servers            map[string]*Server    `json:"servers"`
 	DefaultContentType string                `json:"defaultContentType"`
 	Channels           map[string]*Channel   `json:"channels"`
 	Operations         map[string]*Operation `json:"operations"`
@@ -105,8 +105,8 @@ func (s *Specification) generateMetadata() error {
 	}
 
 	// Generate servers metadata
-	for i, srv := range s.Servers {
-		srv.generateMetadata("", "Server", &i)
+	for name, srv := range s.Servers {
+		srv.generateMetadata("", name)
 	}
 
 	// Generate metadata for channels

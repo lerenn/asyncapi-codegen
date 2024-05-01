@@ -1,0 +1,15 @@
+asyncapi: 3.0.0
+info:
+  title: Hello world application
+  version: '0.1.0'
+servers:
+  local:
+    host: localhost:9092
+    protocol: kafka
+    protocolVersion: '3.5'
+    description: Local Kafka broker
+  test:
+    host: test.k8s.cluster.local:9092
+    protocol: kafka
+    protocolVersion: '3.5'
+    description: Test environment K8S Kafka cluster
