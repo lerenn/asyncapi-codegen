@@ -16,6 +16,7 @@ adventure, this file is a attempt to show them the respect they earned.
 * [Tzu-Yu Lee (@leejuyuu)](https://github.com/leejuyuu)
 * [Stefan Meschke (@stefanmeschke)](https://github.com/stefanmeschke)
 * [Aleksey (@lo00l)](https://github.com/lo00l)
+* [Denis Zadorojnii (@mymdz)](https://github.com/mymdz)
 * And maybe you ?
 
 ## I would like to join the list. How can I help the project?
