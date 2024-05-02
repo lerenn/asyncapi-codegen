@@ -736,7 +736,16 @@ func (s Specification) reference(ref string) (any, error) {
 			return nil, fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[1], ref)
 		}
 	case "channels":
-		return usedSpec.Channels[refPath[1]], nil
+		if len(refPath) < 3 {
+			return usedSpec.Channels[refPath[1]], nil
+		}
+		switch refPath[2] {
+		case "messages":
+			msg := usedSpec.Channels[refPath[1]].Messages[refPath[3]]
+			return msg.referenceFrom(refPath[4:]), nil
+		default:
+			return nil, fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[2], ref)
+		}
 	default:
 		return nil, fmt.Errorf("%w: %q from reference %q is not supported", ErrInvalidReference, refPath[0], ref)
 	}
