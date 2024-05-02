@@ -17,6 +17,7 @@ adventure, this file is a attempt to show them the respect they earned.
 * [Stefan Meschke (@stefanmeschke)](https://github.com/stefanmeschke)
 * [Aleksey (@lo00l)](https://github.com/lo00l)
 * [Denis Zadorojnii (@mymdz)](https://github.com/mymdz)
+* [Vladyslav Tomashpolskyi (@wizzardich)](https://github.com/wizzardich)
 * And maybe you ?
 
 ## I would like to join the list. How can I help the project?
