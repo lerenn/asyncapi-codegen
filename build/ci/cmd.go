@@ -46,7 +46,7 @@ func (ci *AsyncapiCodegenCi) Check(
 	ctx context.Context,
 	dir *Directory,
 ) (string, error) {
-	if _, err := ci.Generate(ctx, dir); err != nil {
+	if _, err := ci.CheckGeneration(ctx, dir); err != nil {
 		return "", err
 	}
 
@@ -65,17 +65,17 @@ func (ci *AsyncapiCodegenCi) Check(
 	return "", nil
 }
 
-// Generate files from Golang generate command on AsyncAPI-Codegen source code.
-func (ci *AsyncapiCodegenCi) Generate(
+// CheckGeneration generate files from Golang generate command on AsyncAPI-Codegen
+// source code and check that there is no change.
+func (ci *AsyncapiCodegenCi) CheckGeneration(
 	ctx context.Context,
 	dir *Directory,
 ) (string, error) {
 	_, err := dag.Container().
 		From(golangImage).
 		With(sourceCodeAndGoCache(dir)).
-		WithExec([]string{"go", "generate", "./..."}).
-		Directory(".").
-		Export(ctx, ".")
+		WithExec([]string{"sh", "./scripts/check-generation"}).
+		Stdout(ctx)
 
 	return "", err
 }

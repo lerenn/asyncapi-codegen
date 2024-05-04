@@ -606,7 +606,7 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 					panic(fmt.Errorf("%s: %w", "failed to unmarshal input arg dir", err))
 				}
 			}
-			return (*AsyncapiCodegenCi).Generate(&parent, ctx, dir)
+			return (*AsyncapiCodegenCi).CheckGeneration(&parent, ctx, dir)
 		case "Lint":
 			var parent AsyncapiCodegenCi
 			err = json.Unmarshal(parentJSON, &parent)
