@@ -6,9 +6,13 @@ import (
 	"runtime/debug"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi/parser"
+	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 	generatorv2 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v2"
 	generatorv3 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v3"
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 	"golang.org/x/tools/imports"
 )
 
@@ -20,11 +24,28 @@ type CodeGen struct {
 }
 
 // FromFile returns a code generator from a specification file path.
-func FromFile(path string) (CodeGen, error) {
+func FromFile(path string, dependencies ...string) (CodeGen, error) {
 	// Get specification from file
-	spec, err := asyncapi.FromFile(path)
+	spec, err := parser.FromFile(parser.FromFileParams{
+		Path: path,
+	})
 	if err != nil {
 		return CodeGen{}, err
+	}
+
+	// Get dependencies
+	for _, path := range dependencies {
+		dep, err := parser.FromFile(parser.FromFileParams{
+			Path:         path,
+			MajorVersion: spec.MajorVersion(),
+		})
+		if err != nil {
+			return CodeGen{}, err
+		}
+
+		if err := spec.AddDependency(path, dep); err != nil {
+			return CodeGen{}, err
+		}
 	}
 
 	return New(spec)
@@ -59,6 +80,10 @@ func modulePathVersion() (path, version string) {
 // Generate generates code from the code generation structure, that have already
 // processed the AsyncAPI file when creating it.
 func (cg CodeGen) Generate(opt options.Options) error {
+	if err := template.SetConvertKeyFn(opt.ConvertKeys); err != nil {
+		return err
+	}
+
 	// Process specification
 	if err := cg.specification.Process(); err != nil {
 		return err
@@ -94,7 +119,7 @@ func (cg CodeGen) generateContent(opt options.Options) (string, error) {
 	version := cg.specification.MajorVersion()
 	switch version {
 	case 2:
-		spec, err := asyncapi.ToV2(cg.specification)
+		spec, err := asyncapiv2.FromUnknownVersion(cg.specification)
 		if err != nil {
 			return "", err
 		}
@@ -106,7 +131,7 @@ func (cg CodeGen) generateContent(opt options.Options) (string, error) {
 			ModuleVersion: cg.moduleVersion,
 		}.Generate()
 	case 3:
-		spec, err := asyncapi.ToV3(cg.specification)
+		spec, err := asyncapiv3.FromUnknownVersion(cg.specification)
 		if err != nil {
 			return "", err
 		}

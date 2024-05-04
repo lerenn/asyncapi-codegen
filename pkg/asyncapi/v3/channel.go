@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 const (
@@ -28,7 +27,7 @@ type Channel struct {
 	Title        string                 `json:"title"`
 	Summary      string                 `json:"summary"`
 	Description  string                 `json:"description"`
-	Servers      []*Server              `json:"servers"`
+	Servers      []*Server              `json:"servers"` // Reference only
 	Parameters   map[string]*Parameter  `json:"parameters"`
 	Tags         []*Tag                 `json:"tags"`
 	ExternalDocs *ExternalDocumentation `json:"externalDocs"`
@@ -41,91 +40,96 @@ type Channel struct {
 	ReferenceTo *Channel `json:"-"`
 }
 
-// Process processes the Channel to make it ready for code generation.
-func (ch *Channel) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the Channel.
+// It generates the name of the channel and the metadata of its elements.
+func (ch *Channel) generateMetadata(parentName, name string) error {
 	// Prevent modification if nil
 	if ch == nil {
 		return nil
 	}
 
 	// Set name
-	ch.Name = template.Namify(name)
+	ch.Name = generateFullName(parentName, name, ChannelSuffix, nil)
 
-	// Process reference
-	if err := ch.processReference(spec); err != nil {
-		return err
-	}
-
-	// Process messages
-	if err := ch.processMessages(spec); err != nil {
-		return err
-	}
-
-	// Process servers
-	if err := ch.processServers(spec); err != nil {
-		return err
-	}
-
-	// Process parameters
-	if err := ch.processParameters(spec); err != nil {
-		return err
-	}
-
-	// Process tags
-	if err := ch.processTags(spec); err != nil {
-		return err
-	}
-
-	// Process external documentation
-	if err := ch.ExternalDocs.Process(ch.Name+ExternalDocsNameSuffix, spec); err != nil {
-		return err
-	}
-
-	// Process Bindings
-	return ch.Bindings.Process(ch.Name+BindingsSuffix, spec)
-}
-
-func (ch *Channel) processParameters(spec Specification) error {
-	for name, param := range ch.Parameters {
-		if err := param.Process(name+"Parameter", spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (ch *Channel) processServers(spec Specification) error {
-	for i, srv := range ch.Servers {
-		if err := srv.Process(fmt.Sprintf("%sServer%d", ch.Name, i), spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (ch *Channel) processMessages(spec Specification) error {
+	// Generate messages metadata
 	for name, msg := range ch.Messages {
-		if err := msg.Process(name+"Message", spec); err != nil {
+		if err := msg.generateMetadata(ch.Name, name, nil); err != nil {
 			return err
 		}
 	}
 
-	return nil
-}
+	// Generate parameters metadata
+	for name, param := range ch.Parameters {
+		param.generateMetadata(ch.Name, name)
+	}
 
-func (ch *Channel) processTags(spec Specification) error {
+	// Generate tags metadata
 	for i, t := range ch.Tags {
-		if err := t.Process(fmt.Sprintf("%sTag%d", ch.Name, i), spec); err != nil {
-			return err
-		}
+		t.generateMetadata(ch.Name, "", &i)
 	}
+
+	// Generate external documentation metadata
+	fullname := generateFullName(ch.Name, "", ExternalDocsNameSuffix, nil)
+	ch.ExternalDocs.generateMetadata(ch.Name, fullname)
+
+	// Generate Bindings metadata
+	ch.Bindings.generateMetadata(ch.Name, "")
 
 	return nil
 }
 
-func (ch *Channel) processReference(spec Specification) error {
+// setDependencies sets dependencies between the different elements of the Channel.
+//
+//nolint:cyclop
+func (ch *Channel) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if ch == nil {
+		return nil
+	}
+
+	// Set reference
+	if err := ch.setReference(spec); err != nil {
+		return err
+	}
+
+	// Set messages dependencies
+	for _, msg := range ch.Messages {
+		if err := msg.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set servers dependencies
+	for _, srv := range ch.Servers {
+		if err := srv.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set parameters dependencies
+	for _, param := range ch.Parameters {
+		if err := param.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set tags dependencies
+	for _, t := range ch.Tags {
+		if err := t.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set external documentation dependencies
+	if err := ch.ExternalDocs.setDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set Bindings dependencies
+	return ch.Bindings.setDependencies(spec)
+}
+
+func (ch *Channel) setReference(spec Specification) error {
 	if ch.Reference == "" {
 		return nil
 	}

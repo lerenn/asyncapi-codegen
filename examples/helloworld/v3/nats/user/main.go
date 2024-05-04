@@ -7,11 +7,20 @@ import (
 	"log"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 
 func main() {
+	// Get broker address based on the environment, it will returns an address like "nats://nats:4222"
+	// Note: this is not needed in your application, you can directly use the address
+	addr := testutil.BrokerAddress(testutil.BrokerAddressParams{
+		Schema:         "nats",
+		DockerizedAddr: "nats",
+		Port:           "4222",
+	})
+
 	// Create a new broker
-	broker, err := nats.NewController("nats://nats:4222", nats.WithQueueGroup("helloworld-users"))
+	broker, err := nats.NewController(addr, nats.WithQueueGroup("helloworld-users"))
 	if err != nil {
 		panic(err)
 	}
@@ -27,7 +36,7 @@ func main() {
 	// Send HelloWorld
 	// Note: it will indefinitely wait to publish as context has no timeout
 	log.Println("Publishing 'hello world' message")
-	if err := ctrl.SendToReceiveHelloOperation(context.Background(), SayHelloMessage{
+	if err := ctrl.SendToReceiveHelloOperation(context.Background(), SayHelloMessageFromHelloChannel{
 		Payload: "HelloWorld!",
 	}); err != nil {
 		panic(err)

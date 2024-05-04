@@ -54,7 +54,7 @@ func (suite *Suite) TestParameter() {
 	err := suite.app.SubscribeToReceiveUserSignedUpOperation(
 		context.Background(),
 		params,
-		func(ctx context.Context, msg UserMessage) error {
+		func(ctx context.Context, msg UserMessageFromUserSignupChannel) error {
 			suite.Require().NotNil(msg.Payload.Name)
 			suite.Require().Equal("testing", *msg.Payload.Name)
 			wg.Done()
@@ -62,13 +62,13 @@ func (suite *Suite) TestParameter() {
 		})
 	suite.Require().NoError(err)
 	defer suite.app.UnsubscribeFromReceiveUserSignedUpOperation(context.Background(), params)
-	wg.Add(1)
 
 	// Set a new message
-	var msg UserMessage
+	var msg UserMessageFromUserSignupChannel
 	msg.Payload.Name = utils.ToPointer("testing")
 
 	// Send the new message
+	wg.Add(1)
 	err = suite.user.SendToReceiveUserSignedUpOperation(context.Background(), params, msg)
 	suite.Require().NoError(err)
 

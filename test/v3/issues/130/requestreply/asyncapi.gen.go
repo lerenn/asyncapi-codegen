@@ -200,7 +200,7 @@ func (c *AppController) SubscribeToPingOperation(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newPingMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToPingMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -317,7 +317,7 @@ func (c *AppController) SubscribeToPingWithIDOperation(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newPingWithIDMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToPingWithIDMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -657,7 +657,7 @@ func (c *UserController) RequestToPingOperation(
 			//
 			// NOTE: it is transformed from the broker again, as it could have
 			// been modified by middlewares
-			return newPongMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+			return brokerMessageToPongMessage(acknowledgeableBrokerMessage.BrokerMessage)
 		case <-ctx.Done(): // Set corrsponding error if context is done
 			c.logger.Error(ctx, "Context done before getting message")
 			return PongMessage{}, extensions.ErrContextCanceled
@@ -762,7 +762,7 @@ func (c *UserController) RequestToPingWithIDOperation(
 			}
 
 			// Get new message
-			rmsg, err := newPongWithIDMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+			rmsg, err := brokerMessageToPongWithIDMessage(acknowledgeableBrokerMessage.BrokerMessage)
 			if err != nil {
 				c.logger.Error(ctx, err.Error())
 			}
@@ -788,7 +788,7 @@ func (c *UserController) RequestToPingWithIDOperation(
 			//
 			// NOTE: it is transformed from the broker again, as it could have
 			// been modified by middlewares
-			return newPongWithIDMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+			return brokerMessageToPongWithIDMessage(acknowledgeableBrokerMessage.BrokerMessage)
 		case <-ctx.Done(): // Set corrsponding error if context is done
 			c.logger.Error(ctx, "Context done before getting message")
 			return PongWithIDMessage{}, extensions.ErrContextCanceled
@@ -854,22 +854,22 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Message 'PingMessage' reference another one at '#/components/messages/ping'.
+// Message 'PingMessageFromPingChannel' reference another one at '#/components/messages/ping'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// Message 'PingMessage' reference another one at '#/components/messages/pingWithID'.
+// Message 'PingMessageFromPingWithIDChannel' reference another one at '#/components/messages/pingWithID'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// Message 'PongMessage' reference another one at '#/components/messages/pong'.
+// Message 'PongMessageFromPongChannel' reference another one at '#/components/messages/pong'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
 
-// Message 'PongMessage' reference another one at '#/components/messages/pongWithID'.
+// Message 'PongMessageFromPongWithIDChannel' reference another one at '#/components/messages/pongWithID'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
@@ -891,8 +891,8 @@ func NewPingMessage() PingMessage {
 	return msg
 }
 
-// newPingMessageFromBrokerMessage will fill a new PingMessage with data from generic broker message
-func newPingMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PingMessage, error) {
+// brokerMessageToPingMessage will fill a new PingMessage with data from generic broker message
+func brokerMessageToPingMessage(bMsg extensions.BrokerMessage) (PingMessage, error) {
 	var msg PingMessage
 
 	// Unmarshal payload to expected message payload format
@@ -925,10 +925,10 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PingWithIDMessageHeaders is a schema from the AsyncAPI specification required in messages
-type PingWithIDMessageHeaders struct {
+// HeadersFromPingWithIDMessage is a schema from the AsyncAPI specification required in messages
+type HeadersFromPingWithIDMessage struct {
 	// Description: Correlation ID set by user
-	CorrelationId *string `json:"correlation_id"`
+	CorrelationId *string `json:"correlationId"`
 }
 
 // PingWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
@@ -939,7 +939,7 @@ type PingWithIDMessagePayload struct {
 // PingWithIDMessage is the message expected for 'PingWithIDMessage' channel.
 type PingWithIDMessage struct {
 	// Headers will be used to fill the message headers
-	Headers PingWithIDMessageHeaders
+	Headers HeadersFromPingWithIDMessage
 
 	// Payload will be inserted in the message payload
 	Payload PingWithIDMessagePayload
@@ -955,8 +955,8 @@ func NewPingWithIDMessage() PingWithIDMessage {
 	return msg
 }
 
-// newPingWithIDMessageFromBrokerMessage will fill a new PingWithIDMessage with data from generic broker message
-func newPingWithIDMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PingWithIDMessage, error) {
+// brokerMessageToPingWithIDMessage will fill a new PingWithIDMessage with data from generic broker message
+func brokerMessageToPingWithIDMessage(bMsg extensions.BrokerMessage) (PingWithIDMessage, error) {
 	var msg PingWithIDMessage
 
 	// Unmarshal payload to expected message payload format
@@ -1044,8 +1044,8 @@ func NewPongMessage() PongMessage {
 	return msg
 }
 
-// newPongMessageFromBrokerMessage will fill a new PongMessage with data from generic broker message
-func newPongMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PongMessage, error) {
+// brokerMessageToPongMessage will fill a new PongMessage with data from generic broker message
+func brokerMessageToPongMessage(bMsg extensions.BrokerMessage) (PongMessage, error) {
 	var msg PongMessage
 
 	// Unmarshal payload to expected message payload format
@@ -1078,10 +1078,10 @@ func (msg PongMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// PongWithIDMessageHeaders is a schema from the AsyncAPI specification required in messages
-type PongWithIDMessageHeaders struct {
+// HeadersFromPongWithIDMessage is a schema from the AsyncAPI specification required in messages
+type HeadersFromPongWithIDMessage struct {
 	// Description: Correlation ID set by user
-	CorrelationId *string `json:"correlation_id"`
+	CorrelationId *string `json:"correlationId"`
 }
 
 // PongWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
@@ -1092,7 +1092,7 @@ type PongWithIDMessagePayload struct {
 // PongWithIDMessage is the message expected for 'PongWithIDMessage' channel.
 type PongWithIDMessage struct {
 	// Headers will be used to fill the message headers
-	Headers PongWithIDMessageHeaders
+	Headers HeadersFromPongWithIDMessage
 
 	// Payload will be inserted in the message payload
 	Payload PongWithIDMessagePayload
@@ -1108,8 +1108,8 @@ func NewPongWithIDMessage() PongWithIDMessage {
 	return msg
 }
 
-// newPongWithIDMessageFromBrokerMessage will fill a new PongWithIDMessage with data from generic broker message
-func newPongWithIDMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (PongWithIDMessage, error) {
+// brokerMessageToPongWithIDMessage will fill a new PongWithIDMessage with data from generic broker message
+func brokerMessageToPongWithIDMessage(bMsg extensions.BrokerMessage) (PongWithIDMessage, error) {
 	var msg PongWithIDMessage
 
 	// Unmarshal payload to expected message payload format

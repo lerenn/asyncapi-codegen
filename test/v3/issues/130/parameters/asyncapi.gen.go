@@ -13,8 +13,8 @@ import (
 
 // AppSubscriber contains all handlers that are listening messages for App
 type AppSubscriber interface {
-	// ReceiveUserSignedUpOperationReceived receive all User messages from UserSignup channel.
-	ReceiveUserSignedUpOperationReceived(ctx context.Context, msg UserMessage) error
+	// ReceiveUserSignedUpOperationReceived receive all UserMessageFromUserSignupChannel messages from UserSignup channel.
+	ReceiveUserSignedUpOperationReceived(ctx context.Context, msg UserMessageFromUserSignupChannel) error
 }
 
 // AppController is the structure that provides sending capabilities to the
@@ -133,7 +133,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 }
 
-// SubscribeToReceiveUserSignedUpOperation will receive User messages from UserSignup channel.
+// SubscribeToReceiveUserSignedUpOperation will receive UserMessageFromUserSignupChannel messages from UserSignup channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -144,7 +144,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 func (c *AppController) SubscribeToReceiveUserSignedUpOperation(
 	ctx context.Context,
 	params UserSignupChannelParameters,
-	fn func(ctx context.Context, msg UserMessage) error,
+	fn func(ctx context.Context, msg UserMessageFromUserSignupChannel) error,
 ) error {
 	// Get channel address
 	addr := fmt.Sprintf("v3.issue130.user.%s.signedup", params.UserId)
@@ -187,7 +187,7 @@ func (c *AppController) SubscribeToReceiveUserSignedUpOperation(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newUserMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToUserMessageFromUserSignupChannel(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -213,7 +213,7 @@ func (c *AppController) SubscribeToReceiveUserSignedUpOperation(
 	c.subscriptions[addr] = sub
 
 	return nil
-} // UnsubscribeFromReceiveUserSignedUpOperation will stop the reception of User messages from UserSignup channel.
+} // UnsubscribeFromReceiveUserSignedUpOperation will stop the reception of UserMessageFromUserSignupChannel messages from UserSignup channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeFromReceiveUserSignedUpOperation(
 	ctx context.Context,
@@ -338,14 +338,14 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// SendToReceiveUserSignedUpOperation will send a User message on UserSignup channel.
+// SendToReceiveUserSignedUpOperation will send a UserMessageFromUserSignupChannel message on UserSignup channel.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *UserController) SendToReceiveUserSignedUpOperation(
 	ctx context.Context,
 	params UserSignupChannelParameters,
-	msg UserMessage,
+	msg UserMessageFromUserSignupChannel,
 ) error {
 	// Set channel address
 	addr := fmt.Sprintf("v3.issue130.user.%s.signedup", params.UserId)
@@ -433,26 +433,26 @@ type UserSignupChannelParameters struct {
 	UserId string
 }
 
-// UserMessagePayload is a schema from the AsyncAPI specification required in messages
-type UserMessagePayload struct {
+// UserMessageFromUserSignupChannelPayload is a schema from the AsyncAPI specification required in messages
+type UserMessageFromUserSignupChannelPayload struct {
 	Name *string `json:"name"`
 }
 
-// UserMessage is the message expected for 'UserMessage' channel.
-type UserMessage struct {
+// UserMessageFromUserSignupChannel is the message expected for 'UserMessageFromUserSignupChannel' channel.
+type UserMessageFromUserSignupChannel struct {
 	// Payload will be inserted in the message payload
-	Payload UserMessagePayload
+	Payload UserMessageFromUserSignupChannelPayload
 }
 
-func NewUserMessage() UserMessage {
-	var msg UserMessage
+func NewUserMessageFromUserSignupChannel() UserMessageFromUserSignupChannel {
+	var msg UserMessageFromUserSignupChannel
 
 	return msg
 }
 
-// newUserMessageFromBrokerMessage will fill a new UserMessage with data from generic broker message
-func newUserMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (UserMessage, error) {
-	var msg UserMessage
+// brokerMessageToUserMessageFromUserSignupChannel will fill a new UserMessageFromUserSignupChannel with data from generic broker message
+func brokerMessageToUserMessageFromUserSignupChannel(bMsg extensions.BrokerMessage) (UserMessageFromUserSignupChannel, error) {
+	var msg UserMessageFromUserSignupChannel
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -465,8 +465,8 @@ func newUserMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (UserMessage
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from UserMessage data
-func (msg UserMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from UserMessageFromUserSignupChannel data
+func (msg UserMessageFromUserSignupChannel) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON

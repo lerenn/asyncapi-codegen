@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 // OperationBindings is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#operationBindingsObject
@@ -35,15 +33,23 @@ type OperationBindings struct {
 	ReferenceTo *OperationBindings `json:"-"`
 }
 
-// Process processes the OperationBinding to make it ready for code generation.
-func (ob *OperationBindings) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the OperationBindings.
+func (ob *OperationBindings) generateMetadata(parentName, name string) {
+	// Prevent modification if nil
+	if ob == nil {
+		return
+	}
+
+	// Set name
+	ob.Name = generateFullName(parentName, name, BindingsSuffix, nil)
+}
+
+// setDependencies sets dependencies between the different elements of the OperationBindings.
+func (ob *OperationBindings) setDependencies(spec Specification) error {
 	// Prevent modification if nil
 	if ob == nil {
 		return nil
 	}
-
-	// Set name
-	ob.Name = template.Namify(name)
 
 	// Add pointer to reference if there is one
 	if ob.Reference != "" {

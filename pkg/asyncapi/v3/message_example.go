@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 // MessageExample is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#messageExampleObject
@@ -19,15 +17,23 @@ type MessageExample struct {
 	ReferenceTo *MessageExample `json:"-"`
 }
 
-// Process processes the MessageExample to make it ready for code generation.
-func (me *MessageExample) Process(path string, spec Specification) error {
+// generateMetadata generates metadata for the MessageExample.
+func (me *MessageExample) generateMetadata(parentName, name string, number *int) {
+	// Prevent modification if nil
+	if me == nil {
+		return
+	}
+
+	// Set name
+	me.Name = generateFullName(parentName, name, "Example", number)
+}
+
+// setDependencies sets dependencies between the different elements of the MessageExample.
+func (me *MessageExample) setDependencies(spec Specification) error {
 	// Prevent modification if nil
 	if me == nil {
 		return nil
 	}
-
-	// Set name
-	me.Name = template.Namify(path)
 
 	// Add pointer to reference if there is one
 	if me.Reference != "" {

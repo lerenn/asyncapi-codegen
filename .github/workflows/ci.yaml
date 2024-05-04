@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - uses: actions/setup-go@v5.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run tests
+        uses: dagger/dagger-for-github@v5
+        with:
+          verb: run
+          args: go run ./build/ci/dagger.go test
+          version: "0.11.0"      
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - uses: actions/setup-go@v5.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run examples
+        uses: dagger/dagger-for-github@v5
+        with:
+          verb: run
+          args: go run ./build/ci/dagger.go examples
+          version: "0.11.0"
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - uses: actions/setup-go@v5.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Lint
+        uses: dagger/dagger-for-github@v5
+        with:
+          verb: run
+          args: go run ./build/ci/dagger.go linter
+          version: "0.11.0"      
+
+  check_generated:
+    name: Check generated
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - uses: actions/setup-go@v5.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run generator
+        uses: dagger/dagger-for-github@v5
+        with:
+          verb: run
+          args: go run ./build/ci/dagger.go generator
+          version: "0.11.0"      
+      - name: check generated
+        run: |
+          git diff-index HEAD
+          git diff --minimal --color=always --compact-summary --exit-code HEAD || FAILED=true ;
+          if [[ $FAILED ]];
+            then echo "❗️ please run \"make generate\" locally and commit the changes"
+            exit 1
+          fi

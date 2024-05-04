@@ -13,7 +13,7 @@ import (
 // AppSubscriber represents all handlers that are expecting messages for App
 type AppSubscriber interface {
 	// V2Issue122Msg subscribes to messages placed on the 'v2.issue122.msg' channel
-	V2Issue122Msg(ctx context.Context, msg V2Issue122MsgSubscribeMessage) error
+	V2Issue122Msg(ctx context.Context, msg V2Issue122MsgMessage) error
 }
 
 // AppController is the structure that provides publishing capabilities to the
@@ -141,7 +141,7 @@ func (c *AppController) UnsubscribeAll(ctx context.Context) {
 // Callback function 'fn' will be called each time a new message is received.
 func (c *AppController) SubscribeV2Issue122Msg(
 	ctx context.Context,
-	fn func(ctx context.Context, msg V2Issue122MsgSubscribeMessage) error,
+	fn func(ctx context.Context, msg V2Issue122MsgMessage) error,
 ) error {
 	// Get channel path
 	path := "v2.issue122.msg"
@@ -184,7 +184,7 @@ func (c *AppController) SubscribeV2Issue122Msg(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newV2Issue122MsgSubscribeMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToV2Issue122MsgMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -234,39 +234,6 @@ func (c *AppController) UnsubscribeV2Issue122Msg(ctx context.Context) {
 	delete(c.subscriptions, path)
 
 	c.logger.Info(ctx, "Unsubscribed from channel")
-}
-
-// PublishV2Issue122Msg will publish messages to 'v2.issue122.msg' channel
-func (c *AppController) PublishV2Issue122Msg(
-	ctx context.Context,
-	msg V2Issue122MsgPublishMessage,
-) error {
-	// Get channel path
-	path := "v2.issue122.msg"
-
-	// Set context
-	ctx = addAppContextValues(ctx, path)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
-
-	// Convert to BrokerMessage
-	brokerMsg, err := msg.toBrokerMessage()
-	if err != nil {
-		return err
-	}
-
-	// Set broker message to context
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
-
-	// Publish the message on event-broker through middlewares
-	return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
-		return c.broker.Publish(ctx, path, brokerMsg)
-	})
-}
-
-// UserSubscriber represents all handlers that are expecting messages for User
-type UserSubscriber interface {
-	// V2Issue122Msg subscribes to messages placed on the 'v2.issue122.msg' channel
-	V2Issue122Msg(ctx context.Context, msg V2Issue122MsgSubscribeMessage) error
 }
 
 // UserController is the structure that provides publishing capabilities to the
@@ -365,134 +332,12 @@ func addUserContextValues(ctx context.Context, path string) context.Context {
 // Close will clean up any existing resources on the controller
 func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
-	c.UnsubscribeAll(ctx)
-
-	c.logger.Info(ctx, "Closed user controller")
-}
-
-// SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
-// For channels with parameters, they should be subscribed independently.
-func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) error {
-	if as == nil {
-		return extensions.ErrNilUserSubscriber
-	}
-
-	if err := c.SubscribeV2Issue122Msg(ctx, as.V2Issue122Msg); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// UnsubscribeAll will unsubscribe all remaining subscribed channels
-func (c *UserController) UnsubscribeAll(ctx context.Context) {
-	c.UnsubscribeV2Issue122Msg(ctx)
-}
-
-// SubscribeV2Issue122Msg will subscribe to new messages from 'v2.issue122.msg' channel.
-//
-// Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeV2Issue122Msg(
-	ctx context.Context,
-	fn func(ctx context.Context, msg V2Issue122MsgSubscribeMessage) error,
-) error {
-	// Get channel path
-	path := "v2.issue122.msg"
-
-	// Set context
-	ctx = addUserContextValues(ctx, path)
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
-
-	// Check if there is already a subscription
-	_, exists := c.subscriptions[path]
-	if exists {
-		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
-		c.logger.Error(ctx, err.Error())
-		return err
-	}
-
-	// Subscribe to broker channel
-	sub, err := c.broker.Subscribe(ctx, path)
-	if err != nil {
-		c.logger.Error(ctx, err.Error())
-		return err
-	}
-	c.logger.Info(ctx, "Subscribed to channel")
-
-	// Asynchronously listen to new messages and pass them to app subscriber
-	go func() {
-		for {
-			// Wait for next message
-			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
-
-			// If subscription is closed and there is no more message
-			// (i.e. uninitialized message), then exit the function
-			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-				return
-			}
-
-			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
-
-			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
-				// Process message
-				msg, err := newV2Issue122MsgSubscribeMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
-				if err != nil {
-					return err
-				}
-
-				// Execute the subscription function
-				if err := fn(ctx, msg); err != nil {
-					return err
-				}
-
-				acknowledgeableBrokerMessage.Ack()
-
-				return nil
-			}); err != nil {
-				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
-				// On error execute the acknowledgeableBrokerMessage nack() function and
-				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
-				acknowledgeableBrokerMessage.Nak()
-			}
-		}
-	}()
-
-	// Add the cancel channel to the inside map
-	c.subscriptions[path] = sub
-
-	return nil
-}
-
-// UnsubscribeV2Issue122Msg will unsubscribe messages from 'v2.issue122.msg' channel.
-// A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) UnsubscribeV2Issue122Msg(ctx context.Context) {
-	// Get channel path
-	path := "v2.issue122.msg"
-
-	// Check if there subscribers for this channel
-	sub, exists := c.subscriptions[path]
-	if !exists {
-		return
-	}
-
-	// Set context
-	ctx = addUserContextValues(ctx, path)
-
-	// Stop the subscription
-	sub.Cancel(ctx)
-
-	// Remove if from the subscribers
-	delete(c.subscriptions, path)
-
-	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
 // PublishV2Issue122Msg will publish messages to 'v2.issue122.msg' channel
 func (c *UserController) PublishV2Issue122Msg(
 	ctx context.Context,
-	msg V2Issue122MsgPublishMessage,
+	msg V2Issue122MsgMessage,
 ) error {
 	// Get channel path
 	path := "v2.issue122.msg"
@@ -574,21 +419,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// V2Issue122MsgSubscribeMessage is the message expected for 'V2Issue122MsgSubscribeMessage' channel.
-type V2Issue122MsgSubscribeMessage struct {
+// V2Issue122MsgMessage is the message expected for 'V2Issue122MsgMessage' channel.
+type V2Issue122MsgMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewV2Issue122MsgSubscribeMessage() V2Issue122MsgSubscribeMessage {
-	var msg V2Issue122MsgSubscribeMessage
+func NewV2Issue122MsgMessage() V2Issue122MsgMessage {
+	var msg V2Issue122MsgMessage
 
 	return msg
 }
 
-// newV2Issue122MsgSubscribeMessageFromBrokerMessage will fill a new V2Issue122MsgSubscribeMessage with data from generic broker message
-func newV2Issue122MsgSubscribeMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue122MsgSubscribeMessage, error) {
-	var msg V2Issue122MsgSubscribeMessage
+// brokerMessageToV2Issue122MsgMessage will fill a new V2Issue122MsgMessage with data from generic broker message
+func brokerMessageToV2Issue122MsgMessage(bMsg extensions.BrokerMessage) (V2Issue122MsgMessage, error) {
+	var msg V2Issue122MsgMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -599,49 +444,8 @@ func newV2Issue122MsgSubscribeMessageFromBrokerMessage(bMsg extensions.BrokerMes
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from V2Issue122MsgSubscribeMessage data
-func (msg V2Issue122MsgSubscribeMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
-	// TODO: implement checks on message
-
-	// Convert to []byte
-	payload := []byte(msg.Payload)
-
-	// There is no headers here
-	headers := make(map[string][]byte, 0)
-
-	return extensions.BrokerMessage{
-		Headers: headers,
-		Payload: payload,
-	}, nil
-}
-
-// V2Issue122MsgPublishMessage is the message expected for 'V2Issue122MsgPublishMessage' channel.
-type V2Issue122MsgPublishMessage struct {
-	// Payload will be inserted in the message payload
-	Payload string
-}
-
-func NewV2Issue122MsgPublishMessage() V2Issue122MsgPublishMessage {
-	var msg V2Issue122MsgPublishMessage
-
-	return msg
-}
-
-// newV2Issue122MsgPublishMessageFromBrokerMessage will fill a new V2Issue122MsgPublishMessage with data from generic broker message
-func newV2Issue122MsgPublishMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (V2Issue122MsgPublishMessage, error) {
-	var msg V2Issue122MsgPublishMessage
-
-	// Convert to string
-	payload := string(bMsg.Payload)
-	msg.Payload = payload // No need for type conversion to reference
-
-	// TODO: run checks on msg type
-
-	return msg, nil
-}
-
-// toBrokerMessage will generate a generic broker message from V2Issue122MsgPublishMessage data
-func (msg V2Issue122MsgPublishMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue122MsgMessage data
+func (msg V2Issue122MsgMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte

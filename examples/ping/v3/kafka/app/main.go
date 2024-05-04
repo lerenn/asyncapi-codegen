@@ -9,6 +9,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
+	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 
 var _ AppSubscriber = (*Subscriber)(nil)
@@ -34,10 +35,17 @@ func (s Subscriber) PingRequestOperationReceived(ctx context.Context, ping PingM
 }
 
 func main() {
+	// Get broker address based on the environment, it will returns an address like "kafka:9092"
+	// Note: this is not needed in your application, you can directly use the address
+	addr := testutil.BrokerAddress(testutil.BrokerAddressParams{
+		DockerizedAddr: "kafka",
+		Port:           "9092",
+	})
+
 	// Instantiate a Kafka controller with a logger
 	logger := loggers.NewText()
 	broker, err := kafka.NewController(
-		[]string{"kafka:9092"},         // List of hosts
+		[]string{addr},                 // List of hosts
 		kafka.WithLogger(logger),       // Attach an internal logger
 		kafka.WithGroupID("ping-apps"), // Change group id
 	)

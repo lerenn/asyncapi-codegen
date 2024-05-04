@@ -191,7 +191,7 @@ func (c *AppController) SubscribeToTestMapOperation(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newTestMapMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToTestMapMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -429,7 +429,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Message 'TestMapMessage' reference another one at '#/components/messages/TestMap'.
+// Message 'TestMapMessageFromTestMapChannel' reference another one at '#/components/messages/TestMap'.
 // This should be fixed in a future version to allow message override.
 // If you encounter this message, feel free to open an issue on this subject
 // to let know that you need this functionnality.
@@ -446,8 +446,8 @@ func NewTestMapMessage() TestMapMessage {
 	return msg
 }
 
-// newTestMapMessageFromBrokerMessage will fill a new TestMapMessage with data from generic broker message
-func newTestMapMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (TestMapMessage, error) {
+// brokerMessageToTestMapMessage will fill a new TestMapMessage with data from generic broker message
+func brokerMessageToTestMapMessage(bMsg extensions.BrokerMessage) (TestMapMessage, error) {
 	var msg TestMapMessage
 
 	// Unmarshal payload to expected message payload format

@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 // MessageBindings is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#messageBindingsObject
@@ -35,14 +33,23 @@ type MessageBindings struct {
 	ReferenceTo *MessageBindings `json:"-"`
 }
 
-// Process processes the MessageBindings to make it ready for code generation.
-func (mb *MessageBindings) Process(name string, spec Specification) error { // Prevent modification if nil
+// generateMetadata generates metadata for the MessageBindings.
+func (mb *MessageBindings) generateMetadata(parentName, name string) {
+	// Prevent modification if nil
 	if mb == nil {
-		return nil
+		return
 	}
 
 	// Set name
-	mb.Name = template.Namify(name)
+	mb.Name = generateFullName(parentName, name, BindingsSuffix, nil)
+}
+
+// setDependencies sets dependencies between the different elements of the MessageBindings.
+func (mb *MessageBindings) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if mb == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if mb.Reference != "" {

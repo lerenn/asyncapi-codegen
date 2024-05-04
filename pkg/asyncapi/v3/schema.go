@@ -1,10 +1,7 @@
 package asyncapiv3
 
 import (
-	"fmt"
-
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 // SchemaType is a structure that represents the type of a field.
@@ -92,78 +89,83 @@ func NewSchema() Schema {
 	}
 }
 
-// Process processes the Schema structure to make it ready for code generation.
+// generateMetadata generates metadata for the Schema and its children.
 //
 //nolint:funlen,cyclop // Not necessary to reduce length and cyclop
-func (s *Schema) Process(name string, spec Specification, isRequired bool) error {
+func (s *Schema) generateMetadata(parentName, name string, number *int, isRequired bool) error {
 	// Prevent modification if nil
 	if s == nil {
 		return nil
 	}
 
 	// Set name
-	s.Name = template.Namify(name)
+	// NOTE: do not specify the type "schema" in the name
+	s.Name = generateFullName(parentName, name, "", number)
 
-	// Process reference
-	if err := s.processReference(spec); err != nil {
-		return err
+	// Generate Properties metadata
+	for n, p := range s.Properties {
+		if err := p.generateMetadata(s.Name, n+"Property", nil, utils.IsInSlice(s.Required, n)); err != nil {
+			return err
+		}
 	}
 
-	// Process Properties
-	if err := s.processProperties(spec); err != nil {
-		return err
-	}
-
-	// Process Pattern Properties
+	// Generate Pattern Properties metadata
 	for n, p := range s.PatternProperties {
-		if err := p.Process(n+"PatternProperty", spec, utils.IsInSlice(s.Required, n)); err != nil {
+		if err := p.generateMetadata(s.Name, n+"PatternProperty", nil, utils.IsInSlice(s.Required, n)); err != nil {
 			return err
 		}
 	}
 
-	// Process AdditionalProperties
+	// Generate AdditionalProperties metadata
 	if s.AdditionalProperties != nil {
-		if err := s.AdditionalProperties.Process(s.Name+"AdditionalProperties", spec, false); err != nil {
+		if err := s.AdditionalProperties.generateMetadata(s.Name, "AdditionalProperties", nil, false); err != nil {
 			return err
 		}
 	}
 
-	// Process Additional Items
+	// Generate Additional Items metadata
 	for i, item := range s.AdditionalItems {
-		if err := item.Process(fmt.Sprintf("%sAdditionalItem%d", s.Name, i), spec, false); err != nil {
+		if err := item.generateMetadata(s.Name, "AdditionalItem", &i, false); err != nil {
 			return err
 		}
 	}
 
-	// Process Items
-	if err := s.Items.Process(s.Name+"Item", spec, false); err != nil {
+	// Generate Items metadata
+	// NOTE: give the name of the parent to the items
+	if err := s.Items.generateMetadata("", "ItemSchemaFor"+s.Name, nil, false); err != nil {
 		return err
 	}
 
-	// Process Contains
+	// Generate Contains metadata
 	for i, item := range s.Contains {
-		if err := item.Process(fmt.Sprintf("%sContains%d", name, i), spec, false); err != nil {
+		if err := item.generateMetadata("", s.Name+"Content", &i, false); err != nil {
 			return err
 		}
 	}
 
-	// Process AnyOf
-	if err := s.processAnyOf(spec); err != nil {
-		return err
+	// Generate AnyOf metadata
+	for _, v := range s.AnyOf {
+		if err := v.generateMetadata(s.Name, "AnyOf", nil, false); err != nil {
+			return err
+		}
 	}
 
-	// Process OneOf
-	if err := s.processOneOf(spec); err != nil {
-		return err
+	// Generate OneOf metadata
+	for _, v := range s.OneOf {
+		if err := v.generateMetadata(s.Name, "OneOf", nil, false); err != nil {
+			return err
+		}
 	}
 
-	// Process AllOf
-	if err := s.processAllOf(spec); err != nil {
-		return err
+	// Generate AllOf metadata
+	for _, v := range s.AllOf {
+		if err := v.generateMetadata(s.Name, "AllOf", nil, false); err != nil {
+			return err
+		}
 	}
 
-	// Process Not
-	if err := s.Not.Process(s.Name+"Not", spec, false); err != nil {
+	// Generate Not metadata
+	if err := s.Not.generateMetadata(s.Name, "NotSchema", nil, false); err != nil {
 		return err
 	}
 
@@ -173,9 +175,85 @@ func (s *Schema) Process(name string, spec Specification, isRequired bool) error
 	return nil
 }
 
-func (s *Schema) processAllOf(spec Specification) error {
+//
+//nolint:funlen,cyclop // Not necessary to reduce length and cyclop
+func (s *Schema) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if s == nil {
+		return nil
+	}
+
+	// Set reference
+	if err := s.setReference(spec); err != nil {
+		return err
+	}
+
+	// Set Properties dependencies
+	for _, p := range s.Properties {
+		if err := p.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set Pattern Properties dependencies
+	for _, p := range s.PatternProperties {
+		if err := p.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set AdditionalProperties dependencies
+	if s.AdditionalProperties != nil {
+		if err := s.AdditionalProperties.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set Additional Items dependencies
+	for _, item := range s.AdditionalItems {
+		if err := item.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set Items dependencies
+	if err := s.Items.setDependencies(spec); err != nil {
+		return err
+	}
+
+	// Set Contains dependencies
+	for _, item := range s.Contains {
+		if err := item.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set AnyOf dependencies
+	if err := s.setAnyOfDependenciesAndMerge(spec); err != nil {
+		return err
+	}
+
+	// Set OneOf dependencies
+	if err := s.setOneOfDependenciesAndMerge(spec); err != nil {
+		return err
+	}
+
+	// Set AllOf dependencies
+	if err := s.setAllOfDependenciesAndMerge(spec); err != nil {
+		return err
+	}
+
+	// Set Not dependencies
+	if err := s.Not.setDependencies(spec); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Schema) setAllOfDependenciesAndMerge(spec Specification) error {
 	for _, v := range s.AllOf {
-		if err := v.Process(s.Name+"AllOf", spec, false); err != nil {
+		if err := v.setDependencies(spec); err != nil {
 			return err
 		}
 
@@ -188,9 +266,9 @@ func (s *Schema) processAllOf(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) processOneOf(spec Specification) error {
+func (s *Schema) setOneOfDependenciesAndMerge(spec Specification) error {
 	for _, v := range s.OneOf {
-		if err := v.Process(s.Name+"OneOf", spec, false); err != nil {
+		if err := v.setDependencies(spec); err != nil {
 			return err
 		}
 
@@ -203,9 +281,9 @@ func (s *Schema) processOneOf(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) processAnyOf(spec Specification) error {
+func (s *Schema) setAnyOfDependenciesAndMerge(spec Specification) error {
 	for _, v := range s.AnyOf {
-		if err := v.Process(s.Name+"AnyOf", spec, false); err != nil {
+		if err := v.setDependencies(spec); err != nil {
 			return err
 		}
 
@@ -218,16 +296,7 @@ func (s *Schema) processAnyOf(spec Specification) error {
 	return nil
 }
 
-func (s *Schema) processProperties(spec Specification) error {
-	for n, p := range s.Properties {
-		if err := p.Process(n+"Property", spec, utils.IsInSlice(s.Required, n)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Schema) processReference(spec Specification) error {
+func (s *Schema) setReference(spec Specification) error {
 	if s.Reference == "" {
 		return nil
 	}
@@ -257,8 +326,6 @@ func (s *Schema) referenceFrom(ref []string) *Schema {
 
 // MergeWith merges the given Schema structure with another one
 // (basically for AllOf, AnyOf, OneOf, etc).
-//
-//nolint:cyclop
 func (s *Schema) MergeWith(spec Specification, s2 Schema) error {
 	if s == nil {
 		return nil
@@ -266,55 +333,145 @@ func (s *Schema) MergeWith(spec Specification, s2 Schema) error {
 
 	s.Type = SchemaTypeIsObject.String()
 
-	// Getting merged with reference
-	if s2.Reference != "" {
-		refAny2, err := spec.ReferenceSchema(s2.Reference)
-		if err != nil {
-			return err
-		}
-
-		if err := s2.MergeWith(spec, *refAny2); err != nil {
-			return err
-		}
-	}
-
-	// Merge AnyOf
-	if s2.AnyOf != nil {
-		if s.AnyOf == nil {
-			copy(s2.AnyOf, s.AnyOf)
-		} else {
-			s.AnyOf = append(s.AnyOf, s2.AnyOf...)
-		}
-	}
-
-	// Merge OneOf
-	if s2.OneOf != nil {
-		if s.OneOf == nil {
-			copy(s2.OneOf, s.OneOf)
-		} else {
-			s.OneOf = append(s.OneOf, s2.OneOf...)
-		}
-	}
-
-	// Merge properties
-	if s2.Properties != nil {
-		if s.Properties == nil {
-			s.Properties = make(map[string]*Schema)
-		}
-
-		for k, v := range s2.Properties {
-			_, exists := s.Properties[k]
-			if !exists {
-				s.Properties[k] = v
-			}
-		}
-	}
+	// Merge with other fields
+	s.mergeWithSchemaAllOf(s2)
+	s.mergeWithSchemaAnyOf(s2)
+	s.mergeWithSchemaOneOf(s2)
+	s.mergeWithSchemaProperties(s2)
 
 	// Merge requirements
 	s.Required = append(s.Required, s2.Required...)
 	s.Required = utils.RemoveDuplicateFromSlice(s.Required)
 
 	return nil
+}
+
+func (s *Schema) mergeWithSchemaAllOf(s2 Schema) {
+	// Return if there are no AllOf to merge
+	if s2.AllOf == nil && (s2.ReferenceTo == nil || s2.ReferenceTo.AllOf == nil) {
+		return
+	}
+
+	// Initialize AllOf if they are nil
+	if s.AllOf == nil {
+		s.AllOf = make([]*Schema, 0)
+	}
+
+	// Add AllOf from s2 to s
+	if s2.AllOf != nil {
+		s.AllOf = append(s.AllOf, s2.AllOf...)
+	}
+
+	// Add AllOf from s2 reference to s
+	if s2.ReferenceTo != nil && s2.ReferenceTo.AllOf != nil {
+		for _, v := range s2.ReferenceTo.AllOf {
+			s.AllOf = append(s.AllOf, &Schema{ReferenceTo: v})
+		}
+	}
+}
+
+func (s *Schema) mergeWithSchemaAnyOf(s2 Schema) {
+	// Return if there are no AnyOf to merge
+	if s2.AnyOf == nil && (s2.ReferenceTo == nil || s2.ReferenceTo.AnyOf == nil) {
+		return
+	}
+
+	// Initialize AnyOf if they are nil
+	if s.AnyOf == nil {
+		s.AnyOf = make([]*Schema, 0)
+	}
+
+	// Add AnyOf from s2 to s
+	if s2.AnyOf != nil {
+		s.AnyOf = append(s.AnyOf, s2.AnyOf...)
+	}
+
+	// Add AnyOf from s2 reference to s
+	if s2.ReferenceTo != nil && s2.ReferenceTo.AnyOf != nil {
+		for _, v := range s2.ReferenceTo.AnyOf {
+			s.AnyOf = append(s.AnyOf, &Schema{ReferenceTo: v})
+		}
+	}
+}
+
+func (s *Schema) mergeWithSchemaOneOf(s2 Schema) {
+	// Return if there are no OneOf to merge
+	if s2.OneOf == nil && (s2.ReferenceTo == nil || s2.ReferenceTo.OneOf == nil) {
+		return
+	}
+
+	// Initialize OneOf if they are nil
+	if s.OneOf == nil {
+		s.OneOf = make([]*Schema, 0)
+	}
+
+	// Add OneOf from s2 to s
+	if s2.OneOf != nil {
+		s.OneOf = append(s.OneOf, s2.OneOf...)
+	}
+
+	// Add OneOf from s2 reference to s
+	if s2.ReferenceTo != nil && s2.ReferenceTo.OneOf != nil {
+		for _, v := range s2.ReferenceTo.OneOf {
+			s.OneOf = append(s.OneOf, &Schema{ReferenceTo: v})
+		}
+	}
+}
+
+func (s *Schema) mergeWithSchemaProperties(s2 Schema) {
+	// Return if there are no properties to merge
+	if s2.Properties == nil && (s2.ReferenceTo == nil || s2.ReferenceTo.Properties == nil) {
+		return
+	}
+
+	// Initialize properties if they are nil
+	if s.Properties == nil {
+		s.Properties = make(map[string]*Schema)
+	}
+
+	// Add properties from s2 to s
+	for k, v := range s2.Properties {
+		_, exists := s.Properties[k]
+		if exists {
+			continue
+		}
+
+		s.Properties[k] = v
+	}
+
+	// Add properties from s2 reference to s
+	s.mergeWithSchemaReferenceProperties(s2)
+}
+
+func (s *Schema) mergeWithSchemaReferenceProperties(s2 Schema) {
+	// Return if there are no properties to merge
+	if s2.ReferenceTo == nil || s2.ReferenceTo.Properties == nil {
+		return
+	}
+
+	// Add properties from s2 reference to s
+	for k, v := range s2.ReferenceTo.Properties {
+		// Skip if the property already exists
+		_, exists := s.Properties[k]
+		if exists {
+			continue
+		}
+
+		// Add the property
+		if v.Type == "object" {
+			s.Properties[k] = &Schema{
+				IsRequired:  v.IsRequired,
+				ReferenceTo: v,
+			}
+		} else {
+			s.Properties[k] = v
+		}
+
+		// Add to required if it is required
+		if v.IsRequired {
+			s.Required = append(s.Required, k)
+		}
+	}
 }
 
 // Follow returns referenced schema if specified or the actual schema.

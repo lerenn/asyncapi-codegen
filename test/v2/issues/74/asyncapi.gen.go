@@ -186,7 +186,7 @@ func (c *AppController) SubscribeV2Issue74TestChannel(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newTestMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToTestMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -422,7 +422,9 @@ func (e *Error) Error() string {
 }
 
 // TestMessagePayload is a schema from the AsyncAPI specification required in messages
-type TestMessagePayload struct{}
+type TestMessagePayload struct {
+	Obj1 TestSchemaObj1 `json:"obj1"`
+}
 
 // TestMessage is the message expected for 'TestMessage' channel.
 // NOTE: test message
@@ -440,8 +442,8 @@ func NewTestMessage() TestMessage {
 	return msg
 }
 
-// newTestMessageFromBrokerMessage will fill a new TestMessage with data from generic broker message
-func newTestMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (TestMessage, error) {
+// brokerMessageToTestMessage will fill a new TestMessage with data from generic broker message
+func brokerMessageToTestMessage(bMsg extensions.BrokerMessage) (TestMessage, error) {
 	var msg TestMessage
 
 	// Unmarshal payload to expected message payload format
@@ -498,7 +500,7 @@ func (msg TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // Description: header
 type HeaderSchema struct {
 	// Description: Date in UTC format "YYYY-MM-DDThh:mm:ss.sZ".
-	DateTime time.Time `json:"date_time"`
+	DateTime time.Time `json:"dateTime"`
 
 	// Description: Schema version
 	Version string `json:"version"`
@@ -512,7 +514,7 @@ type TestSchema struct {
 // TestSchemaObj1 is a schema from the AsyncAPI specification required in messages
 type TestSchemaObj1 struct {
 	// Description: reference ID.
-	ReferenceId string `json:"reference_id"`
+	ReferenceId string `json:"referenceId"`
 }
 
 const (

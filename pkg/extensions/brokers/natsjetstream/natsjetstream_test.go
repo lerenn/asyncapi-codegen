@@ -2,29 +2,38 @@ package natsjetstream
 
 import (
 	"context"
+	"crypto/tls"
 	"sync"
 	"testing"
 
+	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 )
 
 //nolint:funlen // this is only for testing
 func TestValidateAckMechanism(t *testing.T) {
-	subj := "ValidateAckMechanism"
+	subj := "NatsJetstreamValidateAckMechanism"
 
 	broker, err := NewController(
-		"nats://nats-jetstream:4222",
+		testutil.BrokerAddress(testutil.BrokerAddressParams{
+			Schema:         "nats",
+			DockerizedAddr: "nats-jetstream",
+			DockerizedPort: "4222",
+			LocalPort:      "4225",
+		}),
 		WithStreamConfig(jetstream.StreamConfig{
 			Name:     subj,
 			Subjects: []string{subj},
 		}),
-		WithConsumerConfig(jetstream.ConsumerConfig{Name: "ValidateAckMechanism"}),
+		WithConsumerConfig(jetstream.ConsumerConfig{Name: "natsJetstreamValidateAckMechanism"}),
 	)
 	assert.NoError(t, err, "new controller should not return error")
 
 	t.Run("validate ack is supported in NATS jetstream", func(t *testing.T) {
 		wg := sync.WaitGroup{}
+
 		stream, err := broker.jetStream.Stream(context.Background(), subj)
 		assert.NoError(t, err, "stream should not return error")
 
@@ -72,4 +81,99 @@ func TestValidateAckMechanism(t *testing.T) {
 
 		wg.Wait()
 	})
+}
+
+//nolint:funlen
+func TestSecureConnectionToNATSJetstream(t *testing.T) {
+	// for testing with InsecureSkipVerify to skip server certificate validation for our self-signed certificate
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+
+	t.Run("test connection is not successfully to TLS secured NATS jetstream broker without TLS config",
+		func(t *testing.T) {
+			subj := "secureConnectTestWithoutTLSConfig"
+
+			_, err := NewController(
+				testutil.BrokerAddress(testutil.BrokerAddressParams{
+					Schema:         "nats",
+					DockerizedAddr: "nats-jetstream-tls",
+					DockerizedPort: "4222",
+					LocalPort:      "4226",
+				}),
+				WithStreamConfig(jetstream.StreamConfig{
+					Name:     subj,
+					Subjects: []string{subj},
+				}),
+				WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithoutTLSConfig"}),
+			)
+			assert.Error(t, err, "new connection to TLS secured NATS broker without TLS config should return a error")
+		})
+
+	t.Run("test connection is successfully to TLS secured NATS jetstream broker with TLS config", func(t *testing.T) {
+		subj := "secureConnectTestWithTLSConfig"
+
+		jc, err := NewController(
+			testutil.BrokerAddress(testutil.BrokerAddressParams{
+				Schema:         "nats",
+				DockerizedAddr: "nats-jetstream-tls",
+				DockerizedPort: "4222",
+				LocalPort:      "4226",
+			}),
+			WithStreamConfig(jetstream.StreamConfig{
+				Name:     subj,
+				Subjects: []string{subj},
+			}),
+			WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithoutTLSConfig"}),
+			WithConnectionOpts(nats.Secure(tlsConfig)),
+		)
+		assert.NoError(t, err,
+			"new connection to TLS secured NATS jetstream broker with TLS config should not return a error")
+		defer jc.Close()
+	})
+
+	t.Run("test connection is not successfully to TLS secured NATS jetstream broker with TLS config and missing credentials", //nolint:lll
+		func(t *testing.T) {
+			subj := "secureConnectTestWithTLSConfigAndWithoutCredentials"
+
+			_, err := NewController(
+				testutil.BrokerAddress(testutil.BrokerAddressParams{
+					Schema:         "nats",
+					DockerizedAddr: "nats-jetstream-tls-basic-auth",
+					DockerizedPort: "4222",
+					LocalPort:      "4227",
+				}),
+				WithStreamConfig(jetstream.StreamConfig{
+					Name:     subj,
+					Subjects: []string{subj},
+				}),
+				WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithTLSConfigAndMissingBasicAuth"}),
+				WithConnectionOpts(nats.Secure(tlsConfig)),
+			)
+			assert.Error(t, err,
+				"new connection to TLS secured NATS jetstream broker with TLS config and missing credentials should return a error")
+		})
+
+	t.Run("test connection is successfully to TLS secured NATS jetstream broker with TLS config and credentials",
+		func(t *testing.T) {
+			subj := "secureConnectTestWithTLSConfigAndCredentials"
+
+			jc, err := NewController(
+				testutil.BrokerAddress(testutil.BrokerAddressParams{
+					Schema:         "nats",
+					DockerizedAddr: "nats-jetstream-tls-basic-auth",
+					DockerizedPort: "4222",
+					LocalPort:      "4227",
+				}),
+				WithStreamConfig(jetstream.StreamConfig{
+					Name:     subj,
+					Subjects: []string{subj},
+				}),
+				WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithTLSConfigAndMissingBasicAuth"}),
+				WithConnectionOpts(
+					nats.Secure(tlsConfig),
+					nats.UserInfo("user", "password"),
+				),
+			)
+			assert.NoError(t, err, "new connection to TLS secured NATS jetstream broker with TLS config and  credentials should return no error") //nolint:lll
+			defer jc.Close()
+		})
 }

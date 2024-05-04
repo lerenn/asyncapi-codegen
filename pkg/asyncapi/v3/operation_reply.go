@@ -1,11 +1,5 @@
 package asyncapiv3
 
-import (
-	"fmt"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-)
-
 // OperationReply is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#operationReplyObject
@@ -23,15 +17,28 @@ type OperationReply struct {
 	ReferenceTo *OperationReply `json:"-"`
 }
 
-// Process processes the OperationReply to make it ready for code generation.
-func (or *OperationReply) Process(name string, op *Operation, spec Specification) error {
+// generateMetadata generates metadata for the OperationReply.
+func (or *OperationReply) generateMetadata(parentName, name string) error {
 	// Prevent modification if nil
 	if or == nil {
 		return nil
 	}
 
 	// Set name
-	or.Name = template.Namify(name)
+	or.Name = generateFullName(parentName, name, "Reply", nil)
+
+	// Generate address metadata
+	or.Address.generateMetadata(or.Name, "")
+
+	return nil
+}
+
+// setDependencies sets dependencies between the different elements of the OperationReply.
+func (or *OperationReply) setDependencies(op *Operation, spec Specification) error {
+	// Prevent modification if nil
+	if or == nil {
+		return nil
+	}
 
 	// Add pointer to reference if there is one
 	if or.Reference != "" {
@@ -42,20 +49,20 @@ func (or *OperationReply) Process(name string, op *Operation, spec Specification
 		or.ReferenceTo = refTo
 	}
 
-	// Process channel if there is one
-	if err := or.Channel.Process(name+ChannelSuffix, spec); err != nil {
+	// Set channel dependencies if there is one
+	if err := or.Channel.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process messages
-	for i, msg := range or.Messages {
-		if err := msg.Process(fmt.Sprintf("%s%d", name, i), spec); err != nil {
+	// Set messages dependencies
+	for _, msg := range or.Messages {
+		if err := msg.setDependencies(spec); err != nil {
 			return err
 		}
 	}
 
-	// Process address
-	if err := or.Address.Process(name+"Address", op, spec); err != nil {
+	// Set address dependencies
+	if err := or.Address.setDependencies(op, spec); err != nil {
 		return err
 	}
 

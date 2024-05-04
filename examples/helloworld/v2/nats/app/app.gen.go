@@ -184,7 +184,7 @@ func (c *AppController) SubscribeHello(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := newHelloMessageFromBrokerMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToHelloMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -306,8 +306,8 @@ func NewHelloMessage() HelloMessage {
 	return msg
 }
 
-// newHelloMessageFromBrokerMessage will fill a new HelloMessage with data from generic broker message
-func newHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (HelloMessage, error) {
+// brokerMessageToHelloMessage will fill a new HelloMessage with data from generic broker message
+func brokerMessageToHelloMessage(bMsg extensions.BrokerMessage) (HelloMessage, error) {
 	var msg HelloMessage
 
 	// Convert to string

@@ -1,17 +1,29 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+import (
+	"fmt"
 
-type processable interface {
-	Process(string, Specification) error
-}
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+)
 
-func processMap[T processable](spec Specification, m map[string]T, suffix string) error {
-	for name, entity := range m {
-		if err := entity.Process(template.Namify(name)+suffix, spec); err != nil {
-			return err
-		}
+// generateFullName generates a full name for a struct.
+// If number is nil, it will not be added to the name.
+func generateFullName(parentName, name, typeName string, number *int) string {
+	// Namify all the strings
+	parentName = template.Namify(parentName)
+	name = template.Namify(name)
+	typeName = template.Namify(typeName)
+
+	// If number is nil, add number to type
+	if number != nil {
+		typeName += fmt.Sprintf("%d", *number)
 	}
 
-	return nil
+	// If there is a parent name, prefix it with a "From"
+	if parentName != "" {
+		parentName = "From" + parentName
+	}
+
+	// Return the name with the number
+	return template.Namify(name + typeName + parentName)
 }

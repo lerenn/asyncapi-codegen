@@ -16,15 +16,23 @@ type Parameter struct {
 	ReferenceTo *Parameter `json:"-"`
 }
 
-// Process processes the Parameter structure to make it ready for code generation.
-func (p *Parameter) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the Parameter.
+func (p *Parameter) generateMetadata(parentName, name string) {
+	// Prevent modification if nil
+	if p == nil {
+		return
+	}
+
+	// Set name
+	p.Name = generateFullName(parentName, name, "Parameter", nil)
+}
+
+// setDependencies sets dependencies between the different elements of the Parameter.
+func (p *Parameter) setDependencies(spec Specification) error {
 	// Prevent modification if nil
 	if p == nil {
 		return nil
 	}
-
-	// Set name
-	p.Name = name
 
 	// Add pointer to reference if there is one
 	if p.Reference != "" {

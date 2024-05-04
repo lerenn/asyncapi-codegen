@@ -9,7 +9,7 @@ import (
 // CheckGeneration is just to test that the generation is correct.
 func CheckGeneration() {
 	var msg Type1Message
-	msg.Payload = []Type1MessagePayloadItem{
+	msg.Payload = []ItemSchemaForType1MessagePayload{
 		{
 			Age:   utils.ToPointer(int64(1)),
 			Email: utils.ToPointer("email1"),

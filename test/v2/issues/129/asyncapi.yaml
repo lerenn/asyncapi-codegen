@@ -1,0 +1,15 @@
+asyncapi: 2.6.0
+
+channels:
+  v2.issue129.test:
+    publish:
+      message:
+        payload:
+          $ref: '#/components/schemas/Test'
+components:
+  schemas:
+    Test:
+      type: object
+      properties:
+        This_is a-Property:
+          type: string

@@ -168,10 +168,6 @@ func (ci *AsyncapiCodegenCi) Publish(
 	dir *Directory,
 	tag string,
 ) error {
-	if err := tagAndPush(ctx, dir, tag); err != nil {
-		return err
-	}
-
 	if err := publishDocker(ctx, dir, tag); err != nil {
 		return err
 	}

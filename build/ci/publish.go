@@ -26,28 +26,18 @@ var (
 	}
 )
 
-func tagAndPush(ctx context.Context, dir *Directory, tag string) error {
-	if _, err := dir.Export(ctx, "/tmp/asyncapi-codegen"); err != nil {
+// Publish should publish tag on git repository and docker image(s) on Docker Hub
+// Note: if this is not 'main' branch, then it will just push docker image with
+// git tag.
+func Publish(ctx context.Context, dir *Directory, tag string) error {
+	if err := publishDocker(ctx, dir, tag); err != nil {
 		return err
 	}
 
-	// Stop here if this not main branch
-	if name, err := git.ActualBranchName("/tmp/asyncapi-codegen"); err != nil {
-		return err
-	} else if name != "main" {
-		return nil
-	}
-
-	// Tag commit
-	if err := git.TagCommit("/tmp/asyncapi-codegen", tag); err != nil {
-		return err
-	}
-
-	// Push the result
-	return git.PushTags("/tmp/asyncapi-codegen", tag)
+	return nil
 }
 
-func publishDocker(ctx context.Context, dir *Directory, tag string) error {
+func publishDocker(ctx context.Context, dir *dagger.Directory, tag string) error {
 	// Get images for each platform
 	platformVariants := make([]*dagger.Container, len(platforms))
 	for i, p := range platforms {

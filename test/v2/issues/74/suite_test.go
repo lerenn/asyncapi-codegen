@@ -11,12 +11,12 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
-	asyncapi_test "github.com/lerenn/asyncapi-codegen/test"
+	testutil "github.com/lerenn/asyncapi-codegen/test"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestSuite(t *testing.T) {
-	brokers, cleanup := asyncapi_test.BrokerControllers(t)
+	brokers, cleanup := testutil.BrokerControllers(t)
 	defer cleanup()
 
 	for _, b := range brokers {
@@ -73,7 +73,6 @@ func (suite *Suite) TestHeaders() {
 
 	// Check what the app receive and translate
 	var recvMsg TestMessage
-	wg.Add(1)
 	err := suite.app.SubscribeV2Issue74TestChannel(context.Background(), func(_ context.Context, msg TestMessage) error {
 		recvMsg = msg
 		wg.Done()
@@ -82,6 +81,7 @@ func (suite *Suite) TestHeaders() {
 	suite.Require().NoError(err)
 
 	// Publish the message
+	wg.Add(1)
 	err = suite.user.PublishV2Issue74TestChannel(context.Background(), sent)
 	suite.Require().NoError(err)
 

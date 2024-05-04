@@ -1,11 +1,5 @@
 package asyncapiv3
 
-import (
-	"fmt"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-)
-
 // OperationAction represents an OperationAction.
 type OperationAction string
 
@@ -54,53 +48,89 @@ type Operation struct {
 	ReferenceTo *Operation `json:"-"`
 }
 
-// Process processes the Channel to make it ready for code generation.
-func (op *Operation) Process(name string, spec Specification) error {
+func (op *Operation) generateMetadata(parentName, name string) error {
 	// Prevent modification if nil
 	if op == nil {
 		return nil
 	}
 
 	// Set name
-	op.Name = template.Namify(name)
+	op.Name = generateFullName(parentName, name, "Operation", nil)
 
-	// Process reference
-	if err := op.processReference(spec); err != nil {
+	// Generate securities metadata
+	for i, sec := range op.Security {
+		sec.generateMetadata(op.Name, "", &i)
+	}
+
+	// Generate external doc metadata if there is one
+	op.ExternalDocs.generateMetadata(op.Name, ExternalDocsNameSuffix)
+
+	// Generate bindings metadata if there is one
+	op.Bindings.generateMetadata(op.Name, "")
+
+	// Generate traits metadata
+	for i, t := range op.Traits {
+		t.generateMetadata(op.Name, "", &i)
+	}
+
+	// Generate reply metadata if there is one
+	if err := op.Reply.generateMetadata(op.Name, ""); err != nil {
 		return err
 	}
 
-	// Process channel if there is one
-	if err := op.Channel.Process(op.Name+ChannelSuffix, spec); err != nil {
+	return nil
+}
+
+// setDependencies sets dependencies between the different elements of the Operation.
+//
+//nolint:cyclop
+func (op *Operation) setDependencies(spec Specification) error {
+	// Prevent modification if nil
+	if op == nil {
+		return nil
+	}
+
+	// Set reference
+	if err := op.setReference(spec); err != nil {
 		return err
 	}
 
-	// Process securities
-	if err := op.processSecurities(spec); err != nil {
+	// Set channel dependencies if there is one
+	if err := op.Channel.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process external doc if there is one
-	if err := op.ExternalDocs.Process(op.Name+ExternalDocsNameSuffix, spec); err != nil {
+	// Set securities dependencies
+	for _, sec := range op.Security {
+		if err := sec.setDependencies(spec); err != nil {
+			return err
+		}
+	}
+
+	// Set external doc dependencies if there is one
+	if err := op.ExternalDocs.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process bindings if there is one
-	if err := op.Bindings.Process(op.Name+BindingsSuffix, spec); err != nil {
+	// Set bindings dependencies if there is one
+	if err := op.Bindings.setDependencies(spec); err != nil {
 		return err
 	}
 
-	// Process traits and apply them
-	if err := op.processTraits(spec); err != nil {
+	// Set traits dependencies and apply them
+	if err := op.setTraitsDependenciesAndApply(spec); err != nil {
 		return err
 	}
 
-	// Process messages
-	if err := op.processMessages(spec); err != nil {
-		return err
+	// Set messages dependencies
+	for _, msg := range op.Messages {
+		if err := msg.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
-	// Process reply if there is one
-	if err := op.Reply.Process(op.Name+"Reply", op, spec); err != nil {
+	// Set reply dependencies if there is one
+	if err := op.Reply.setDependencies(op, spec); err != nil {
 		return err
 	}
 
@@ -110,27 +140,7 @@ func (op *Operation) Process(name string, spec Specification) error {
 	return nil
 }
 
-func (op *Operation) processSecurities(spec Specification) error {
-	for i, sec := range op.Security {
-		if err := sec.Process(fmt.Sprintf("%sSecurity%d", op.Name, i), spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (op *Operation) processMessages(spec Specification) error {
-	for i, msg := range op.Messages {
-		if err := msg.Process(fmt.Sprintf("%sMessage%d", op.Name, i), spec); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (op *Operation) processReference(spec Specification) error {
+func (op *Operation) setReference(spec Specification) error {
 	if op.Reference == "" {
 		return nil
 	}
@@ -145,9 +155,9 @@ func (op *Operation) processReference(spec Specification) error {
 	return nil
 }
 
-func (op *Operation) processTraits(spec Specification) error {
-	for i, t := range op.Traits {
-		if err := t.Process(fmt.Sprintf("%sTrait%d", op.Name, i), spec); err != nil {
+func (op *Operation) setTraitsDependenciesAndApply(spec Specification) error {
+	for _, t := range op.Traits {
+		if err := t.setDependencies(spec); err != nil {
 			return err
 		}
 

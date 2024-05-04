@@ -23,3 +23,13 @@ func IsVersionSupported(version string) bool {
 
 	return false
 }
+
+// IsMajorVersionSupported checks that the major version is supported.
+func IsMajorVersionSupported(version int) bool {
+	switch version {
+	case 2, 3:
+		return true
+	default:
+		return false
+	}
+}

@@ -108,13 +108,13 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// SendToReceiveHelloOperation will send a SayHello message on Hello channel.
+// SendToReceiveHelloOperation will send a SayHelloMessageFromHelloChannel message on Hello channel.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
 func (c *UserController) SendToReceiveHelloOperation(
 	ctx context.Context,
-	msg SayHelloMessage,
+	msg SayHelloMessageFromHelloChannel,
 ) error {
 	// Set channel address
 	addr := "hello"
@@ -196,21 +196,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// SayHelloMessage is the message expected for 'SayHelloMessage' channel.
-type SayHelloMessage struct {
+// SayHelloMessageFromHelloChannel is the message expected for 'SayHelloMessageFromHelloChannel' channel.
+type SayHelloMessageFromHelloChannel struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewSayHelloMessage() SayHelloMessage {
-	var msg SayHelloMessage
+func NewSayHelloMessageFromHelloChannel() SayHelloMessageFromHelloChannel {
+	var msg SayHelloMessageFromHelloChannel
 
 	return msg
 }
 
-// newSayHelloMessageFromBrokerMessage will fill a new SayHelloMessage with data from generic broker message
-func newSayHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (SayHelloMessage, error) {
-	var msg SayHelloMessage
+// brokerMessageToSayHelloMessageFromHelloChannel will fill a new SayHelloMessageFromHelloChannel with data from generic broker message
+func brokerMessageToSayHelloMessageFromHelloChannel(bMsg extensions.BrokerMessage) (SayHelloMessageFromHelloChannel, error) {
+	var msg SayHelloMessageFromHelloChannel
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -221,8 +221,8 @@ func newSayHelloMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (SayHell
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from SayHelloMessage data
-func (msg SayHelloMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from SayHelloMessageFromHelloChannel data
+func (msg SayHelloMessageFromHelloChannel) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte

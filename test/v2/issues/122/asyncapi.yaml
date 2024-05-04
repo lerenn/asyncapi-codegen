@@ -8,10 +8,6 @@ info:
   version: 1.0.0
 channels:
   v2.issue122.msg: # channel that has the two operations
-    subscribe:
-      message:
-        payload:
-          type: string
     publish:
       message:
         payload:

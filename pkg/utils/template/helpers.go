@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/iancoleman/strcase"
 )
 
 // NamifyWithoutParams will convert a sentence to a golang conventional type name.
@@ -49,16 +51,33 @@ func Namify(sentence string) string {
 	return sentence
 }
 
-var (
-	matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
-	matchAllCap   = regexp.MustCompile("([a-z0-9])([A-Z])")
-)
+type convertKeyFn func(string) string
 
-// SnakeCase will convert a sentence to snake case.
-func SnakeCase(sentence string) string {
-	snake := matchFirstCap.ReplaceAllString(sentence, "${1}_${2}")
-	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
-	return strings.ToLower(snake)
+var convertKeyFuncs = map[string]convertKeyFn{
+	"snake": strcase.ToSnake,
+	"kebab": strcase.ToKebab,
+	"camel": strcase.ToCamel,
+	"none":  func(s string) string { return s },
+}
+
+var convertKey = convertKeyFuncs["none"]
+
+// ConvertKey is used in template to convert schema property key name
+// according to chosen strategy.
+func ConvertKey(sentence string) string {
+	return convertKey(sentence)
+}
+
+// SetConvertKeyFn sets the function used to convert schema property key names.
+func SetConvertKeyFn(name string) error {
+	fn, ok := convertKeyFuncs[name]
+	if !ok {
+		return fmt.Errorf("unknown convert key function %s, supported values: snake, kebab, camel, none", name)
+	}
+
+	convertKey = fn
+
+	return nil
 }
 
 // HasField will check if a struct has a field with the given name.
@@ -103,7 +122,8 @@ func HelpersFunctions() template.FuncMap {
 	return template.FuncMap{
 		"namifyWithoutParam": NamifyWithoutParams,
 		"namify":             Namify,
-		"snakeCase":          SnakeCase,
+		"convertKey":         ConvertKey,
+		"snakeCase":          strcase.ToSnake,
 		"hasField":           HasField,
 		"describeStruct":     DescribeStruct,
 		"multiLineComment":   MultiLineComment,

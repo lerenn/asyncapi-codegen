@@ -79,8 +79,8 @@ func NewGroupMessage() GroupMessage {
 	return msg
 }
 
-// newGroupMessageFromBrokerMessage will fill a new GroupMessage with data from generic broker message
-func newGroupMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (GroupMessage, error) {
+// brokerMessageToGroupMessage will fill a new GroupMessage with data from generic broker message
+func brokerMessageToGroupMessage(bMsg extensions.BrokerMessage) (GroupMessage, error) {
 	var msg GroupMessage
 
 	// Convert to string
@@ -120,8 +120,8 @@ func NewInfoMessage() InfoMessage {
 	return msg
 }
 
-// newInfoMessageFromBrokerMessage will fill a new InfoMessage with data from generic broker message
-func newInfoMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (InfoMessage, error) {
+// brokerMessageToInfoMessage will fill a new InfoMessage with data from generic broker message
+func brokerMessageToInfoMessage(bMsg extensions.BrokerMessage) (InfoMessage, error) {
 	var msg InfoMessage
 
 	// Convert to string
@@ -161,8 +161,8 @@ func NewProjectMessage() ProjectMessage {
 	return msg
 }
 
-// newProjectMessageFromBrokerMessage will fill a new ProjectMessage with data from generic broker message
-func newProjectMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (ProjectMessage, error) {
+// brokerMessageToProjectMessage will fill a new ProjectMessage with data from generic broker message
+func brokerMessageToProjectMessage(bMsg extensions.BrokerMessage) (ProjectMessage, error) {
 	var msg ProjectMessage
 
 	// Convert to string
@@ -202,8 +202,8 @@ func NewResourceMessage() ResourceMessage {
 	return msg
 }
 
-// newResourceMessageFromBrokerMessage will fill a new ResourceMessage with data from generic broker message
-func newResourceMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (ResourceMessage, error) {
+// brokerMessageToResourceMessage will fill a new ResourceMessage with data from generic broker message
+func brokerMessageToResourceMessage(bMsg extensions.BrokerMessage) (ResourceMessage, error) {
 	var msg ResourceMessage
 
 	// Convert to string
@@ -243,8 +243,8 @@ func NewStatusMessage() StatusMessage {
 	return msg
 }
 
-// newStatusMessageFromBrokerMessage will fill a new StatusMessage with data from generic broker message
-func newStatusMessageFromBrokerMessage(bMsg extensions.BrokerMessage) (StatusMessage, error) {
+// brokerMessageToStatusMessage will fill a new StatusMessage with data from generic broker message
+func brokerMessageToStatusMessage(bMsg extensions.BrokerMessage) (StatusMessage, error) {
 	var msg StatusMessage
 
 	// Convert to string

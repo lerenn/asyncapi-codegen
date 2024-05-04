@@ -1,4 +1,4 @@
-package asyncapi_test
+package testutil
 
 import (
 	"regexp"

@@ -1,7 +1,5 @@
 package asyncapiv3
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
-
 const (
 	// ExternalDocsNameSuffix is the suffix that is added to the name of external docs.
 	ExternalDocsNameSuffix = "ExternalDocs"
@@ -23,15 +21,23 @@ type ExternalDocumentation struct {
 	ReferenceTo *ExternalDocumentation `json:"-"`
 }
 
-// Process processes the ExternalDocumentation to make it ready for code generation.
-func (doc *ExternalDocumentation) Process(name string, spec Specification) error {
+// generateMetadata generates metadata for the ExternalDocumentation.
+func (doc *ExternalDocumentation) generateMetadata(parentName, name string) {
+	// Return if empty
+	if doc == nil {
+		return
+	}
+
+	// Set name
+	doc.Name = generateFullName(parentName, name, ExternalDocsNameSuffix, nil)
+}
+
+// setDependencies sets dependencies between the different elements of the ExternalDocumentation.
+func (doc *ExternalDocumentation) setDependencies(spec Specification) error {
 	// Return if empty
 	if doc == nil {
 		return nil
 	}
-
-	// Set name
-	doc.Name = template.Namify(name)
 
 	// Add pointer to reference if there is one
 	if doc.Reference != "" {

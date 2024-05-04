@@ -1,0 +1,26 @@
+asyncapi: 3.0.0
+info:
+  title: event
+  version: 0.1.0
+channels:
+  eventSuccess:
+    address: some.random.topic
+    messages:
+      eventSuccessMessage:
+        $ref: "#/components/messages/EventSuccess"
+operations:
+  handleEventSuccess:
+    action: "receive"
+    channel:
+      $ref: "#/channels/eventSuccess"
+    messages:
+      - $ref: "#/channels/eventSuccess/messages/eventSuccessMessage"
+components:
+  messages:
+    EventSuccess:
+      payload:
+        type: object
+        properties:
+          timestamp:
+            type: integer
+            description: The timestamp of the event
