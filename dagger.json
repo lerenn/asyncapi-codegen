@@ -1,0 +1,6 @@
+{
+  "name": "asyncapi-codegen-ci",
+  "sdk": "go",
+  "source": "build/ci",
+  "engineVersion": "v0.10.2"
+}

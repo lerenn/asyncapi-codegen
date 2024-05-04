@@ -21,8 +21,8 @@ jobs:
       - name: Run tests
         uses: dagger/dagger-for-github@v5
         with:
-          verb: run
-          args: go run ./build/ci/dagger.go test
+          verb: call
+          args: tests --dir .
           version: "0.11.0"      
   examples:
     name: Examples
@@ -36,8 +36,8 @@ jobs:
       - name: Run examples
         uses: dagger/dagger-for-github@v5
         with:
-          verb: run
-          args: go run ./build/ci/dagger.go examples
+          verb: call
+          args: examples --dir .
           version: "0.11.0"
   lint:
     name: Lint
@@ -52,30 +52,23 @@ jobs:
       - name: Lint
         uses: dagger/dagger-for-github@v5
         with:
-          verb: run
-          args: go run ./build/ci/dagger.go linter
+          verb: call
+          args: lint --dir .
           version: "0.11.0"      
 
-  check_generated:
-    name: Check generated
+  check-generation:
+    name: Check generation
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4.1.1
       - uses: actions/setup-go@v5.0.0
         with:
           go-version-file: go.mod
           cache: true
-      - name: Run generator
+      - name: Lint
         uses: dagger/dagger-for-github@v5
         with:
-          verb: run
-          args: go run ./build/ci/dagger.go generator
-          version: "0.11.0"      
-      - name: check generated
-        run: |
-          git diff-index HEAD
-          git diff --minimal --color=always --compact-summary --exit-code HEAD || FAILED=true ;
-          if [[ $FAILED ]];
-            then echo "❗️ please run \"make generate\" locally and commit the changes"
-            exit 1
-          fi
+          verb: call
+          args: check-generation --dir .
+          version: "0.11.0"  

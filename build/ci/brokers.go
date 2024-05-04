@@ -1,16 +1,21 @@
-package ci
+package main
 
 import (
+	"dagger/asyncapi-codegen-ci/internal/dagger"
 	"fmt"
 
-	"dagger.io/dagger"
 	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 
-// BindBrokers is used as a helper to bind brokers to a container.
-func BindBrokers(brokers map[string]*dagger.Service) func(r *dagger.Container) *dagger.Container {
+const (
+	// kafkaImage is the image used for kafka.
+	kafkaImage = "bitnami/kafka:3.5.1"
+	// natsImage is the image used for NATS.
+	natsImage = "nats:2.10"
+)
+
+func bindBrokers(brokers map[string]*dagger.Service) func(r *dagger.Container) *dagger.Container {
 	return func(r *dagger.Container) *dagger.Container {
-		// Bind all brokers to the container.
 		for n, b := range brokers {
 			r = r.WithServiceBinding(n, b)
 		}
@@ -21,33 +26,33 @@ func BindBrokers(brokers map[string]*dagger.Service) func(r *dagger.Container) *
 	}
 }
 
-// Brokers returns a map of containers for each broker as service.
-func Brokers(client *dagger.Client) map[string]*dagger.Service {
+// brokers returns a map of containers for each broker as service.
+func brokers() map[string]*dagger.Service {
 	brokers := make(map[string]*dagger.Service)
 
 	// Kafka
-	brokers["kafka"] = BrokerKafka(client)
-	brokers["kafka-tls"] = BrokerKafkaSecure(client)
-	brokers["kafka-tls-basic-auth"] = BrokerKafkaSecureBasicAuth(client)
+	brokers["kafka"] = brokerKafka()
+	brokers["kafka-tls"] = brokerKafkaSecure()
+	brokers["kafka-tls-basic-auth"] = brokerKafkaSecureBasicAuth()
 
 	// NATS
-	brokers["nats"] = BrokerNATS(client)
-	brokers["nats-tls"] = BrokerNATSSecure(client)
-	brokers["nats-tls-basic-auth"] = BrokerNATSSecureBasicAuth(client)
+	brokers["nats"] = brokerNATS()
+	brokers["nats-tls"] = brokerNATSSecure()
+	brokers["nats-tls-basic-auth"] = brokerNATSSecureBasicAuth()
 
 	// NATS Jetstream
-	brokers["nats-jetstream"] = BrokerNATSJetstream(client)
-	brokers["nats-jetstream-tls"] = BrokerNATSJetstreamSecure(client)
-	brokers["nats-jetstream-tls-basic-auth"] = BrokerNATSJetstreamSecureBasicAuth(client)
+	brokers["nats-jetstream"] = brokerNATSJetstream()
+	brokers["nats-jetstream-tls"] = brokerNATSJetstreamSecure()
+	brokers["nats-jetstream-tls-basic-auth"] = brokerNATSJetstreamSecureBasicAuth()
 
 	return brokers
 }
 
-// BrokerKafka returns a service for the Kafka broker.
-func BrokerKafka(client *dagger.Client) *dagger.Service {
-	return client.Container().
+// brokerKafka returns a service for the Kafka broker.
+func brokerKafka() *dagger.Service {
+	return dag.Container().
 		//	Set container image
-		From(KafkaImage).
+		From(kafkaImage).
 
 		// Add environment variables
 		WithEnvVariable("KAFKA_CFG_NODE_ID", "0").
@@ -68,21 +73,21 @@ func BrokerKafka(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerKafkaSecure returns a service for the Kafka broker secured with TLS.
-func BrokerKafkaSecure(client *dagger.Client) *dagger.Service {
+// brokerKafkaSecure returns a service for the Kafka broker secured with TLS.
+func brokerKafkaSecure() *dagger.Service {
 	key, cert, cacert, err := testutil.GenerateSelfSignedCertificateWithCA("kafka-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
 
-	tlsDir := client.Directory().
+	tlsDir := dag.Directory().
 		WithNewFile("kafka.keystore.key", string(key)).
 		WithNewFile("kafka.keystore.pem", string(cert)).
 		WithNewFile("kafka.truststore.pem", string(cacert))
 
-	return client.Container().
+	return dag.Container().
 		//	Set container image
-		From(KafkaImage).
+		From(kafkaImage).
 
 		// Add environment variables
 		WithEnvVariable("KAFKA_CFG_NODE_ID", "0").
@@ -111,21 +116,21 @@ func BrokerKafkaSecure(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerKafkaSecureBasicAuth returns a service for the Kafka broker secured with TLS and basic auth.
-func BrokerKafkaSecureBasicAuth(client *dagger.Client) *dagger.Service {
+// brokerKafkaSecureBasicAuth returns a service for the Kafka broker secured with TLS and basic auth.
+func brokerKafkaSecureBasicAuth() *dagger.Service {
 	key, cert, cacert, err := testutil.GenerateSelfSignedCertificateWithCA("kafka-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
 
-	tlsDir := client.Directory().
+	tlsDir := dag.Directory().
 		WithNewFile("kafka.keystore.key", string(key)).
 		WithNewFile("kafka.keystore.pem", string(cert)).
 		WithNewFile("kafka.truststore.pem", string(cacert))
 
-	return client.Container().
+	return dag.Container().
 		//	Set container image
-		From(KafkaImage).
+		From(kafkaImage).
 
 		// Add environment variables
 		WithEnvVariable("KAFKA_CFG_NODE_ID", "0").
@@ -161,28 +166,28 @@ func BrokerKafkaSecureBasicAuth(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerNATS returns a service for the NATS broker.
-func BrokerNATS(client *dagger.Client) *dagger.Service {
-	return client.Container().
+// brokerNATS returns a service for the NATS broker.
+func brokerNATS() *dagger.Service {
+	return dag.Container().
 		// Add base image
-		From(NATSImage).
+		From(natsImage).
 		// Add exposed ports
 		WithExposedPort(4222).
 		// Return container as a service
 		AsService()
 }
 
-// BrokerNATSSecure returns a service for the NATS broker secured with TLS.
-func BrokerNATSSecure(client *dagger.Client) *dagger.Service {
+// brokerNATSSecure returns a service for the NATS broker secured with TLS.
+func brokerNATSSecure() *dagger.Service {
 	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
-	tlsDir := client.Directory().WithNewFile("server-key.pem", string(key)).WithNewFile("server-cert.pem", string(cert))
+	tlsDir := dag.Directory().WithNewFile("server-key.pem", string(key)).WithNewFile("server-cert.pem", string(cert))
 
-	return client.Container().
+	return dag.Container().
 		// Add base image
-		From(NATSImage).
+		From(natsImage).
 		// Add exposed ports
 		WithExposedPort(4222).
 		// Add server cert and key directory
@@ -193,18 +198,18 @@ func BrokerNATSSecure(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerNATSSecureBasicAuth returns a service for the NATS broker secured with TLS
+// brokerNATSSecureBasicAuth returns a service for the NATS broker secured with TLS
 // and basic auth user: user password: password.
-func BrokerNATSSecureBasicAuth(client *dagger.Client) *dagger.Service {
+func brokerNATSSecureBasicAuth() *dagger.Service {
 	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
-	tlsDir := client.Directory().WithNewFile("server-key.pem", string(key)).WithNewFile("server-cert.pem", string(cert))
+	tlsDir := dag.Directory().WithNewFile("server-key.pem", string(key)).WithNewFile("server-cert.pem", string(cert))
 
-	return client.Container().
+	return dag.Container().
 		// Add base image
-		From(NATSImage).
+		From(natsImage).
 		// Add exposed ports
 		WithExposedPort(4222).
 		// Add server cert and key directory
@@ -220,11 +225,11 @@ func BrokerNATSSecureBasicAuth(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerNATSJetstream returns a service for the NATS broker.
-func BrokerNATSJetstream(client *dagger.Client) *dagger.Service {
-	return client.Container().
+// brokerNATSJetstream returns a service for the NATS broker.
+func brokerNATSJetstream() *dagger.Service {
+	return dag.Container().
 		// Add base image
-		From(NATSImage).
+		From(natsImage).
 		// Add exposed ports
 		WithExposedPort(4222).
 		// Add command
@@ -233,17 +238,17 @@ func BrokerNATSJetstream(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerNATSJetstreamSecure returns a service for the NATS broker secured with TLS.
-func BrokerNATSJetstreamSecure(client *dagger.Client) *dagger.Service {
+// brokerNATSJetstreamSecure returns a service for the NATS broker secured with TLS.
+func brokerNATSJetstreamSecure() *dagger.Service {
 	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-jetstream-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
-	tlsDir := client.Directory().WithNewFile("server-key.pem", string(key)).WithNewFile("server-cert.pem", string(cert))
+	tlsDir := dag.Directory().WithNewFile("server-key.pem", string(key)).WithNewFile("server-cert.pem", string(cert))
 
-	return client.Container().
+	return dag.Container().
 		// Add base image
-		From(NATSImage).
+		From(natsImage).
 		// Add exposed ports
 		WithExposedPort(4222).
 		// Add server cert and key directory
@@ -254,18 +259,18 @@ func BrokerNATSJetstreamSecure(client *dagger.Client) *dagger.Service {
 		AsService()
 }
 
-// BrokerNATSJetstreamSecureBasicAuth returns a service for the NATS broker secured with TLS
+// brokerNATSJetstreamSecureBasicAuth returns a service for the NATS broker secured with TLS
 // and basic auth user: user password: password.
-func BrokerNATSJetstreamSecureBasicAuth(client *dagger.Client) *dagger.Service {
+func brokerNATSJetstreamSecureBasicAuth() *dagger.Service {
 	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-jetstream-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
-	tlsDir := client.Directory().WithNewFile("server-key.pem", string(key)).WithNewFile("server-cert.pem", string(cert))
+	tlsDir := dag.Directory().WithNewFile("server-key.pem", string(key)).WithNewFile("server-cert.pem", string(cert))
 
-	return client.Container().
+	return dag.Container().
 		// Add base image
-		From(NATSImage).
+		From(natsImage).
 		// Add exposed ports
 		WithExposedPort(4222).
 		// Add server cert and key directory
