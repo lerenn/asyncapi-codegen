@@ -12,7 +12,7 @@ go generate ./...
 
 # Check that there is nothing to commit
 git diff-index HEAD
-git diff --minimal --color=always --compact-summary --exit-code HEAD || FAILED=true ;
+git diff --minimal --color=always --compact-summary --exit-code HEAD || FAILED=true
 if [[ $FAILED ]]; then
     echo "❗️ please run \"make generate\" locally and commit the changes"
     exit 1
