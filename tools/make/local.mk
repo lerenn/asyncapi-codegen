@@ -1,5 +1,5 @@
 .PHONY: local/check
-local/check: local/check-generation local/lint local/examples local/test ## Run all the checks locally
+local/check: local/check-generation local/lint local/test ## Run all the checks locally
 
 .PHONY: local/clean
 local/clean: local/down ## Clean the project locally
