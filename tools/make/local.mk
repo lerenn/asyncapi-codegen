@@ -1,3 +1,6 @@
+.PHONY: local/check
+local/check: local/check-generation local/lint local/examples local/test ## Run all the checks locally
+
 .PHONY: local/clean
 local/clean: local/down ## Clean the project locally
 	@rm -rf ./tmp/certs
@@ -22,6 +25,10 @@ local/test: local/up ## Perform tests locally
 .PHONY: local/generate
 local/generate: ## Generate files locally
 	@go generate ./...
+
+.PHONY: local/check-generation
+local/check-generation: ## Check files are generated locally
+	@sh ./scripts/check-generation.sh
 
 .PHONY: local/publish
 local/publish: dagger/publish ## Publish with tag on git, docker hub, etc. locally

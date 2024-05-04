@@ -74,7 +74,7 @@ func (ci *AsyncapiCodegenCi) CheckGeneration(
 	_, err := dag.Container().
 		From(golangImage).
 		With(sourceCodeAndGoCache(dir)).
-		WithExec([]string{"sh", "./scripts/check-generation"}).
+		WithExec([]string{"sh", "./scripts/check-generation.sh"}).
 		Stdout(ctx)
 
 	return "", err
