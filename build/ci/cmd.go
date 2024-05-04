@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"dagger/asyncapi-codegen-ci/internal/dagger"
-	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
@@ -107,24 +106,31 @@ func (ci *AsyncapiCodegenCi) Examples(
 	// Get examples containers
 	containers := make(map[string]*dagger.Container, 0)
 	for _, p := range subdirs {
-		// Get corresponding broker (always at same level)
-		brokerName := strings.Split(p, "/")[4]
-
 		// Set app container
 		app := dag.Container().
 			From(golangImage).
+			// Add source code as work directory
 			With(sourceCodeAndGoCache(dir)).
-			WithServiceBinding(brokerName, ci.cachedBrokers()[brokerName]).
+			// Set broker as dependency
+			With(bindBrokers(ci.cachedBrokers())).
+			// Execute command
 			WithExec([]string{"go", "run", p + "/app"}).
+			// Add exposed port to let know when the service is ready
 			WithExposedPort(1234).
+			// Set as service
 			AsService()
 
 		// Set user container
 		user := dag.Container().
+			// Add base image
 			From(golangImage).
+			// Add source code as work directory
 			With(sourceCodeAndGoCache(dir)).
-			WithServiceBinding(brokerName, ci.cachedBrokers()[brokerName]).
+			// Set broker as dependency
+			With(bindBrokers(ci.cachedBrokers())).
+			// Add app as dependency of user
 			WithServiceBinding("app", app).
+			// Execute command
 			WithExec([]string{"go", "run", p + "/user"})
 
 		// Add user containers to containers
@@ -140,24 +146,16 @@ func (ci *AsyncapiCodegenCi) Tests(
 	ctx context.Context,
 	dir *Directory,
 ) (string, error) {
-	// Get tests subdirs
-	subdirs, err := directoriesAtSublevel(ctx, dir.Directory("test"), 2, "./test")
-	if err != nil {
-		return "", err
-	}
-
-	// Get tests containers
-	containers := make(map[string]*dagger.Container, 0)
-	for _, p := range subdirs {
-		containers[p] = dag.Container().
-			From(golangImage).
-			With(sourceCodeAndGoCache(dir)).
-			With(bindBrokers(ci.cachedBrokers())).
-			WithExec([]string{"go", "test", p})
-	}
-
-	executeContainers(ctx, utils.MapToList(containers)...)
-	return "", nil
+	return dag.Container().
+		// Add base image
+		From(golangImage).
+		// Add source code as work directory
+		With(sourceCodeAndGoCache(dir)).
+		// Set brokers as dependencies of app and user
+		With(bindBrokers(ci.cachedBrokers())).
+		// Execute command
+		WithExec([]string{"go", "test", "./..."}).
+		Stdout(ctx)
 }
 
 // Publish tag on git repository and docker image(s) on Docker Hub

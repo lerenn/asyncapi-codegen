@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"dagger/asyncapi-codegen-ci/internal/dagger"
-	"strings"
 	"sync"
 )
 
@@ -28,8 +27,7 @@ func directoriesAtSublevel(ctx context.Context, dir *Directory, sublevel int, ba
 
 	if sublevel == 0 {
 		for _, e := range entries {
-			d := dir.Directory(e)
-			if check, err := isDir(ctx, d); err != nil {
+			if check, err := isDir(ctx, dir, e); err != nil {
 				return nil, err
 			} else if !check {
 				continue
@@ -42,13 +40,13 @@ func directoriesAtSublevel(ctx context.Context, dir *Directory, sublevel int, ba
 	}
 
 	for _, e := range entries {
-		d := dir.Directory(e)
-		if check, err := isDir(ctx, d); err != nil {
+		if check, err := isDir(ctx, dir, e); err != nil {
 			return nil, err
 		} else if !check {
 			continue
 		}
 
+		d := dir.Directory(e)
 		subentries, err := directoriesAtSublevel(ctx, d, sublevel-1, basePath+"/"+e)
 		if err != nil {
 			return nil, err
@@ -59,16 +57,21 @@ func directoriesAtSublevel(ctx context.Context, dir *Directory, sublevel int, ba
 	return paths, nil
 }
 
-func isDir(ctx context.Context, dir *Directory) (bool, error) {
-	_, err := dir.Sync(ctx)
-	if err != nil {
-		if strings.Contains(err.Error(), "not a directory") {
-			return false, nil
-		}
-		return false, err
+func isDir(ctx context.Context, parentDir *Directory, path string) (bool, error) {
+	_, isNotDirErr := parentDir.Directory(path).Sync(ctx)
+	if isNotDirErr == nil {
+		// If it is a directory do not keep further checking
+		return true, nil
 	}
 
-	return true, nil
+	_, isNotFileErr := parentDir.File(path).Sync(ctx)
+	if isNotFileErr == nil {
+		return false, nil
+	}
+
+	// At this point we know that the path does not exist or a graphql error occurred
+	// We also assume that isNotDirErr and isNotFileErr are the same error
+	return false, isNotFileErr
 }
 
 func executeContainers(ctx context.Context, containers ...*dagger.Container) {
