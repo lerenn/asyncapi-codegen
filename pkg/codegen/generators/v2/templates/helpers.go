@@ -29,6 +29,10 @@ func GetChildrenObjectSchemas(s asyncapi.Schema) []*asyncapi.Schema {
 	for _, schema := range allSchemas {
 		if schema.Type == asyncapi.SchemaTypeIsObject.String() {
 			filteredSchemas = append(filteredSchemas, schema)
+		} else if schema.Type == asyncapi.SchemaTypeIsArray.String() &&
+			schema.Items != nil &&
+			schema.Items.Type == asyncapi.SchemaTypeIsObject.String() {
+			filteredSchemas = append(filteredSchemas, schema.Items)
 		}
 	}
 

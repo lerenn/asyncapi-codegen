@@ -69,10 +69,10 @@ func (e *Error) Error() string {
 }
 
 // Type1MessagePayload is a schema from the AsyncAPI specification required in messages
-type Type1MessagePayload []ItemSchemaForType1MessagePayload
+type Type1MessagePayload []ItemFromType1MessagePayload
 
-// ItemSchemaForType1MessagePayload is a schema from the AsyncAPI specification required in messages
-type ItemSchemaForType1MessagePayload struct {
+// ItemFromType1MessagePayload is a schema from the AsyncAPI specification required in messages
+type ItemFromType1MessagePayload struct {
 	Age   *int64  `json:"age"`
 	Email *string `json:"email"`
 	Name  *string `json:"name"`
@@ -81,7 +81,7 @@ type ItemSchemaForType1MessagePayload struct {
 // Type1Message is the message expected for 'Type1Message' channel.
 type Type1Message struct {
 	// Payload will be inserted in the message payload
-	Payload []ItemSchemaForType1MessagePayload
+	Payload []ItemFromType1MessagePayload
 }
 
 func NewType1Message() Type1Message {
@@ -220,10 +220,10 @@ func (msg Type3Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 }
 
 // ArrayPayloadSchema is a schema from the AsyncAPI specification required in messages
-type ArrayPayloadSchema []ItemSchemaForArrayPayloadSchema
+type ArrayPayloadSchema []ItemFromArrayPayloadSchema
 
-// ItemSchemaForArrayPayloadSchema is a schema from the AsyncAPI specification required in messages
-type ItemSchemaForArrayPayloadSchema struct {
+// ItemFromArrayPayloadSchema is a schema from the AsyncAPI specification required in messages
+type ItemFromArrayPayloadSchema struct {
 	Age   *int64  `json:"age"`
 	Email *string `json:"email"`
 	Name  *string `json:"name"`
