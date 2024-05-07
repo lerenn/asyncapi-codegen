@@ -1,0 +1,22 @@
+asyncapi: 3.0.0
+info:
+  title: event
+  version: 0.1.0
+
+components:
+  messages:
+    EventSuccess:
+      payload:
+        type: object
+        properties:
+          event_objects:
+            type: array
+            items:
+              type: object
+              properties:
+                event_id:
+                  type: string
+                  description: The identifier of the event
+                event_type:
+                  type: string
+                  description: The type of the event

@@ -132,7 +132,7 @@ func (s *Schema) generateMetadata(parentName, name string, number *int, isRequir
 
 	// Generate Items metadata
 	// NOTE: give the name of the parent to the items
-	if err := s.Items.generateMetadata("", "ItemSchemaFor"+s.Name, nil, false); err != nil {
+	if err := s.Items.generateMetadata("", "ItemFrom"+s.Name, nil, false); err != nil {
 		return err
 	}
 
