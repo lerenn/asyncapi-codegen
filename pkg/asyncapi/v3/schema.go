@@ -33,9 +33,9 @@ type Schema struct {
 	Type                 string             `json:"type"`
 	Required             []string           `json:"required"`
 	MultipleOf           []string           `json:"multipleOf"`
-	Maximum              string             `json:"maximum"`
+	Maximum              uint               `json:"maximum"`
 	ExclusiveMaximum     float64            `json:"exclusiveMaximum"`
-	Minimum              string             `json:"minimum"`
+	Minimum              uint               `json:"minimum"`
 	ExclusiveMinimum     float64            `json:"exclusiveMinimum"`
 	MaxLength            uint               `json:"maxLength"`
 	MinLength            uint               `json:"minLength"`

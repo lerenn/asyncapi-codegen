@@ -126,6 +126,31 @@ func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	return sprint[:len(sprint)-1] + ")"
 }
 
+func GenerateValidationTag(schema asyncapi.Schema) string {
+	var directives []string
+	if schema.IsRequired {
+		directives = append(directives, "required")
+	}
+	if schema.MinLength != 0 {
+		directives = append(directives, fmt.Sprintf("min=%d", schema.MinLength))
+	}
+	if schema.MaxLength != 0 {
+		directives = append(directives, fmt.Sprintf("max=%d", schema.MaxLength))
+	}
+	if schema.Minimum != 0 {
+		directives = append(directives, fmt.Sprintf("gte=%d", schema.Minimum))
+	}
+	if schema.Maximum != 0 {
+		directives = append(directives, fmt.Sprintf("gte=%d", schema.Maximum))
+	}
+
+	if len(directives) > 0 {
+		return fmt.Sprintf(" validate:\"%s\"", strings.Join(directives, ","))
+	} else {
+		return ""
+	}
+}
+
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
@@ -138,5 +163,6 @@ func HelpersFunctions() template.FuncMap {
 		"generateChannelAddr":            GenerateChannelAddr,
 		"generateChannelAddrFromOp":      GenerateChannelAddrFromOp,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
+		"generateValidate":               GenerateValidationTag,
 	}
 }
