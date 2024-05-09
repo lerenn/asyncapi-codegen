@@ -138,10 +138,16 @@ func GenerateValidationTag(schema asyncapi.Schema) string {
 		directives = append(directives, fmt.Sprintf("max=%d", schema.MaxLength))
 	}
 	if schema.Minimum != 0 {
-		directives = append(directives, fmt.Sprintf("gte=%d", schema.Minimum))
+		directives = append(directives, fmt.Sprintf("gte=%g", schema.Minimum))
 	}
 	if schema.Maximum != 0 {
-		directives = append(directives, fmt.Sprintf("gte=%d", schema.Maximum))
+		directives = append(directives, fmt.Sprintf("lte=%g", schema.Maximum))
+	}
+	if schema.ExclusiveMinimum != 0 {
+		directives = append(directives, fmt.Sprintf("gt=%g", schema.ExclusiveMinimum))
+	}
+	if schema.ExclusiveMaximum != 0 {
+		directives = append(directives, fmt.Sprintf("lt=%g", schema.ExclusiveMaximum))
 	}
 
 	if len(directives) > 0 {
