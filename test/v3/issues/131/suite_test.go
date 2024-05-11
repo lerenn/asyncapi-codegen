@@ -1,6 +1,6 @@
-//go:generate go run ../../../../cmd/asyncapi-codegen -p issue181 -i ./asyncapi.yaml -o ./asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -p issue131 -i ./asyncapi.yaml -o ./asyncapi.gen.go
 
-package issue181
+package issue131
 
 import (
 	"github.com/go-playground/validator/v10"
@@ -31,6 +31,8 @@ func ValidTestSchema() TestSchema {
 		ArrayProp:            []string{"test1", "test2"},
 		IntegerProp:          Ptr[int64](2),
 		IntegerExclusiveProp: Ptr[int64](3),
+		EnumProp:             Ptr("amber"),
+		ConstProp:            Ptr("Canada"),
 	}
 }
 
@@ -98,4 +100,22 @@ func (suite *Suite) TestArray() {
 	tooFewElt.ArrayProp = []string{"1"}
 
 	assert.Error(suite.T(), validator.New().Struct(tooFewElt))
+
+	notUnique := ValidTestSchema()
+	notUnique.ArrayProp = []string{"1", "1"}
+	assert.Error(suite.T(), validator.New().Struct(notUnique))
+}
+
+func (suite *Suite) TestEnum() {
+	wrong := ValidTestSchema()
+	wrong.EnumProp = Ptr("Wrong")
+
+	assert.Error(suite.T(), validator.New().Struct(wrong))
+}
+
+func (suite *Suite) TestConst() {
+	wrong := ValidTestSchema()
+	wrong.EnumProp = Ptr("Wrong")
+
+	assert.Error(suite.T(), validator.New().Struct(wrong))
 }

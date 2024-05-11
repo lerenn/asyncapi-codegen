@@ -39,5 +39,15 @@ components:
           type: array
           minLength: 2
           maxLength: 5
+          uniqueItems: true
           items:
             type: string
+        EnumProp:
+          type: string
+          enum:
+            - "red"
+            - "amber"
+            - "green"
+        ConstProp:
+          type: string
+          const: "Canada"

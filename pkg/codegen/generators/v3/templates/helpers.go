@@ -149,6 +149,27 @@ func GenerateValidationTag(schema asyncapi.Schema) string {
 	if schema.ExclusiveMaximum != 0 {
 		directives = append(directives, fmt.Sprintf("lt=%g", schema.ExclusiveMaximum))
 	}
+	if schema.UniqueItems {
+		directives = append(directives, fmt.Sprintf("unique"))
+	}
+	if len(schema.Enum) > 0 {
+		var enumsStr []string
+		for _, e := range schema.Enum {
+			switch eStr := e.(type) {
+			case string:
+				enumsStr = append(enumsStr, eStr)
+			}
+		}
+		if len(schema.Enum) == len(enumsStr) {
+			directives = append(directives, fmt.Sprintf("oneof=%s", strings.Join(enumsStr, " ")))
+		}
+	}
+	if schema.Const != nil {
+		switch cStr := schema.Const.(type) {
+		case string:
+			directives = append(directives, fmt.Sprintf("eq=%s", cStr))
+		}
+	}
 
 	if len(directives) > 0 {
 		return fmt.Sprintf(" validate:\"%s\"", strings.Join(directives, ","))
