@@ -31,6 +31,7 @@ func ValidTestSchema() TestSchema {
 		ArrayProp:            []string{"test1", "test2"},
 		IntegerProp:          Ptr[int64](2),
 		IntegerExclusiveProp: Ptr[int64](3),
+		FloatProp:            Ptr[float64](2.55),
 		EnumProp:             Ptr("amber"),
 		ConstProp:            Ptr("Canada"),
 	}
@@ -76,6 +77,18 @@ func (suite *Suite) TestExclusiveInteger() {
 	tooLarge.IntegerProp = Ptr[int64](5)
 
 	assert.NoError(suite.T(), validator.New().Struct(tooLarge))
+}
+
+func (suite *Suite) TestFloat() {
+	tooSmall := ValidTestSchema()
+	tooSmall.FloatProp = Ptr[float64](2.49)
+
+	assert.Error(suite.T(), validator.New().Struct(tooSmall))
+
+	tooLarge := ValidTestSchema()
+	tooLarge.FloatProp = Ptr[float64](5.51)
+
+	assert.Error(suite.T(), validator.New().Struct(tooLarge))
 }
 
 func (suite *Suite) TestRequired() {

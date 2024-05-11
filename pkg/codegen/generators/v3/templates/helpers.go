@@ -126,29 +126,26 @@ func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	return sprint[:len(sprint)-1] + ")"
 }
 
-func GenerateValidationTag(schema asyncapi.Schema) string {
+func appendDirectiveIfDefined(directives []string, tagName string, value float64) []string {
+	if value != 0 {
+		return append(directives, fmt.Sprintf("%s=%g", tagName, value))
+	}
+	return directives
+}
+
+func GenerateValidateTags(schema asyncapi.Schema) string {
 	var directives []string
 	if schema.IsRequired {
 		directives = append(directives, "required")
 	}
-	if schema.MinLength != 0 {
-		directives = append(directives, fmt.Sprintf("min=%d", schema.MinLength))
-	}
-	if schema.MaxLength != 0 {
-		directives = append(directives, fmt.Sprintf("max=%d", schema.MaxLength))
-	}
-	if schema.Minimum != 0 {
-		directives = append(directives, fmt.Sprintf("gte=%g", schema.Minimum))
-	}
-	if schema.Maximum != 0 {
-		directives = append(directives, fmt.Sprintf("lte=%g", schema.Maximum))
-	}
-	if schema.ExclusiveMinimum != 0 {
-		directives = append(directives, fmt.Sprintf("gt=%g", schema.ExclusiveMinimum))
-	}
-	if schema.ExclusiveMaximum != 0 {
-		directives = append(directives, fmt.Sprintf("lt=%g", schema.ExclusiveMaximum))
-	}
+
+	directives = appendDirectiveIfDefined(directives, "min", float64(schema.MinLength))
+	directives = appendDirectiveIfDefined(directives, "max", float64(schema.MaxLength))
+	directives = appendDirectiveIfDefined(directives, "gte", schema.Minimum)
+	directives = appendDirectiveIfDefined(directives, "lte", schema.Maximum)
+	directives = appendDirectiveIfDefined(directives, "gt", schema.ExclusiveMinimum)
+	directives = appendDirectiveIfDefined(directives, "lt", schema.ExclusiveMaximum)
+
 	if schema.UniqueItems {
 		directives = append(directives, fmt.Sprintf("unique"))
 	}
@@ -160,6 +157,8 @@ func GenerateValidationTag(schema asyncapi.Schema) string {
 				enumsStr = append(enumsStr, eStr)
 			}
 		}
+
+		// Only generate enum if all elements are string, otherwise this is unsupported
 		if len(schema.Enum) == len(enumsStr) {
 			directives = append(directives, fmt.Sprintf("oneof=%s", strings.Join(enumsStr, " ")))
 		}
@@ -167,6 +166,7 @@ func GenerateValidationTag(schema asyncapi.Schema) string {
 	if schema.Const != nil {
 		switch cStr := schema.Const.(type) {
 		case string:
+			// Only generate enum if the elements is a string, otherwise this is unsupported
 			directives = append(directives, fmt.Sprintf("eq=%s", cStr))
 		}
 	}
@@ -190,6 +190,6 @@ func HelpersFunctions() template.FuncMap {
 		"generateChannelAddr":            GenerateChannelAddr,
 		"generateChannelAddrFromOp":      GenerateChannelAddrFromOp,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
-		"generateValidate":               GenerateValidationTag,
+		"generateValidateTags":           GenerateValidateTags,
 	}
 }

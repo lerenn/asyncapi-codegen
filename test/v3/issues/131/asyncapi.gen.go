@@ -477,18 +477,15 @@ func (msg TestMessageFromTestChannel) toBrokerMessage() (extensions.BrokerMessag
 
 // TestSchema is a schema from the AsyncAPI specification required in messages
 type TestSchema struct {
-	ArrayProp            []string                              `json:"ArrayProp" validate:"min=2,max=5,unique"`
-	ConstProp            *string                               `json:"ConstProp" validate:"eq=Canada"`
-	EnumProp             *string                               `json:"EnumProp" validate:"oneof=red amber green"`
-	IntegerExclusiveProp *int64                                `json:"IntegerExclusiveProp" validate:"gt=2,lt=5"`
-	IntegerProp          *int64                                `json:"IntegerProp" validate:"gte=2,lte=5"`
-	PropertiesProp       *PropertiesPropPropertyFromTestSchema `json:"PropertiesProp"`
-	RequiredProp         string                                `json:"RequiredProp" validate:"required"`
-	StringProp           *string                               `json:"StringProp" validate:"min=2,max=5"`
+	ArrayProp            []string `json:"ArrayProp" validate:"min=2,max=5,unique"`
+	ConstProp            *string  `json:"ConstProp" validate:"eq=Canada"`
+	EnumProp             *string  `json:"EnumProp" validate:"oneof=red amber green"`
+	FloatProp            *float64 `json:"FloatProp" validate:"gte=2.5,lte=5.5"`
+	IntegerExclusiveProp *int64   `json:"IntegerExclusiveProp" validate:"gt=2,lt=5"`
+	IntegerProp          *int64   `json:"IntegerProp" validate:"gte=2,lte=5"`
+	RequiredProp         string   `json:"RequiredProp" validate:"required"`
+	StringProp           *string  `json:"StringProp" validate:"min=2,max=5"`
 }
-
-// PropertiesPropPropertyFromTestSchema is a schema from the AsyncAPI specification required in messages
-type PropertiesPropPropertyFromTestSchema struct{}
 
 const (
 	// TestChannelPath is the constant representing the 'TestChannel' channel path.
