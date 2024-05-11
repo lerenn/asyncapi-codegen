@@ -133,6 +133,8 @@ func appendDirectiveIfDefined(directives []string, tagName string, value float64
 	return directives
 }
 
+// GenerateValidateTags returns the "validate" tag for a given field in a struct, based on the asyncapi contract.
+// This tag can then be used by go-playground/validator/v10 to validate the struct's content.
 func GenerateValidateTags(schema asyncapi.Schema) string {
 	var directives []string
 	if schema.IsRequired {
@@ -147,13 +149,12 @@ func GenerateValidateTags(schema asyncapi.Schema) string {
 	directives = appendDirectiveIfDefined(directives, "lt", schema.ExclusiveMaximum)
 
 	if schema.UniqueItems {
-		directives = append(directives, fmt.Sprintf("unique"))
+		directives = append(directives, "unique")
 	}
 	if len(schema.Enum) > 0 {
 		var enumsStr []string
 		for _, e := range schema.Enum {
-			switch eStr := e.(type) {
-			case string:
+			if eStr, ok := e.(string); ok {
 				enumsStr = append(enumsStr, eStr)
 			}
 		}
@@ -164,8 +165,7 @@ func GenerateValidateTags(schema asyncapi.Schema) string {
 		}
 	}
 	if schema.Const != nil {
-		switch cStr := schema.Const.(type) {
-		case string:
+		if cStr, ok := schema.Const.(string); ok {
 			// Only generate enum if the elements is a string, otherwise this is unsupported
 			directives = append(directives, fmt.Sprintf("eq=%s", cStr))
 		}

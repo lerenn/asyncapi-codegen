@@ -3,10 +3,11 @@
 package issue131
 
 import (
+	"testing"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 func TestSuite(t *testing.T) {
