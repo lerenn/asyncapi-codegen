@@ -1,6 +1,7 @@
 package templates
 
 import (
+	asyncapi2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"testing"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
@@ -22,9 +23,9 @@ func (suite *HelpersSuite) TestIsRequired() {
 		Result bool
 	}{
 		// Is required
-		{Schema: asyncapi.Schema{Required: []string{"field"}}, Field: "field", Result: true},
+		{Schema: asyncapi.Schema{Validations: asyncapi2.Validations[asyncapi.Schema]{Required: []string{"field"}}}, Field: "field", Result: true},
 		// Is not required
-		{Schema: asyncapi.Schema{Required: []string{"another_field"}}, Field: "field", Result: false},
+		{Schema: asyncapi.Schema{Validations: asyncapi2.Validations[asyncapi.Schema]{Required: []string{"another_field"}}}, Field: "field", Result: false},
 	}
 
 	for i, c := range cases {

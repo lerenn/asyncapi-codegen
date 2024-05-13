@@ -1,6 +1,7 @@
 package asyncapiv2
 
 import (
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"sort"
 	"testing"
 
@@ -60,7 +61,9 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectProperty() {
 							},
 						},
 					},
-					Required: []string{"flag"},
+					Validations: asyncapi.Validations[Schema]{
+						Required: []string{"flag"},
+					},
 				},
 			},
 		},
@@ -124,7 +127,9 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectPropertyAndDifferentP
 							},
 						},
 					},
-					Required: []string{"flag"},
+					Validations: asyncapi.Validations[Schema]{
+						Required: []string{"flag"},
+					},
 				},
 			},
 		},
@@ -167,7 +172,9 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithObjectPropertyAndMultipleIm
 							},
 						},
 					},
-					Required: []string{"flag"},
+					Validations: asyncapi.Validations[Schema]{
+						Required: []string{"flag"},
+					},
 				},
 			},
 		},
@@ -211,7 +218,9 @@ func (suite *ExtensionsSuite) TextExtGoTypeImportWithConflictingPackageNames() {
 							},
 						},
 					},
-					Required: []string{"start_flag", "end_flag"},
+					Validations: asyncapi.Validations[Schema]{
+						Required: []string{"start_flag", "end_flag"},
+					},
 				},
 			},
 		},

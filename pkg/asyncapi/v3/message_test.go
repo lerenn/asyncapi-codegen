@@ -1,6 +1,7 @@
 package asyncapiv3
 
 import (
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"testing"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
@@ -19,7 +20,9 @@ func (suite *MessageSuite) TestIsCorrelationIDRequiredWithTopLevelHeader() {
 	// Set message
 	msg := Message{
 		Headers: &Schema{
-			Required: []string{"correlationId"},
+			Validations: asyncapi.Validations[Schema]{
+				Required: []string{"correlationId"},
+			},
 		},
 		CorrelationID: &CorrelationID{
 			Location: "$message.header#/correlationId",
@@ -34,7 +37,9 @@ func (suite *MessageSuite) TestIsCorrelationIDRequiredWithTopLevelPayload() {
 	// Set message
 	msg := Message{
 		Payload: &Schema{
-			Required: []string{"correlationId"},
+			Validations: asyncapi.Validations[Schema]{
+				Required: []string{"correlationId"},
+			},
 		},
 		CorrelationID: &CorrelationID{
 			Location: "$message.payload#/correlationId",
@@ -51,7 +56,9 @@ func (suite *MessageSuite) TestIsCorrelationIDRequiredWithDeepLevelHeader() {
 		Headers: &Schema{
 			Properties: map[string]*Schema{
 				"toto": utils.ToPointer(Schema{
-					Required: []string{"correlationId"},
+					Validations: asyncapi.Validations[Schema]{
+						Required: []string{"correlationId"},
+					},
 				}),
 			},
 		},
@@ -70,7 +77,9 @@ func (suite *MessageSuite) TestIsCorrelationIDRequiredWithDeepLevelPayload() {
 		Payload: &Schema{
 			Properties: map[string]*Schema{
 				"toto": utils.ToPointer(Schema{
-					Required: []string{"correlationId"},
+					Validations: asyncapi.Validations[Schema]{
+						Required: []string{"correlationId"},
+					},
 				}),
 			},
 		},
@@ -88,7 +97,9 @@ func (suite *MessageSuite) TestIsCorrelationIDRequiredWithReferencedHeaders() {
 	msg := Message{
 		Headers: &Schema{
 			ReferenceTo: utils.ToPointer(Schema{
-				Required: []string{"correlationId"},
+				Validations: asyncapi.Validations[Schema]{
+					Required: []string{"correlationId"},
+				},
 			}),
 		},
 		CorrelationID: &CorrelationID{
@@ -105,7 +116,9 @@ func (suite *MessageSuite) TestIsCorrelationIDRequiredWithReferencedPayload() {
 	msg := Message{
 		Payload: &Schema{
 			ReferenceTo: utils.ToPointer(Schema{
-				Required: []string{"correlationId"},
+				Validations: asyncapi.Validations[Schema]{
+					Required: []string{"correlationId"},
+				},
 			}),
 		},
 		CorrelationID: &CorrelationID{

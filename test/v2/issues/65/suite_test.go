@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	asyncapi2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"regexp"
 	"testing"
 
@@ -51,7 +52,9 @@ func (suite *Suite) TestExtensionsWithObjectProperty() {
 							Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
 						},
 					},
-					Required: []string{"flag"},
+					Validations: asyncapi2.Validations[asyncapi.Schema]{
+						Required: []string{"flag"},
+					},
 				},
 			},
 		},
@@ -102,7 +105,9 @@ func (suite *Suite) TestExtensionsWithObjectPropertyAndTypeFromPackage() {
 							Extensions: asyncapi.Extensions{ExtGoType: "mypackage.Flag"},
 						},
 					},
-					Required: []string{"flag"},
+					Validations: asyncapi2.Validations[asyncapi.Schema]{
+						Required: []string{"flag"},
+					},
 				},
 			},
 		},
