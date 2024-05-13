@@ -1,6 +1,7 @@
 package asyncapiv3
 
 import (
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
 
@@ -31,22 +32,6 @@ type Schema struct {
 
 	Title                string             `json:"title"`
 	Type                 string             `json:"type"`
-	Required             []string           `json:"required"`
-	MultipleOf           []string           `json:"multipleOf"`
-	Maximum              float64            `json:"maximum"`
-	ExclusiveMaximum     float64            `json:"exclusiveMaximum"`
-	Minimum              float64            `json:"minimum"`
-	ExclusiveMinimum     float64            `json:"exclusiveMinimum"`
-	MaxLength            uint               `json:"maxLength"`
-	MinLength            uint               `json:"minLength"`
-	Pattern              string             `json:"pattern"`
-	MaxItems             uint               `json:"maxItems"`
-	MinItems             uint               `json:"minItems"`
-	UniqueItems          bool               `json:"uniqueItems"`
-	MaxProperties        uint               `json:"maxProperties"`
-	MinProperties        uint               `json:"minProperties"`
-	Enum                 []any              `json:"enum"`
-	Const                any                `json:"const"`
 	Examples             []any              `json:"examples"`
 	ReadOnly             bool               `json:"readOnly"`
 	WriteOnly            bool               `json:"writeOnly"`
@@ -74,7 +59,9 @@ type Schema struct {
 
 	Name        string  `json:"-"`
 	ReferenceTo *Schema `json:"-"`
-	IsRequired  bool    `json:"-"`
+
+	// Embedded validation fields
+	asyncapi.Validations[Schema]
 
 	// --- Embedded extended fields --------------------------------------------
 
@@ -85,7 +72,9 @@ type Schema struct {
 func NewSchema() Schema {
 	return Schema{
 		Properties: make(map[string]*Schema),
-		Required:   make([]string, 0),
+		Validations: asyncapi.Validations[Schema]{
+			Required: make([]string, 0),
+		},
 	}
 }
 
@@ -460,7 +449,9 @@ func (s *Schema) mergeWithSchemaReferenceProperties(s2 Schema) {
 		// Add the property
 		if v.Type == "object" {
 			s.Properties[k] = &Schema{
-				IsRequired:  v.IsRequired,
+				Validations: asyncapi.Validations[Schema]{
+					IsRequired: v.IsRequired,
+				},
 				ReferenceTo: v,
 			}
 		} else {

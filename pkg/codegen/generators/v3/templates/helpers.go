@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
 	"regexp"
 	"strings"
 	"text/template"
@@ -126,58 +127,6 @@ func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	return sprint[:len(sprint)-1] + ")"
 }
 
-func appendDirectiveIfDefined(directives []string, tagName string, value float64) []string {
-	if value != 0 {
-		return append(directives, fmt.Sprintf("%s=%g", tagName, value))
-	}
-	return directives
-}
-
-// GenerateValidateTags returns the "validate" tag for a given field in a struct, based on the asyncapi contract.
-// This tag can then be used by go-playground/validator/v10 to validate the struct's content.
-func GenerateValidateTags(schema asyncapi.Schema) string {
-	var directives []string
-	if schema.IsRequired {
-		directives = append(directives, "required")
-	}
-
-	directives = appendDirectiveIfDefined(directives, "min", float64(schema.MinLength))
-	directives = appendDirectiveIfDefined(directives, "max", float64(schema.MaxLength))
-	directives = appendDirectiveIfDefined(directives, "gte", schema.Minimum)
-	directives = appendDirectiveIfDefined(directives, "lte", schema.Maximum)
-	directives = appendDirectiveIfDefined(directives, "gt", schema.ExclusiveMinimum)
-	directives = appendDirectiveIfDefined(directives, "lt", schema.ExclusiveMaximum)
-
-	if schema.UniqueItems {
-		directives = append(directives, "unique")
-	}
-	if len(schema.Enum) > 0 {
-		var enumsStr []string
-		for _, e := range schema.Enum {
-			if eStr, ok := e.(string); ok {
-				enumsStr = append(enumsStr, eStr)
-			}
-		}
-
-		// Only generate enum if all elements are string, otherwise this is unsupported
-		if len(schema.Enum) == len(enumsStr) {
-			directives = append(directives, fmt.Sprintf("oneof=%s", strings.Join(enumsStr, " ")))
-		}
-	}
-	if schema.Const != nil {
-		if cStr, ok := schema.Const.(string); ok {
-			// Only generate enum if the elements is a string, otherwise this is unsupported
-			directives = append(directives, fmt.Sprintf("eq=%s", cStr))
-		}
-	}
-
-	if len(directives) > 0 {
-		return fmt.Sprintf(" validate:\"%s\"", strings.Join(directives, ","))
-	} else {
-		return ""
-	}
-}
-
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
@@ -190,6 +139,6 @@ func HelpersFunctions() template.FuncMap {
 		"generateChannelAddr":            GenerateChannelAddr,
 		"generateChannelAddrFromOp":      GenerateChannelAddrFromOp,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
-		"generateValidateTags":           GenerateValidateTags,
+		"generateValidateTags":           generators.GenerateValidateTags[asyncapi.Schema],
 	}
 }

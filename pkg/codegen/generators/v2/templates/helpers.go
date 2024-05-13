@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
 	"regexp"
 	"strings"
 	"text/template"
@@ -151,5 +152,6 @@ func HelpersFunctions() template.FuncMap {
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
 		"operationName":                  OperationName,
 		"referenceToTypeName":            ReferenceToTypeName,
+		"generateValidateTags":           generators.GenerateValidateTags[asyncapi.Schema],
 	}
 }
