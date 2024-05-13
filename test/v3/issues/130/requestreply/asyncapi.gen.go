@@ -876,7 +876,7 @@ func (e *Error) Error() string {
 
 // PingMessagePayload is a schema from the AsyncAPI specification required in messages
 type PingMessagePayload struct {
-	Event *string `json:"event"`
+	Event *string `json:"event" validate:"eq=ping"`
 }
 
 // PingMessage is the message expected for 'PingMessage' channel.
@@ -933,7 +933,7 @@ type HeadersFromPingWithIDMessage struct {
 
 // PingWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
 type PingWithIDMessagePayload struct {
-	Event *string `json:"event"`
+	Event *string `json:"event" validate:"eq=ping"`
 }
 
 // PingWithIDMessage is the message expected for 'PingWithIDMessage' channel.
@@ -1029,7 +1029,7 @@ func (msg *PingWithIDMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 
 // PongMessagePayload is a schema from the AsyncAPI specification required in messages
 type PongMessagePayload struct {
-	Event *string `json:"event"`
+	Event *string `json:"event" validate:"eq=pong"`
 }
 
 // PongMessage is the message expected for 'PongMessage' channel.
@@ -1086,7 +1086,7 @@ type HeadersFromPongWithIDMessage struct {
 
 // PongWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
 type PongWithIDMessagePayload struct {
-	Event *string `json:"event"`
+	Event *string `json:"event" validate:"eq=pong"`
 }
 
 // PongWithIDMessage is the message expected for 'PongWithIDMessage' channel.
