@@ -7,6 +7,7 @@ import (
 	"text/template"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	templateutil "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
@@ -138,5 +139,6 @@ func HelpersFunctions() template.FuncMap {
 		"generateChannelAddr":            GenerateChannelAddr,
 		"generateChannelAddrFromOp":      GenerateChannelAddrFromOp,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
+		"generateValidateTags":           generators.GenerateValidateTags[asyncapi.Schema],
 	}
 }

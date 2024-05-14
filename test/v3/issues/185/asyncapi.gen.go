@@ -70,22 +70,22 @@ func (e *Error) Error() string {
 
 // BaseEventSchema is a schema from the AsyncAPI specification required in messages
 type BaseEventSchema struct {
-	Time time.Time `json:"time"`
+	Time time.Time `json:"time" validate:"required"`
 }
 
 // BaseEventInfoSchema is a schema from the AsyncAPI specification required in messages
 type BaseEventInfoSchema struct {
-	Data ContentDataSchema `json:"data"`
+	Data ContentDataSchema `json:"data" validate:"required"`
 }
 
 // ContentDataSchema is a schema from the AsyncAPI specification required in messages
 type ContentDataSchema struct {
-	ContentId string `json:"contentId"`
+	ContentId string `json:"contentId" validate:"required"`
 }
 
 // EventPayloadSchema is a schema from the AsyncAPI specification required in messages
 type EventPayloadSchema struct {
-	Data ContentDataSchema `json:"data"`
-	Id   string            `json:"id"`
-	Time time.Time         `json:"time"`
+	Data ContentDataSchema `json:"data" validate:"required"`
+	Id   string            `json:"id" validate:"required"`
+	Time time.Time         `json:"time" validate:"required"`
 }

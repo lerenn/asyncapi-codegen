@@ -1,6 +1,7 @@
 package asyncapiv2
 
 import (
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
@@ -29,24 +30,22 @@ const (
 // Source: https://www.asyncapi.com/docs/reference/specification/v2.6.0#schemaObject
 type Schema struct {
 	// --- JSON Schema fields --------------------------------------------------
-
-	AllOf                []*Schema          `json:"allOf"`
-	AnyOf                []*Schema          `json:"anyOf"`
-	OneOf                []*Schema          `json:"oneOf"`
 	Type                 string             `json:"type"`
 	Description          string             `json:"description"`
 	Format               string             `json:"format"`
 	Properties           map[string]*Schema `json:"properties"`
 	Items                *Schema            `json:"items"`
 	Reference            string             `json:"$ref"`
-	Required             []string           `json:"required"`
 	AdditionalProperties *Schema            `json:"additionalProperties"`
 
 	// --- Non JSON Schema/AsyncAPI fields -------------------------------------
 
 	Name        string  `json:"-"`
 	ReferenceTo *Schema `json:"-"`
-	IsRequired  bool    `json:"-"`
+
+	// Embedded validation fields
+	asyncapi.Validations[Schema]
+
 	// Embedded extended fields
 	Extensions
 }
@@ -54,8 +53,10 @@ type Schema struct {
 // NewSchema creates a new Schema structure with initialized fields.
 func NewSchema() Schema {
 	return Schema{
+		Validations: asyncapi.Validations[Schema]{
+			Required: make([]string, 0),
+		},
 		Properties: make(map[string]*Schema),
-		Required:   make([]string, 0),
 	}
 }
 
@@ -433,7 +434,9 @@ func (s *Schema) mergeWithSchemaReferenceProperties(s2 Schema) {
 		// Add the property
 		if v.Type == "object" {
 			s.Properties[k] = &Schema{
-				IsRequired:  v.IsRequired,
+				Validations: asyncapi.Validations[Schema]{
+					IsRequired: v.IsRequired,
+				},
 				ReferenceTo: v,
 			}
 		} else {

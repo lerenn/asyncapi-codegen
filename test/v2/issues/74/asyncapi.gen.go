@@ -423,7 +423,7 @@ func (e *Error) Error() string {
 
 // TestMessagePayload is a schema from the AsyncAPI specification required in messages
 type TestMessagePayload struct {
-	Obj1 TestSchemaObj1 `json:"obj1"`
+	Obj1 TestSchemaObj1 `json:"obj1" validate:"required"`
 }
 
 // TestMessage is the message expected for 'TestMessage' channel.
@@ -500,21 +500,21 @@ func (msg TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // Description: header
 type HeaderSchema struct {
 	// Description: Date in UTC format "YYYY-MM-DDThh:mm:ss.sZ".
-	DateTime time.Time `json:"dateTime"`
+	DateTime time.Time `json:"dateTime" validate:"required"`
 
 	// Description: Schema version
-	Version string `json:"version"`
+	Version string `json:"version" validate:"required"`
 }
 
 // TestSchema is a schema from the AsyncAPI specification required in messages
 type TestSchema struct {
-	Obj1 TestSchemaObj1 `json:"obj1"`
+	Obj1 TestSchemaObj1 `json:"obj1" validate:"required"`
 }
 
 // TestSchemaObj1 is a schema from the AsyncAPI specification required in messages
 type TestSchemaObj1 struct {
 	// Description: reference ID.
-	ReferenceId string `json:"referenceId"`
+	ReferenceId string `json:"referenceId" validate:"required"`
 }
 
 const (

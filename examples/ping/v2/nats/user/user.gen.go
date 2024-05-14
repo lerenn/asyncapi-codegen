@@ -521,10 +521,10 @@ type PongMessageHeaders struct {
 // PongMessagePayload is a schema from the AsyncAPI specification required in messages
 type PongMessagePayload struct {
 	// Description: Pong message
-	Message string `json:"message"`
+	Message string `json:"message" validate:"required"`
 
 	// Description: Pong creation time
-	Time time.Time `json:"time"`
+	Time time.Time `json:"time" validate:"required"`
 }
 
 // PongMessage is the message expected for 'PongMessage' channel.
