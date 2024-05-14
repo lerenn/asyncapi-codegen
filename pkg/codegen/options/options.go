@@ -28,4 +28,8 @@ type Options struct {
 	// ConvertKeys defines a schema property keys conversion strategy.
 	// Supported values: snake, camel, kebab, none
 	ConvertKeys string
+
+	// NamingScheme defines the naming scheme for generated golang structs
+	// Supported values: camel, none
+	NamingScheme string
 }

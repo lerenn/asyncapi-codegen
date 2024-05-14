@@ -1,0 +1,21 @@
+asyncapi: 2.6.0
+info:
+  title: Sample App
+  version: 1.2.3
+
+channels:
+  v2.issue131.test:
+    subscribe:
+      message:
+        payload:
+          $ref: '#/components/schemas/TEST'
+
+components:
+  schemas:
+    TEST:
+      type: object
+      properties:
+        A_PROP_1:
+          type: string
+        ANOTHER_PROP_2:
+          type: string

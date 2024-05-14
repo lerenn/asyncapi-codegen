@@ -11,6 +11,23 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+type namingSchemeFn func(string) string
+
+var convertKeyFuncs = map[string]namingSchemeFn{
+	"snake": strcase.ToSnake,
+	"kebab": strcase.ToKebab,
+	"camel": strcase.ToCamel,
+	"none":  func(s string) string { return s },
+}
+
+var namifyPerScheme = map[string]namingSchemeFn{
+	"camel": strcase.ToCamel,
+	"none":  DefaultNamifier,
+}
+
+var convertKey = convertKeyFuncs["none"]
+var namify = namifyPerScheme["none"]
+
 // NamifyWithoutParams will convert a sentence to a golang conventional type name.
 // and will remove all parameters that can appear between '{' and '}'.
 func NamifyWithoutParams(sentence string) string {
@@ -18,11 +35,11 @@ func NamifyWithoutParams(sentence string) string {
 	re := regexp.MustCompile("{[^()]*}")
 	sentence = string(re.ReplaceAll([]byte(sentence), []byte("_")))
 
-	return Namify(sentence)
+	return namify(sentence)
 }
 
-// Namify will convert a sentence to a golang conventional type name.
-func Namify(sentence string) string {
+// DefaultNamifier will convert a sentence to a golang conventional type name.
+func DefaultNamifier(sentence string) string {
 	// Check if empty
 	if len(sentence) == 0 {
 		return sentence
@@ -51,21 +68,16 @@ func Namify(sentence string) string {
 	return sentence
 }
 
-type convertKeyFn func(string) string
-
-var convertKeyFuncs = map[string]convertKeyFn{
-	"snake": strcase.ToSnake,
-	"kebab": strcase.ToKebab,
-	"camel": strcase.ToCamel,
-	"none":  func(s string) string { return s },
-}
-
-var convertKey = convertKeyFuncs["none"]
-
 // ConvertKey is used in template to convert schema property key name
 // according to chosen strategy.
 func ConvertKey(sentence string) string {
 	return convertKey(sentence)
+}
+
+// Namify is used in template to generated golang structs names
+// according to chosen strategy.
+func Namify(sentence string) string {
+	return namify(sentence)
 }
 
 // SetConvertKeyFn sets the function used to convert schema property key names.
@@ -76,6 +88,18 @@ func SetConvertKeyFn(name string) error {
 	}
 
 	convertKey = fn
+
+	return nil
+}
+
+// SetNamifyFn sets the function used to generate golang struct names.
+func SetNamifyFn(name string) error {
+	fn, ok := namifyPerScheme[name]
+	if !ok {
+		return fmt.Errorf("unknown namify function %s, supported values: camel, none", name)
+	}
+
+	namify = fn
 
 	return nil
 }

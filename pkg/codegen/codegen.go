@@ -84,6 +84,10 @@ func (cg CodeGen) Generate(opt options.Options) error {
 		return err
 	}
 
+	if err := template.SetNamifyFn(opt.NamingScheme); err != nil {
+		return err
+	}
+
 	// Process specification
 	if err := cg.specification.Process(); err != nil {
 		return err

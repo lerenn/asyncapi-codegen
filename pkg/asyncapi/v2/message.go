@@ -61,7 +61,7 @@ func (msg *Message) generateMetadata(name string) error {
 
 	// Generate Payload metadata
 	if msg.Payload != nil {
-		if err := msg.Payload.generateMetadata(msg.Name+"Payload", false); err != nil {
+		if err := msg.Payload.generateMetadata(msg.Name+"_Payload", false); err != nil {
 			return err
 		}
 	}
@@ -120,7 +120,7 @@ func (msg *Message) generateHeadersMetadata() error {
 	}
 
 	// Process headers
-	if err := msg.Headers.generateMetadata(msg.Name+"Headers", false); err != nil {
+	if err := msg.Headers.generateMetadata(msg.Name+"_Headers", false); err != nil {
 		return err
 	}
 
