@@ -1,9 +1,9 @@
 package asyncapiv3
 
 import (
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"testing"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	"github.com/stretchr/testify/suite"
 )

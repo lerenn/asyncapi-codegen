@@ -1,10 +1,10 @@
 package templates
 
 import (
-	asyncapi2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"testing"
 
-	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -18,14 +18,30 @@ type HelpersSuite struct {
 
 func (suite *HelpersSuite) TestIsRequired() {
 	cases := []struct {
-		Schema asyncapi.Schema
+		Schema asyncapiv2.Schema
 		Field  string
 		Result bool
 	}{
 		// Is required
-		{Schema: asyncapi.Schema{Validations: asyncapi2.Validations[asyncapi.Schema]{Required: []string{"field"}}}, Field: "field", Result: true},
+		{
+			Schema: asyncapiv2.Schema{
+				Validations: asyncapi.Validations[asyncapiv2.Schema]{
+					Required: []string{"field"},
+				},
+			},
+			Field:  "field",
+			Result: true,
+		},
 		// Is not required
-		{Schema: asyncapi.Schema{Validations: asyncapi2.Validations[asyncapi.Schema]{Required: []string{"another_field"}}}, Field: "field", Result: false},
+		{
+			Schema: asyncapiv2.Schema{
+				Validations: asyncapi.Validations[asyncapiv2.Schema]{
+					Required: []string{"another_field"},
+				},
+			},
+			Field:  "field",
+			Result: false,
+		},
 	}
 
 	for i, c := range cases {
@@ -35,26 +51,26 @@ func (suite *HelpersSuite) TestIsRequired() {
 
 func (suite *HelpersSuite) TestOperationName() {
 	cases := []struct {
-		Channel asyncapi.Channel
+		Channel asyncapiv2.Channel
 		Result  string
 	}{
 		// By default
 		{
-			Channel: asyncapi.Channel{Name: "Default"},
+			Channel: asyncapiv2.Channel{Name: "Default"},
 			Result:  "Default",
 		},
 		// With subscribe but no ooperation ID
 		{
-			Channel: asyncapi.Channel{
-				Subscribe: &asyncapi.Operation{},
+			Channel: asyncapiv2.Channel{
+				Subscribe: &asyncapiv2.Operation{},
 				Name:      "Default",
 			},
 			Result: "Default",
 		},
 		// With subscribe and operation ID
 		{
-			Channel: asyncapi.Channel{
-				Subscribe: &asyncapi.Operation{
+			Channel: asyncapiv2.Channel{
+				Subscribe: &asyncapiv2.Operation{
 					OperationID: "Subscribe",
 				},
 				Name: "Default",
@@ -63,16 +79,16 @@ func (suite *HelpersSuite) TestOperationName() {
 		},
 		// With publish but no ooperation ID
 		{
-			Channel: asyncapi.Channel{
-				Publish: &asyncapi.Operation{},
+			Channel: asyncapiv2.Channel{
+				Publish: &asyncapiv2.Operation{},
 				Name:    "Default",
 			},
 			Result: "Default",
 		},
 		// With publish and operation ID
 		{
-			Channel: asyncapi.Channel{
-				Publish: &asyncapi.Operation{
+			Channel: asyncapiv2.Channel{
+				Publish: &asyncapiv2.Operation{
 					OperationID: "Publish",
 				},
 				Name: "Default",

@@ -1,10 +1,10 @@
 package templates
 
 import (
-	asyncapi2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"testing"
 
-	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -18,14 +18,30 @@ type HelpersSuite struct {
 
 func (suite *HelpersSuite) TestIsRequired() {
 	cases := []struct {
-		Schema asyncapi.Schema
+		Schema asyncapiv3.Schema
 		Field  string
 		Result bool
 	}{
 		// Is required
-		{Schema: asyncapi.Schema{Validations: asyncapi2.Validations[asyncapi.Schema]{Required: []string{"field"}}}, Field: "field", Result: true},
+		{
+			Schema: asyncapiv3.Schema{
+				Validations: asyncapi.Validations[asyncapiv3.Schema]{
+					Required: []string{"field"},
+				},
+			},
+			Field:  "field",
+			Result: true,
+		},
 		// Is not required
-		{Schema: asyncapi.Schema{Validations: asyncapi2.Validations[asyncapi.Schema]{Required: []string{"another_field"}}}, Field: "field", Result: false},
+		{
+			Schema: asyncapiv3.Schema{
+				Validations: asyncapi.Validations[asyncapiv3.Schema]{
+					Required: []string{"another_field"},
+				},
+			},
+			Field:  "field",
+			Result: false,
+		},
 	}
 
 	for i, c := range cases {

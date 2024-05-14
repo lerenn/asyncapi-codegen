@@ -1,11 +1,11 @@
 package testutil
 
 import (
-	asyncapi2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"regexp"
 	"testing"
 
-	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
 	generatorv2 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v2"
 	"github.com/stretchr/testify/suite"
 )
@@ -20,13 +20,13 @@ type Suite struct {
 
 func (suite *Suite) TestExtensionsWithSchema() {
 	// Set specification
-	spec := asyncapi.Specification{
-		Components: asyncapi.Components{
-			Schemas: map[string]*asyncapi.Schema{
+	spec := asyncapiv2.Specification{
+		Components: asyncapiv2.Components{
+			Schemas: map[string]*asyncapiv2.Schema{
 				"flag": {
 					Name:       "FlagSchema",
-					Type:       asyncapi.SchemaTypeIsInteger.String(),
-					Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
+					Type:       asyncapiv2.SchemaTypeIsInteger.String(),
+					Extensions: asyncapiv2.Extensions{ExtGoType: "uint8"},
 				},
 			},
 		},
@@ -40,19 +40,19 @@ func (suite *Suite) TestExtensionsWithSchema() {
 
 func (suite *Suite) TestExtensionsWithObjectProperty() {
 	// Set specification
-	spec := asyncapi.Specification{
-		Components: asyncapi.Components{
-			Schemas: map[string]*asyncapi.Schema{
-				asyncapi.SchemaTypeIsObject.String(): {
-					Type: asyncapi.SchemaTypeIsObject.String(),
-					Properties: map[string]*asyncapi.Schema{
+	spec := asyncapiv2.Specification{
+		Components: asyncapiv2.Components{
+			Schemas: map[string]*asyncapiv2.Schema{
+				asyncapiv2.SchemaTypeIsObject.String(): {
+					Type: asyncapiv2.SchemaTypeIsObject.String(),
+					Properties: map[string]*asyncapiv2.Schema{
 						"flag": {
 							Name:       "Flag",
-							Type:       asyncapi.SchemaTypeIsInteger.String(),
-							Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
+							Type:       asyncapiv2.SchemaTypeIsInteger.String(),
+							Extensions: asyncapiv2.Extensions{ExtGoType: "uint8"},
 						},
 					},
-					Validations: asyncapi2.Validations[asyncapi.Schema]{
+					Validations: asyncapi.Validations[asyncapiv2.Schema]{
 						Required: []string{"flag"},
 					},
 				},
@@ -68,16 +68,16 @@ func (suite *Suite) TestExtensionsWithObjectProperty() {
 
 func (suite *Suite) TestExtensionsWithArrayItem() {
 	// Set specification
-	spec := asyncapi.Specification{
-		Components: asyncapi.Components{
-			Schemas: map[string]*asyncapi.Schema{
+	spec := asyncapiv2.Specification{
+		Components: asyncapiv2.Components{
+			Schemas: map[string]*asyncapiv2.Schema{
 				"flags": {
 					Name: "FlagsSchema",
-					Type: asyncapi.SchemaTypeIsArray.String(),
-					Items: &asyncapi.Schema{
+					Type: asyncapiv2.SchemaTypeIsArray.String(),
+					Items: &asyncapiv2.Schema{
 						Name:       "FlagSchema",
-						Type:       asyncapi.SchemaTypeIsInteger.String(),
-						Extensions: asyncapi.Extensions{ExtGoType: "uint8"},
+						Type:       asyncapiv2.SchemaTypeIsInteger.String(),
+						Extensions: asyncapiv2.Extensions{ExtGoType: "uint8"},
 					},
 				},
 			},
@@ -92,20 +92,20 @@ func (suite *Suite) TestExtensionsWithArrayItem() {
 
 func (suite *Suite) TestExtensionsWithObjectPropertyAndTypeFromPackage() {
 	// Set specification
-	spec := asyncapi.Specification{
-		Components: asyncapi.Components{
-			Schemas: map[string]*asyncapi.Schema{
-				asyncapi.SchemaTypeIsObject.String(): {
+	spec := asyncapiv2.Specification{
+		Components: asyncapiv2.Components{
+			Schemas: map[string]*asyncapiv2.Schema{
+				asyncapiv2.SchemaTypeIsObject.String(): {
 					Name: "ObjectSchema",
-					Type: asyncapi.SchemaTypeIsObject.String(),
-					Properties: map[string]*asyncapi.Schema{
+					Type: asyncapiv2.SchemaTypeIsObject.String(),
+					Properties: map[string]*asyncapiv2.Schema{
 						"flag": {
 							Name:       "Flag",
-							Type:       asyncapi.SchemaTypeIsInteger.String(),
-							Extensions: asyncapi.Extensions{ExtGoType: "mypackage.Flag"},
+							Type:       asyncapiv2.SchemaTypeIsInteger.String(),
+							Extensions: asyncapiv2.Extensions{ExtGoType: "mypackage.Flag"},
 						},
 					},
-					Validations: asyncapi2.Validations[asyncapi.Schema]{
+					Validations: asyncapi.Validations[asyncapiv2.Schema]{
 						Required: []string{"flag"},
 					},
 				},

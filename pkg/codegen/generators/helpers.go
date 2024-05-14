@@ -2,8 +2,9 @@ package generators
 
 import (
 	"fmt"
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"strings"
+
+	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 )
 
 func appendDirectiveIfDefined(directives []string, tagName string, value float64) []string {
