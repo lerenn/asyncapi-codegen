@@ -39,6 +39,10 @@ type Flags struct {
 	// ConvertKeys defines a schema property keys conversion strategy.
 	// Supported values: snake, camel, kebab, none
 	ConvertKeys string
+
+	// NamingScheme defines the naming case for generated golang structs
+	// Supported values: camel, none
+	NamingScheme string
 }
 
 // SetToCommand adds the flags to a cobra command.
@@ -52,6 +56,8 @@ func (f *Flags) SetToCommand(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&f.DisableFormatting, "disable-formatting", "f", false, "Disables the code generation formatting")
 	cmd.Flags().StringVarP(&f.ConvertKeys, "convert-keys", "c", "none",
 		"Schema property key names conversion strategy.\nSupported values: snake, camel, kebab, none.")
+	cmd.Flags().StringVarP(&f.NamingScheme, "naming-scheme", "n", "none",
+		"Naming scheme for generated golang elements.\nSupported values: camel, none.")
 }
 
 // ToCodegenOptions processes command line flags structure to code generation tool options.
@@ -61,6 +67,7 @@ func (f Flags) ToCodegenOptions() (options.Options, error) {
 		PackageName:       f.PackageName,
 		DisableFormatting: f.DisableFormatting,
 		ConvertKeys:       f.ConvertKeys,
+		NamingScheme:      f.NamingScheme,
 	}
 
 	if f.Generate != "" {

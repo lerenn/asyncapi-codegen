@@ -17,7 +17,7 @@ type Components struct {
 func (c *Components) generateMetadata() error {
 	// For all schemas, generate schema metadata
 	for name, schema := range c.Schemas {
-		if err := schema.generateMetadata(name+"Schema", false); err != nil {
+		if err := schema.generateMetadata(name+"_Schema", false); err != nil {
 			return err
 		}
 	}
@@ -31,7 +31,7 @@ func (c *Components) generateMetadata() error {
 
 	// For all parameters, generate param metadata
 	for name, param := range c.Parameters {
-		param.generateMetadata(name + "Parameter")
+		param.generateMetadata(name + "_Parameter")
 	}
 
 	return nil
