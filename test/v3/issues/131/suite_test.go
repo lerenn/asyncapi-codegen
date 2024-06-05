@@ -54,6 +54,11 @@ func (suite *Suite) TestString() {
 	tooLong.StringProp = Ptr("WayTooLong")
 
 	assert.Error(suite.T(), validator.New().Struct(tooLong))
+
+	validNil := ValidTestSchema()
+	validNil.StringProp = nil
+
+	assert.NoError(suite.T(), validator.New().Struct(validNil))
 }
 
 func (suite *Suite) TestInteger() {
@@ -66,18 +71,37 @@ func (suite *Suite) TestInteger() {
 	tooLarge.IntegerProp = Ptr[int64](6)
 
 	assert.Error(suite.T(), validator.New().Struct(tooLarge))
+
+	boundaryMin := ValidTestSchema()
+	boundaryMin.IntegerProp = Ptr[int64](2)
+
+	assert.NoError(suite.T(), validator.New().Struct(boundaryMin))
+
+	boundaryMax := ValidTestSchema()
+	boundaryMax.IntegerProp = Ptr[int64](5)
+
+	assert.NoError(suite.T(), validator.New().Struct(boundaryMax))
+	validNil := ValidTestSchema()
+	validNil.IntegerProp = nil
+
+	assert.NoError(suite.T(), validator.New().Struct(validNil))
 }
 
 func (suite *Suite) TestExclusiveInteger() {
 	tooSmall := ValidTestSchema()
-	tooSmall.IntegerProp = Ptr[int64](2)
+	tooSmall.IntegerExclusiveProp = Ptr[int64](2)
 
-	assert.NoError(suite.T(), validator.New().Struct(tooSmall))
+	assert.Error(suite.T(), validator.New().Struct(tooSmall))
 
 	tooLarge := ValidTestSchema()
-	tooLarge.IntegerProp = Ptr[int64](5)
+	tooLarge.IntegerExclusiveProp = Ptr[int64](5)
 
-	assert.NoError(suite.T(), validator.New().Struct(tooLarge))
+	assert.Error(suite.T(), validator.New().Struct(tooLarge))
+
+	validNil := ValidTestSchema()
+	validNil.IntegerExclusiveProp = nil
+
+	assert.NoError(suite.T(), validator.New().Struct(validNil))
 }
 
 func (suite *Suite) TestFloat() {
@@ -90,6 +114,11 @@ func (suite *Suite) TestFloat() {
 	tooLarge.FloatProp = Ptr[float64](5.51)
 
 	assert.Error(suite.T(), validator.New().Struct(tooLarge))
+
+	validNil := ValidTestSchema()
+	validNil.FloatProp = nil
+
+	assert.NoError(suite.T(), validator.New().Struct(validNil))
 }
 
 func (suite *Suite) TestRequired() {
@@ -125,6 +154,11 @@ func (suite *Suite) TestEnum() {
 	wrong.EnumProp = Ptr("Wrong")
 
 	assert.Error(suite.T(), validator.New().Struct(wrong))
+
+	validNil := ValidTestSchema()
+	validNil.EnumProp = nil
+
+	assert.NoError(suite.T(), validator.New().Struct(validNil))
 }
 
 func (suite *Suite) TestConst() {
@@ -132,4 +166,9 @@ func (suite *Suite) TestConst() {
 	wrong.EnumProp = Ptr("Wrong")
 
 	assert.Error(suite.T(), validator.New().Struct(wrong))
+
+	validNil := ValidTestSchema()
+	validNil.ConstProp = nil
+
+	assert.NoError(suite.T(), validator.New().Struct(validNil))
 }

@@ -29,13 +29,13 @@ If and once you're ready to write the contribution, you can start the developmen
 environment by typing this command:
 
 ```bash 
-make dev/up
+make local/up
 ```
 
 Once you're done, you can terminate your environment by typing this command:
 
 ```bash
-make dev/down
+make local/down
 ```
 
 #### Explore the source code
