@@ -8,10 +8,11 @@ import (
 // to the code, being asyncapi-codegen packages, standard library packages or
 // custom packages.
 type ImportsGenerator struct {
-	PackageName   string
-	ModuleVersion string
-	ModuleName    string
-	CustomImports []string
+	PackageName     string
+	ModuleVersion   string
+	ModuleName      string
+	RequiredImports []string
+	CustomImports   []string
 }
 
 // Generate will generate the imports code.

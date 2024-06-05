@@ -55,11 +55,17 @@ func (g Generator) generateImports(opts options.Options) (string, error) {
 		return "", fmt.Errorf("failed to generate custom imports: %w", err)
 	}
 
+	var requiredImports []string
+	if generators.DateTimeFormatInSpec(g.Specification) {
+		requiredImports = append(requiredImports, "\"cloud.google.com/go/civil\"")
+	}
+
 	return ImportsGenerator{
-		PackageName:   opts.PackageName,
-		ModuleVersion: g.ModuleVersion,
-		ModuleName:    g.ModulePath,
-		CustomImports: imps,
+		PackageName:     opts.PackageName,
+		ModuleVersion:   g.ModuleVersion,
+		ModuleName:      g.ModulePath,
+		RequiredImports: requiredImports,
+		CustomImports:   imps,
 	}.Generate()
 }
 

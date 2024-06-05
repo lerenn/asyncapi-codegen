@@ -17,6 +17,8 @@ import (
     "github.com/google/uuid"
     "github.com/nats-io/nats.go"
 
+    {{ range .RequiredImports }}{{.}}
+    {{end}}
     {{ range .CustomImports }}{{.}}
     {{end}}
 )
