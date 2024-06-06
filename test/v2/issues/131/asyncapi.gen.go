@@ -468,14 +468,14 @@ func (msg V2Issue131TestMessage) toBrokerMessage() (extensions.BrokerMessage, er
 
 // TestSchema is a schema from the AsyncAPI specification required in messages
 type TestSchema struct {
-	ArrayProp            []string `json:"ArrayProp" validate:"min=2,max=5,unique"`
-	ConstProp            *string  `json:"ConstProp" validate:"eq=Canada"`
-	EnumProp             *string  `json:"EnumProp" validate:"oneof=red amber green"`
-	FloatProp            *float64 `json:"FloatProp" validate:"gte=2.5,lte=5.5"`
-	IntegerExclusiveProp *int64   `json:"IntegerExclusiveProp" validate:"gt=2,lt=5"`
-	IntegerProp          *int64   `json:"IntegerProp" validate:"gte=2,lte=5"`
+	ArrayProp            []string `json:"ArrayProp" validate:"omitempty,min=2,max=5,unique"`
+	ConstProp            *string  `json:"ConstProp" validate:"omitempty,eq=Canada"`
+	EnumProp             *string  `json:"EnumProp" validate:"omitempty,oneof=red amber green"`
+	FloatProp            *float64 `json:"FloatProp" validate:"omitempty,gte=2.5,lte=5.5"`
+	IntegerExclusiveProp *int64   `json:"IntegerExclusiveProp" validate:"omitempty,gt=2,lt=5"`
+	IntegerProp          *int64   `json:"IntegerProp" validate:"omitempty,gte=2,lte=5"`
 	RequiredProp         string   `json:"RequiredProp" validate:"required"`
-	StringProp           *string  `json:"StringProp" validate:"min=2,max=5"`
+	StringProp           *string  `json:"StringProp" validate:"omitempty,min=2,max=5"`
 }
 
 const (

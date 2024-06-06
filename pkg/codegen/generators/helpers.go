@@ -32,6 +32,27 @@ func GenerateValidateTags[T any](schema asyncapi.Validations[T]) string {
 	if schema.UniqueItems {
 		directives = append(directives, "unique")
 	}
+
+	directives = appendEnumDirectives(schema, directives)
+	if schema.Const != nil {
+		if cStr, ok := schema.Const.(string); ok {
+			// Only generate enum if the elements is a string, otherwise this is unsupported
+			directives = append(directives, fmt.Sprintf("eq=%s", cStr))
+		}
+	}
+
+	if len(directives) > 0 {
+		if !schema.IsRequired {
+			directives = append([]string{"omitempty"}, directives...)
+		}
+
+		return fmt.Sprintf(" validate:\"%s\"", strings.Join(directives, ","))
+	} else {
+		return ""
+	}
+}
+
+func appendEnumDirectives[T any](schema asyncapi.Validations[T], directives []string) []string {
 	if len(schema.Enum) > 0 {
 		var enumsStr []string
 		for _, e := range schema.Enum {
@@ -45,16 +66,5 @@ func GenerateValidateTags[T any](schema asyncapi.Validations[T]) string {
 			directives = append(directives, fmt.Sprintf("oneof=%s", strings.Join(enumsStr, " ")))
 		}
 	}
-	if schema.Const != nil {
-		if cStr, ok := schema.Const.(string); ok {
-			// Only generate enum if the elements is a string, otherwise this is unsupported
-			directives = append(directives, fmt.Sprintf("eq=%s", cStr))
-		}
-	}
-
-	if len(directives) > 0 {
-		return fmt.Sprintf(" validate:\"%s\"", strings.Join(directives, ","))
-	} else {
-		return ""
-	}
+	return directives
 }
