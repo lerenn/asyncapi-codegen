@@ -10,12 +10,12 @@ info:
   version: 1.2.3
 channels:
   resource:
-    address: resource
+    address: v3.issue135.resource
   info:
-    address: info
+    address: v3.issue135.info
   status:
-    address: status
+    address: v3.issue135.status
   project:
-    address: project
+    address: v3.issue135.project
   group:
-    address: group
+    address: v3.issue135.group

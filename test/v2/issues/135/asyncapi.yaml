@@ -9,27 +9,27 @@ info:
   title: Sample App
   version: 1.2.3
 channels:
-  resource:
+  v2.issue135.resource:
     publish:
       message:
         payload:
           type: string
-  info:
+  v2.issue135.info:
     publish:
       message:
         payload:
           type: string
-  status:
+  v2.issue135.status:
     subscribe:
       message:
         payload:
           type: string
-  project:
+  v2.issue135.project:
     publish:
       message:
         payload:
           type: string
-  group:
+  v2.issue135.group:
     publish:
       message:
         payload:

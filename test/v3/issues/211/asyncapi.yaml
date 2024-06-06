@@ -4,7 +4,7 @@ info:
   version: 0.1.0
 channels:
   eventSuccess:
-    address: some.random.topic
+    address: v3.issue211.topic
     messages:
       eventSuccessMessage:
         $ref: "#/components/messages/EventSuccess"

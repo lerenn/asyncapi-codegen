@@ -127,7 +127,7 @@ func (msg EventSuccessMessage) toBrokerMessage() (extensions.BrokerMessage, erro
 
 const (
 	// EventSuccessChannelPath is the constant representing the 'EventSuccessChannel' channel path.
-	EventSuccessChannelPath = "some.random.topic"
+	EventSuccessChannelPath = "v3.issue211.topic"
 )
 
 // ChannelsPaths is an array of all channels paths

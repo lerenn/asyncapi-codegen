@@ -67,21 +67,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// GroupMessage is the message expected for 'GroupMessage' channel.
-type GroupMessage struct {
+// V2Issue135GroupMessage is the message expected for 'V2Issue135GroupMessage' channel.
+type V2Issue135GroupMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewGroupMessage() GroupMessage {
-	var msg GroupMessage
+func NewV2Issue135GroupMessage() V2Issue135GroupMessage {
+	var msg V2Issue135GroupMessage
 
 	return msg
 }
 
-// brokerMessageToGroupMessage will fill a new GroupMessage with data from generic broker message
-func brokerMessageToGroupMessage(bMsg extensions.BrokerMessage) (GroupMessage, error) {
-	var msg GroupMessage
+// brokerMessageToV2Issue135GroupMessage will fill a new V2Issue135GroupMessage with data from generic broker message
+func brokerMessageToV2Issue135GroupMessage(bMsg extensions.BrokerMessage) (V2Issue135GroupMessage, error) {
+	var msg V2Issue135GroupMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -92,8 +92,8 @@ func brokerMessageToGroupMessage(bMsg extensions.BrokerMessage) (GroupMessage, e
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from GroupMessage data
-func (msg GroupMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue135GroupMessage data
+func (msg V2Issue135GroupMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -108,21 +108,21 @@ func (msg GroupMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// InfoMessage is the message expected for 'InfoMessage' channel.
-type InfoMessage struct {
+// V2Issue135InfoMessage is the message expected for 'V2Issue135InfoMessage' channel.
+type V2Issue135InfoMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewInfoMessage() InfoMessage {
-	var msg InfoMessage
+func NewV2Issue135InfoMessage() V2Issue135InfoMessage {
+	var msg V2Issue135InfoMessage
 
 	return msg
 }
 
-// brokerMessageToInfoMessage will fill a new InfoMessage with data from generic broker message
-func brokerMessageToInfoMessage(bMsg extensions.BrokerMessage) (InfoMessage, error) {
-	var msg InfoMessage
+// brokerMessageToV2Issue135InfoMessage will fill a new V2Issue135InfoMessage with data from generic broker message
+func brokerMessageToV2Issue135InfoMessage(bMsg extensions.BrokerMessage) (V2Issue135InfoMessage, error) {
+	var msg V2Issue135InfoMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -133,8 +133,8 @@ func brokerMessageToInfoMessage(bMsg extensions.BrokerMessage) (InfoMessage, err
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from InfoMessage data
-func (msg InfoMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue135InfoMessage data
+func (msg V2Issue135InfoMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -149,21 +149,21 @@ func (msg InfoMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// ProjectMessage is the message expected for 'ProjectMessage' channel.
-type ProjectMessage struct {
+// V2Issue135ProjectMessage is the message expected for 'V2Issue135ProjectMessage' channel.
+type V2Issue135ProjectMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewProjectMessage() ProjectMessage {
-	var msg ProjectMessage
+func NewV2Issue135ProjectMessage() V2Issue135ProjectMessage {
+	var msg V2Issue135ProjectMessage
 
 	return msg
 }
 
-// brokerMessageToProjectMessage will fill a new ProjectMessage with data from generic broker message
-func brokerMessageToProjectMessage(bMsg extensions.BrokerMessage) (ProjectMessage, error) {
-	var msg ProjectMessage
+// brokerMessageToV2Issue135ProjectMessage will fill a new V2Issue135ProjectMessage with data from generic broker message
+func brokerMessageToV2Issue135ProjectMessage(bMsg extensions.BrokerMessage) (V2Issue135ProjectMessage, error) {
+	var msg V2Issue135ProjectMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -174,8 +174,8 @@ func brokerMessageToProjectMessage(bMsg extensions.BrokerMessage) (ProjectMessag
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from ProjectMessage data
-func (msg ProjectMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue135ProjectMessage data
+func (msg V2Issue135ProjectMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -190,21 +190,21 @@ func (msg ProjectMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// ResourceMessage is the message expected for 'ResourceMessage' channel.
-type ResourceMessage struct {
+// V2Issue135ResourceMessage is the message expected for 'V2Issue135ResourceMessage' channel.
+type V2Issue135ResourceMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewResourceMessage() ResourceMessage {
-	var msg ResourceMessage
+func NewV2Issue135ResourceMessage() V2Issue135ResourceMessage {
+	var msg V2Issue135ResourceMessage
 
 	return msg
 }
 
-// brokerMessageToResourceMessage will fill a new ResourceMessage with data from generic broker message
-func brokerMessageToResourceMessage(bMsg extensions.BrokerMessage) (ResourceMessage, error) {
-	var msg ResourceMessage
+// brokerMessageToV2Issue135ResourceMessage will fill a new V2Issue135ResourceMessage with data from generic broker message
+func brokerMessageToV2Issue135ResourceMessage(bMsg extensions.BrokerMessage) (V2Issue135ResourceMessage, error) {
+	var msg V2Issue135ResourceMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -215,8 +215,8 @@ func brokerMessageToResourceMessage(bMsg extensions.BrokerMessage) (ResourceMess
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from ResourceMessage data
-func (msg ResourceMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue135ResourceMessage data
+func (msg V2Issue135ResourceMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -231,21 +231,21 @@ func (msg ResourceMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	}, nil
 }
 
-// StatusMessage is the message expected for 'StatusMessage' channel.
-type StatusMessage struct {
+// V2Issue135StatusMessage is the message expected for 'V2Issue135StatusMessage' channel.
+type V2Issue135StatusMessage struct {
 	// Payload will be inserted in the message payload
 	Payload string
 }
 
-func NewStatusMessage() StatusMessage {
-	var msg StatusMessage
+func NewV2Issue135StatusMessage() V2Issue135StatusMessage {
+	var msg V2Issue135StatusMessage
 
 	return msg
 }
 
-// brokerMessageToStatusMessage will fill a new StatusMessage with data from generic broker message
-func brokerMessageToStatusMessage(bMsg extensions.BrokerMessage) (StatusMessage, error) {
-	var msg StatusMessage
+// brokerMessageToV2Issue135StatusMessage will fill a new V2Issue135StatusMessage with data from generic broker message
+func brokerMessageToV2Issue135StatusMessage(bMsg extensions.BrokerMessage) (V2Issue135StatusMessage, error) {
+	var msg V2Issue135StatusMessage
 
 	// Convert to string
 	payload := string(bMsg.Payload)
@@ -256,8 +256,8 @@ func brokerMessageToStatusMessage(bMsg extensions.BrokerMessage) (StatusMessage,
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from StatusMessage data
-func (msg StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue135StatusMessage data
+func (msg V2Issue135StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Convert to []byte
@@ -273,23 +273,23 @@ func (msg StatusMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 }
 
 const (
-	// GroupPath is the constant representing the 'Group' channel path.
-	GroupPath = "group"
-	// InfoPath is the constant representing the 'Info' channel path.
-	InfoPath = "info"
-	// ProjectPath is the constant representing the 'Project' channel path.
-	ProjectPath = "project"
-	// ResourcePath is the constant representing the 'Resource' channel path.
-	ResourcePath = "resource"
-	// StatusPath is the constant representing the 'Status' channel path.
-	StatusPath = "status"
+	// V2Issue135GroupPath is the constant representing the 'V2Issue135Group' channel path.
+	V2Issue135GroupPath = "v2.issue135.group"
+	// V2Issue135InfoPath is the constant representing the 'V2Issue135Info' channel path.
+	V2Issue135InfoPath = "v2.issue135.info"
+	// V2Issue135ProjectPath is the constant representing the 'V2Issue135Project' channel path.
+	V2Issue135ProjectPath = "v2.issue135.project"
+	// V2Issue135ResourcePath is the constant representing the 'V2Issue135Resource' channel path.
+	V2Issue135ResourcePath = "v2.issue135.resource"
+	// V2Issue135StatusPath is the constant representing the 'V2Issue135Status' channel path.
+	V2Issue135StatusPath = "v2.issue135.status"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	GroupPath,
-	InfoPath,
-	ProjectPath,
-	ResourcePath,
-	StatusPath,
+	V2Issue135GroupPath,
+	V2Issue135InfoPath,
+	V2Issue135ProjectPath,
+	V2Issue135ResourcePath,
+	V2Issue135StatusPath,
 }

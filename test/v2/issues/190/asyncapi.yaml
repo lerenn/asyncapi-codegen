@@ -3,7 +3,7 @@ info:
   title: Sample App
   version: 1.0.0
 channels:
-  issue169.msg1:
+  v2.issue190.msg1:
     publish:
       message:
         payload:
@@ -16,7 +16,7 @@ channels:
                   type: string
                 hello:
                   type: string
-  issue169.msg2:
+  v2.issue190.msg2:
     publish:
       message:
         payload:
