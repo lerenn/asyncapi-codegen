@@ -7,7 +7,7 @@ info:
   title: Sample App
   version: 1.0.0
 channels:
-  issue169.msg:
+  v2.issue169.msg:
     publish:
       message:
         payload:

@@ -69,15 +69,15 @@ func (e *Error) Error() string {
 
 const (
 	// GroupChannelPath is the constant representing the 'GroupChannel' channel path.
-	GroupChannelPath = "group"
+	GroupChannelPath = "v3.issue135.group"
 	// InfoChannelPath is the constant representing the 'InfoChannel' channel path.
-	InfoChannelPath = "info"
+	InfoChannelPath = "v3.issue135.info"
 	// ProjectChannelPath is the constant representing the 'ProjectChannel' channel path.
-	ProjectChannelPath = "project"
+	ProjectChannelPath = "v3.issue135.project"
 	// ResourceChannelPath is the constant representing the 'ResourceChannel' channel path.
-	ResourceChannelPath = "resource"
+	ResourceChannelPath = "v3.issue135.resource"
 	// StatusChannelPath is the constant representing the 'StatusChannel' channel path.
-	StatusChannelPath = "status"
+	StatusChannelPath = "v3.issue135.status"
 )
 
 // ChannelsPaths is an array of all channels paths

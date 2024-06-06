@@ -109,13 +109,13 @@ func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
-// PublishV2Issue131Test will publish messages to 'v2.issue131.test' channel
-func (c *AppController) PublishV2Issue131Test(
+// PublishV2Issue220Test will publish messages to 'v2.issue220.test' channel
+func (c *AppController) PublishV2Issue220Test(
 	ctx context.Context,
-	msg V2Issue131TestMessage,
+	msg V2Issue220TestMessage,
 ) error {
 	// Get channel path
-	path := "v2.issue131.test"
+	path := "v2.issue220.test"
 
 	// Set context
 	ctx = addAppContextValues(ctx, path)
@@ -138,8 +138,8 @@ func (c *AppController) PublishV2Issue131Test(
 
 // UserSubscriber represents all handlers that are expecting messages for User
 type UserSubscriber interface {
-	// V2Issue131Test subscribes to messages placed on the 'v2.issue131.test' channel
-	V2Issue131Test(ctx context.Context, msg V2Issue131TestMessage) error
+	// V2Issue220Test subscribes to messages placed on the 'v2.issue220.test' channel
+	V2Issue220Test(ctx context.Context, msg V2Issue220TestMessage) error
 }
 
 // UserController is the structure that provides publishing capabilities to the
@@ -250,7 +250,7 @@ func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) er
 		return extensions.ErrNilUserSubscriber
 	}
 
-	if err := c.SubscribeV2Issue131Test(ctx, as.V2Issue131Test); err != nil {
+	if err := c.SubscribeV2Issue220Test(ctx, as.V2Issue220Test); err != nil {
 		return err
 	}
 
@@ -259,18 +259,18 @@ func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) er
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
 func (c *UserController) UnsubscribeAll(ctx context.Context) {
-	c.UnsubscribeV2Issue131Test(ctx)
+	c.UnsubscribeV2Issue220Test(ctx)
 }
 
-// SubscribeV2Issue131Test will subscribe to new messages from 'v2.issue131.test' channel.
+// SubscribeV2Issue220Test will subscribe to new messages from 'v2.issue220.test' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeV2Issue131Test(
+func (c *UserController) SubscribeV2Issue220Test(
 	ctx context.Context,
-	fn func(ctx context.Context, msg V2Issue131TestMessage) error,
+	fn func(ctx context.Context, msg V2Issue220TestMessage) error,
 ) error {
 	// Get channel path
-	path := "v2.issue131.test"
+	path := "v2.issue220.test"
 
 	// Set context
 	ctx = addUserContextValues(ctx, path)
@@ -310,7 +310,7 @@ func (c *UserController) SubscribeV2Issue131Test(
 			// Execute middlewares before handling the message
 			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
 				// Process message
-				msg, err := brokerMessageToV2Issue131TestMessage(acknowledgeableBrokerMessage.BrokerMessage)
+				msg, err := brokerMessageToV2Issue220TestMessage(acknowledgeableBrokerMessage.BrokerMessage)
 				if err != nil {
 					return err
 				}
@@ -338,11 +338,11 @@ func (c *UserController) SubscribeV2Issue131Test(
 	return nil
 }
 
-// UnsubscribeV2Issue131Test will unsubscribe messages from 'v2.issue131.test' channel.
+// UnsubscribeV2Issue220Test will unsubscribe messages from 'v2.issue220.test' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) UnsubscribeV2Issue131Test(ctx context.Context) {
+func (c *UserController) UnsubscribeV2Issue220Test(ctx context.Context) {
 	// Get channel path
-	path := "v2.issue131.test"
+	path := "v2.issue220.test"
 
 	// Check if there subscribers for this channel
 	sub, exists := c.subscriptions[path]
@@ -420,21 +420,21 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// V2Issue131TestMessage is the message expected for 'V2Issue131TestMessage' channel.
-type V2Issue131TestMessage struct {
+// V2Issue220TestMessage is the message expected for 'V2Issue220TestMessage' channel.
+type V2Issue220TestMessage struct {
 	// Payload will be inserted in the message payload
 	Payload TestSchema
 }
 
-func NewV2Issue131TestMessage() V2Issue131TestMessage {
-	var msg V2Issue131TestMessage
+func NewV2Issue220TestMessage() V2Issue220TestMessage {
+	var msg V2Issue220TestMessage
 
 	return msg
 }
 
-// brokerMessageToV2Issue131TestMessage will fill a new V2Issue131TestMessage with data from generic broker message
-func brokerMessageToV2Issue131TestMessage(bMsg extensions.BrokerMessage) (V2Issue131TestMessage, error) {
-	var msg V2Issue131TestMessage
+// brokerMessageToV2Issue220TestMessage will fill a new V2Issue220TestMessage with data from generic broker message
+func brokerMessageToV2Issue220TestMessage(bMsg extensions.BrokerMessage) (V2Issue220TestMessage, error) {
+	var msg V2Issue220TestMessage
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -447,8 +447,8 @@ func brokerMessageToV2Issue131TestMessage(bMsg extensions.BrokerMessage) (V2Issu
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from V2Issue131TestMessage data
-func (msg V2Issue131TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue220TestMessage data
+func (msg V2Issue220TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -473,11 +473,11 @@ type TestSchema struct {
 }
 
 const (
-	// V2Issue131TestPath is the constant representing the 'V2Issue131Test' channel path.
-	V2Issue131TestPath = "v2.issue131.test"
+	// V2Issue220TestPath is the constant representing the 'V2Issue220Test' channel path.
+	V2Issue220TestPath = "v2.issue220.test"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	V2Issue131TestPath,
+	V2Issue220TestPath,
 }

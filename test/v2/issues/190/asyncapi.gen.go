@@ -68,32 +68,32 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Issue169Msg1MessagePayload is a schema from the AsyncAPI specification required in messages
-type Issue169Msg1MessagePayload struct {
-	Data *Issue169Msg1MessagePayloadData `json:"data"`
+// V2Issue190Msg1MessagePayload is a schema from the AsyncAPI specification required in messages
+type V2Issue190Msg1MessagePayload struct {
+	Data *V2Issue190Msg1MessagePayloadData `json:"data"`
 }
 
-// Issue169Msg1MessagePayloadData is a schema from the AsyncAPI specification required in messages
-type Issue169Msg1MessagePayloadData struct {
+// V2Issue190Msg1MessagePayloadData is a schema from the AsyncAPI specification required in messages
+type V2Issue190Msg1MessagePayloadData struct {
 	Hello *string `json:"hello"`
 	Id    *string `json:"id"`
 }
 
-// Issue169Msg1Message is the message expected for 'Issue169Msg1Message' channel.
-type Issue169Msg1Message struct {
+// V2Issue190Msg1Message is the message expected for 'V2Issue190Msg1Message' channel.
+type V2Issue190Msg1Message struct {
 	// Payload will be inserted in the message payload
-	Payload Issue169Msg1MessagePayload
+	Payload V2Issue190Msg1MessagePayload
 }
 
-func NewIssue169Msg1Message() Issue169Msg1Message {
-	var msg Issue169Msg1Message
+func NewV2Issue190Msg1Message() V2Issue190Msg1Message {
+	var msg V2Issue190Msg1Message
 
 	return msg
 }
 
-// brokerMessageToIssue169Msg1Message will fill a new Issue169Msg1Message with data from generic broker message
-func brokerMessageToIssue169Msg1Message(bMsg extensions.BrokerMessage) (Issue169Msg1Message, error) {
-	var msg Issue169Msg1Message
+// brokerMessageToV2Issue190Msg1Message will fill a new V2Issue190Msg1Message with data from generic broker message
+func brokerMessageToV2Issue190Msg1Message(bMsg extensions.BrokerMessage) (V2Issue190Msg1Message, error) {
+	var msg V2Issue190Msg1Message
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -106,8 +106,8 @@ func brokerMessageToIssue169Msg1Message(bMsg extensions.BrokerMessage) (Issue169
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Issue169Msg1Message data
-func (msg Issue169Msg1Message) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue190Msg1Message data
+func (msg V2Issue190Msg1Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -125,32 +125,32 @@ func (msg Issue169Msg1Message) toBrokerMessage() (extensions.BrokerMessage, erro
 	}, nil
 }
 
-// Issue169Msg2MessagePayload is a schema from the AsyncAPI specification required in messages
-type Issue169Msg2MessagePayload struct {
-	Data *Issue169Msg2MessagePayloadData `json:"data"`
+// V2Issue190Msg2MessagePayload is a schema from the AsyncAPI specification required in messages
+type V2Issue190Msg2MessagePayload struct {
+	Data *V2Issue190Msg2MessagePayloadData `json:"data"`
 }
 
-// Issue169Msg2MessagePayloadData is a schema from the AsyncAPI specification required in messages
-type Issue169Msg2MessagePayloadData struct {
+// V2Issue190Msg2MessagePayloadData is a schema from the AsyncAPI specification required in messages
+type V2Issue190Msg2MessagePayloadData struct {
 	Bar *string `json:"bar"`
 	Id  *string `json:"id"`
 }
 
-// Issue169Msg2Message is the message expected for 'Issue169Msg2Message' channel.
-type Issue169Msg2Message struct {
+// V2Issue190Msg2Message is the message expected for 'V2Issue190Msg2Message' channel.
+type V2Issue190Msg2Message struct {
 	// Payload will be inserted in the message payload
-	Payload Issue169Msg2MessagePayload
+	Payload V2Issue190Msg2MessagePayload
 }
 
-func NewIssue169Msg2Message() Issue169Msg2Message {
-	var msg Issue169Msg2Message
+func NewV2Issue190Msg2Message() V2Issue190Msg2Message {
+	var msg V2Issue190Msg2Message
 
 	return msg
 }
 
-// brokerMessageToIssue169Msg2Message will fill a new Issue169Msg2Message with data from generic broker message
-func brokerMessageToIssue169Msg2Message(bMsg extensions.BrokerMessage) (Issue169Msg2Message, error) {
-	var msg Issue169Msg2Message
+// brokerMessageToV2Issue190Msg2Message will fill a new V2Issue190Msg2Message with data from generic broker message
+func brokerMessageToV2Issue190Msg2Message(bMsg extensions.BrokerMessage) (V2Issue190Msg2Message, error) {
+	var msg V2Issue190Msg2Message
 
 	// Unmarshal payload to expected message payload format
 	err := json.Unmarshal(bMsg.Payload, &msg.Payload)
@@ -163,8 +163,8 @@ func brokerMessageToIssue169Msg2Message(bMsg extensions.BrokerMessage) (Issue169
 	return msg, nil
 }
 
-// toBrokerMessage will generate a generic broker message from Issue169Msg2Message data
-func (msg Issue169Msg2Message) toBrokerMessage() (extensions.BrokerMessage, error) {
+// toBrokerMessage will generate a generic broker message from V2Issue190Msg2Message data
+func (msg V2Issue190Msg2Message) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// TODO: implement checks on message
 
 	// Marshal payload to JSON
@@ -183,14 +183,14 @@ func (msg Issue169Msg2Message) toBrokerMessage() (extensions.BrokerMessage, erro
 }
 
 const (
-	// Issue169Msg1Path is the constant representing the 'Issue169Msg1' channel path.
-	Issue169Msg1Path = "issue169.msg1"
-	// Issue169Msg2Path is the constant representing the 'Issue169Msg2' channel path.
-	Issue169Msg2Path = "issue169.msg2"
+	// V2Issue190Msg1Path is the constant representing the 'V2Issue190Msg1' channel path.
+	V2Issue190Msg1Path = "v2.issue190.msg1"
+	// V2Issue190Msg2Path is the constant representing the 'V2Issue190Msg2' channel path.
+	V2Issue190Msg2Path = "v2.issue190.msg2"
 )
 
 // ChannelsPaths is an array of all channels paths
 var ChannelsPaths = []string{
-	Issue169Msg1Path,
-	Issue169Msg2Path,
+	V2Issue190Msg1Path,
+	V2Issue190Msg2Path,
 }

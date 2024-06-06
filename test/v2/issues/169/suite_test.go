@@ -114,23 +114,23 @@ func (suite *Suite) TestIssue169() {
 	var wg sync.WaitGroup
 
 	// Test message
-	sent := Issue169MsgMessage{
+	sent := V2Issue169MsgMessage{
 		Payload: "some test msg",
 	}
 
 	// Validate msg
-	err := suite.app.SubscribeIssue169Msg(context.Background(),
-		func(ctx context.Context, msg Issue169MsgMessage) error {
+	err := suite.app.SubscribeV2Issue169Msg(context.Background(),
+		func(ctx context.Context, msg V2Issue169MsgMessage) error {
 			suite.Require().Equal(sent.Payload, msg.Payload)
 			wg.Done()
 			return nil
 		})
 	suite.Require().NoError(err)
-	defer suite.app.UnsubscribeIssue169Msg(context.Background())
+	defer suite.app.UnsubscribeV2Issue169Msg(context.Background())
 
 	// Publish the message
 	wg.Add(1)
-	err = suite.user.PublishIssue169Msg(context.Background(), sent)
+	err = suite.user.PublishV2Issue169Msg(context.Background(), sent)
 	suite.Require().NoError(err)
 
 	wg.Wait()

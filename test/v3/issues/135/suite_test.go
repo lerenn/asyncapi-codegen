@@ -18,11 +18,11 @@ type Suite struct {
 
 func (suite *Suite) TestCheckPaths() {
 	// Check path contents
-	suite.Require().Equal("group", GroupChannelPath)
-	suite.Require().Equal("info", InfoChannelPath)
-	suite.Require().Equal("project", ProjectChannelPath)
-	suite.Require().Equal("resource", ResourceChannelPath)
-	suite.Require().Equal("status", StatusChannelPath)
+	suite.Require().Equal("v3.issue135.group", GroupChannelPath)
+	suite.Require().Equal("v3.issue135.info", InfoChannelPath)
+	suite.Require().Equal("v3.issue135.project", ProjectChannelPath)
+	suite.Require().Equal("v3.issue135.resource", ResourceChannelPath)
+	suite.Require().Equal("v3.issue135.status", StatusChannelPath)
 
 	// Check path list
 	for _, p := range ChannelsPaths {

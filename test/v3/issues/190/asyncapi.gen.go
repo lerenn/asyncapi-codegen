@@ -184,9 +184,9 @@ func (msg SayHelloMessageFromHelloChannel) toBrokerMessage() (extensions.BrokerM
 
 const (
 	// FooChannelPath is the constant representing the 'FooChannel' channel path.
-	FooChannelPath = "hello"
+	FooChannelPath = "v3.issue190.foo"
 	// HelloChannelPath is the constant representing the 'HelloChannel' channel path.
-	HelloChannelPath = "hello"
+	HelloChannelPath = "v3.issue190.hello"
 )
 
 // ChannelsPaths is an array of all channels paths
