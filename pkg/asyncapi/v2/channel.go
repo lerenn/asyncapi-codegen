@@ -1,6 +1,6 @@
 package asyncapiv2
 
-import "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+import "github.com/TheSadlig/asyncapi-codegen/pkg/utils/template"
 
 // Channel is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.

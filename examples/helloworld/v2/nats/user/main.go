@@ -6,8 +6,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
-	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/brokers/nats"
+	testutil "github.com/TheSadlig/asyncapi-codegen/pkg/utils/test"
 )
 
 func main() {

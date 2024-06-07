@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions"
 )
 
 // Recovery is a middleware that recovers from panic in middlewares coming after

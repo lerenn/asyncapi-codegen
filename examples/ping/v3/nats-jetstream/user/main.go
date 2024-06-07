@@ -5,10 +5,10 @@ package main
 import (
 	"context"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
-	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/loggers"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/middlewares"
+	testutil "github.com/TheSadlig/asyncapi-codegen/pkg/utils/test"
 )
 
 func main() {

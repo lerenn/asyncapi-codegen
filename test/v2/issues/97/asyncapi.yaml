@@ -1,4 +1,4 @@
-# Issue: https://github.com/lerenn/asyncapi-codegen/issues/97
+# Issue: https://github.com/TheSadlig/asyncapi-codegen/issues/97
 
 # Message payload was json marshalled properly when the payload was a reference
 

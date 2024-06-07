@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions"
 	"github.com/fatih/color"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
 // Text is a logger that will print logs in Elastic Common Schema format.

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/utils"
 	"github.com/mohae/deepcopy"
 )
 

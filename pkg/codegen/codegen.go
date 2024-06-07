@@ -5,14 +5,14 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi/parser"
-	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
-	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
-	generatorv2 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v2"
-	generatorv3 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v3"
-	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi/parser"
+	asyncapiv2 "github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi/v2"
+	asyncapiv3 "github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi/v3"
+	generatorv2 "github.com/TheSadlig/asyncapi-codegen/pkg/codegen/generators/v2"
+	generatorv3 "github.com/TheSadlig/asyncapi-codegen/pkg/codegen/generators/v3"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/codegen/options"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/utils/template"
 	"golang.org/x/tools/imports"
 )
 

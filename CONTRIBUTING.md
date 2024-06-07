@@ -4,7 +4,7 @@ Welcome on the CONTRIBUTING page of asyncapi-codegen ! Thanks for your interest
 in contributing to this project, any contribution/suggestion is warmly welcomed.
 
 If you need further guidance, you can find our team on the following:
-* [Discussions on Github](https://github.com/lerenn/asyncapi-codegen/discussions)
+* [Discussions on Github](https://github.com/TheSadlig/asyncapi-codegen/discussions)
 
 ## Contributing
 
@@ -12,7 +12,7 @@ If you need further guidance, you can find our team on the following:
 
 If you have a suggestion, a bug, or any kind of thing that should impact the
 source code, please open an issue on the
-[Github repository](https://github.com/lerenn/asyncapi-codegen/issues).
+[Github repository](https://github.com/TheSadlig/asyncapi-codegen/issues).
 
 Expose your problem and/or the suggestion and feel free to mention if you are
 willing to do the change by yourself or prefer to let someone else do it.
@@ -99,9 +99,9 @@ Of course, do not hesitate to ask for help if you need it.
 ### 3. Open a pull request
 
 Once you're done with your code, you can open a pull request on the
-[Github repository](https://github.com/lerenn/asyncapi-codegen/pulls).
+[Github repository](https://github.com/TheSadlig/asyncapi-codegen/pulls).
 
 ## Missing information here?
 
 If you think that some information is missing here, feel free to open an issue
-on the [Github repository](https://github.com/lerenn/asyncapi-codegen/issues).
+on the [Github repository](https://github.com/TheSadlig/asyncapi-codegen/issues).

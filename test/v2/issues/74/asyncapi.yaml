@@ -1,4 +1,4 @@
-# Issue: https://github.com/lerenn/asyncapi-codegen/issues/74
+# Issue: https://github.com/TheSadlig/asyncapi-codegen/issues/74
 
 # It was failing when headers properties were defined as a reference to a schema
 # instead of a plain list of properties.

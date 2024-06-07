@@ -4,7 +4,7 @@ description: >
   Generate Go user and application boilerplate from AsyncAPI specifications.
   Can be called from `go generate` without requirements.
 links:
-  repoUrl: https://github.com/lerenn/asyncapi-codegen
+  repoUrl: https://github.com/TheSadlig/asyncapi-codegen
 filters:
   language: golang
   categories:

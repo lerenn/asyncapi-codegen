@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	testutil "github.com/lerenn/asyncapi-codegen/test"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions"
+	testutil "github.com/TheSadlig/asyncapi-codegen/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )

@@ -5,11 +5,11 @@ package main
 import (
 	"context"
 
-	"github.com/lerenn/asyncapi-codegen/examples"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
-	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
+	"github.com/TheSadlig/asyncapi-codegen/examples"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/brokers/kafka"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/loggers"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/middlewares"
+	testutil "github.com/TheSadlig/asyncapi-codegen/pkg/utils/test"
 )
 
 var _ AppSubscriber = (*Subscriber)(nil)

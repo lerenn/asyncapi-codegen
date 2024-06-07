@@ -2,8 +2,8 @@
 package trait
 
 import (
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi/parser"
-	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi/parser"
+	asyncapiv3 "github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi/v3"
 	"github.com/stretchr/testify/suite"
 )
 

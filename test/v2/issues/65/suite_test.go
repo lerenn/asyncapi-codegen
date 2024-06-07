@@ -4,9 +4,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
-	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
-	generatorv2 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v2"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi"
+	asyncapiv2 "github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi/v2"
+	generatorv2 "github.com/TheSadlig/asyncapi-codegen/pkg/codegen/generators/v2"
 	"github.com/stretchr/testify/suite"
 )
 

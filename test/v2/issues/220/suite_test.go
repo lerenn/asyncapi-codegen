@@ -6,8 +6,8 @@ package issue220
 import (
 	"testing"
 
-	"github.com/lerenn/asyncapi-codegen/test/v2/issues/220/camel"
-	"github.com/lerenn/asyncapi-codegen/test/v2/issues/220/none"
+	"github.com/TheSadlig/asyncapi-codegen/test/v2/issues/220/camel"
+	"github.com/TheSadlig/asyncapi-codegen/test/v2/issues/220/none"
 	"github.com/stretchr/testify/suite"
 )
 

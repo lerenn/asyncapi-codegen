@@ -3,7 +3,7 @@
 package issue175
 
 import (
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/utils"
 )
 
 // CheckGeneration is just to test that the generation is correct.

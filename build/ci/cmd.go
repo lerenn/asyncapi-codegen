@@ -18,7 +18,7 @@ import (
 	"context"
 	"dagger/asyncapi-codegen-ci/internal/dagger"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/utils"
 )
 
 const (

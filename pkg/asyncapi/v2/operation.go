@@ -3,7 +3,7 @@ package asyncapiv2
 import (
 	"strings"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/utils/template"
 )
 
 // Operation is a representation of the corresponding asyncapi object filled

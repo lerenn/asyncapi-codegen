@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/brokers"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )

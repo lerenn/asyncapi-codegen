@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
+	testutil "github.com/TheSadlig/asyncapi-codegen/pkg/utils/test"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"

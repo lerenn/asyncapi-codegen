@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions"
 )
 
 const (

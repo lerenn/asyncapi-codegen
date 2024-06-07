@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions"
 )
 
 func insertLogIntoStruct(key, value string, m map[string]any) map[string]any {

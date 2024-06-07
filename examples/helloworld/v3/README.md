@@ -13,7 +13,7 @@ In order to recreate the code for user and application, you have to run this com
 
 ```shell
 # Install the tool
-go install github.com/lerenn/asyncapi-codegen/cmd/asyncapi-codegen@latest
+go install github.com/TheSadlig/asyncapi-codegen/cmd/asyncapi-codegen@latest
 
 # Generate the code from the asyncapi file
 asyncapi-codegen -i examples/helloworld/v3/asyncapi.yaml -p main -o ./helloworld.gen.go
@@ -79,7 +79,7 @@ code (you can also find it [here](./examples/helloworld/v3)):
 
 ```go
 import(
-  "github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+  "github.com/TheSadlig/asyncapi-codegen/pkg/extensions/brokers/nats"
   // ...
 )
 
@@ -135,7 +135,7 @@ code (you can also find it [here](./examples/helloworld/v3)):
 
 ```go
 import(
-  "github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+  "github.com/TheSadlig/asyncapi-codegen/pkg/extensions/brokers/nats"
   // ...
 )
 

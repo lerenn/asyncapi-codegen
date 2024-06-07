@@ -3,9 +3,9 @@ package generatorv3
 import (
 	"fmt"
 
-	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
-	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
-	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
+	asyncapi "github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi/v3"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/codegen/generators"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/codegen/options"
 )
 
 // Generator is the structure that contains information to generate the code from

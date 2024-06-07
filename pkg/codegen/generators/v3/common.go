@@ -1,8 +1,8 @@
 package generatorv3
 
 import (
-	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
-	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
+	asyncapi "github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi/v3"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/codegen/generators"
 )
 
 // ActionOperations contains operations based on their action.

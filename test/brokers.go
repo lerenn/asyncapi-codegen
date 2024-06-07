@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
-	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/brokers/kafka"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/extensions/brokers/nats"
+	testutil "github.com/TheSadlig/asyncapi-codegen/pkg/utils/test"
 )
 
 // BrokerAddressParams is the parameters for the BrokerAddress function.

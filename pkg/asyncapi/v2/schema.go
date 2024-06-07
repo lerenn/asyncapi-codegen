@@ -1,9 +1,9 @@
 package asyncapiv2
 
 import (
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/asyncapi"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/utils"
+	"github.com/TheSadlig/asyncapi-codegen/pkg/utils/template"
 )
 
 // SchemaType is a structure that represents the type of a field.

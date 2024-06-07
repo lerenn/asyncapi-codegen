@@ -14,11 +14,11 @@ FROM --platform=${BUILDPLATFORM} ${BUILDBASEIMAGE} AS build
 ENV CGO_ENABLED 0
 
 # Get all remaining code
-RUN mkdir -p /go/src/github.com/lerenn/asyncapi-codegen
-COPY ./ /go/src/github.com/lerenn/asyncapi-codegen
+RUN mkdir -p /go/src/github.com/TheSadlig/asyncapi-codegen
+COPY ./ /go/src/github.com/TheSadlig/asyncapi-codegen
 
 # Set the workdir
-WORKDIR /go/src/github.com/lerenn/asyncapi-codegen
+WORKDIR /go/src/github.com/TheSadlig/asyncapi-codegen
 
 # Build everything in cmd/
 RUN --mount=type=cache,target=/root/.cache/go-build \
