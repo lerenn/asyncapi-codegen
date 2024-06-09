@@ -93,68 +93,68 @@ func (s *Schema) generateMetadata(parentName, name string, number *int, isRequir
 
 	// Generate Properties metadata
 	for n, p := range s.Properties {
-		if err := p.generateMetadata(s.Name, n+"Property", nil, utils.IsInSlice(s.Required, n)); err != nil {
+		if err := p.generateMetadata(s.Name, n+"_Property", nil, utils.IsInSlice(s.Required, n)); err != nil {
 			return err
 		}
 	}
 
 	// Generate Pattern Properties metadata
 	for n, p := range s.PatternProperties {
-		if err := p.generateMetadata(s.Name, n+"PatternProperty", nil, utils.IsInSlice(s.Required, n)); err != nil {
+		if err := p.generateMetadata(s.Name, n+"_Pattern_Property", nil, utils.IsInSlice(s.Required, n)); err != nil {
 			return err
 		}
 	}
 
 	// Generate AdditionalProperties metadata
 	if s.AdditionalProperties != nil {
-		if err := s.AdditionalProperties.generateMetadata(s.Name, "AdditionalProperties", nil, false); err != nil {
+		if err := s.AdditionalProperties.generateMetadata(s.Name, "Additional_Properties", nil, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate Additional Items metadata
 	for i, item := range s.AdditionalItems {
-		if err := item.generateMetadata(s.Name, "AdditionalItem", &i, false); err != nil {
+		if err := item.generateMetadata(s.Name, "Additional_Item", &i, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate Items metadata
 	// NOTE: give the name of the parent to the items
-	if err := s.Items.generateMetadata("", "ItemFrom"+s.Name, nil, false); err != nil {
+	if err := s.Items.generateMetadata("", "Item_From_"+s.Name, nil, false); err != nil {
 		return err
 	}
 
 	// Generate Contains metadata
 	for i, item := range s.Contains {
-		if err := item.generateMetadata("", s.Name+"Content", &i, false); err != nil {
+		if err := item.generateMetadata("", s.Name+"_Content", &i, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate AnyOf metadata
 	for _, v := range s.AnyOf {
-		if err := v.generateMetadata(s.Name, "AnyOf", nil, false); err != nil {
+		if err := v.generateMetadata(s.Name, "Any_Of", nil, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate OneOf metadata
 	for _, v := range s.OneOf {
-		if err := v.generateMetadata(s.Name, "OneOf", nil, false); err != nil {
+		if err := v.generateMetadata(s.Name, "One_Of", nil, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate AllOf metadata
 	for _, v := range s.AllOf {
-		if err := v.generateMetadata(s.Name, "AllOf", nil, false); err != nil {
+		if err := v.generateMetadata(s.Name, "All_Of", nil, false); err != nil {
 			return err
 		}
 	}
 
 	// Generate Not metadata
-	if err := s.Not.generateMetadata(s.Name, "NotSchema", nil, false); err != nil {
+	if err := s.Not.generateMetadata(s.Name, "Not_Schema", nil, false); err != nil {
 		return err
 	}
 

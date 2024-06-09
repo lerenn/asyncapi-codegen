@@ -16,14 +16,14 @@ func generateFullName(parentName, name, typeName string, number *int) string {
 
 	// If number is nil, add number to type
 	if number != nil {
-		typeName += fmt.Sprintf("%d", *number)
+		typeName += fmt.Sprintf("_%d", *number)
 	}
 
 	// If there is a parent name, prefix it with a "From"
 	if parentName != "" {
-		parentName = "From" + parentName
+		parentName = "From_" + parentName
 	}
 
 	// Return the name with the number
-	return template.Namify(name + typeName + parentName)
+	return template.Namify(name + "_" + typeName + "_" + parentName)
 }

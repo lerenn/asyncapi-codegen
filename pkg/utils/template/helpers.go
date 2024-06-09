@@ -137,6 +137,7 @@ func Args(vs ...any) []any {
 // CutSuffix is a function used to remove a suffix to a string.
 func CutSuffix(s, suffix string) string {
 	s, _ = strings.CutSuffix(s, suffix)
+	s, _ = strings.CutSuffix(s, "_"+suffix)
 	return s
 }
 

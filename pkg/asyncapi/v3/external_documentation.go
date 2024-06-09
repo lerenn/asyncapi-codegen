@@ -2,7 +2,7 @@ package asyncapiv3
 
 const (
 	// ExternalDocsNameSuffix is the suffix that is added to the name of external docs.
-	ExternalDocsNameSuffix = "ExternalDocs"
+	ExternalDocsNameSuffix = "External_Docs"
 )
 
 // ExternalDocumentation is a representation of the corresponding asyncapi object filled

@@ -1,14 +1,23 @@
-asyncapi: 2.6.0
+asyncapi: 3.0.0
 info:
   title: Sample App
   version: 1.2.3
 
 channels:
-  v2.issue220.test:
-    subscribe:
-      message:
+  testing:
+    address: v3.issue220.test
+    messages:
+      testingEvent:
         payload:
           $ref: '#/components/schemas/TEST'
+
+operations:
+  handlingTesting:
+    action: receive
+    channel:
+      $ref: '#/channels/testing'
+    message:
+      $ref: '#/channels/testing/messages/testingEvent'
 
 components:
   schemas:
