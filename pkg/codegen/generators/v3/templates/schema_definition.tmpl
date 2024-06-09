@@ -8,7 +8,7 @@
 {{- /* ----------------------------- Object ----------------------------- */ -}}
 {{- if eq .Type "object" -}}
 
-type {{ .Name }} struct {
+type {{ namify .Name }} struct {
     {{- range $key, $value := .Properties -}}
     {{if $value.Description}}
     // Description: {{multiLineComment $value.Description}}

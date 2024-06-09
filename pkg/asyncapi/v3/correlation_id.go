@@ -24,7 +24,7 @@ func (c *CorrelationID) generateMetadata(parentName, name string) {
 	}
 
 	// Set name
-	c.Name = generateFullName(parentName, name, "CorrelationID", nil)
+	c.Name = generateFullName(parentName, name, "Correlation_ID", nil)
 }
 
 // setDependencies sets dependencies between the different elements of the CorrelationID.

@@ -38,7 +38,7 @@ func (c *Components) generateMetadata() error {
 
 	// Generate schemas metadata
 	for name, schema := range c.Schemas {
-		if err := schema.generateMetadata("", name+"Schema", nil, false); err != nil {
+		if err := schema.generateMetadata("", name+"_Schema", nil, false); err != nil {
 			return err
 		}
 	}

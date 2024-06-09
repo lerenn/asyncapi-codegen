@@ -58,7 +58,7 @@ func (s *SecurityScheme) generateMetadata(parentName, name string, number *int) 
 	}
 
 	// Set name
-	s.Name = generateFullName(parentName, name, "SecurityScheme", number)
+	s.Name = generateFullName(parentName, name, "Security_Scheme", number)
 }
 
 func (s *SecurityScheme) setDependencies(spec Specification) error {

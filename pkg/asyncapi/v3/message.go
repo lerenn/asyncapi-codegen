@@ -74,7 +74,7 @@ func (msg *Message) generateMetadata(parentName, name string, number *int) error
 
 	// Generate Payload metadata
 	// NOTE: Suffix Message name with payload for name and set no parent
-	if err := msg.Payload.generateMetadata("", msg.Name+"Payload", nil, false); err != nil {
+	if err := msg.Payload.generateMetadata("", msg.Name+"_Payload", nil, false); err != nil {
 		return err
 	}
 
