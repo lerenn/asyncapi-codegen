@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
 
 func appendDirectiveIfDefined(directives []string, tagName string, value float64) []string {
@@ -68,9 +67,4 @@ func appendEnumDirectives[T any](schema asyncapi.Validations[T], directives []st
 		}
 	}
 	return directives
-}
-
-// DateTimeFormatInSpec recursively iterates to find any Schema, and returns true if their format is "date-time".
-func DateTimeFormatInSpec[SPEC any](spec SPEC) bool {
-	return utils.FieldValueExists(spec, "Format", "date-time")
 }

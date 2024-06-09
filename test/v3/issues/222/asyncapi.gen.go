@@ -9,8 +9,9 @@ import (
 	"fmt"
 	"time"
 
-	"cloud.google.com/go/civil"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+
+	"cloud.google.com/go/civil"
 )
 
 // AppController is the structure that provides publishing capabilities to the
