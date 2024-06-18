@@ -61,6 +61,9 @@ func DefaultNamifier(sentence string) string {
 	// Remove leading numbers
 	re = regexp.MustCompile("^[0-9]+")
 	sentence = string(re.ReplaceAll([]byte(sentence), []byte("")))
+	if len(sentence) == 0 {
+		return sentence
+	}
 
 	// Upper first letter
 	sentence = strings.ToUpper(sentence[:1]) + sentence[1:]

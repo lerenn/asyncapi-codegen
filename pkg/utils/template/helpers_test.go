@@ -22,6 +22,10 @@ type namifyCases struct {
 var namifyBaseCases = []namifyCases{
 	// Nothing
 	{In: "", Out: ""},
+	// new line
+	{In: "\n", Out: ""},
+	// just numbers
+	{In: "00", Out: ""},
 	// Remove leading digits
 	{In: "0name0", Out: "Name0"},
 	// Remove non alphanumerics
