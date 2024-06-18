@@ -147,6 +147,14 @@ func WithConnectionOpts(opts ...nats.Option) ControllerOption {
 	}
 }
 
+// WithConnection uses the existing nats connection.
+func WithConnection(conn *nats.Conn) ControllerOption {
+	return func(controller *Controller) error {
+		controller.natsConn = conn
+		return nil
+	}
+}
+
 // registerConsumer set consumer configuration for creates or updates a consumer based on the given configuration
 // at the broker.
 func (c *Controller) registerConsumer() error {
