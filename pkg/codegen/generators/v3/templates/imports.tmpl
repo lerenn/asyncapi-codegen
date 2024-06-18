@@ -4,6 +4,8 @@
 package {{.PackageName}}
 
 import (
+    {{/* ------------------- Standard library imports ------------------- */ -}}
+
     "encoding/json"
     "time"
     "errors"
@@ -12,10 +14,18 @@ import (
     "encoding/binary"
     "math"
 
+    {{/* ------------------- AsyncAPI Codegen imports ------------------- */ -}}
+
+    {{- /* For extensions */}}
     "github.com/lerenn/asyncapi-codegen/pkg/extensions"
 
+    {{/* ----------------------- External imports ----------------------- */ -}}
+
+    {{- /* For UUID */}}
     "github.com/google/uuid"
-    "github.com/nats-io/nats.go"
+
+    {{- /* For Date & Time formatting */}}
+    "cloud.google.com/go/civil"
 
     {{ range .CustomImports }}{{.}}
     {{end}}

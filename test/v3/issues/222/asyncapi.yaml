@@ -1,0 +1,32 @@
+asyncapi: 3.0.0
+info:
+  title: Sample App
+  version: 1.2.3
+
+channels:
+  testing:
+    address: v3.issue222.test
+    messages:
+      testMessage:
+        payload:
+          $ref: '#/components/schemas/Test'
+
+operations:
+  handleTesting:
+    action: "receive"
+    channel:
+      $ref: "#/channels/testing"
+    messages:
+      - $ref: "#/channels/testing/messages/testMessage"
+
+components:
+  schemas:
+    Test:
+      type: object
+      properties:
+        DateProp:
+          type: string
+          format: date
+        DateTimeProp:
+          type: string
+          format: date-time
