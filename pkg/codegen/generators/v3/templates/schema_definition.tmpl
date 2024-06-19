@@ -13,7 +13,7 @@ type {{ namify .Name }} struct {
     {{if $value.Description}}
     // Description: {{multiLineComment $value.Description}}
     {{else if and $value.ReferenceTo $value.ReferenceTo.Description}}
-    // Description: {{$value.ReferenceTo.Description}}
+    // Description: {{multiLineComment $value.ReferenceTo.Description}}
     {{end -}}
     {{namify $key}} {{if and (not (isRequired $ $key)) (ne $value.Type "array")}}*{{end}}{{template "schema-name" $value}} `json:"{{convertKey $key}}"{{generateValidateTags $value.Validations}}`
     {{end -}}

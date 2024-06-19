@@ -61,7 +61,9 @@ func DefaultNamifier(sentence string) string {
 	// Remove leading numbers
 	re = regexp.MustCompile("^[0-9]+")
 	sentence = string(re.ReplaceAll([]byte(sentence), []byte("")))
-
+	if len(sentence) == 0 {
+		return sentence
+	}
 	// Upper first letter
 	sentence = strings.ToUpper(sentence[:1]) + sentence[1:]
 
@@ -116,10 +118,10 @@ func HasField(v any, name string) bool {
 	return rv.FieldByName(name).IsValid()
 }
 
-// DescribeStruct will describe a struct in a human readable way using `%+v`
+// DescribeStruct will describe a struct in a human-readable way using `%+v`
 // format from the standard library.
 func DescribeStruct(st any) string {
-	return fmt.Sprintf("%+v", st)
+	return MultiLineComment(fmt.Sprintf("%+v", st))
 }
 
 // MultiLineComment will prefix each line of a comment with "// " in order to
