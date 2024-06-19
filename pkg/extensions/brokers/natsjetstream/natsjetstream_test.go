@@ -10,6 +10,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //nolint:funlen // this is only for testing
@@ -176,4 +177,33 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 			assert.NoError(t, err, "new connection to TLS secured NATS jetstream broker with TLS config and  credentials should return no error") //nolint:lll
 			defer jc.Close()
 		})
+}
+
+//nolint:funlen
+func TestExistingNatsConnection(t *testing.T) {
+	subj := "NatsJetstreamValidateConnection"
+	natsUrl := testutil.BrokerAddress(testutil.BrokerAddressParams{
+		Schema:         "nats",
+		DockerizedAddr: "nats-jetstream",
+		DockerizedPort: "4222",
+		LocalPort:      "4225",
+	})
+
+	nc, err := nats.Connect(natsUrl)
+	require.NoError(t, err, "nats connection should be established")
+	defer nc.Close()
+
+	broker, err := NewController(
+		"unused",
+		WithStreamConfig(jetstream.StreamConfig{
+			Name:     subj,
+			Subjects: []string{subj},
+		}),
+		WithConnection(nc),
+	)
+	assert.NoError(t, err, "new controller should not return error")
+
+	broker.Close()
+
+	assert.True(t, nc.IsConnected(), "our connection should still be intact")
 }
