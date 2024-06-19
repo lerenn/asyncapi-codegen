@@ -96,7 +96,11 @@ func (s *Schema) generateMetadata(name string, isRequired bool) error {
 
 	// Set IsRequired
 	s.IsRequired = isRequired
-
+	if s.Type == "" {
+		if _, ok := s.Const.(string); ok {
+			s.Type = "string"
+		}
+	}
 	return nil
 }
 
