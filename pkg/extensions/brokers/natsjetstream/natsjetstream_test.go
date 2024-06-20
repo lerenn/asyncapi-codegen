@@ -179,17 +179,16 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 		})
 }
 
-//nolint:funlen
 func TestExistingNatsConnection(t *testing.T) {
 	subj := "NatsJetstreamValidateConnection"
-	natsUrl := testutil.BrokerAddress(testutil.BrokerAddressParams{
+	natsURL := testutil.BrokerAddress(testutil.BrokerAddressParams{
 		Schema:         "nats",
 		DockerizedAddr: "nats-jetstream",
 		DockerizedPort: "4222",
 		LocalPort:      "4225",
 	})
 
-	nc, err := nats.Connect(natsUrl)
+	nc, err := nats.Connect(natsURL)
 	require.NoError(t, err, "nats connection should be established")
 	defer nc.Close()
 
