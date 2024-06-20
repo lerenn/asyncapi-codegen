@@ -20,6 +20,7 @@ adventure, this file is a attempt to show them the respect they earned.
 * [Vladyslav Tomashpolskyi (@wizzardich)](https://github.com/wizzardich)
 * [Gildas Lebel (@TheSadlig)](https://github.com/TheSadlig)
 * [Andreas Schneider (@aksdb)](https://github.com/aksdb)
+* [Nick Chen (@nickchen)](https://github.com/nickchen)
 * And maybe you ?
 
 ## I would like to join the list. How can I help the project?
