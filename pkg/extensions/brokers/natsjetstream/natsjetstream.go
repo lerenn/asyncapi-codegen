@@ -19,6 +19,7 @@ var _ extensions.BrokerController = (*Controller)(nil)
 type Controller struct {
 	url            string
 	natsConn       *nats.Conn
+	ownsNatsConn   bool
 	jetStream      jetstream.JetStream
 	logger         extensions.Logger
 	streamName     string
@@ -56,7 +57,7 @@ func NewController(url string, options ...ControllerOption) (*Controller, error)
 			return nil, fmt.Errorf("could not connect to nats: %w", err)
 		}
 
-		controller.natsConn = nc
+		controller.setNatsConnection(nc, true)
 	}
 
 	// Create a JetStream management interface
@@ -142,9 +143,29 @@ func WithConnectionOpts(opts ...nats.Option) ControllerOption {
 		if err != nil {
 			return fmt.Errorf("could not connect to nats: %w", err)
 		}
-		controller.natsConn = nc
+		controller.setNatsConnection(nc, true)
 		return nil
 	}
+}
+
+// WithConnection uses the existing nats connection.
+func WithConnection(conn *nats.Conn) ControllerOption {
+	return func(controller *Controller) error {
+		controller.setNatsConnection(conn, false)
+		return nil
+	}
+}
+
+// setNatsConnection replaces the current nats connection (in a non-thread-safe manner),
+// potentially closing the existing connection in the process.
+// It needs to be specified, if the given connection is owned or not. If it is owned, it
+// will be closed during the lifecycle of this controller. Otherwise, it will be kept alive.
+func (c *Controller) setNatsConnection(nc *nats.Conn, owning bool) {
+	if c.natsConn != nil && c.ownsNatsConn {
+		c.natsConn.Close()
+	}
+	c.natsConn = nc
+	c.ownsNatsConn = owning
 }
 
 // registerConsumer set consumer configuration for creates or updates a consumer based on the given configuration
@@ -267,7 +288,9 @@ func (c *Controller) HandleMessage(ctx context.Context, msg jetstream.Msg, sub e
 
 // Close closes everything related to the broker.
 func (c *Controller) Close() {
-	c.natsConn.Close()
+	if c.natsConn != nil && c.ownsNatsConn {
+		c.natsConn.Close()
+	}
 }
 
 // ConsumeIfNeeded starts consuming messages if needed.
