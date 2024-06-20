@@ -64,6 +64,7 @@ func DefaultNamifier(sentence string) string {
 	if len(sentence) == 0 {
 		return sentence
 	}
+  
 	// Upper first letter
 	sentence = strings.ToUpper(sentence[:1]) + sentence[1:]
 

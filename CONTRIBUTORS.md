@@ -19,6 +19,7 @@ adventure, this file is a attempt to show them the respect they earned.
 * [Denis Zadorojnii (@mymdz)](https://github.com/mymdz)
 * [Vladyslav Tomashpolskyi (@wizzardich)](https://github.com/wizzardich)
 * [Gildas Lebel (@TheSadlig)](https://github.com/TheSadlig)
+* [Andreas Schneider (@aksdb)](https://github.com/aksdb)
 * And maybe you ?
 
 ## I would like to join the list. How can I help the project?
