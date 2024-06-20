@@ -119,10 +119,10 @@ func HasField(v any, name string) bool {
 	return rv.FieldByName(name).IsValid()
 }
 
-// DescribeStruct will describe a struct in a human readable way using `%+v`
+// DescribeStruct will describe a struct in a human-readable way using `%+v`
 // format from the standard library.
 func DescribeStruct(st any) string {
-	return fmt.Sprintf("%+v", st)
+	return MultiLineComment(fmt.Sprintf("%+v", st))
 }
 
 // MultiLineComment will prefix each line of a comment with "// " in order to

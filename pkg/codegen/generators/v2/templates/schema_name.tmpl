@@ -71,8 +71,9 @@ struct {
 {{- else if .ReferenceTo -}}
 {{ namify .Follow.Name }}
 
-{{- /* ----------------------- Unsupported usecase ---------------------- */ -}}
+{{- /* ----------------------- Unsupported use case ---------------------- */ -}}
 {{- else -}}
+interface{}
 // WARNING: potential error in AsyncAPI generation
 // Infos on type: {{ describeStruct . }}
 {{- end -}}
