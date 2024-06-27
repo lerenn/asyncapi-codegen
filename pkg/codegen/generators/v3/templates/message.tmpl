@@ -131,7 +131,11 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
                         }
                         msg.Headers.{{ namify $key}} = t
                     {{- else}}
+                        {{- if $value.Reference }}
+                        msg.Headers.{{ namify $key}} = {{$value.ReferenceTo.Name}}(v)
+                        {{- else }}
                         msg.Headers.{{ namify $key}} = {{$value.Type}}(v)
+                        {{- end}}
                     {{- end}}
                 {{- else}}
                     {{- if eq $value.Type "object" }}
@@ -146,7 +150,11 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
                         }
                         msg.Headers.{{ namify $key}} = &t
                     {{- else}}
+                        {{- if $value.Reference }}
+                        h := {{$value.ReferenceTo.Name}}(v)
+                        {{- else }}
                         h := {{$value.Type}}(v)
+                        {{- end}}
                         msg.Headers.{{ namify $key}} = &h
                     {{- end}}
                 {{- end}}

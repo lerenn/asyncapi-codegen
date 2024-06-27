@@ -1,0 +1,32 @@
+# Issue: https://github.com/lerenn/asyncapi-codegen/issues/241
+
+asyncapi: 3.0.0
+info:
+  title: Sample App
+  version: 1.0.0
+channels:
+  test:
+    messages:
+      ping:
+        name: Ping
+        payload:
+          type: object
+          properties:
+            event:
+              type: string
+              const: ping
+        headers:
+          name: test_headers
+          type: object
+          properties:
+            # Headers that references custom schema.
+            event_id:
+              $ref: "#/components/schemas/eventId"
+            optional_event_id:
+              $ref: "#/components/schemas/eventId"
+          required:
+            - event_id
+components:
+  schemas:
+    eventId:
+      type: string
