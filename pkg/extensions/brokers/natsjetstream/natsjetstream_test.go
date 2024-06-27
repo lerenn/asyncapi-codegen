@@ -104,7 +104,9 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 					Name:     subj,
 					Subjects: []string{subj},
 				}),
-				WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithoutTLSConfig"}),
+				WithConsumerConfig(jetstream.ConsumerConfig{
+					Name: subj,
+				}),
 			)
 			assert.Error(t, err, "new connection to TLS secured NATS broker without TLS config should return a error")
 		})
@@ -123,7 +125,9 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 				Name:     subj,
 				Subjects: []string{subj},
 			}),
-			WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithoutTLSConfig"}),
+			WithConsumerConfig(jetstream.ConsumerConfig{
+				Name: subj,
+			}),
 			WithConnectionOpts(nats.Secure(tlsConfig)),
 		)
 		assert.NoError(t, err,
@@ -146,7 +150,9 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 					Name:     subj,
 					Subjects: []string{subj},
 				}),
-				WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithTLSConfigAndMissingBasicAuth"}),
+				WithConsumerConfig(jetstream.ConsumerConfig{
+					Name: subj,
+				}),
 				WithConnectionOpts(nats.Secure(tlsConfig)),
 			)
 			assert.Error(t, err,
@@ -168,7 +174,9 @@ func TestSecureConnectionToNATSJetstream(t *testing.T) {
 					Name:     subj,
 					Subjects: []string{subj},
 				}),
-				WithConsumerConfig(jetstream.ConsumerConfig{Name: "secureConnectTestWithTLSConfigAndMissingBasicAuth"}),
+				WithConsumerConfig(jetstream.ConsumerConfig{
+					Name: subj,
+				}),
 				WithConnectionOpts(
 					nats.Secure(tlsConfig),
 					nats.UserInfo("user", "password"),
