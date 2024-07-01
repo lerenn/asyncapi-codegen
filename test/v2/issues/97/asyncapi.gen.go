@@ -363,39 +363,15 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadArray(
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
 		for {
-			// Wait for next message
-			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
-
-			// If subscription is closed and there is no more message
-			// (i.e. uninitialized message), then exit the function
-			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-				return
+			// Listen to next message
+			stop, err := c.listenToV2Issue97ReferencePayloadArrayNextMessage(path, sub, fn)
+			if err != nil {
+				c.logger.Error(ctx, err.Error())
 			}
 
-			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
-
-			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
-				// Process message
-				msg, err := brokerMessageToReferencePayloadArrayMessage(acknowledgeableBrokerMessage.BrokerMessage)
-				if err != nil {
-					return err
-				}
-
-				// Execute the subscription function
-				if err := fn(ctx, msg); err != nil {
-					return err
-				}
-
-				acknowledgeableBrokerMessage.Ack()
-
-				return nil
-			}); err != nil {
-				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
-				// On error execute the acknowledgeableBrokerMessage nack() function and
-				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
-				acknowledgeableBrokerMessage.Nak()
+			// Stop if required
+			if stop {
+				return
 			}
 		}
 	}()
@@ -404,6 +380,55 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadArray(
 	c.subscriptions[path] = sub
 
 	return nil
+}
+
+func (c *UserController) listenToV2Issue97ReferencePayloadArrayNextMessage(
+	path string,
+	sub extensions.BrokerChannelSubscription,
+	fn func(ctx context.Context, msg ReferencePayloadArrayMessage) error,
+) (stop bool, err error) {
+	// Create a context for the received response
+	msgCtx, cancel := context.WithCancel(context.Background())
+	msgCtx = addUserContextValues(msgCtx, path)
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
+	defer cancel()
+
+	// Wait for next message
+	acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
+
+	// If subscription is closed and there is no more message
+	// (i.e. uninitialized message), then exit the function
+	if !open && acknowledgeableBrokerMessage.IsUninitialized() {
+		return true, nil
+	}
+
+	// Set broker message to context
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
+
+	// Execute middlewares before handling the message
+	if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, func(middlewareCtx context.Context) error {
+		// Process message
+		msg, err := brokerMessageToReferencePayloadArrayMessage(acknowledgeableBrokerMessage.BrokerMessage)
+		if err != nil {
+			return err
+		}
+
+		// Execute the subscription function
+		if err := fn(middlewareCtx, msg); err != nil {
+			return err
+		}
+
+		acknowledgeableBrokerMessage.Ack()
+
+		return nil
+	}); err != nil {
+		c.errorHandler(msgCtx, path, &acknowledgeableBrokerMessage, err)
+		// On error execute the acknowledgeableBrokerMessage nack() function and
+		// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+		acknowledgeableBrokerMessage.Nak()
+	}
+
+	return false, nil
 }
 
 // UnsubscribeV2Issue97ReferencePayloadArray will unsubscribe messages from 'v2.issue97.referencePayloadArray' channel.
@@ -463,39 +488,15 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadObject(
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
 		for {
-			// Wait for next message
-			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
-
-			// If subscription is closed and there is no more message
-			// (i.e. uninitialized message), then exit the function
-			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-				return
+			// Listen to next message
+			stop, err := c.listenToV2Issue97ReferencePayloadObjectNextMessage(path, sub, fn)
+			if err != nil {
+				c.logger.Error(ctx, err.Error())
 			}
 
-			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
-
-			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
-				// Process message
-				msg, err := brokerMessageToReferencePayloadObjectMessage(acknowledgeableBrokerMessage.BrokerMessage)
-				if err != nil {
-					return err
-				}
-
-				// Execute the subscription function
-				if err := fn(ctx, msg); err != nil {
-					return err
-				}
-
-				acknowledgeableBrokerMessage.Ack()
-
-				return nil
-			}); err != nil {
-				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
-				// On error execute the acknowledgeableBrokerMessage nack() function and
-				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
-				acknowledgeableBrokerMessage.Nak()
+			// Stop if required
+			if stop {
+				return
 			}
 		}
 	}()
@@ -504,6 +505,55 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadObject(
 	c.subscriptions[path] = sub
 
 	return nil
+}
+
+func (c *UserController) listenToV2Issue97ReferencePayloadObjectNextMessage(
+	path string,
+	sub extensions.BrokerChannelSubscription,
+	fn func(ctx context.Context, msg ReferencePayloadObjectMessage) error,
+) (stop bool, err error) {
+	// Create a context for the received response
+	msgCtx, cancel := context.WithCancel(context.Background())
+	msgCtx = addUserContextValues(msgCtx, path)
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
+	defer cancel()
+
+	// Wait for next message
+	acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
+
+	// If subscription is closed and there is no more message
+	// (i.e. uninitialized message), then exit the function
+	if !open && acknowledgeableBrokerMessage.IsUninitialized() {
+		return true, nil
+	}
+
+	// Set broker message to context
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
+
+	// Execute middlewares before handling the message
+	if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, func(middlewareCtx context.Context) error {
+		// Process message
+		msg, err := brokerMessageToReferencePayloadObjectMessage(acknowledgeableBrokerMessage.BrokerMessage)
+		if err != nil {
+			return err
+		}
+
+		// Execute the subscription function
+		if err := fn(middlewareCtx, msg); err != nil {
+			return err
+		}
+
+		acknowledgeableBrokerMessage.Ack()
+
+		return nil
+	}); err != nil {
+		c.errorHandler(msgCtx, path, &acknowledgeableBrokerMessage, err)
+		// On error execute the acknowledgeableBrokerMessage nack() function and
+		// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+		acknowledgeableBrokerMessage.Nak()
+	}
+
+	return false, nil
 }
 
 // UnsubscribeV2Issue97ReferencePayloadObject will unsubscribe messages from 'v2.issue97.referencePayloadObject' channel.
@@ -563,39 +613,15 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadString(
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
 		for {
-			// Wait for next message
-			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
-
-			// If subscription is closed and there is no more message
-			// (i.e. uninitialized message), then exit the function
-			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-				return
+			// Listen to next message
+			stop, err := c.listenToV2Issue97ReferencePayloadStringNextMessage(path, sub, fn)
+			if err != nil {
+				c.logger.Error(ctx, err.Error())
 			}
 
-			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
-
-			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
-				// Process message
-				msg, err := brokerMessageToReferencePayloadStringMessage(acknowledgeableBrokerMessage.BrokerMessage)
-				if err != nil {
-					return err
-				}
-
-				// Execute the subscription function
-				if err := fn(ctx, msg); err != nil {
-					return err
-				}
-
-				acknowledgeableBrokerMessage.Ack()
-
-				return nil
-			}); err != nil {
-				c.errorHandler(ctx, path, &acknowledgeableBrokerMessage, err)
-				// On error execute the acknowledgeableBrokerMessage nack() function and
-				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
-				acknowledgeableBrokerMessage.Nak()
+			// Stop if required
+			if stop {
+				return
 			}
 		}
 	}()
@@ -604,6 +630,55 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadString(
 	c.subscriptions[path] = sub
 
 	return nil
+}
+
+func (c *UserController) listenToV2Issue97ReferencePayloadStringNextMessage(
+	path string,
+	sub extensions.BrokerChannelSubscription,
+	fn func(ctx context.Context, msg ReferencePayloadStringMessage) error,
+) (stop bool, err error) {
+	// Create a context for the received response
+	msgCtx, cancel := context.WithCancel(context.Background())
+	msgCtx = addUserContextValues(msgCtx, path)
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
+	defer cancel()
+
+	// Wait for next message
+	acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
+
+	// If subscription is closed and there is no more message
+	// (i.e. uninitialized message), then exit the function
+	if !open && acknowledgeableBrokerMessage.IsUninitialized() {
+		return true, nil
+	}
+
+	// Set broker message to context
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
+
+	// Execute middlewares before handling the message
+	if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, func(middlewareCtx context.Context) error {
+		// Process message
+		msg, err := brokerMessageToReferencePayloadStringMessage(acknowledgeableBrokerMessage.BrokerMessage)
+		if err != nil {
+			return err
+		}
+
+		// Execute the subscription function
+		if err := fn(middlewareCtx, msg); err != nil {
+			return err
+		}
+
+		acknowledgeableBrokerMessage.Ack()
+
+		return nil
+	}); err != nil {
+		c.errorHandler(msgCtx, path, &acknowledgeableBrokerMessage, err)
+		// On error execute the acknowledgeableBrokerMessage nack() function and
+		// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+		acknowledgeableBrokerMessage.Nak()
+	}
+
+	return false, nil
 }
 
 // UnsubscribeV2Issue97ReferencePayloadString will unsubscribe messages from 'v2.issue97.referencePayloadString' channel.

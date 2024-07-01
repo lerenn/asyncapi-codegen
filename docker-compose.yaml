@@ -4,10 +4,14 @@ services:
     image: nats:latest
     ports:
       - 4222:4222
+    expose:
+      - 4222
   nats-tls:
     image: nats:latest
     ports:
       - "4223:4222"
+    expose:
+      - 4223
     command: [
       "--tls",
       "--tlscert", "/certs/server-cert.pem",
@@ -19,6 +23,8 @@ services:
     image: nats:latest
     ports:
       - 4224:4222
+    expose:
+      - 4224
     command: [
       "--tls",
       "--tlscert", "/certs/server-cert.pem",
@@ -34,6 +40,8 @@ services:
     image: nats:latest
     ports:
       - 4225:4222
+    expose:
+      - 4225
     command: [
       "-js",
     ]
@@ -41,6 +49,8 @@ services:
     image: nats:latest
     ports:
       - 4226:4222
+    expose:
+      - 4226
     command: [
       "-js",
       "--tls",
@@ -53,6 +63,8 @@ services:
     image: nats:latest
     ports:
       - 4227:4222
+    expose:
+      - 4227
     command: [
       "-js",
       "--tls",
@@ -70,6 +82,9 @@ services:
     ports:
       - 9092:9092
       - 9093:9093
+    expose:
+      - 9092
+      - 9093
     environment:
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -84,6 +99,9 @@ services:
     ports:
       - 9094:9094
       - 9095:9095
+    expose:
+      - 9094
+      - 9095
     environment:
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -102,6 +120,9 @@ services:
     ports:
       - 9096:9096
       - 9097:9097
+    expose:
+      - 9096
+      - 9097
     environment:
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
