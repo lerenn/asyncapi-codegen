@@ -166,6 +166,7 @@ func (c *UserController) RequestToPingRequestOperation(
 
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "wait-for")
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, addr)
@@ -197,48 +198,79 @@ func (c *UserController) RequestToPingRequestOperation(
 
 	// Wait for corresponding response
 	for {
-		select {
-		case acknowledgeableBrokerMessage, open := <-sub.MessagesChannel():
-			// If subscription is closed and there is no more message
-			// (i.e. uninitialized message), then the subscription ended before
-			// receiving the expected message
-			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-				c.logger.Error(ctx, "Channel closed before getting message")
-				return PongMessage{}, extensions.ErrSubscriptionCanceled
-			}
-
-			// Get new message
-			rmsg, err := brokerMessageToPongMessage(acknowledgeableBrokerMessage.BrokerMessage)
-			if err != nil {
-				c.logger.Error(ctx, err.Error())
-			}
-
-			acknowledgeableBrokerMessage.Ack()
-
-			// If message doesn't have corresponding correlation ID, then ingore and continue
-			if msg.CorrelationID() != rmsg.CorrelationID() {
-				continue
-			}
-
-			// Set context with received values as it is the expected message
-			msgCtx := context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
-			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
-			msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
-
-			// Execute middlewares before returning
-			if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, nil); err != nil {
-				return PongMessage{}, err
-			}
-
-			// Return the message to the caller
-			//
-			// NOTE: it is transformed from the broker again, as it could have
-			// been modified by middlewares
-			return brokerMessageToPongMessage(acknowledgeableBrokerMessage.BrokerMessage)
-		case <-ctx.Done(): // Set corrsponding error if context is done
-			c.logger.Error(ctx, "Context done before getting message")
-			return PongMessage{}, extensions.ErrContextCanceled
+		// Listen to next message
+		msg, err := c.waitForPingRequestOperationNextResponse(ctx, addr, sub, msg)
+		if err != nil {
+			c.logger.Error(ctx, err.Error())
 		}
+
+		// Continue if the message hasn't been received
+		if msg == nil {
+			continue
+		}
+
+		return *msg, nil
+	}
+}
+
+func (c *UserController) waitForPingRequestOperationNextResponse(
+	ctx context.Context,
+	addr string,
+	sub extensions.BrokerChannelSubscription,
+	msg PingMessage,
+) (*PongMessage, error) {
+	// Create a context for the received response
+	msgCtx, cancel := context.WithCancel(context.Background())
+	msgCtx = addUserContextValues(msgCtx, addr)
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "wait-for")
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
+	defer cancel()
+
+	select {
+	case acknowledgeableBrokerMessage, open := <-sub.MessagesChannel():
+		// If subscription is closed and there is no more message
+		// (i.e. uninitialized message), then the subscription ended before
+		// receiving the expected message
+		if !open && acknowledgeableBrokerMessage.IsUninitialized() {
+			c.logger.Error(msgCtx, "Channel closed before getting message")
+			return nil, extensions.ErrSubscriptionCanceled
+		}
+
+		// Get new message
+		rmsg, err := brokerMessageToPongMessage(acknowledgeableBrokerMessage.BrokerMessage)
+		if err != nil {
+			c.logger.Error(msgCtx, err.Error())
+		}
+
+		// Acknowledge the message
+		acknowledgeableBrokerMessage.Ack()
+
+		// If message doesn't have corresponding correlation ID, then ingore and continue
+		if msg.CorrelationID() != rmsg.CorrelationID() {
+			return nil, nil
+		}
+
+		// Set context with received values as it is the expected message
+		msgCtx := context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
+
+		// Execute middlewares before returning
+		if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, nil); err != nil {
+			return nil, err
+		}
+
+		// Return the message to the caller
+		//
+		// NOTE: it is transformed from the broker again, as it could have
+		// been modified by middlewares
+		rmsg, err = brokerMessageToPongMessage(acknowledgeableBrokerMessage.BrokerMessage)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rmsg, nil
+	case <-ctx.Done(): // Set corresponding error if context is done
+		c.logger.Error(msgCtx, "Context done before getting message")
+		return nil, extensions.ErrContextCanceled
 	}
 }
 

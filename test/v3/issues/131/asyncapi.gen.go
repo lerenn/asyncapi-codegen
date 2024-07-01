@@ -176,39 +176,15 @@ func (c *AppController) SubscribeToReceiveTestOperation(
 	// Asynchronously listen to new messages and pass them to app receiver
 	go func() {
 		for {
-			// Wait for next message
-			acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
-
-			// If subscription is closed and there is no more message
-			// (i.e. uninitialized message), then exit the function
-			if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-				return
+			// Listen to next message
+			stop, err := c.listenToReceiveTestOperationNextMessage(addr, sub, fn)
+			if err != nil {
+				c.logger.Error(ctx, err.Error())
 			}
 
-			// Set broker message to context
-			ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
-
-			// Execute middlewares before handling the message
-			if err := c.executeMiddlewares(ctx, &acknowledgeableBrokerMessage.BrokerMessage, func(ctx context.Context) error {
-				// Process message
-				msg, err := brokerMessageToTestMessageFromTestChannel(acknowledgeableBrokerMessage.BrokerMessage)
-				if err != nil {
-					return err
-				}
-
-				// Execute the subscription function
-				if err := fn(ctx, msg); err != nil {
-					return err
-				}
-
-				acknowledgeableBrokerMessage.Ack()
-
-				return nil
-			}); err != nil {
-				c.errorHandler(ctx, addr, &acknowledgeableBrokerMessage, err)
-				// On error execute the acknowledgeableBrokerMessage nack() function and
-				// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
-				acknowledgeableBrokerMessage.Nak()
+			// Stop if required
+			if stop {
+				return
 			}
 		}
 	}()
@@ -217,7 +193,58 @@ func (c *AppController) SubscribeToReceiveTestOperation(
 	c.subscriptions[addr] = sub
 
 	return nil
-} // UnsubscribeFromReceiveTestOperation will stop the reception of TestMessageFromTestChannel messages from Test channel.
+}
+
+func (c *AppController) listenToReceiveTestOperationNextMessage(
+	addr string,
+	sub extensions.BrokerChannelSubscription,
+	fn func(ctx context.Context, msg TestMessageFromTestChannel) error,
+) (stop bool, err error) {
+	// Create a context for the received response
+	msgCtx, cancel := context.WithCancel(context.Background())
+	msgCtx = addAppContextValues(msgCtx, addr)
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
+	defer cancel()
+
+	// Wait for next message
+	acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
+
+	// If subscription is closed and there is no more message
+	// (i.e. uninitialized message), then exit the function
+	if !open && acknowledgeableBrokerMessage.IsUninitialized() {
+		return true, nil
+	}
+
+	// Set broker message to context
+	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
+
+	// Execute middlewares before handling the message
+	if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, func(middlewareCtx context.Context) error {
+		// Process message
+		msg, err := brokerMessageToTestMessageFromTestChannel(acknowledgeableBrokerMessage.BrokerMessage)
+		if err != nil {
+			return err
+		}
+
+		// Execute the subscription function
+		if err := fn(middlewareCtx, msg); err != nil {
+			return err
+		}
+
+		acknowledgeableBrokerMessage.Ack()
+
+		return nil
+	}); err != nil {
+		c.errorHandler(msgCtx, addr, &acknowledgeableBrokerMessage, err)
+		// On error execute the acknowledgeableBrokerMessage nack() function and
+		// let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+		acknowledgeableBrokerMessage.Nak()
+	}
+
+	return false, nil
+}
+
+// UnsubscribeFromReceiveTestOperation will stop the reception of TestMessageFromTestChannel messages from Test channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
 func (c *AppController) UnsubscribeFromReceiveTestOperation(
 	ctx context.Context,
