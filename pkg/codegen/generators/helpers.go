@@ -2,10 +2,10 @@ package generators
 
 import (
 	"fmt"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 func appendDirectiveIfDefined(directives []string, tagName string, value float64) []string {
@@ -15,8 +15,8 @@ func appendDirectiveIfDefined(directives []string, tagName string, value float64
 	return directives
 }
 
-// GenerateJsonTags returns the "json" tag for a given field in a struct, based on the asyncapi contract.
-func GenerateJsonTags[T any](schema asyncapi.Validations[T], field string) string {
+// GenerateJSONTags returns the "json" tag for a given field in a struct, based on the asyncapi contract.
+func GenerateJSONTags[T any](schema asyncapi.Validations[T], field string) string {
 	directives := []string{
 		template.ConvertKey(field),
 	}

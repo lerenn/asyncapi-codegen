@@ -140,6 +140,6 @@ func HelpersFunctions() template.FuncMap {
 		"generateChannelAddrFromOp":      GenerateChannelAddrFromOp,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
 		"generateValidateTags":           generators.GenerateValidateTags[asyncapi.Schema],
-		"generateJsonTags":               generators.GenerateJsonTags[asyncapi.Schema],
+		"generateJSONTags":               generators.GenerateJSONTags[asyncapi.Schema],
 	}
 }
