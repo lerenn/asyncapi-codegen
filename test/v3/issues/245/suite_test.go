@@ -28,24 +28,59 @@ func Ptr[T any](v T) *T {
 
 func ValidTestSchema() TestSchema {
 	return TestSchema{
-		RequiredProp:         "test",
-		ArrayProp:            []string{"test1", "test2"},
-		IntegerProp:          Ptr[int64](2),
-		IntegerExclusiveProp: Ptr[int64](3),
-		FloatProp:            Ptr[float64](2.55),
-		EnumProp:             Ptr("amber"),
-		ConstProp:            Ptr("Canada"),
+		RequiredProp: "test",
+		ArrayProp:    []string{"test1", "test2"},
+		IntegerProp:  Ptr[int64](2),
+		FloatProp:    Ptr[float64](2.55),
+		EnumProp:     Ptr("amber"),
+		ConstProp:    Ptr("Canada"),
 	}
 }
 
-func (suite *Suite) TestOmitEmpty() {
+func (suite *Suite) TestGenerateJsonOmitEmptyTag() {
 	testData := ValidTestSchema()
 	err := validator.New().Struct(testData)
 
 	assert.NoError(suite.T(), err)
 
-	js, err := json.Marshal(testData)
-	assert.NoError(suite.T(), err)
-	assert.JSONEq(suite.T(), `{"RequiredProp":"test","ArrayProp":["test1","test2"],"IntegerProp":2,"IntegerExclusiveProp":3,"FloatProp":2.55,"EnumProp":"amber","ConstProp":"Canada"}`, string(js))
-
+	testData.IntegerProp = nil
+	testTable := []struct {
+		name     string
+		data     TestSchema
+		expected string
+	}{
+		{
+			name:     "ArrayProp is not nil",
+			data:     TestSchema{RequiredProp: "test", ArrayProp: []string{"test1", "test2"}},
+			expected: `{"RequiredProp":"test", "ArrayProp":["test1", "test2"]}`,
+		},
+		{
+			name:     "IntegerProp is not nil",
+			data:     TestSchema{RequiredProp: "test", IntegerProp: Ptr[int64](2)},
+			expected: `{"RequiredProp":"test", "IntegerProp":2}`,
+		},
+		{
+			name:     "FloatProp is not nil",
+			data:     TestSchema{RequiredProp: "test", FloatProp: Ptr[float64](2.66)},
+			expected: `{"RequiredProp":"test", "FloatProp":2.66}`,
+		},
+		{
+			name:     "EnumProp is not nil",
+			data:     TestSchema{RequiredProp: "test", EnumProp: Ptr("amber")},
+			expected: `{"RequiredProp":"test", "EnumProp":"amber"}`,
+		},
+		{
+			name:     "IntegerProp is not nil",
+			data:     TestSchema{RequiredProp: "test", ConstProp: Ptr("Canada")},
+			expected: `{"RequiredProp":"test", "ConstProp":"Canada"}`,
+		},
+	}
+	for _, tt := range testTable {
+		tt := tt
+		suite.T().Run(tt.name, func(t *testing.T) {
+			js, err := json.Marshal(tt.data)
+			assert.NoError(suite.T(), err)
+			assert.JSONEq(suite.T(), tt.expected, string(js))
+		})
+	}
 }
