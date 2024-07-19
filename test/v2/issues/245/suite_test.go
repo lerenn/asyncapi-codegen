@@ -38,6 +38,7 @@ func ValidTestSchema() TestSchema {
 	}
 }
 
+// TestOmitEmpty tests that the omitempty tag is correctly applied to the schema
 func (suite *Suite) TestOmitEmpty() {
 	testData := ValidTestSchema()
 	err := validator.New().Struct(testData)
@@ -47,5 +48,4 @@ func (suite *Suite) TestOmitEmpty() {
 	js, err := json.Marshal(testData)
 	assert.NoError(suite.T(), err)
 	assert.JSONEq(suite.T(), `{"RequiredProp":"test","ArrayProp":["test1","test2"],"IntegerProp":2,"IntegerExclusiveProp":3,"FloatProp":2.55,"EnumProp":"amber","ConstProp":"Canada"}`, string(js))
-
 }

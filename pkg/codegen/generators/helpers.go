@@ -15,6 +15,7 @@ func appendDirectiveIfDefined(directives []string, tagName string, value float64
 	return directives
 }
 
+// GenerateJsonTags returns the "json" tag for a given field in a struct, based on the asyncapi contract.
 func GenerateJsonTags[T any](schema asyncapi.Validations[T], field string) string {
 	directives := []string{
 		template.ConvertKey(field),

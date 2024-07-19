@@ -153,5 +153,6 @@ func HelpersFunctions() template.FuncMap {
 		"operationName":                  OperationName,
 		"referenceToTypeName":            ReferenceToTypeName,
 		"generateValidateTags":           generators.GenerateValidateTags[asyncapi.Schema],
+		"generateJsonTags":               generators.GenerateJsonTags[asyncapi.Schema],
 	}
 }
