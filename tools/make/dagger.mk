@@ -14,7 +14,7 @@ dagger/check-generation: ## Check files are generated on Dagger
 dagger/lint: ## Lint the code on Dagger
 	@dagger call lint --dir .
 
-.PHONY: dagger/publish
+.PHONY: dagger/publish   
 dagger/publish: ## Publish with tag on git, docker hub, etc. on Dagger
 	@dagger call publish --dir . --tag ${TAG}
 
