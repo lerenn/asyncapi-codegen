@@ -2,6 +2,7 @@ package generators
 
 import (
 	"fmt"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
@@ -12,6 +13,18 @@ func appendDirectiveIfDefined(directives []string, tagName string, value float64
 		return append(directives, fmt.Sprintf("%s=%g", tagName, value))
 	}
 	return directives
+}
+
+func GenerateJsonTags[T any](schema asyncapi.Validations[T], field string) string {
+	directives := []string{
+		template.ConvertKey(field),
+	}
+
+	if !schema.IsRequired {
+		directives = append(directives, "omitempty")
+	}
+
+	return fmt.Sprintf("json:\"%s\"", strings.Join(directives, ","))
 }
 
 // GenerateValidateTags returns the "validate" tag for a given field in a struct, based on the asyncapi contract.

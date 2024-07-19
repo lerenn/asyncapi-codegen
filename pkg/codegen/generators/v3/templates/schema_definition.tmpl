@@ -15,7 +15,7 @@ type {{ namify .Name }} struct {
     {{else if and $value.ReferenceTo $value.ReferenceTo.Description}}
     // Description: {{multiLineComment $value.ReferenceTo.Description}}
     {{end -}}
-    {{namify $key}} {{if and (not (isRequired $ $key)) (ne $value.Type "array")}}*{{end}}{{template "schema-name" $value}} `json:"{{convertKey $key}}"{{generateValidateTags $value.Validations}}`
+    {{namify $key}} {{if and (not (isRequired $ $key)) (ne $value.Type "array")}}*{{end}}{{template "schema-name" $value}} `{{generateJsonTags $value.Validations $key}}{{generateValidateTags $value.Validations}}`
     {{end -}}
 
     {{- if .AdditionalProperties}}
