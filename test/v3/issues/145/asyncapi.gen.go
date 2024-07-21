@@ -630,15 +630,15 @@ func (e *Error) Error() string {
 // HeadersFromPingMessage is a schema from the AsyncAPI specification required in messages
 type HeadersFromPingMessage struct {
 	// Description: Provide path to which reply must be provided
-	ReplyTo *string `json:"replyTo"`
+	ReplyTo *string `json:"replyTo,omitempty"`
 
 	// Description: Provide request id that you will use to identify the reply match
-	RequestId *string `json:"requestId"`
+	RequestId *string `json:"requestId,omitempty"`
 }
 
 // PingMessagePayload is a schema from the AsyncAPI specification required in messages
 type PingMessagePayload struct {
-	Event *string `json:"event" validate:"omitempty,eq=ping"`
+	Event *string `json:"event,omitempty" validate:"omitempty,eq=ping"`
 }
 
 // PingMessage is the message expected for 'PingMessage' channel.
@@ -715,12 +715,12 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // HeadersFromPongMessage is a schema from the AsyncAPI specification required in messages
 type HeadersFromPongMessage struct {
 	// Description: Reply message must contain id of the request message
-	RequestId *string `json:"requestId"`
+	RequestId *string `json:"requestId,omitempty"`
 }
 
 // PongMessagePayload is a schema from the AsyncAPI specification required in messages
 type PongMessagePayload struct {
-	Event *string `json:"event" validate:"omitempty,eq=pong"`
+	Event *string `json:"event,omitempty" validate:"omitempty,eq=pong"`
 }
 
 // PongMessage is the message expected for 'PongMessage' channel.

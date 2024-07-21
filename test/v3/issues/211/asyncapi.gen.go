@@ -76,7 +76,7 @@ func (e *Error) Error() string {
 // EventSuccessMessagePayload is a schema from the AsyncAPI specification required in messages
 type EventSuccessMessagePayload struct {
 	// Description: The timestamp of the event
-	Timestamp *int64 `json:"timestamp"`
+	Timestamp *int64 `json:"timestamp,omitempty"`
 }
 
 // EventSuccessMessage is the message expected for 'EventSuccessMessage' channel.

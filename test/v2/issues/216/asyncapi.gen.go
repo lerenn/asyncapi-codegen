@@ -70,16 +70,16 @@ func (e *Error) Error() string {
 
 // EventSuccessMessagePayload is a schema from the AsyncAPI specification required in messages
 type EventSuccessMessagePayload struct {
-	EventObjects []EventSuccessMessagePayloadEventObjectsItem `json:"event_objects"`
+	EventObjects []EventSuccessMessagePayloadEventObjectsItem `json:"event_objects,omitempty"`
 }
 
 // EventSuccessMessagePayloadEventObjectsItem is a schema from the AsyncAPI specification required in messages
 type EventSuccessMessagePayloadEventObjectsItem struct {
 	// Description: The identifier of the event
-	EventId *string `json:"event_id"`
+	EventId *string `json:"event_id,omitempty"`
 
 	// Description: The type of the event
-	EventType *string `json:"event_type"`
+	EventType *string `json:"event_type,omitempty"`
 }
 
 // EventSuccessMessage is the message expected for 'EventSuccessMessage' channel.

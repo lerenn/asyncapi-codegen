@@ -70,13 +70,13 @@ func (e *Error) Error() string {
 
 // V2Issue190Msg1MessagePayload is a schema from the AsyncAPI specification required in messages
 type V2Issue190Msg1MessagePayload struct {
-	Data *V2Issue190Msg1MessagePayloadData `json:"data"`
+	Data *V2Issue190Msg1MessagePayloadData `json:"data,omitempty"`
 }
 
 // V2Issue190Msg1MessagePayloadData is a schema from the AsyncAPI specification required in messages
 type V2Issue190Msg1MessagePayloadData struct {
-	Hello *string `json:"hello"`
-	Id    *string `json:"id"`
+	Hello *string `json:"hello,omitempty"`
+	Id    *string `json:"id,omitempty"`
 }
 
 // V2Issue190Msg1Message is the message expected for 'V2Issue190Msg1Message' channel.
@@ -127,13 +127,13 @@ func (msg V2Issue190Msg1Message) toBrokerMessage() (extensions.BrokerMessage, er
 
 // V2Issue190Msg2MessagePayload is a schema from the AsyncAPI specification required in messages
 type V2Issue190Msg2MessagePayload struct {
-	Data *V2Issue190Msg2MessagePayloadData `json:"data"`
+	Data *V2Issue190Msg2MessagePayloadData `json:"data,omitempty"`
 }
 
 // V2Issue190Msg2MessagePayloadData is a schema from the AsyncAPI specification required in messages
 type V2Issue190Msg2MessagePayloadData struct {
-	Bar *string `json:"bar"`
-	Id  *string `json:"id"`
+	Bar *string `json:"bar,omitempty"`
+	Id  *string `json:"id,omitempty"`
 }
 
 // V2Issue190Msg2Message is the message expected for 'V2Issue190Msg2Message' channel.

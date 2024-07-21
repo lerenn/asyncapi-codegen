@@ -268,12 +268,12 @@ func (e *Error) Error() string {
 // HeadersFromPingMessageFromTestChannel is a schema from the AsyncAPI specification required in messages
 type HeadersFromPingMessageFromTestChannel struct {
 	EventId         EventIdSchema  `json:"event_id" validate:"required"`
-	OptionalEventId *EventIdSchema `json:"optional_event_id"`
+	OptionalEventId *EventIdSchema `json:"optional_event_id,omitempty"`
 }
 
 // PingMessageFromTestChannelPayload is a schema from the AsyncAPI specification required in messages
 type PingMessageFromTestChannelPayload struct {
-	Event *string `json:"event" validate:"omitempty,eq=ping"`
+	Event *string `json:"event,omitempty" validate:"omitempty,eq=ping"`
 }
 
 // PingMessageFromTestChannel is the message expected for 'PingMessageFromTestChannel' channel.

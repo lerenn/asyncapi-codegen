@@ -901,7 +901,7 @@ type ArraySchema []string
 
 // ObjectSchema is a schema from the AsyncAPI specification required in messages
 type ObjectSchema struct {
-	Text *string `json:"text"`
+	Text *string `json:"text,omitempty"`
 }
 
 // StringSchema is a schema from the AsyncAPI specification required in messages
