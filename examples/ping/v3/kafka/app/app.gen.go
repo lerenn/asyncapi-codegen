@@ -400,12 +400,12 @@ func (e *Error) Error() string {
 // HeadersFromPingMessage is a schema from the AsyncAPI specification required in messages
 type HeadersFromPingMessage struct {
 	// Description: Correlation ID set by user
-	CorrelationId *string `json:"correlationId"`
+	CorrelationId *string `json:"correlationId,omitempty"`
 }
 
 // PingMessagePayload is a schema from the AsyncAPI specification required in messages
 type PingMessagePayload struct {
-	Event *string `json:"event" validate:"omitempty,eq=ping"`
+	Event *string `json:"event,omitempty" validate:"omitempty,eq=ping"`
 }
 
 // PingMessage is the message expected for 'PingMessage' channel.
@@ -502,12 +502,12 @@ func (msg *PingMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 // HeadersFromPongMessage is a schema from the AsyncAPI specification required in messages
 type HeadersFromPongMessage struct {
 	// Description: Correlation ID set by user
-	CorrelationId *string `json:"correlationId"`
+	CorrelationId *string `json:"correlationId,omitempty"`
 }
 
 // PongMessagePayload is a schema from the AsyncAPI specification required in messages
 type PongMessagePayload struct {
-	Event *string `json:"event" validate:"omitempty,eq=pong"`
+	Event *string `json:"event,omitempty" validate:"omitempty,eq=pong"`
 }
 
 // PongMessage is the message expected for 'PongMessage' channel.

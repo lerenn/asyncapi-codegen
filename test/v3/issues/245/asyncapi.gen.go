@@ -504,13 +504,13 @@ func (msg TestMessageFromTestChannel) toBrokerMessage() (extensions.BrokerMessag
 
 // TestSchema is a schema from the AsyncAPI specification required in messages
 type TestSchema struct {
-	ArrayProp            []string `json:"ArrayProp,omitempty" validate:"omitempty,min=2,max=5,unique"`
-	ConstProp            *string  `json:"ConstProp,omitempty" validate:"omitempty,eq=Canada"`
-	EnumProp             *string  `json:"EnumProp,omitempty" validate:"omitempty,oneof=red amber green"`
-	FloatProp            *float64 `json:"FloatProp,omitempty" validate:"omitempty,gte=2.5,lte=5.5"`
-	IntegerProp          *int64   `json:"IntegerProp,omitempty" validate:"omitempty,gte=2,lte=5"`
-	RequiredProp         string   `json:"RequiredProp" validate:"required"`
-	StringProp           *string  `json:"StringProp,omitempty" validate:"omitempty,min=2,max=5"`
+	ArrayProp    []string `json:"ArrayProp,omitempty" validate:"omitempty,min=2,max=5,unique"`
+	ConstProp    *string  `json:"ConstProp,omitempty" validate:"omitempty,eq=Canada"`
+	EnumProp     *string  `json:"EnumProp,omitempty" validate:"omitempty,oneof=red amber green"`
+	FloatProp    *float64 `json:"FloatProp,omitempty" validate:"omitempty,gte=2.5,lte=5.5"`
+	IntegerProp  *int64   `json:"IntegerProp,omitempty" validate:"omitempty,gte=2,lte=5"`
+	RequiredProp string   `json:"RequiredProp" validate:"required"`
+	StringProp   *string  `json:"StringProp,omitempty" validate:"omitempty,min=2,max=5"`
 }
 
 const (

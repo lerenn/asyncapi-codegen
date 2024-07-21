@@ -119,5 +119,5 @@ type SubTestSchema string
 
 // TestSchema is a schema from the AsyncAPI specification required in messages
 type TestSchema struct {
-	Subtest *SubTestSchema `json:"subtest"`
+	Subtest *SubTestSchema `json:"subtest,omitempty"`
 }

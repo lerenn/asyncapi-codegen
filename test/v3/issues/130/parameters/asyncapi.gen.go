@@ -462,7 +462,7 @@ type UserSignupChannelParameters struct {
 
 // UserMessageFromUserSignupChannelPayload is a schema from the AsyncAPI specification required in messages
 type UserMessageFromUserSignupChannelPayload struct {
-	Name *string `json:"name"`
+	Name *string `json:"name,omitempty"`
 }
 
 // UserMessageFromUserSignupChannel is the message expected for 'UserMessageFromUserSignupChannel' channel.

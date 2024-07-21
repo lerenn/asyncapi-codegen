@@ -504,8 +504,8 @@ func (msg TestingEventMessageFromTestingChannel) toBrokerMessage() (extensions.B
 
 // TESTSchema is a schema from the AsyncAPI specification required in messages
 type TESTSchema struct {
-	ANOTHERPROP2 *string `json:"ANOTHER_PROP_2"`
-	APROP1       *string `json:"A_PROP_1"`
+	ANOTHERPROP2 *string `json:"ANOTHER_PROP_2,omitempty"`
+	APROP1       *string `json:"A_PROP_1,omitempty"`
 }
 
 const (
