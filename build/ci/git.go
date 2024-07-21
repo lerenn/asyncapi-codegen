@@ -22,11 +22,16 @@ type Git struct {
 }
 
 func NewGit(srcDir, sshDir *dagger.Directory) Git {
+	container := dag.Container().
+		From("alpine/git").
+		WithMountedDirectory("/git", srcDir)
+
+	if sshDir != nil {
+		container = container.WithMountedDirectory("/root/.ssh", sshDir)
+	}
+
 	return Git{
-		container: dag.Container().
-			From("alpine/git").
-			WithMountedDirectory("/git", srcDir).
-			WithMountedDirectory("/root/.ssh", sshDir),
+		container: container,
 	}
 }
 

@@ -164,6 +164,7 @@ func (ci *AsyncapiCodegenCi) Tests(
 func (ci *AsyncapiCodegenCi) Publish(
 	ctx context.Context,
 	srcDir *dagger.Directory,
+	// +optional
 	sshDir *dagger.Directory,
 ) error {
 	gi := NewGit(srcDir, sshDir)

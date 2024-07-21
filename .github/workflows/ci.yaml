@@ -77,6 +77,8 @@ jobs:
 
   publish:
     name: Publish asyncapi-codegen new version
+    permissions:
+      contents: write
     # needs: ["tests", "examples", "lint", "check-generation"]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -91,5 +93,5 @@ jobs:
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: publish --src-dir . --ssh-dir=~/.ssh
+          args: publish --src-dir .
           version: "0.11.0"
