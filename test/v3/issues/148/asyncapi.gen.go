@@ -618,7 +618,7 @@ func (e *Error) Error() string {
 
 // HeadersFromRequestMessageFromReceptionChannel is a schema from the AsyncAPI specification required in messages
 type HeadersFromRequestMessageFromReceptionChannel struct {
-	ReplyTo *string `json:"replyTo"`
+	ReplyTo *string `json:"replyTo,omitempty"`
 }
 
 // RequestMessageFromReceptionChannel is the message expected for 'RequestMessageFromReceptionChannel' channel.

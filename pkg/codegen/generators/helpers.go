@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 func appendDirectiveIfDefined(directives []string, tagName string, value float64) []string {
@@ -12,6 +13,19 @@ func appendDirectiveIfDefined(directives []string, tagName string, value float64
 		return append(directives, fmt.Sprintf("%s=%g", tagName, value))
 	}
 	return directives
+}
+
+// GenerateJSONTags returns the "json" tag for a given field in a struct, based on the asyncapi contract.
+func GenerateJSONTags[T any](schema asyncapi.Validations[T], field string) string {
+	directives := []string{
+		template.ConvertKey(field),
+	}
+
+	if !schema.IsRequired {
+		directives = append(directives, "omitempty")
+	}
+
+	return fmt.Sprintf("json:\"%s\"", strings.Join(directives, ","))
 }
 
 // GenerateValidateTags returns the "validate" tag for a given field in a struct, based on the asyncapi contract.

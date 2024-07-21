@@ -245,7 +245,7 @@ func (msg TestMessageFromTestChannel) toBrokerMessage() (extensions.BrokerMessag
 
 // TestSchema is a schema from the AsyncAPI specification required in messages
 type TestSchema struct {
-	ThisIsAProperty *string `json:"ThisIsAProperty"`
+	ThisIsAProperty *string `json:"ThisIsAProperty,omitempty"`
 }
 
 const (

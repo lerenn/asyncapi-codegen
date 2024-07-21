@@ -988,7 +988,7 @@ func (e *Error) Error() string {
 
 // PingMessagePayload is a schema from the AsyncAPI specification required in messages
 type PingMessagePayload struct {
-	Event *string `json:"event" validate:"omitempty,eq=ping"`
+	Event *string `json:"event,omitempty" validate:"omitempty,eq=ping"`
 }
 
 // PingMessage is the message expected for 'PingMessage' channel.
@@ -1040,12 +1040,12 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // HeadersFromPingWithIDMessage is a schema from the AsyncAPI specification required in messages
 type HeadersFromPingWithIDMessage struct {
 	// Description: Correlation ID set by user
-	CorrelationId *string `json:"correlationId"`
+	CorrelationId *string `json:"correlationId,omitempty"`
 }
 
 // PingWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
 type PingWithIDMessagePayload struct {
-	Event *string `json:"event" validate:"omitempty,eq=ping"`
+	Event *string `json:"event,omitempty" validate:"omitempty,eq=ping"`
 }
 
 // PingWithIDMessage is the message expected for 'PingWithIDMessage' channel.
@@ -1141,7 +1141,7 @@ func (msg *PingWithIDMessage) SetAsResponseFrom(req MessageWithCorrelationID) {
 
 // PongMessagePayload is a schema from the AsyncAPI specification required in messages
 type PongMessagePayload struct {
-	Event *string `json:"event" validate:"omitempty,eq=pong"`
+	Event *string `json:"event,omitempty" validate:"omitempty,eq=pong"`
 }
 
 // PongMessage is the message expected for 'PongMessage' channel.
@@ -1193,12 +1193,12 @@ func (msg PongMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 // HeadersFromPongWithIDMessage is a schema from the AsyncAPI specification required in messages
 type HeadersFromPongWithIDMessage struct {
 	// Description: Correlation ID set by user
-	CorrelationId *string `json:"correlationId"`
+	CorrelationId *string `json:"correlationId,omitempty"`
 }
 
 // PongWithIDMessagePayload is a schema from the AsyncAPI specification required in messages
 type PongWithIDMessagePayload struct {
-	Event *string `json:"event" validate:"omitempty,eq=pong"`
+	Event *string `json:"event,omitempty" validate:"omitempty,eq=pong"`
 }
 
 // PongWithIDMessage is the message expected for 'PongWithIDMessage' channel.

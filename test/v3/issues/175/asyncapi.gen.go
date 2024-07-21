@@ -73,9 +73,9 @@ type Type1MessagePayload []ItemFromType1MessagePayload
 
 // ItemFromType1MessagePayload is a schema from the AsyncAPI specification required in messages
 type ItemFromType1MessagePayload struct {
-	Age   *int64  `json:"age"`
-	Email *string `json:"email"`
-	Name  *string `json:"name"`
+	Age   *int64  `json:"age,omitempty"`
+	Email *string `json:"email,omitempty"`
+	Name  *string `json:"name,omitempty"`
 }
 
 // Type1Message is the message expected for 'Type1Message' channel.
@@ -224,7 +224,7 @@ type ArrayPayloadSchema []ItemFromArrayPayloadSchema
 
 // ItemFromArrayPayloadSchema is a schema from the AsyncAPI specification required in messages
 type ItemFromArrayPayloadSchema struct {
-	Age   *int64  `json:"age"`
-	Email *string `json:"email"`
-	Name  *string `json:"name"`
+	Age   *int64  `json:"age,omitempty"`
+	Email *string `json:"email,omitempty"`
+	Name  *string `json:"name,omitempty"`
 }

@@ -70,13 +70,13 @@ func (e *Error) Error() string {
 
 // BarMessageFromFooChannelPayload is a schema from the AsyncAPI specification required in messages
 type BarMessageFromFooChannelPayload struct {
-	Data *DataPropertyFromBarMessageFromFooChannelPayload `json:"data"`
+	Data *DataPropertyFromBarMessageFromFooChannelPayload `json:"data,omitempty"`
 }
 
 // DataPropertyFromBarMessageFromFooChannelPayload is a schema from the AsyncAPI specification required in messages
 type DataPropertyFromBarMessageFromFooChannelPayload struct {
-	Bar *string `json:"bar"`
-	Id  *string `json:"id"`
+	Bar *string `json:"bar,omitempty"`
+	Id  *string `json:"id,omitempty"`
 }
 
 // BarMessageFromFooChannel is the message expected for 'BarMessageFromFooChannel' channel.
@@ -127,13 +127,13 @@ func (msg BarMessageFromFooChannel) toBrokerMessage() (extensions.BrokerMessage,
 
 // SayHelloMessageFromHelloChannelPayload is a schema from the AsyncAPI specification required in messages
 type SayHelloMessageFromHelloChannelPayload struct {
-	Data *DataPropertyFromSayHelloMessageFromHelloChannelPayload `json:"data"`
+	Data *DataPropertyFromSayHelloMessageFromHelloChannelPayload `json:"data,omitempty"`
 }
 
 // DataPropertyFromSayHelloMessageFromHelloChannelPayload is a schema from the AsyncAPI specification required in messages
 type DataPropertyFromSayHelloMessageFromHelloChannelPayload struct {
-	Hello *string `json:"hello"`
-	Id    *string `json:"id"`
+	Hello *string `json:"hello,omitempty"`
+	Id    *string `json:"id,omitempty"`
 }
 
 // SayHelloMessageFromHelloChannel is the message expected for 'SayHelloMessageFromHelloChannel' channel.

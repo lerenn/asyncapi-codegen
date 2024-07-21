@@ -1,0 +1,49 @@
+asyncapi: 2.6.0
+info:
+  title: Sample App
+  version: 1.2.3
+
+channels:
+  v2.issue245.test:
+    subscribe:
+      message:
+        payload:
+          $ref: '#/components/schemas/Test'
+
+components:
+  schemas:
+    Test:
+      type: object
+      required:
+        - RequiredProp
+      properties:
+        RequiredProp:
+          type: string
+        StringProp:
+          type: string
+          minLength: 2
+          maxLength: 5
+        IntegerProp:
+          type: integer
+          minimum: 2
+          maximum: 5
+        FloatProp:
+          type: number
+          minimum: 2.5
+          maximum: 5.5
+        ArrayProp:
+          type: array
+          minLength: 2
+          maxLength: 5
+          uniqueItems: true
+          items:
+            type: string
+        EnumProp:
+          type: string
+          enum:
+            - "red"
+            - "amber"
+            - "green"
+        ConstProp:
+          type: string
+          const: "Canada"

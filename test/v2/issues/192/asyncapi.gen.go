@@ -75,11 +75,11 @@ type LocalSchema ObjectSchema
 
 // ObjectSchema is a schema from the AsyncAPI specification required in messages
 type ObjectSchema struct {
-	Data *ObjectSchemaData `json:"data"`
+	Data *ObjectSchemaData `json:"data,omitempty"`
 }
 
 // ObjectSchemaData is a schema from the AsyncAPI specification required in messages
 type ObjectSchemaData struct {
-	Hello *string `json:"hello"`
-	World *string `json:"world"`
+	Hello *string `json:"hello,omitempty"`
+	World *string `json:"world,omitempty"`
 }
