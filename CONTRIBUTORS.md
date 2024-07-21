@@ -21,6 +21,7 @@ adventure, this file is a attempt to show them the respect they earned.
 * [Gildas Lebel (@TheSadlig)](https://github.com/TheSadlig)
 * [Andreas Schneider (@aksdb)](https://github.com/aksdb)
 * [Nick Chen (@nickchen)](https://github.com/nickchen)
+* [Sinan Ülker (@unicod3)](https://github.com/unicod3)
 * And maybe you ?
 
 ## I would like to join the list. How can I help the project?
