@@ -272,7 +272,7 @@ func invoke(ctx context.Context, parentJSON []byte, parentName string, fnName st
 							dag.TypeDef().WithKind(dagger.VoidKind).WithOptional(true)).
 							WithDescription("Publish tag on git repository and docker image(s) on Docker Hub\nNote: if this is not 'main' branch, then it will just push docker image with\ngit tag.").
 							WithArg("srcDir", dag.TypeDef().WithObject("Directory")).
-							WithArg("sshDir", dag.TypeDef().WithObject("Directory")))), nil
+							WithArg("sshDir", dag.TypeDef().WithObject("Directory").WithOptional(true)))), nil
 	default:
 		return nil, fmt.Errorf("unknown object %s", parentName)
 	}
