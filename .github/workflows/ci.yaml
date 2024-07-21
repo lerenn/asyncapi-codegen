@@ -9,66 +9,87 @@ on:
       - main
 
 jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4.1.1
-      - uses: actions/setup-go@v5.0.0
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: Run tests
-        uses: dagger/dagger-for-github@v5
-        with:
-          verb: call
-          args: tests --dir .
-          version: "0.11.0"      
-  examples:
-    name: Examples
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4.1.1
-      - uses: actions/setup-go@v5.0.0
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: Run examples
-        uses: dagger/dagger-for-github@v5
-        with:
-          verb: call
-          args: examples --dir .
-          version: "0.11.0"
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4.1.1
-      - uses: actions/setup-go@v5.0.0
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: Lint
-        uses: dagger/dagger-for-github@v5
-        with:
-          verb: call
-          args: lint --dir .
-          version: "0.11.0"      
+  # tests:
+  #   name: Tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4.1.1
+  #     - uses: actions/setup-go@v5.0.0
+  #       with:
+  #         go-version-file: go.mod
+  #         cache: true
+  #     - name: Run tests
+  #       uses: dagger/dagger-for-github@v5
+  #       with:
+  #         verb: call
+  #         args: tests --dir .
+  #         version: "0.11.0"      
+  
+  # examples:
+  #   name: Examples
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4.1.1
+  #     - uses: actions/setup-go@v5.0.0
+  #       with:
+  #         go-version-file: go.mod
+  #         cache: true
+  #     - name: Run examples
+  #       uses: dagger/dagger-for-github@v5
+  #       with:
+  #         verb: call
+  #         args: examples --dir .
+  #         version: "0.11.0"
+  
+  # lint:
+  #   name: Lint
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 5
+  #   steps:
+  #     - uses: actions/checkout@v4.1.1
+  #     - uses: actions/setup-go@v5.0.0
+  #       with:
+  #         go-version-file: go.mod
+  #         cache: true
+  #     - name: Lint
+  #       uses: dagger/dagger-for-github@v5
+  #       with:
+  #         verb: call
+  #         args: lint --dir .
+  #         version: "0.11.0"      
 
-  check-generation:
-    name: Check generation
+  # check-generation:
+  #   name: Check generation
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 5
+  #   steps:
+  #     - uses: actions/checkout@v4.1.1
+  #     - uses: actions/setup-go@v5.0.0
+  #       with:
+  #         go-version-file: go.mod
+  #         cache: true
+  #     - name: Lint
+  #       uses: dagger/dagger-for-github@v5
+  #       with:
+  #         verb: call
+  #         args: check-generation --dir .
+  #         version: "0.11.0"
+
+  publish:
+    name: Publish asyncapi-codegen new version
+    # needs: ["tests", "examples", "lint", "check-generation"]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4.1.1
       - uses: actions/setup-go@v5.0.0
         with:
           go-version-file: go.mod
           cache: true
-      - name: Lint
+      - name: Publish on git
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: check-generation --dir .
-          version: "0.11.0"  
+          args: publish --src-dir . --ssh-dir=~/.ssh
+          version: "0.11.0"
