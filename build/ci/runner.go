@@ -14,7 +14,7 @@ type runnerType struct {
 }
 
 // runnerFromDockerfile returns a dagger container based on the repository Dockerfile.
-func runnerFromDockerfile(dir *Directory, rt runnerType) *dagger.Container {
+func runnerFromDockerfile(dir *dagger.Directory, rt runnerType) *dagger.Container {
 	// Get running OS, if that's an OS unsupported by Docker, replace by Linux
 	os := runtime.GOOS
 	if os == "darwin" {

@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-func sourceCodeAndGoCache(dir *Directory) func(r *dagger.Container) *dagger.Container {
+func sourceCodeAndGoCache(dir *dagger.Directory) func(r *dagger.Container) *dagger.Container {
 	sourceCodeMountPath := "/go/src/github.com/lerenn/asyncapi-codegen"
 	return func(r *dagger.Container) *dagger.Container {
 		return r.
@@ -17,7 +17,7 @@ func sourceCodeAndGoCache(dir *Directory) func(r *dagger.Container) *dagger.Cont
 	}
 }
 
-func directoriesAtSublevel(ctx context.Context, dir *Directory, sublevel int, basePath string) ([]string, error) {
+func directoriesAtSublevel(ctx context.Context, dir *dagger.Directory, sublevel int, basePath string) ([]string, error) {
 	paths := make([]string, 0)
 
 	entries, err := dir.Entries(ctx)
@@ -57,7 +57,7 @@ func directoriesAtSublevel(ctx context.Context, dir *Directory, sublevel int, ba
 	return paths, nil
 }
 
-func isDir(ctx context.Context, parentDir *Directory, path string) (bool, error) {
+func isDir(ctx context.Context, parentDir *dagger.Directory, path string) (bool, error) {
 	_, isNotDirErr := parentDir.Directory(path).Sync(ctx)
 	if isNotDirErr == nil {
 		// If it is a directory do not keep further checking

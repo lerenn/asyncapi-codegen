@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"dagger/asyncapi-codegen-ci/internal/dagger"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/git"
 )
 
 const (
@@ -26,18 +24,7 @@ var (
 	}
 )
 
-// Publish should publish tag on git repository and docker image(s) on Docker Hub
-// Note: if this is not 'main' branch, then it will just push docker image with
-// git tag.
-func Publish(ctx context.Context, dir *Directory, tag string) error {
-	if err := publishDocker(ctx, dir, tag); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func publishDocker(ctx context.Context, dir *dagger.Directory, tag string) error {
+func publishDocker(ctx context.Context, dir *dagger.Directory, git Git) error {
 	// Get images for each platform
 	platformVariants := make([]*dagger.Container, len(platforms))
 	for i, p := range platforms {
@@ -50,7 +37,7 @@ func publishDocker(ctx context.Context, dir *dagger.Directory, tag string) error
 	}
 
 	// Get last git commit hash
-	hash, err := git.GetLastCommitHash(".")
+	hash, err := git.GetLastCommitShortSHA(ctx)
 	if err != nil {
 		return err
 	}
@@ -61,9 +48,17 @@ func publishDocker(ctx context.Context, dir *dagger.Directory, tag string) error
 	}
 
 	// Stop here if this not main branch
-	if name, err := git.ActualBranchName("."); err != nil {
+	if name, err := git.GetActualBranch(ctx); err != nil {
 		return err
 	} else if name != "main" {
+		return nil
+	}
+
+	// Check if there is a new sem ver, if there is none, just stop here
+	tag, err := git.GetNewSemVerIfNeeded(ctx)
+	if err != nil {
+		return err
+	} else if tag == "" {
 		return nil
 	}
 

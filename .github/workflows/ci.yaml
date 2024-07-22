@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  test:
-    name: Test
+  tests:
+    name: Run tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
@@ -22,10 +22,11 @@ jobs:
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: tests --dir .
+          args: tests --src-dir .
           version: "0.11.0"      
+  
   examples:
-    name: Examples
+    name: Run examples
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
@@ -37,10 +38,11 @@ jobs:
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: examples --dir .
+          args: examples --src-dir .
           version: "0.11.0"
+  
   lint:
-    name: Lint
+    name: Run linter
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -53,11 +55,11 @@ jobs:
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: lint --dir .
+          args: lint --src-dir .
           version: "0.11.0"      
 
   check-generation:
-    name: Check generation
+    name: Check generation has been run
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -70,5 +72,29 @@ jobs:
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: check-generation --dir .
-          version: "0.11.0"  
+          args: check-generation --src-dir .
+          version: "0.11.0"
+
+  publish:
+    name: Publish a new version
+    permissions:
+      contents: write
+    needs: ["tests", "examples", "lint", "check-generation"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-go@v5.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Publish on git
+        uses: dagger/dagger-for-github@v5
+        with:
+          verb: call
+          args: publish --src-dir .
+          version: "0.11.0"
