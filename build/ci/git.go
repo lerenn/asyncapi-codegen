@@ -50,6 +50,11 @@ func (g *Git) GetLastCommitShortSHA(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Remove potential new line
+	res = strings.TrimSuffix(res, "\n")
+
+	// Set the cache value
 	g.lastCommit.shortSHA = res
 
 	return g.lastCommit.shortSHA, nil
@@ -67,6 +72,11 @@ func (g *Git) GetActualBranch(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Remove potential new line
+	res = strings.TrimSuffix(res, "\n")
+
+	// Set the cache value
 	g.actualBranch = res
 
 	return g.actualBranch, nil
@@ -84,6 +94,11 @@ func (g *Git) GetLastCommitTitle(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Remove potential new line
+	res = strings.TrimSuffix(res, "\n")
+
+	// Set the cache value
 	g.lastCommit.title = res
 
 	return g.lastCommit.title, nil
@@ -101,6 +116,11 @@ func (g *Git) GetLastTag(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Remove potential new line
+	res = strings.TrimSuffix(res, "\n")
+
+	// Set the cache value
 	g.lastTag = res
 
 	return g.lastTag, nil
@@ -115,7 +135,6 @@ func (g *Git) GetLastSemanticVersionedTag(ctx context.Context) (major, minor, pa
 
 	// Remove wrong characters
 	tag = strings.TrimPrefix(tag, "v")
-	tag = strings.TrimSuffix(tag, "\n")
 
 	// Split tag into parts
 	parts := strings.Split(tag, ".")
@@ -173,7 +192,10 @@ func (g *Git) GetNewSemVerIfNeeded(ctx context.Context) (string, error) {
 		return "", nil
 	}
 
-	return fmt.Sprintf("v%d.%d.%d", major, minor, patch), nil
+	// Set the new semver cached value
+	g.newSemVer = fmt.Sprintf("v%d.%d.%d", major, minor, patch)
+
+	return g.newSemVer, nil
 }
 
 func (g *Git) PushNewSemVerIfNeeded(ctx context.Context) error {
