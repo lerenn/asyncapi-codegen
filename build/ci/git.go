@@ -42,7 +42,7 @@ func (g *Git) GetLastCommitShortSHA(ctx context.Context) (string, error) {
 	}
 
 	res, err := g.container.
-		WithExec([]string{"rev-parse", "--short", "HEAD"}).
+		WithExec([]string{"git", "rev-parse", "--short", "HEAD"}).
 		Stdout(ctx)
 	if err != nil {
 		return "", err
@@ -59,7 +59,7 @@ func (g *Git) GetLastCommitTitle(ctx context.Context) (string, error) {
 	}
 
 	res, err := g.container.
-		WithExec([]string{"log", "-1", "--pretty=%B"}).
+		WithExec([]string{"git", "log", "-1", "--pretty=%B"}).
 		Stdout(ctx)
 	if err != nil {
 		return "", err
@@ -76,7 +76,7 @@ func (g *Git) GetLastTag(ctx context.Context) (string, error) {
 	}
 
 	res, err := g.container.
-		WithExec([]string{"describe", "--tags", "--abbrev=0"}).
+		WithExec([]string{"git", "describe", "--tags", "--abbrev=0"}).
 		Stdout(ctx)
 	if err != nil {
 		return "", err
@@ -167,8 +167,8 @@ func (g *Git) PushNewSemVerIfNeeded(ctx context.Context) error {
 
 	// Push new tag
 	_, err = g.container.
-		WithExec([]string{"tag", semver}).
-		WithExec([]string{"push", "--tags"}).
+		WithExec([]string{"git", "tag", semver}).
+		WithExec([]string{"git", "push", "--tags"}).
 		Stdout(ctx)
 	return err
 }
