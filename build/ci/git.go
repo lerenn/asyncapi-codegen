@@ -24,7 +24,8 @@ type Git struct {
 func NewGit(srcDir, sshDir *dagger.Directory) Git {
 	container := dag.Container().
 		From("alpine/git").
-		WithMountedDirectory("/git", srcDir)
+		WithMountedDirectory("/git", srcDir).
+		WithoutEntrypoint()
 
 	if sshDir != nil {
 		container = container.WithMountedDirectory("/root/.ssh", sshDir)
