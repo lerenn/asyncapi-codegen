@@ -54,10 +54,12 @@ func publishDocker(ctx context.Context, dir *dagger.Directory, git Git) error {
 		return nil
 	}
 
-	// Get last git tag
-	tag, err := git.GetLastTag(ctx)
+	// Check if there is a new sem ver, if there is none, just stop here
+	tag, err := git.GetNewSemVerIfNeeded(ctx)
 	if err != nil {
 		return err
+	} else if tag == "" {
+		return nil
 	}
 
 	// Publish with tag passed in argument

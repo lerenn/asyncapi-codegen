@@ -22,7 +22,7 @@ jobs:
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: tests --dir .
+          args: tests --src-dir .
           version: "0.11.0"      
   
   examples:
@@ -38,7 +38,7 @@ jobs:
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: examples --dir .
+          args: examples --src-dir .
           version: "0.11.0"
   
   lint:
@@ -55,7 +55,7 @@ jobs:
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: lint --dir .
+          args: lint --src-dir .
           version: "0.11.0"      
 
   check-generation:
@@ -72,7 +72,7 @@ jobs:
         uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: check-generation --dir .
+          args: check-generation --src-dir .
           version: "0.11.0"
 
   publish:
