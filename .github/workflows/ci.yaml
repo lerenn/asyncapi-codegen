@@ -18,8 +18,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Run tests
-        uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@v5
         with:
           verb: call
           args: tests --src-dir .
@@ -34,8 +33,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Run examples
-        uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@v5
         with:
           verb: call
           args: examples --src-dir .
@@ -51,8 +49,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Lint
-        uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@v5
         with:
           verb: call
           args: lint --src-dir .
@@ -68,8 +65,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Lint
-        uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@v5
         with:
           verb: call
           args: check-generation --src-dir .
@@ -88,12 +84,15 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: actions/setup-go@v5.0.0
         with:
           go-version-file: go.mod
           cache: true
-      - name: Publish on git
-        uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@v5
         with:
           verb: call
           args: publish --src-dir .
