@@ -78,6 +78,8 @@ func (g *Git) GetLastTag(ctx context.Context) (string, error) {
 	}
 
 	res, err := g.container.
+		WithExec([]string{"ls"}).
+		WithExec([]string{"pwd"}).
 		WithExec([]string{"git", "describe", "--tags", "--abbrev=0"}).
 		Stdout(ctx)
 	if err != nil {
