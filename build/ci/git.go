@@ -144,8 +144,11 @@ func (g *Git) GetNewSemVerIfNeeded(ctx context.Context) (string, error) {
 	switch {
 	case strings.HasPrefix(title, "BREAKING CHANGE"):
 		major += 1
+		minor = 0
+		patch = 0
 	case strings.HasPrefix(title, "feat"):
 		minor += 1
+		patch = 0
 	case strings.HasPrefix(title, "fix"):
 		patch += 1
 	default:
