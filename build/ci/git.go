@@ -17,8 +17,9 @@ type Git struct {
 		shortSHA string
 	}
 
-	lastTag   string
-	newSemVer string
+	lastTag      string
+	newSemVer    string
+	actualBranch string
 }
 
 func NewGit(srcDir, sshDir *dagger.Directory) Git {
@@ -52,6 +53,23 @@ func (g *Git) GetLastCommitShortSHA(ctx context.Context) (string, error) {
 	g.lastCommit.shortSHA = res
 
 	return g.lastCommit.shortSHA, nil
+}
+
+func (g *Git) GetActualBranch(ctx context.Context) (string, error) {
+	// Check if already doesn't exist
+	if g.actualBranch != "" {
+		return g.actualBranch, nil
+	}
+
+	res, err := g.container.
+		WithExec([]string{"git", "rev-parse", "--abbrev-ref", "HEAD"}).
+		Stdout(ctx)
+	if err != nil {
+		return "", err
+	}
+	g.actualBranch = res
+
+	return g.actualBranch, nil
 }
 
 func (g *Git) GetLastCommitTitle(ctx context.Context) (string, error) {

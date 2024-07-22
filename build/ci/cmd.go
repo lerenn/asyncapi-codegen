@@ -174,5 +174,6 @@ func (ci *AsyncapiCodegenCi) Publish(
 		return err
 	}
 
-	return nil
+	// Publish docker image
+	return publishDocker(ctx, srcDir, gi)
 }
