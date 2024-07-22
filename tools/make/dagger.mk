@@ -1,4 +1,4 @@
-DAGGER_CMD := dagger -vvv
+DAGGER_CMD := dagger
 
 .PHONY: dagger/check 
 dagger/check: ## Run all the checks before commit on Dagger
