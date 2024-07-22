@@ -10,7 +10,7 @@ on:
 
 jobs:
   tests:
-    name: Tests
+    name: Run tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
@@ -26,7 +26,7 @@ jobs:
           version: "0.11.0"      
   
   examples:
-    name: Examples
+    name: Run examples
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
@@ -42,7 +42,7 @@ jobs:
           version: "0.11.0"
   
   lint:
-    name: Lint
+    name: Run linter
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -59,7 +59,7 @@ jobs:
           version: "0.11.0"      
 
   check-generation:
-    name: Check generation
+    name: Check generation has been run
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -76,7 +76,7 @@ jobs:
           version: "0.11.0"
 
   publish:
-    name: Publish asyncapi-codegen new version
+    name: Publish a new version
     permissions:
       contents: write
     needs: ["tests", "examples", "lint", "check-generation"]
