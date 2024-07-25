@@ -26,30 +26,30 @@ func bindBrokers(brokers map[string]*dagger.Service) func(r *dagger.Container) *
 	}
 }
 
-// brokers returns a map of containers for each broker as service.
-func brokers() map[string]*dagger.Service {
+// brokerServices returns a map of containers for each broker as service.
+func brokerServices() map[string]*dagger.Service {
 	brokers := make(map[string]*dagger.Service)
 
 	// Kafka
-	brokers["kafka"] = brokerKafka()
-	brokers["kafka-tls"] = brokerKafkaSecure()
-	brokers["kafka-tls-basic-auth"] = brokerKafkaSecureBasicAuth()
+	brokers["kafka"] = brokerKafka().AsService()
+	brokers["kafka-tls"] = brokerKafkaSecure().AsService()
+	brokers["kafka-tls-basic-auth"] = brokerKafkaSecureBasicAuth().AsService()
 
 	// NATS
-	brokers["nats"] = brokerNATS()
-	brokers["nats-tls"] = brokerNATSSecure()
-	brokers["nats-tls-basic-auth"] = brokerNATSSecureBasicAuth()
+	brokers["nats"] = brokerNATS().AsService()
+	brokers["nats-tls"] = brokerNATSSecure().AsService()
+	brokers["nats-tls-basic-auth"] = brokerNATSSecureBasicAuth().AsService()
 
 	// NATS Jetstream
-	brokers["nats-jetstream"] = brokerNATSJetstream()
-	brokers["nats-jetstream-tls"] = brokerNATSJetstreamSecure()
-	brokers["nats-jetstream-tls-basic-auth"] = brokerNATSJetstreamSecureBasicAuth()
+	brokers["nats-jetstream"] = brokerNATSJetstream().AsService()
+	brokers["nats-jetstream-tls"] = brokerNATSJetstreamSecure().AsService()
+	brokers["nats-jetstream-tls-basic-auth"] = brokerNATSJetstreamSecureBasicAuth().AsService()
 
 	return brokers
 }
 
-// brokerKafka returns a service for the Kafka broker.
-func brokerKafka() *dagger.Service {
+// brokerKafka returns a container for the Kafka broker.
+func brokerKafka() *dagger.Container {
 	return dag.Container().
 		//	Set container image
 		From(kafkaImage).
@@ -67,14 +67,11 @@ func brokerKafka() *dagger.Service {
 
 		// Add exposed ports
 		WithExposedPort(9092).
-		WithExposedPort(9093).
-
-		// Return container as a service
-		AsService()
+		WithExposedPort(9093)
 }
 
-// brokerKafkaSecure returns a service for the Kafka broker secured with TLS.
-func brokerKafkaSecure() *dagger.Service {
+// brokerKafkaSecure returns a container for the Kafka broker secured with TLS.
+func brokerKafkaSecure() *dagger.Container {
 	key, cert, cacert, err := testutil.GenerateSelfSignedCertificateWithCA("kafka-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
@@ -110,14 +107,11 @@ func brokerKafkaSecure() *dagger.Service {
 		WithExposedPort(9093).
 
 		// Add server cert and key directory
-		WithDirectory("/bitnami/kafka/config/certs/", tlsDir).
-
-		// Return container as a service
-		AsService()
+		WithDirectory("/bitnami/kafka/config/certs/", tlsDir)
 }
 
-// brokerKafkaSecureBasicAuth returns a service for the Kafka broker secured with TLS and basic auth.
-func brokerKafkaSecureBasicAuth() *dagger.Service {
+// brokerKafkaSecureBasicAuth returns a container for the Kafka broker secured with TLS and basic auth.
+func brokerKafkaSecureBasicAuth() *dagger.Container {
 	key, cert, cacert, err := testutil.GenerateSelfSignedCertificateWithCA("kafka-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
@@ -160,25 +154,20 @@ func brokerKafkaSecureBasicAuth() *dagger.Service {
 		WithExposedPort(9093).
 
 		// Add server cert and key directory
-		WithDirectory("/bitnami/kafka/config/certs/", tlsDir).
-
-		// Return container as a service
-		AsService()
+		WithDirectory("/bitnami/kafka/config/certs/", tlsDir)
 }
 
-// brokerNATS returns a service for the NATS broker.
-func brokerNATS() *dagger.Service {
+// brokerNATS returns a container for the NATS broker.
+func brokerNATS() *dagger.Container {
 	return dag.Container().
 		// Add base image
 		From(natsImage).
 		// Add exposed ports
-		WithExposedPort(4222).
-		// Return container as a service
-		AsService()
+		WithExposedPort(4222)
 }
 
-// brokerNATSSecure returns a service for the NATS broker secured with TLS.
-func brokerNATSSecure() *dagger.Service {
+// brokerNATSSecure returns a container for the NATS broker secured with TLS.
+func brokerNATSSecure() *dagger.Container {
 	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
@@ -193,14 +182,13 @@ func brokerNATSSecure() *dagger.Service {
 		// Add server cert and key directory
 		WithDirectory("./tls", tlsDir).
 		// Start NATS with tls
-		WithExec([]string{"--tls", "--tlscert=/tls/server-cert.pem", "--tlskey=/tls/server-key.pem"}).
-		// Return container as a service
-		AsService()
+		WithoutEntrypoint().
+		WithExec([]string{"nats-server", "--tls", "--tlscert=/tls/server-cert.pem", "--tlskey=/tls/server-key.pem"})
 }
 
-// brokerNATSSecureBasicAuth returns a service for the NATS broker secured with TLS
+// brokerNATSSecureBasicAuth returns a container for the NATS broker secured with TLS
 // and basic auth user: user password: password.
-func brokerNATSSecureBasicAuth() *dagger.Service {
+func brokerNATSSecureBasicAuth() *dagger.Container {
 	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
@@ -215,31 +203,30 @@ func brokerNATSSecureBasicAuth() *dagger.Service {
 		// Add server cert and key directory
 		WithDirectory("./tls", tlsDir).
 		// Start NATS with tls and credentials
+		WithoutEntrypoint().
 		WithExec([]string{
+			"nats-server",
 			"--tls",
 			"--tlscert=/tls/server-cert.pem",
 			"--tlskey=/tls/server-key.pem",
 			"--user", "user",
-			"--pass", "password"}).
-		// Return container as a service
-		AsService()
+			"--pass", "password"})
 }
 
-// brokerNATSJetstream returns a service for the NATS broker.
-func brokerNATSJetstream() *dagger.Service {
+// brokerNATSJetstream returns a container for the NATS broker.
+func brokerNATSJetstream() *dagger.Container {
 	return dag.Container().
 		// Add base image
 		From(natsImage).
 		// Add exposed ports
 		WithExposedPort(4222).
 		// Add command
-		WithExec([]string{"-js"}).
-		// Return container as a service
-		AsService()
+		WithoutEntrypoint().
+		WithExec([]string{"nats-server", "-js"})
 }
 
-// brokerNATSJetstreamSecure returns a service for the NATS broker secured with TLS.
-func brokerNATSJetstreamSecure() *dagger.Service {
+// brokerNATSJetstreamSecure returns a container for the NATS broker secured with TLS.
+func brokerNATSJetstreamSecure() *dagger.Container {
 	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-jetstream-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
@@ -254,14 +241,13 @@ func brokerNATSJetstreamSecure() *dagger.Service {
 		// Add server cert and key directory
 		WithDirectory("./tls", tlsDir).
 		// Start NATS jetstream with tls
-		WithExec([]string{"-js", "--tls", "--tlscert=/tls/server-cert.pem", "--tlskey=/tls/server-key.pem"}).
-		// Return container as a service
-		AsService()
+		WithoutEntrypoint().
+		WithExec([]string{"nats-server", "-js", "--tls", "--tlscert=/tls/server-cert.pem", "--tlskey=/tls/server-key.pem"})
 }
 
-// brokerNATSJetstreamSecureBasicAuth returns a service for the NATS broker secured with TLS
+// brokerNATSJetstreamSecureBasicAuth returns a container for the NATS broker secured with TLS
 // and basic auth user: user password: password.
-func brokerNATSJetstreamSecureBasicAuth() *dagger.Service {
+func brokerNATSJetstreamSecureBasicAuth() *dagger.Container {
 	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-jetstream-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
@@ -276,7 +262,14 @@ func brokerNATSJetstreamSecureBasicAuth() *dagger.Service {
 		// Add server cert and key directory
 		WithDirectory("./tls", tlsDir).
 		// Start NATS jetstream with tls and credentials
-		WithExec([]string{"-js", "--tls", "--tlscert=/tls/server-cert.pem", "--tlskey=/tls/server-key.pem", "--user", "user", "--pass", "password"}). //nolint:lll
-		// Return container as a service
-		AsService()
+		WithoutEntrypoint().
+		WithExec([]string{
+			"nats-server",
+			"-js",
+			"--tls",
+			"--tlscert=/tls/server-cert.pem",
+			"--tlskey=/tls/server-key.pem",
+			"--user", "user",
+			"--pass", "password",
+		})
 }
