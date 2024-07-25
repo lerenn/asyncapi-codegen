@@ -1,7 +1,7 @@
 package main
 
 import (
-	"dagger/asyncapi-codegen-ci/internal/dagger"
+	"asyncapi-codegen/ci/dagger/internal/dagger"
 	"runtime"
 )
 

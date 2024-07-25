@@ -1,8 +1,8 @@
 package main
 
 import (
+	"asyncapi-codegen/ci/dagger/internal/dagger"
 	"context"
-	"dagger/asyncapi-codegen-ci/internal/dagger"
 )
 
 const (
