@@ -36,7 +36,7 @@ jobs:
       - uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: -m build/ci run-examples --src-dir .
+          args: -m build/ci run-examples --help
           version: "0.11.0"
   
   lint:
