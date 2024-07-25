@@ -17,8 +17,6 @@ package main
 import (
 	"asyncapi-codegen/ci/dagger/internal/dagger"
 	"context"
-
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 )
 
 const (
@@ -35,7 +33,7 @@ type AsyncapiCodegenCi struct {
 
 func (ci *AsyncapiCodegenCi) cachedBrokers() map[string]*dagger.Service {
 	if ci.brokers == nil {
-		ci.brokers = brokers()
+		ci.brokers = brokerServices()
 	}
 	return ci.brokers
 }
@@ -104,7 +102,6 @@ func (ci *AsyncapiCodegenCi) Examples(
 	}
 
 	// Get examples containers
-	containers := make(map[string]*dagger.Container, 0)
 	for _, p := range subdirs {
 		// Set app container
 		app := dag.Container().
@@ -133,11 +130,13 @@ func (ci *AsyncapiCodegenCi) Examples(
 			// Execute command
 			WithExec([]string{"go", "run", p + "/user"})
 
-		// Add user containers to containers
-		containers[p] = user
+		// Execute user container
+		stderr, err := user.Stderr(ctx)
+		if err != nil {
+			return stderr, err
+		}
 	}
 
-	executeContainers(ctx, utils.MapToList(containers)...)
 	return "", nil
 }
 

@@ -1,7 +1,7 @@
 include tools/make/help.mk
 
-.PHONY: all
-all: check-generation lint test ## Run all the checks locally
+.PHONY: check
+check: check-generation lint test ## Run all the checks locally
 
 .PHONY: check-generation
 check-generation: ## Check files are generated locally

@@ -3,7 +3,6 @@ package main
 import (
 	"asyncapi-codegen/ci/dagger/internal/dagger"
 	"context"
-	"sync"
 )
 
 func sourceCodeAndGoCache(dir *dagger.Directory) func(r *dagger.Container) *dagger.Container {
@@ -72,34 +71,4 @@ func isDir(ctx context.Context, parentDir *dagger.Directory, path string) (bool,
 	// At this point we know that the path does not exist or a graphql error occurred
 	// We also assume that isNotDirErr and isNotFileErr are the same error
 	return false, isNotFileErr
-}
-
-func executeContainers(ctx context.Context, containers ...*dagger.Container) {
-	funcs := make([]func(context.Context) error, 0)
-	for _, c := range containers {
-		local := c
-		fn := func(ctx context.Context) error {
-			_, err := local.Stderr(ctx)
-			return err
-		}
-		funcs = append(funcs, fn)
-	}
-
-	execute(ctx, funcs...)
-}
-
-func execute(ctx context.Context, funcs ...func(context.Context) error) {
-	var wg sync.WaitGroup
-	for _, fn := range funcs {
-		go func(callback func(context.Context) error) {
-			if err := callback(ctx); err != nil {
-				panic(err)
-			}
-			wg.Done()
-		}(fn)
-
-		wg.Add(1)
-	}
-
-	wg.Wait()
 }

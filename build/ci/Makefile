@@ -2,8 +2,8 @@ include ../../tools/make/help.mk
 
 SRC_DIR := ../..
 
-.PHONY: all 
-all: ## Run all the checks before commit on Dagger
+.PHONY: check 
+check: ## Run all the checks before commit on Dagger
 	@dagger call check --src-dir $(SRC_DIR)
 
 .PHONY: examples
