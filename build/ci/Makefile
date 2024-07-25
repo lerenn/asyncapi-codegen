@@ -6,9 +6,9 @@ SRC_DIR := ../..
 check: ## Run all the checks before commit on Dagger
 	@dagger call check --src-dir $(SRC_DIR)
 
-.PHONY: examples
-examples: ## Run all the examples on Dagger
-	@dagger call examples --src-dir $(SRC_DIR)
+.PHONY: run-examples
+run-examples: ## Run all the examples on Dagger
+	@dagger call run-examples --src-dir $(SRC_DIR)
 
 .PHONY: check-generation
 check-generation: ## Check files are generated on Dagger
