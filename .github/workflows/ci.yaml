@@ -21,8 +21,7 @@ jobs:
       - uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: -m build/ci tests --src-dir .
-          version: "0.11.0"      
+          args: -m build/ci test --src-dir .      
   
   examples:
     name: Run examples
@@ -36,8 +35,7 @@ jobs:
       - uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: -m build/ci examples --src-dir .
-          version: "0.11.0"
+          args: -m build/ci examples --src-dir . stderr
   
   lint:
     name: Run linter
@@ -52,8 +50,7 @@ jobs:
       - uses: dagger/dagger-for-github@v5
         with:
           verb: call
-          args: -m build/ci lint --src-dir .
-          version: "0.11.0"      
+          args: -m build/ci lint --src-dir .      
 
   check-generation:
     name: Check generation has been run
@@ -69,7 +66,6 @@ jobs:
         with:
           verb: call
           args: -m build/ci check-generation --src-dir .
-          version: "0.11.0"
 
   publish:
     name: Publish a new version
@@ -96,4 +92,3 @@ jobs:
         with:
           verb: call
           args: -m build/ci publish --src-dir .
-          version: "0.11.0"

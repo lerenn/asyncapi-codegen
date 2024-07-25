@@ -42,24 +42,21 @@ func (ci *AsyncapiCodegenCi) cachedBrokers() map[string]*dagger.Service {
 func (ci *AsyncapiCodegenCi) Check(
 	ctx context.Context,
 	srcDir *dagger.Directory,
-) (string, error) {
-	if _, err := ci.CheckGeneration(ctx, srcDir); err != nil {
-		return "", err
-	}
+) ([]*dagger.Container, error) {
+	containers := make([]*dagger.Container, 0)
 
-	if _, err := ci.Lint(ctx, srcDir); err != nil {
-		return "", err
-	}
+	containers = append(containers, ci.CheckGeneration(ctx, srcDir))
+	containers = append(containers, ci.Lint(ctx, srcDir))
 
-	if _, err := ci.Examples(ctx, srcDir); err != nil {
-		return "", err
+	examples, err := ci.Examples(ctx, srcDir)
+	if err != nil {
+		return nil, err
 	}
+	containers = append(containers, examples...)
 
-	if _, err := ci.Tests(ctx, srcDir); err != nil {
-		return "", err
-	}
+	containers = append(containers, ci.Test(ctx, srcDir))
 
-	return "", nil
+	return containers, nil
 }
 
 // CheckGeneration generate files from Golang generate command on AsyncAPI-Codegen
@@ -67,42 +64,39 @@ func (ci *AsyncapiCodegenCi) Check(
 func (ci *AsyncapiCodegenCi) CheckGeneration(
 	ctx context.Context,
 	srcDir *dagger.Directory,
-) (string, error) {
-	_, err := dag.Container().
+) *dagger.Container {
+	return dag.Container().
 		From(golangImage).
 		With(sourceCodeAndGoCache(srcDir)).
-		WithExec([]string{"sh", "./scripts/check-generation.sh"}).
-		Stdout(ctx)
-
-	return "", err
+		WithExec([]string{"sh", "./scripts/check-generation.sh"})
 }
 
 // Lint AsyncAPI-Codegen source code.
 func (ci *AsyncapiCodegenCi) Lint(
 	ctx context.Context,
 	srcDir *dagger.Directory,
-) (string, error) {
+) *dagger.Container {
 	return dag.Container().
 		From(linterImage).
 		With(sourceCodeAndGoCache(srcDir)).
 		WithMountedCache("/root/.cache/golangci-lint", dag.CacheVolume("golangci-lint")).
-		WithExec([]string{"golangci-lint", "run"}).
-		Stdout(ctx)
+		WithExec([]string{"golangci-lint", "run"})
 }
 
-// Run AsyncAPI-Codegen examples.
+// Examples runs AsyncAPI-Codegen examples.
 func (ci *AsyncapiCodegenCi) Examples(
 	ctx context.Context,
 	srcDir *dagger.Directory,
-) (string, error) {
+) ([]*dagger.Container, error) {
 	// Get examples subdirs
 	subdirs, err := directoriesAtSublevel(ctx, srcDir.Directory("examples"), 2, "./examples")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Get examples containers
-	for _, p := range subdirs {
+	containers := make([]*dagger.Container, len(subdirs))
+	for i, p := range subdirs {
 		// Set app container
 		app := dag.Container().
 			From(golangImage).
@@ -130,21 +124,18 @@ func (ci *AsyncapiCodegenCi) Examples(
 			// Execute command
 			WithExec([]string{"go", "run", p + "/user"})
 
-		// Execute user container
-		stderr, err := user.Stderr(ctx)
-		if err != nil {
-			return stderr, err
-		}
+		// Add user container to list
+		containers[i] = user
 	}
 
-	return "", nil
+	return containers, nil
 }
 
-// Run tests from AsyncAPICodegen
-func (ci *AsyncapiCodegenCi) Tests(
+// Test run tests from AsyncAPICodegen
+func (ci *AsyncapiCodegenCi) Test(
 	ctx context.Context,
 	srcDir *dagger.Directory,
-) (string, error) {
+) *dagger.Container {
 	return dag.Container().
 		// Add base image
 		From(golangImage).
@@ -153,8 +144,7 @@ func (ci *AsyncapiCodegenCi) Tests(
 		// Set brokers as dependencies of app and user
 		With(bindBrokers(ci.cachedBrokers())).
 		// Execute command
-		WithExec([]string{"go", "test", "./..."}).
-		Stdout(ctx)
+		WithExec([]string{"go", "test", "./..."})
 }
 
 // Publish tag on git repository and docker image(s) on Docker Hub
