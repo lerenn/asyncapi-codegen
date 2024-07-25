@@ -48,7 +48,7 @@ func (ci *AsyncapiCodegenCi) Check(
 	containers = append(containers, ci.CheckGeneration(ctx, srcDir))
 	containers = append(containers, ci.Lint(ctx, srcDir))
 
-	examples, err := ci.RunExamples(ctx, srcDir)
+	examples, err := ci.Examples(ctx, srcDir)
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +83,8 @@ func (ci *AsyncapiCodegenCi) Lint(
 		WithExec([]string{"golangci-lint", "run"})
 }
 
-// RunExamples runs AsyncAPI-Codegen examples.
-func (ci *AsyncapiCodegenCi) RunExamples(
+// Examples runs AsyncAPI-Codegen examples.
+func (ci *AsyncapiCodegenCi) Examples(
 	ctx context.Context,
 	srcDir *dagger.Directory,
 ) ([]*dagger.Container, error) {
