@@ -16,9 +16,9 @@ bool
 
 {{- /* --------------------------- Type String -------------------------- */ -}}
 {{- else if eq .Type "string" -}}
-{{- if and .Format (eq .Format "date") -}}
+{{- if and (isDateOrDateTimeGenerated .Format) (eq .Format "date") -}}
 civil.Date
-{{- else if and .Format (eq .Format "date-time") -}}
+{{- else if and (isDateOrDateTimeGenerated .Format) (eq .Format "date-time") -}}
 time.Time
 {{- else -}}
 string

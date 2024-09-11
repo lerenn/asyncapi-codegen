@@ -63,7 +63,7 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
     {{- /* Handle payload based on type */}}
     {{- if eq $payload.Type "string"}}
         // Convert to string
-        {{- if and $payload.Format (or (eq $payload.Format "date") (eq $payload.Format "date-time"))}}
+        {{- if isDateOrDateTimeGenerated $payload.Format }}
             t, err := time.Parse(time.RFC3339, string(bMsg.Payload))
             if err != nil {
                 return {{namify .Name}}{}, err
@@ -124,7 +124,7 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
                         if err != nil {
                             return msg, err
                         }
-                    {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                    {{- else if isDateOrDateTimeGenerated $value.Format }}
                         t, err := time.Parse(time.RFC3339, string(v))
                         if err != nil {
                             return msg, err
@@ -143,7 +143,7 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
                         if err != nil {
                             return msg, err
                         }
-                    {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                    {{- else if isDateOrDateTimeGenerated $value.Format }}
                         t, err := time.Parse(time.RFC3339, string(v))
                         if err != nil {
                             return msg, err
@@ -205,7 +205,7 @@ func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) 
             payload := make([]byte, 8)
             binary.BigEndian.PutUint64(payload, math.Float64bits(msg.Payload))
         {{- end}}
-    {{- else if and (eq $payload.Type "string") (and $payload.Format (or (eq $payload.Format "date") (eq $payload.Format "date-time")))}}
+    {{- else if and (eq $payload.Type "string") (isDateOrDateTimeGenerated $payload.Format) }}
         // Convert to RFC3339 and to []byte
         payload := []byte(msg.Payload.Format(time.RFC3339))
     {{- else}}
@@ -235,7 +235,7 @@ func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) 
                         return extensions.BrokerMessage{}, err
                     }
                     headers["{{$key}}"] = h
-                {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                {{- else if isDateOrDateTimeGenerated $value.Format }}
                     headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}}.Format(time.RFC3339))
                 {{- else }}
                     headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}})
@@ -248,7 +248,7 @@ func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) 
                             return extensions.BrokerMessage{}, err
                         }
                         headers["{{$key}}"] = h
-                    {{- else if or (eq $value.Format "date") (eq $value.Format "date-time")}}
+                    {{- else if isDateOrDateTimeGenerated $value.Format }}
                         headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}}.Format(time.RFC3339))
                     {{- else }}
                         headers["{{$key}}"] = []byte(*msg.Headers.{{namify $key}})
