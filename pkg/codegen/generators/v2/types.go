@@ -10,6 +10,7 @@ import (
 // contained in an asyncapi specification to golang structures code.
 type TypesGenerator struct {
 	asyncapi.Specification
+	IgnoreStringFormat bool
 }
 
 // Generate will create a new types code generator.

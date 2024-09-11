@@ -9,7 +9,9 @@ components:
       payload:
         type: object
         properties:
-          A_PROP_1:
+          DateProp:
             type: string
-          ANOTHER_PROP_2:
+            format: date
+          DateTimeProp:
             type: string
+            format: date-time

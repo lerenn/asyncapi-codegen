@@ -25,7 +25,7 @@ func NewSuite() *Suite {
 
 func (suite *Suite) TestCamel() {
 	// Checking if the schema has been generated with the correct naming scheme
-	_ = camel.TestSchema{
+	_ = camel.TestMessagePayload{
 		AnotherProp2: nil,
 		AProp1:       nil,
 	}
@@ -33,7 +33,7 @@ func (suite *Suite) TestCamel() {
 
 func (suite *Suite) TestNone() {
 	// Checking if the schema has been generated with the correct naming scheme
-	_ = none.TESTSchema{
+	_ = none.TESTMessagePayload{
 		ANOTHERPROP2: nil,
 		APROP1:       nil,
 	}

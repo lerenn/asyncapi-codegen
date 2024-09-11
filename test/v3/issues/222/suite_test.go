@@ -24,13 +24,13 @@ func NewSuite() *Suite {
 
 const val = `
 {
-	"DateProp": "2024-02-02",
+	"DateProp": "2024-06-05T13:45:30.0000Z",
 	"DateTimeProp": "2024-06-05T13:45:30.0000Z"
 }
 `
 
 func (suite *Suite) TestMarshalling() {
-	var res TestSchema
+	var res TestMessagePayload
 	err := json.Unmarshal([]byte(val), &res)
 	assert.NoError(suite.T(), err)
 }

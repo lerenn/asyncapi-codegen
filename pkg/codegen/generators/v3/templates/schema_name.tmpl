@@ -16,7 +16,7 @@ bool
 
 {{- /* --------------------------- Type String -------------------------- */ -}}
 {{- else if eq .Type "string" -}}
-{{- if and .Format (or (eq .Format "date") (eq .Format "date-time")) -}}
+{{- if isDateOrDateTimeGenerated .Format -}}
 time.Time
 {{- else -}}
 string

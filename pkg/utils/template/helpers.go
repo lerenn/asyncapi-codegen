@@ -140,18 +140,28 @@ func CutSuffix(s, suffix string) string {
 	return s
 }
 
+var isDateOrDateTimeGenerated = func(format string) bool {
+	return format == "date" || format == "date-time"
+}
+
+// DisableDateOrTimeGeneration is used to disable the generation of date/date-time formats within types.
+func DisableDateOrTimeGeneration() {
+	isDateOrDateTimeGenerated = func(_ string) bool { return false }
+}
+
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
 	return template.FuncMap{
-		"namifyWithoutParam": NamifyWithoutParams,
-		"namify":             Namify,
-		"convertKey":         ConvertKey,
-		"snakeCase":          strcase.ToSnake,
-		"hasField":           HasField,
-		"describeStruct":     DescribeStruct,
-		"multiLineComment":   MultiLineComment,
-		"cutSuffix":          CutSuffix,
-		"args":               Args,
+		"namifyWithoutParam":        NamifyWithoutParams,
+		"namify":                    Namify,
+		"isDateOrDateTimeGenerated": isDateOrDateTimeGenerated,
+		"convertKey":                ConvertKey,
+		"snakeCase":                 strcase.ToSnake,
+		"hasField":                  HasField,
+		"describeStruct":            DescribeStruct,
+		"multiLineComment":          MultiLineComment,
+		"cutSuffix":                 CutSuffix,
+		"args":                      Args,
 	}
 }
