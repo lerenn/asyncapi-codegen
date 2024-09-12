@@ -43,6 +43,9 @@ type Flags struct {
 	// NamingScheme defines the naming case for generated golang structs
 	// Supported values: camel, none
 	NamingScheme string
+
+	// IgnoreStringFormat states whether the properties' format (date, date-time) should impact the type in types
+	IgnoreStringFormat bool
 }
 
 // SetToCommand adds the flags to a cobra command.
@@ -58,16 +61,19 @@ func (f *Flags) SetToCommand(cmd *cobra.Command) {
 		"Schema property key names conversion strategy.\nSupported values: snake, camel, kebab, none.")
 	cmd.Flags().StringVarP(&f.NamingScheme, "naming-scheme", "n", "none",
 		"Naming scheme for generated golang elements.\nSupported values: camel, none.")
+	cmd.Flags().BoolVar(&f.IgnoreStringFormat, "ignore-string-format", false,
+		"Ignores the format (date, date-time) on string properties, generating golang string, instead of dates")
 }
 
 // ToCodegenOptions processes command line flags structure to code generation tool options.
 func (f Flags) ToCodegenOptions() (options.Options, error) {
 	opt := options.Options{
-		OutputPath:        f.OutputPath,
-		PackageName:       f.PackageName,
-		DisableFormatting: f.DisableFormatting,
-		ConvertKeys:       f.ConvertKeys,
-		NamingScheme:      f.NamingScheme,
+		OutputPath:         f.OutputPath,
+		PackageName:        f.PackageName,
+		DisableFormatting:  f.DisableFormatting,
+		ConvertKeys:        f.ConvertKeys,
+		NamingScheme:       f.NamingScheme,
+		IgnoreStringFormat: f.IgnoreStringFormat,
 	}
 
 	if f.Generate != "" {

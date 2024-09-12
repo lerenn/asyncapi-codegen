@@ -32,4 +32,7 @@ type Options struct {
 	// NamingScheme defines the naming scheme for generated golang structs
 	// Supported values: camel, none
 	NamingScheme string
+
+	// IgnoreStringFormat states whether the properties' format (date, date-time) should impact the type in types
+	IgnoreStringFormat bool
 }

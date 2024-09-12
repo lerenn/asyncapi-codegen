@@ -88,6 +88,10 @@ func (cg CodeGen) Generate(opt options.Options) error {
 		return err
 	}
 
+	if opt.IgnoreStringFormat {
+		template.DisableDateOrTimeGeneration()
+	}
+
 	// Process specification
 	if err := cg.specification.Process(); err != nil {
 		return err
