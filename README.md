@@ -31,6 +31,7 @@ to the application/user. Just plug your application to your favorite message bro
   * [Versioning](#versioning)
   * [Extensions](#specification-extensions)
   * [ErrorHandler](#errorhandler)
+  * [Validations](#validations)
 * [Contributing and support](#contributing-and-support)
 
 ## Supported functionalities
@@ -778,6 +779,25 @@ func(ctx context.Context, topic string, msg *extensions.AcknowledgeableBrokerMes
     msg.Nak()
 }
 ```
+
+### Validations
+
+You can use [go-playground/validator](https://github.com/go-playground/validator) to validate the fields content against the contract.
+
+The following tags are currently supported:
+
+| Asyncapi         | Validator tag  | Comment                                                      |
+|------------------|----------------|--------------------------------------------------------------|
+| required         | required       | For a full support, the flag `--force-pointers` is necessary |
+| minLength        | min            |                                                              |
+| maxLength        | max            |                                                              |
+| minimum          | gte            |                                                              |
+| maximum          | lte            |                                                              |
+| exclusiveMinimum | gt             |                                                              |
+| exclusiveMaximum | lt             |                                                              |
+| uniqueItems      | unique         | Only for arrays                                              |
+| enum             | oneof          | Only string enum are supported                               |    
+
 
 ## Contributing and support
 

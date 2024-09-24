@@ -139,8 +139,8 @@ func (suite *Suite) TestV2Reception() {
 	// Expected message
 	sent := v2.V2Issue73HelloMessage{
 		Payload: struct {
-			Message   string    `json:"message" validate:"required"`
-			Timestamp time.Time `json:"timestamp" validate:"required"`
+			Message   string    `json:"message"`
+			Timestamp time.Time `json:"timestamp"`
 		}{
 			Message:   "HelloWord!",
 			Timestamp: utils.Must(time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")).UTC(),

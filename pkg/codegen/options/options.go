@@ -35,4 +35,7 @@ type Options struct {
 
 	// IgnoreStringFormat states whether the properties' format (date, date-time) should impact the type in types
 	IgnoreStringFormat bool
+
+	// ForcePointers can be used to force all struct fields to be generated as pointers
+	ForcePointers bool
 }

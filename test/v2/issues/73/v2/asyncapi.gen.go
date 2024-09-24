@@ -448,8 +448,8 @@ func (e *Error) Error() string {
 
 // V2Issue73HelloMessagePayload is a schema from the AsyncAPI specification required in messages
 type V2Issue73HelloMessagePayload struct {
-	Message   string    `json:"message" validate:"required"`
-	Timestamp time.Time `json:"timestamp" validate:"required"`
+	Message   string    `json:"message"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // V2Issue73HelloMessage is the message expected for 'V2Issue73HelloMessage' channel.
