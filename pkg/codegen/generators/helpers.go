@@ -30,9 +30,9 @@ func GenerateJSONTags[T any](schema asyncapi.Validations[T], field string) strin
 
 // GenerateValidateTags returns the "validate" tag for a given field in a struct, based on the asyncapi contract.
 // This tag can then be used by go-playground/validator/v10 to validate the struct's content.
-func GenerateValidateTags[T any](schema asyncapi.Validations[T]) string {
+func GenerateValidateTags[T any](schema asyncapi.Validations[T], isPointer bool, schemaType string) string {
 	var directives []string
-	if schema.IsRequired {
+	if schema.IsRequired && (isPointer || schemaType == "array") {
 		directives = append(directives, "required")
 	}
 

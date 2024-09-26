@@ -509,7 +509,7 @@ type TestSchema struct {
 	EnumProp     *string  `json:"EnumProp,omitempty" validate:"omitempty,oneof=red amber green"`
 	FloatProp    *float64 `json:"FloatProp,omitempty" validate:"omitempty,gte=2.5,lte=5.5"`
 	IntegerProp  *int64   `json:"IntegerProp,omitempty" validate:"omitempty,gte=2,lte=5"`
-	RequiredProp string   `json:"RequiredProp" validate:"required"`
+	RequiredProp string   `json:"RequiredProp"`
 	StringProp   *string  `json:"StringProp,omitempty" validate:"omitempty,min=2,max=5"`
 }
 

@@ -46,6 +46,9 @@ type Flags struct {
 
 	// IgnoreStringFormat states whether the properties' format (date, date-time) should impact the type in types
 	IgnoreStringFormat bool
+
+	// ForcePointers can be used to force all struct fields to be generated as pointers
+	ForcePointers bool
 }
 
 // SetToCommand adds the flags to a cobra command.
@@ -63,6 +66,7 @@ func (f *Flags) SetToCommand(cmd *cobra.Command) {
 		"Naming scheme for generated golang elements.\nSupported values: camel, none.")
 	cmd.Flags().BoolVar(&f.IgnoreStringFormat, "ignore-string-format", false,
 		"Ignores the format (date, date-time) on string properties, generating golang string, instead of dates")
+	cmd.Flags().BoolVar(&f.ForcePointers, "force-pointers", false, "Forces all struct fields to be generated as pointers")
 }
 
 // ToCodegenOptions processes command line flags structure to code generation tool options.
@@ -74,6 +78,7 @@ func (f Flags) ToCodegenOptions() (options.Options, error) {
 		ConvertKeys:        f.ConvertKeys,
 		NamingScheme:       f.NamingScheme,
 		IgnoreStringFormat: f.IgnoreStringFormat,
+		ForcePointers:      f.ForcePointers,
 	}
 
 	if f.Generate != "" {

@@ -10,7 +10,9 @@ import (
 	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
 	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 	generatorv2 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v2"
+	templatesv2 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v2/templates"
 	generatorv3 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v3"
+	templatesv3 "github.com/lerenn/asyncapi-codegen/pkg/codegen/generators/v3/templates"
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/options"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 	"golang.org/x/tools/imports"
@@ -90,6 +92,10 @@ func (cg CodeGen) Generate(opt options.Options) error {
 
 	if opt.IgnoreStringFormat {
 		template.DisableDateOrTimeGeneration()
+	}
+	if opt.ForcePointers {
+		templatesv2.ForcePointerOnFields()
+		templatesv3.ForcePointerOnFields()
 	}
 
 	// Process specification

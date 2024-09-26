@@ -267,7 +267,7 @@ func (e *Error) Error() string {
 
 // HeadersFromPingMessageFromTestChannel is a schema from the AsyncAPI specification required in messages
 type HeadersFromPingMessageFromTestChannel struct {
-	EventId         EventIdSchema  `json:"event_id" validate:"required"`
+	EventId         EventIdSchema  `json:"event_id"`
 	OptionalEventId *EventIdSchema `json:"optional_event_id,omitempty"`
 }
 

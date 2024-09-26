@@ -1,0 +1,27 @@
+asyncapi: 3.0.0
+info:
+  title: Sample App
+  version: 1.2.3
+
+components:
+  messages:
+    Test:
+      payload:
+        type: object
+        required:
+          - reqField
+          - reqArray
+        properties:
+          reqField:
+            type: string
+          nonReqField:
+            type: string
+          reqArray:
+            type: array
+            items:
+              type: string
+          nonReqArray:
+            type: array
+            items:
+              type: string
+

@@ -92,13 +92,6 @@ func (suite *Suite) TestFloat() {
 	assert.Error(suite.T(), validator.New().Struct(tooLarge))
 }
 
-func (suite *Suite) TestRequired() {
-	invalidAbsent := ValidTestSchema()
-	invalidAbsent.RequiredProp = ""
-
-	assert.Error(suite.T(), validator.New().Struct(invalidAbsent))
-}
-
 func (suite *Suite) TestArray() {
 	empty := ValidTestSchema()
 	empty.ArrayProp = []string{}

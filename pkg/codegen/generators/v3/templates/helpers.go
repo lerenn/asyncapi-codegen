@@ -127,6 +127,17 @@ func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	return sprint[:len(sprint)-1] + ")"
 }
 
+var isFieldPointer = func(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
+	return !IsRequired(parent, field) && schema.Type != "array"
+}
+
+// ForcePointerOnFields is used to force the generation of all fields as pointers, except for arrays.
+func ForcePointerOnFields() {
+	isFieldPointer = func(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
+		return schema.Type != "array"
+	}
+}
+
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
@@ -136,6 +147,7 @@ func HelpersFunctions() template.FuncMap {
 		"opToMsgTypeName":                OpToMsgTypeName,
 		"opToChannelTypeName":            OpToChannelTypeName,
 		"isRequired":                     IsRequired,
+		"isFieldPointer":                 isFieldPointer,
 		"generateChannelAddr":            GenerateChannelAddr,
 		"generateChannelAddrFromOp":      GenerateChannelAddrFromOp,
 		"referenceToStructAttributePath": ReferenceToStructAttributePath,
