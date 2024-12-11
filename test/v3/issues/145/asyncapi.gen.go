@@ -701,7 +701,9 @@ func (msg PingMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	// Adding ReplyTo header
 	if msg.Headers.ReplyTo != nil {
 		headers["replyTo"] = []byte(*msg.Headers.ReplyTo)
-	} // Adding RequestId header
+	}
+
+	// Adding RequestId header
 	if msg.Headers.RequestId != nil {
 		headers["requestId"] = []byte(*msg.Headers.RequestId)
 	}

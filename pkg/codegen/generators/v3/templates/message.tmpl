@@ -116,28 +116,10 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
             {{- end}}
 
             {{- /* For each header */}}
+            {{- $headers := .Headers -}}
             {{- range  $key, $value := $headerProperties}}
             case k == "{{$key}}": // Retrieving {{namify $key}} header
-                {{- if $value.IsRequired }}
-                    {{- if eq $value.Type "object" }}
-                        err := json.Unmarshal(v, &msg.Headers.{{ namify $key}})
-                        if err != nil {
-                            return msg, err
-                        }
-                    {{- else if isDateOrDateTimeGenerated $value.Format }}
-                        t, err := time.Parse(time.RFC3339, string(v))
-                        if err != nil {
-                            return msg, err
-                        }
-                        msg.Headers.{{ namify $key}} = t
-                    {{- else}}
-                        {{- if $value.Reference }}
-                        msg.Headers.{{ namify $key}} = {{$value.ReferenceTo.Name}}(v)
-                        {{- else }}
-                        msg.Headers.{{ namify $key}} = {{$value.Type}}(v)
-                        {{- end}}
-                    {{- end}}
-                {{- else}}
+                {{- if isFieldPointer $headers $key $value }}
                     {{- if eq $value.Type "object" }}
                         err := json.Unmarshal(v, msg.Headers.{{ namify $key}})
                         if err != nil {
@@ -156,6 +138,25 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
                         h := {{$value.Type}}(v)
                         {{- end}}
                         msg.Headers.{{ namify $key}} = &h
+                    {{- end}}
+                {{- else}}
+                    {{- if eq $value.Type "object" }}
+                        err := json.Unmarshal(v, &msg.Headers.{{ namify $key}})
+                        if err != nil {
+                            return msg, err
+                        }
+                    {{- else if isDateOrDateTimeGenerated $value.Format }}
+                        t, err := time.Parse(time.RFC3339, string(v))
+                        if err != nil {
+                            return msg, err
+                        }
+                        msg.Headers.{{ namify $key}} = t
+                    {{- else}}
+                        {{- if $value.Reference }}
+                        msg.Headers.{{ namify $key}} = {{$value.ReferenceTo.Name}}(v)
+                        {{- else }}
+                        msg.Headers.{{ namify $key}} = {{$value.Type}}(v)
+                        {{- end}}
                     {{- end}}
                 {{- end}}
             {{- end}}
@@ -224,21 +225,29 @@ func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) 
 
         // Add each headers to broker message
         headers := make(map[string][]byte, {{ len $headerProperties }})
-
+        {{- $headers := .Headers -}}
         {{/* For each header */ -}}
-        {{- range  $key, $value := $headerProperties -}}
+        {{- range  $key, $value := $headerProperties }}
+
             // Adding {{ namify $key}} header
             {{- if $value.IsRequired }}
+                {{- $dereferenceOp := "" -}}
+                {{- if isFieldPointer $headers $key $value -}}
+                    {{- $dereferenceOp = "*" }}
+                     if msg.Headers.{{ namify $key}} == nil {
+                        return extensions.BrokerMessage{}, fmt.Errorf("field {{ namify $key}} should not be nil")
+                     }
+                {{- end -}}
                 {{- if eq $value.Type "object" }}
-                    h, err := json.Marshal(msg.Headers.{{ namify $key}})
+                    h, err := json.Marshal({{ $dereferenceOp }}msg.Headers.{{ namify $key}})
                     if err != nil {
                         return extensions.BrokerMessage{}, err
                     }
                     headers["{{$key}}"] = h
                 {{- else if isDateOrDateTimeGenerated $value.Format }}
-                    headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}}.Format(time.RFC3339))
+                    headers["{{$key}}"] = []byte({{ $dereferenceOp }}msg.Headers.{{namify $key}}.Format(time.RFC3339))
                 {{- else }}
-                    headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}})
+                    headers["{{$key}}"] = []byte({{ $dereferenceOp }}msg.Headers.{{namify $key}})
                 {{- end }}
             {{- else}}
                 if msg.Headers.{{namify $key}} != nil {

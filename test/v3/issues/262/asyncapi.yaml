@@ -1,0 +1,21 @@
+asyncapi: 3.0.0
+info:
+  title: Sample App
+  version: 1.2.3
+components:
+  messages:
+    Test:
+      headers:
+        type: object
+        required:
+          - fieldReq
+        properties:
+          fieldNonReq:
+            type: string
+          fieldReq:
+            type: string
+          someDateTime:
+            type: string
+            format: date-time
+      payload:
+        type: string
