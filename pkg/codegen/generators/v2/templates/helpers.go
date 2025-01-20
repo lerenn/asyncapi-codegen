@@ -142,7 +142,7 @@ func OperationName(channel asyncapi.Channel) string {
 }
 
 var isFieldPointer = func(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
-	return !IsRequired(parent, field) && schema.Type != "array"
+	return !(IsRequired(parent, field) || schema.IsRequired) && schema.Type != "array"
 }
 
 // ForcePointerOnFields is used to force the generation of all fields as pointers, except for arrays.

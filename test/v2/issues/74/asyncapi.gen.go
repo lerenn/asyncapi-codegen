@@ -512,7 +512,9 @@ func (msg TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	headers := make(map[string][]byte, 2)
 
 	// Adding DateTime header
-	headers["dateTime"] = []byte(msg.Headers.DateTime.Format(time.RFC3339)) // Adding Version header
+	headers["dateTime"] = []byte(msg.Headers.DateTime.Format(time.RFC3339))
+
+	// Adding Version header
 	headers["version"] = []byte(msg.Headers.Version)
 
 	return extensions.BrokerMessage{
