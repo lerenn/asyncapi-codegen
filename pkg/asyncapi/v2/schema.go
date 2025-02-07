@@ -104,6 +104,13 @@ func (s *Schema) generateMetadata(name string, isRequired bool) error {
 	return nil
 }
 
+func (s *Schema) setValidationsFromReferenced(refTo *Schema) {
+	if refTo == nil {
+		return
+	}
+	s.Validations.Merge(refTo.Validations)
+}
+
 // setDependencies sets dependencies for the schema from the specification.
 func (s *Schema) setDependencies(spec Specification) error {
 	// Reference to another schema if specified
@@ -113,6 +120,7 @@ func (s *Schema) setDependencies(spec Specification) error {
 			return err
 		}
 		s.ReferenceTo = refTo
+		s.setValidationsFromReferenced(refTo)
 	}
 
 	// Set properties dependencies
