@@ -285,6 +285,13 @@ func (s *Schema) setAnyOfDependenciesAndMerge(spec Specification) error {
 	return nil
 }
 
+func (s *Schema) setValidationsFromReferenced(refTo *Schema) {
+	if refTo == nil {
+		return
+	}
+	s.Validations = refTo.Validations
+}
+
 func (s *Schema) setReference(spec Specification) error {
 	if s.Reference == "" {
 		return nil
@@ -296,6 +303,7 @@ func (s *Schema) setReference(spec Specification) error {
 		return err
 	}
 	s.ReferenceTo = refTo
+	s.Validations.Merge(refTo.Validations)
 
 	return nil
 }

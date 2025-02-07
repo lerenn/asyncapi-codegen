@@ -27,3 +27,66 @@ type Validations[T any] struct {
 	// --- Non JSON Schema/AsyncAPI fields -------------------------------------
 	IsRequired bool `json:"-"`
 }
+
+func (v *Validations[T]) Merge(newV Validations[T]) {
+	if len(newV.Required) > 0 {
+		v.Required = newV.Required
+	}
+	if len(newV.MultipleOf) > 0 {
+		v.MultipleOf = newV.MultipleOf
+	}
+	if newV.Maximum != 0 {
+		v.Maximum = newV.Maximum
+	}
+	if newV.ExclusiveMaximum != 0 {
+		v.ExclusiveMaximum = newV.ExclusiveMaximum
+	}
+	if newV.Minimum != 0 {
+		v.Minimum = newV.Minimum
+	}
+	if newV.ExclusiveMinimum != 0 {
+		v.ExclusiveMinimum = newV.ExclusiveMinimum
+	}
+	if newV.MaxLength != 0 {
+		v.MaxLength = newV.MaxLength
+	}
+	if newV.MinLength != 0 {
+		v.MinLength = newV.MinLength
+	}
+	if newV.Pattern != "" {
+		v.Pattern = newV.Pattern
+	}
+	if newV.MaxItems != 0 {
+		v.MaxItems = newV.MaxItems
+	}
+	if newV.MinItems != 0 {
+		v.MinItems = newV.MinItems
+	}
+	if newV.UniqueItems {
+		v.UniqueItems = newV.UniqueItems
+	}
+	if newV.MaxProperties != 0 {
+		v.MaxProperties = newV.MaxProperties
+	}
+	if newV.MinProperties != 0 {
+		v.MinProperties = newV.MinProperties
+	}
+	if len(newV.Enum) > 0 {
+		v.Enum = newV.Enum
+	}
+	if newV.Const != nil {
+		v.Const = newV.Const
+	}
+	if len(newV.AllOf) > 0 {
+		v.AllOf = newV.AllOf
+	}
+	if len(newV.AnyOf) > 0 {
+		v.AnyOf = newV.AnyOf
+	}
+	if len(newV.OneOf) > 0 {
+		v.OneOf = newV.OneOf
+	}
+	if newV.IsRequired {
+		v.IsRequired = newV.IsRequired
+	}
+}
