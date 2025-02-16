@@ -2,10 +2,11 @@
 package issue137
 
 import (
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateOneOfExist(t *testing.T) {

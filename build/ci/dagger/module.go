@@ -21,7 +21,7 @@ import (
 
 const (
 	// linterImage is the image used for linter.
-	linterImage = "golangci/golangci-lint:v1.55"
+	linterImage = "golangci/golangci-lint:v1.62.0"
 	// golangImage is the image used as base for golang operations.
 	golangImage = "golang:1.21.4-alpine"
 )

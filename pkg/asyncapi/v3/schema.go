@@ -303,6 +303,7 @@ func (s *Schema) setReference(spec Specification) error {
 		return err
 	}
 	s.ReferenceTo = refTo
+	s.setValidationsFromReferenced(refTo)
 	s.Validations.Merge(refTo.Validations)
 
 	return nil
