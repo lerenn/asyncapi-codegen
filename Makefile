@@ -22,7 +22,7 @@ lint: ## Lint the code locally
 .PHONY: local-env/start
 local-env/start: ## Start the local environment
 	@go run ./tools/generate-certs
-	@docker-compose local-env/start -d
+	@docker-compose up -d
 
 .PHONY: local-env/stop
 local-env/stop: ## Stop the local environment
