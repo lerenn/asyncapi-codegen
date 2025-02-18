@@ -17,12 +17,12 @@ generate: ## Generate files locally
 
 .PHONY: lint
 lint: ## Lint the code locally
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55 run ./...
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.0 run ./...
 
 .PHONY: local-env/start
 local-env/start: ## Start the local environment
 	@go run ./tools/generate-certs
-	@docker-compose local-env/start -d
+	@docker-compose up -d
 
 .PHONY: local-env/stop
 local-env/stop: ## Stop the local environment

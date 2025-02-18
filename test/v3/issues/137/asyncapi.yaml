@@ -1,0 +1,20 @@
+asyncapi: 3.0.0
+components:
+  schemas:
+    audit:
+      type: object
+      description: An audit event is a record of an event that has occurred in a system.
+      required:
+        - channel
+      properties:
+        channel:
+          $ref: '#/components/schemas/channel'
+    channel:
+      type: string
+      example: API
+      enum:
+        - API0
+        - API1
+        - API2
+        - API3
+        - API4
