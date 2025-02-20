@@ -1,9 +1,9 @@
 package main
 
 import (
-	"asyncapi-codegen/ci/dagger/internal/dagger"
 	"fmt"
 
+	"asyncapi-codegen/ci/dagger/internal/dagger"
 	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 
@@ -12,6 +12,8 @@ const (
 	kafkaImage = "bitnami/kafka:3.5.1"
 	// natsImage is the image used for NATS.
 	natsImage = "nats:2.10"
+	// rabbitmqImage is the image used for RabbitMQ.
+	rabbitmqImage = "rabbitmq:4.0.6"
 )
 
 func bindBrokers(brokers map[string]*dagger.Service) func(r *dagger.Container) *dagger.Container {
@@ -44,6 +46,9 @@ func brokerServices() map[string]*dagger.Service {
 	brokers["nats-jetstream"] = brokerNATSJetstream().AsService()
 	brokers["nats-jetstream-tls"] = brokerNATSJetstreamSecure().AsService()
 	brokers["nats-jetstream-tls-basic-auth"] = brokerNATSJetstreamSecureBasicAuth().AsService()
+
+	// RabbitMQ
+	brokers["rabbitmq"] = brokerRabbitMQ().AsService()
 
 	return brokers
 }
@@ -272,4 +277,13 @@ func brokerNATSJetstreamSecureBasicAuth() *dagger.Container {
 			"--user", "user",
 			"--pass", "password",
 		})
+}
+
+// brokerRabbitMQ returns a container for the RabbitMQ broker.
+func brokerRabbitMQ() *dagger.Container {
+	return dag.Container().
+		// Add base image
+		From(rabbitmqImage).
+		// Add exposed ports
+		WithExposedPort(5672)
 }

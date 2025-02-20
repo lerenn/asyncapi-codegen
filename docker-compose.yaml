@@ -140,4 +140,12 @@ services:
     volumes:
       - ./tmp/certs/kafka:/bitnami/kafka/config/certs/
     
-  
+  # Rabbitmq variants
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    expose:
+      - 5672
+      - 15672

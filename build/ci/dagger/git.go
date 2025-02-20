@@ -1,12 +1,13 @@
 package main
 
 import (
-	"asyncapi-codegen/ci/dagger/internal/dagger"
 	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"asyncapi-codegen/ci/dagger/internal/dagger"
 )
 
 type Git struct {

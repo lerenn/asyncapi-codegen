@@ -22,6 +22,7 @@ to the application/user. Just plug your application to your favorite message bro
 * [Supported Brokers](#supported-brokers)
   * [Kafka](#kafka)
   * [NATS](#nats) / [NATS JetStream](#nats-jetstream)
+  * [RabbitMQ](#rabbitmq)
   * [Custom broker](#custom-broker)
 * [CLI options](#cli-options)
 * [Advanced topics](#advanced-topics)
@@ -42,6 +43,7 @@ to the application/user. Just plug your application to your favorite message bro
 * Brokers:
   * Kafka
   * NATS / NATS JetStream
+  * RabbitMQ
   * Custom
 * Formats:
   * JSON
@@ -261,6 +263,21 @@ Consumer for the user controller can be either created/updated with `WithConsume
 #### Limitations
 
 * the messages will be ack'd from the consumer even though the subscription was not setup (this will be logged)
+
+### RabbitMQ
+
+In order to use RabbitMQ as a broker, you can use the following code:
+```go
+// Create the RabbitMQ controller
+broker, _ := rabbitmq.NewController("amqp://<host>:<port>", /* options */)
+defer broker.Close()
+// Add RabbitMQ controller to a new App controller
+ctrl, err := NewAppController(broker)
+//...
+```
+
+#### Limitations
+
 
 ### Custom broker
 

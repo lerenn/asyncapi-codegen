@@ -7,6 +7,7 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/kafka"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/rabbitmq"
 	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 
@@ -56,10 +57,23 @@ func BrokerControllers(t *testing.T) ([]extensions.BrokerController, func()) {
 		panic(err)
 	}
 
+	// Add RabbitMQ broker
+	rabbitmqController, err := rabbitmq.NewController(
+		testutil.BrokerAddress(testutil.BrokerAddressParams{
+			Schema:         "amqp",
+			DockerizedAddr: "rabbitmq",
+			Port:           "5672",
+		}),
+		rabbitmq.WithQueueGroup(queueGroupID))
+	if err != nil {
+		panic(err)
+	}
+
 	// Return brokers with their cleanup functions
 	return []extensions.BrokerController{
 			natsController,
 			kafkaController,
+			rabbitmqController,
 		}, func() {
 			natsController.Close()
 		}

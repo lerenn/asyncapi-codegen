@@ -1,8 +1,9 @@
 package main
 
 import (
-	"asyncapi-codegen/ci/dagger/internal/dagger"
 	"runtime"
+
+	"asyncapi-codegen/ci/dagger/internal/dagger"
 )
 
 // runnerType represents the type of runner based on various info.

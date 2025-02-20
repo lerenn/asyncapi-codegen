@@ -1,8 +1,9 @@
 package main
 
 import (
-	"asyncapi-codegen/ci/dagger/internal/dagger"
 	"context"
+
+	"asyncapi-codegen/ci/dagger/internal/dagger"
 )
 
 func sourceCodeAndGoCache(dir *dagger.Directory) func(r *dagger.Container) *dagger.Container {
