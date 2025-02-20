@@ -53,9 +53,56 @@ func NewController(url string, options ...ControllerOption) (*Controller, error)
 }
 
 // WithQueueGroup sets a custom queue group for channel subscription.
-func WithQueueGroup(name string) ControllerOption {
+func WithQueueGroup(
+	exchangeName string,
+	exchangeType string,
+	durable bool,
+	autoDelete bool,
+	internal bool,
+	noWait bool,
+	args amqp.Table) ControllerOption {
 	return func(controller *Controller) error {
-		controller.queueGroup = name
+		controller.queueGroup = exchangeName
+		channel, err := controller.connection.Channel()
+		if err != nil {
+			return fmt.Errorf("could not create channel: %w", err)
+		}
+		defer channel.Close()
+		err = channel.ExchangeDeclare(
+			exchangeName,
+			exchangeType,
+			durable,
+			autoDelete,
+			internal,
+			noWait,
+			args,
+		)
+		if err != nil {
+			return fmt.Errorf("could not declare exchange: %w", err)
+		}
+		return nil
+	}
+}
+
+// WithQueueOptions sets options for the rabbitmq exchange.
+func WithQueueOptions(name string,
+	durable bool,
+	autoDelete bool,
+	exclusive bool,
+	noWait bool,
+	args amqp.Table) ControllerOption {
+	return func(controller *Controller) error {
+		channel, err := controller.connection.Channel()
+		if err != nil {
+			return fmt.Errorf("could not create channel: %w", err)
+		}
+		defer channel.Close() // Ensure the queue exists
+		_, err = channel.QueueDeclare(
+			name, durable, autoDelete, exclusive, noWait, args,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to declare queue: %w", err)
+		}
 		return nil
 	}
 }

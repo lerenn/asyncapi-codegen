@@ -19,7 +19,7 @@ func TestValidateAckMechanism(t *testing.T) {
 			DockerizedAddr: "rabbitmq",
 			Port:           "5672",
 		}),
-		WithQueueGroup(subj))
+		WithQueueGroup(subj, "direct", false, true, false, false, nil))
 	assert.NoError(t, err, "new controller should not return error")
 	defer rmqb.Close()
 
@@ -146,7 +146,7 @@ func TestRabbitMQController_WithQueueGroup(t *testing.T) {
 			DockerizedAddr: "rabbitmq",
 			Port:           "5672",
 		}),
-		WithQueueGroup(queueGroupID),
+		WithQueueGroup(queueGroupID, "topic", false, true, false, false, nil),
 	)
 	assert.NoError(t, err, "should be able to create RabbitMQ controller")
 	defer controller.Close()
