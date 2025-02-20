@@ -12,6 +12,7 @@ jobs:
   tests:
     name: Run tests
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4.1.1
       - uses: actions/setup-go@v5.0.0
@@ -26,6 +27,7 @@ jobs:
   examples:
     name: Run examples
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4.1.1
       - uses: actions/setup-go@v5.0.0
