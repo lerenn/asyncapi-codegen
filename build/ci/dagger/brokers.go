@@ -14,8 +14,6 @@ const (
 	natsImage = "nats:2.10"
 	// rabbitmqImage is the image used for RabbitMQ.
 	rabbitmqImage = "rabbitmq:4.0.6"
-	// lavinmqImage is the image used for LavinMQ.
-	lavinmqImage = "lavinmq:latest"
 )
 
 func bindBrokers(brokers map[string]*dagger.Service) func(r *dagger.Container) *dagger.Container {
@@ -288,13 +286,4 @@ func brokerRabbitMQ() *dagger.Container {
 		From(rabbitmqImage).
 		// Add exposed ports
 		WithExposedPort(5672)
-}
-
-// brokerlavinMQ returns a container for the lavinmq broker.
-func brokerlavinMQ() *dagger.Container {
-	return dag.Container().
-		// Add base image
-		From(lavinmqImage).
-		// Add exposed ports
-		WithExposedPort(5673)
 }

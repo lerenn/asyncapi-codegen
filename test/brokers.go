@@ -69,24 +69,11 @@ func BrokerControllers(t *testing.T) ([]extensions.BrokerController, func()) {
 		panic(err)
 	}
 
-	// Add lavinmq broker
-	lavinmqController, err := rabbitmq.NewController(
-		testutil.BrokerAddress(testutil.BrokerAddressParams{
-			Schema:         "amqp",
-			DockerizedAddr: "lavinmq",
-			Port:           "5673",
-		}),
-		rabbitmq.WithQueueGroup(queueGroupID))
-	if err != nil {
-		panic(err)
-	}
-
 	// Return brokers with their cleanup functions
 	return []extensions.BrokerController{
 			natsController,
 			kafkaController,
 			rabbitmqController,
-			lavinmqController,
 		}, func() {
 			natsController.Close()
 		}

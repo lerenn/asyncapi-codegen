@@ -1,13 +1,13 @@
 services:
   # NATS variants
   nats:
-    image: docker.io/library/nats:latest
+    image: nats:latest
     ports:
       - 4222:4222
     expose:
       - 4222
   nats-tls:
-    image: docker.io/library/nats:latest
+    image: nats:latest
     ports:
       - "4223:4222"
     expose:
@@ -20,7 +20,7 @@ services:
     volumes:
       - ./tmp/certs/nats:/certs
   nats-tls-basic-auth:
-    image: docker.io/library/nats:latest
+    image: nats:latest
     ports:
       - 4224:4222
     expose:
@@ -37,7 +37,7 @@ services:
   
   # NATS Jetstream variants
   nats-jetstream:
-    image: docker.io/library/nats:latest
+    image: nats:latest
     ports:
       - 4225:4222
     expose:
@@ -46,7 +46,7 @@ services:
       "-js",
     ]
   nats-jetstream-tls:
-    image: docker.io/library/nats:latest
+    image: nats:latest
     ports:
       - 4226:4222
     expose:
@@ -60,7 +60,7 @@ services:
     volumes:
       - ./tmp/certs/nats:/certs
   nats-jetstream-tls-basic-auth:
-    image: docker.io/library/nats:latest
+    image: nats:latest
     ports:
       - 4227:4222
     expose:
@@ -78,7 +78,7 @@ services:
 
   # Kafka variants
   kafka:
-    image: docker.io/bitnami/kafka:3.5.1
+    image: bitnami/kafka:3.5.1
     ports:
       - 9092:9092
       - 9093:9093
@@ -95,7 +95,7 @@ services:
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
   kafka-tls:
-    image: docker.io/bitnami/kafka:3.5.1
+    image: bitnami/kafka:3.5.1
     ports:
       - 9094:9094
       - 9095:9095
@@ -116,7 +116,7 @@ services:
     volumes:
       - ./tmp/certs/kafka:/bitnami/kafka/config/certs/
   kafka-tls-basic-auth:
-    image: docker.io/bitnami/kafka:3.5.1
+    image: bitnami/kafka:3.5.1
     ports:
       - 9096:9096
       - 9097:9097
@@ -142,20 +142,10 @@ services:
     
   # Rabbitmq variants
   rabbitmq:
-    image: docker.io/library/rabbitmq:management
+    image: rabbitmq:management
     ports:
       - 5672:5672
       - 15672:15672
-    expose:
-      - 5672
-      - 15672
-
-  # lavinmq variants
-  lavinmq:
-    image: docker.io/cloudamqp/lavinmq:latest
-    ports:
-      - 5673:5672
-      - 15673:15672
     expose:
       - 5672
       - 15672
