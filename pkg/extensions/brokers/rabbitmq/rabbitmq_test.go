@@ -1,9 +1,11 @@
 package rabbitmq
 
 import (
+	"context"
 	"sync"
 	"testing"
 
+	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
@@ -12,14 +14,13 @@ import (
 //nolint:funlen // this is only for testing
 func TestValidateAckMechanism(t *testing.T) {
 	// Establish a connection to the AMQP broker
-	subj := "CoreRabbitmqValidateAckMechanism"
 	rmqb, err := NewController(
 		testutil.BrokerAddress(testutil.BrokerAddressParams{
 			Schema:         "amqp",
 			DockerizedAddr: "rabbitmq",
 			Port:           "5672",
 		}),
-		WithQueueGroup(subj, "direct", false, true, false, false, nil))
+	)
 	assert.NoError(t, err, "new controller should not return error")
 	defer rmqb.Close()
 
@@ -139,18 +140,68 @@ func TestValidateAckMechanism(t *testing.T) {
 }
 
 func TestRabbitMQController_WithQueueGroup(t *testing.T) {
-	queueGroupID := "test-queue-group"
+	subj := "test-queue-group"
 	controller, err := NewController(
 		testutil.BrokerAddress(testutil.BrokerAddressParams{
 			Schema:         "amqp",
 			DockerizedAddr: "rabbitmq",
 			Port:           "5672",
 		}),
-		WithQueueGroup(queueGroupID, "topic", false, true, false, false, nil),
+		WithQueueGroup(subj),
 	)
 	assert.NoError(t, err, "should be able to create RabbitMQ controller")
 	defer controller.Close()
 	ch, err := controller.connection.Channel()
 	assert.NoError(t, err, "should be able to get channel")
 	defer ch.Close()
+}
+
+func TestRabbitMQController_WithExchangeOptionsAndQueueOptions(t *testing.T) {
+	controller, err := NewController(
+		testutil.BrokerAddress(testutil.BrokerAddressParams{
+			Schema:         "amqp",
+			DockerizedAddr: "rabbitmq",
+			Port:           "5672",
+		}),
+		WithQueueGroup("test-queue-group-for-all-options"),
+		WithExchangeOptions(ExchangeDeclare{
+			Type:       "fanout",
+			Durable:    false,
+			AutoDelete: true,
+			Internal:   false,
+			NoWait:     false,
+			Arguments:  amqp091.Table{},
+		}),
+		WithQueueOptions(QueueDeclare{
+			Durable:    false,
+			AutoDelete: true,
+			Exclusive:  false,
+			NoWait:     false,
+			Arguments:  amqp091.Table{},
+		}),
+	)
+	assert.NoError(t, err, "should be able to create RabbitMQ controller")
+	defer controller.Close()
+	ch, err := controller.connection.Channel()
+	assert.NoError(t, err, "should be able to get channel")
+	defer ch.Close()
+
+	_, err = controller.Subscribe(context.Background(), "test-queue2")
+	assert.NoError(t, err, "should be able to subscribe to queue")
+
+	err = controller.Publish(context.Background(), "test-queue-for-all-options", extensions.BrokerMessage{
+		Payload: []byte("test-payload"),
+	})
+	assert.NoError(t, err, "should be able to publish to queue")
+}
+
+func TestValidExchangeType(t *testing.T) {
+	assert.True(t, isValidExchangeType("direct"))
+	assert.True(t, isValidExchangeType("fanout"))
+	assert.True(t, isValidExchangeType("topic"))
+	assert.True(t, isValidExchangeType("headers"))
+	assert.False(t, isValidExchangeType("invalid"))
+	assert.False(t, isValidExchangeType(""))
+	assert.False(t, isValidExchangeType(" "))
+	assert.False(t, isValidExchangeType("direct "))
 }

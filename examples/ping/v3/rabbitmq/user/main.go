@@ -25,7 +25,7 @@ func main() {
 	broker, err := rabbitmq.NewController(
 		addr,                                  // Set URL to broker
 		rabbitmq.WithLogger(logger),           // Attach an internal logger
-		rabbitmq.WithQueueGroup("ping-users", "fanout", false, false, false, false, nil), // Set a specific queue group to avoid collisions
+		rabbitmq.WithQueueGroup("ping-users"), // Set a specific queue group to avoid collisions
 	)
 	if err != nil {
 		panic(err)

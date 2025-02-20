@@ -64,7 +64,7 @@ func BrokerControllers(t *testing.T) ([]extensions.BrokerController, func()) {
 			DockerizedAddr: "rabbitmq",
 			Port:           "5672",
 		}),
-		rabbitmq.WithQueueGroup(queueGroupID, "fanout", false, false, false, false, nil))
+		rabbitmq.WithQueueGroup(queueGroupID))
 	if err != nil {
 		panic(err)
 	}

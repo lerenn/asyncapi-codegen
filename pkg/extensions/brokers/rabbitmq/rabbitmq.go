@@ -12,12 +12,34 @@ import (
 // Check that it still fills the interface.
 var _ extensions.BrokerController = (*Controller)(nil)
 
+// ExchangeDeclare is a partial copy of amqp.ExchangeDeclare .
+type ExchangeDeclare struct {
+	Type       string
+	Passive    bool
+	Durable    bool
+	AutoDelete bool
+	Internal   bool
+	NoWait     bool
+	Arguments  amqp.Table
+}
+
+// QueueDeclare is a partial copy of amqp.QueueDeclare .
+type QueueDeclare struct {
+	Durable    bool
+	Exclusive  bool
+	AutoDelete bool
+	NoWait     bool
+	Arguments  amqp.Table
+}
+
 // Controller is the Controller implementation for asyncapi-codegen.
 type Controller struct {
-	url        string
-	connection *amqp.Connection
-	logger     extensions.Logger
-	queueGroup string
+	url             string
+	connection      *amqp.Connection
+	logger          extensions.Logger
+	queueGroup      string
+	exchangeOptions ExchangeDeclare
+	queueOptions    QueueDeclare
 }
 
 // ControllerOption is a function that can be used to configure a RabbitMQ controller.
@@ -52,61 +74,6 @@ func NewController(url string, options ...ControllerOption) (*Controller, error)
 	return controller, nil
 }
 
-// WithQueueGroup sets a custom queue group for channel subscription.
-func WithQueueGroup(
-	exchangeName string,
-	exchangeType string,
-	durable bool,
-	autoDelete bool,
-	internal bool,
-	noWait bool,
-	args amqp.Table) ControllerOption {
-	return func(controller *Controller) error {
-		controller.queueGroup = exchangeName
-		channel, err := controller.connection.Channel()
-		if err != nil {
-			return fmt.Errorf("could not create channel: %w", err)
-		}
-		defer channel.Close()
-		err = channel.ExchangeDeclare(
-			exchangeName,
-			exchangeType,
-			durable,
-			autoDelete,
-			internal,
-			noWait,
-			args,
-		)
-		if err != nil {
-			return fmt.Errorf("could not declare exchange: %w", err)
-		}
-		return nil
-	}
-}
-
-// WithQueueOptions sets options for the rabbitmq exchange.
-func WithQueueOptions(name string,
-	durable bool,
-	autoDelete bool,
-	exclusive bool,
-	noWait bool,
-	args amqp.Table) ControllerOption {
-	return func(controller *Controller) error {
-		channel, err := controller.connection.Channel()
-		if err != nil {
-			return fmt.Errorf("could not create channel: %w", err)
-		}
-		defer channel.Close() // Ensure the queue exists
-		_, err = channel.QueueDeclare(
-			name, durable, autoDelete, exclusive, noWait, args,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to declare queue: %w", err)
-		}
-		return nil
-	}
-}
-
 // WithLogger sets a custom logger that will log operations on the broker controller.
 func WithLogger(logger extensions.Logger) ControllerOption {
 	return func(controller *Controller) error {
@@ -127,6 +94,56 @@ func WithConnectionOpts(config amqp.Config) ControllerOption {
 	}
 }
 
+// WithQueueGroup sets the queue group to use for the broker controller.
+func WithQueueGroup(queueGroup string) ControllerOption {
+	return func(controller *Controller) error {
+		controller.queueGroup = queueGroup
+		return nil
+	}
+}
+
+// WithQueueOptions sets the queue options to use for the broker controller.
+func WithQueueOptions(options QueueDeclare) ControllerOption {
+	return func(controller *Controller) error {
+		controller.queueOptions = options
+		return nil
+	}
+}
+
+func mergeQueueOptions(defaultOptions, options QueueDeclare) QueueDeclare {
+	if options.Arguments == nil {
+		options.Arguments = defaultOptions.Arguments
+	}
+	return options
+}
+
+// WithExchangeOptions sets the exchange options to use for the broker controller.
+func WithExchangeOptions(options ExchangeDeclare) ControllerOption {
+	return func(controller *Controller) error {
+		controller.exchangeOptions = options
+		return nil
+	}
+}
+
+func isValidExchangeType(exchangeType string) bool {
+	switch exchangeType {
+	case "direct", "fanout", "topic", "headers":
+		return true
+	default:
+		return false
+	}
+}
+
+func mergeExchangeOptions(defaultOptions, options ExchangeDeclare) ExchangeDeclare {
+	if !isValidExchangeType(options.Type) {
+		options.Type = defaultOptions.Type
+	}
+	if options.Arguments == nil {
+		options.Arguments = defaultOptions.Arguments
+	}
+	return options
+}
+
 // Publish a message to the broker.
 func (c *Controller) Publish(_ context.Context, queueName string, bm extensions.BrokerMessage) error {
 	channel, err := c.connection.Channel()
@@ -135,14 +152,28 @@ func (c *Controller) Publish(_ context.Context, queueName string, bm extensions.
 	}
 	defer channel.Close()
 
-	// Ensure the queue exists
+	c.mergeDefaultOptions()
+
+	err = channel.ExchangeDeclare(
+		c.queueGroup,
+		c.exchangeOptions.Type,
+		c.exchangeOptions.Durable,
+		c.exchangeOptions.AutoDelete,
+		c.exchangeOptions.Internal,
+		c.exchangeOptions.NoWait,
+		c.exchangeOptions.Arguments,
+	)
+	if err != nil {
+		return fmt.Errorf("could not declare exchange: %w", err)
+	}
+
 	_, err = channel.QueueDeclare(
 		queueName,
-		false, // durable
-		false, // auto-delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
+		c.queueOptions.Durable,
+		c.queueOptions.AutoDelete,
+		c.queueOptions.Exclusive,
+		c.queueOptions.NoWait,
+		c.queueOptions.Arguments,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to declare queue: %w", err)
@@ -171,6 +202,29 @@ func (c *Controller) Publish(_ context.Context, queueName string, bm extensions.
 		return err
 	}
 	return nil
+}
+
+func (c *Controller) mergeDefaultOptions() {
+	defaultExchangeOptions := ExchangeDeclare{
+		Type:       "direct",
+		Durable:    false,
+		AutoDelete: false,
+		Internal:   false,
+		NoWait:     false,
+		Arguments:  amqp.Table{},
+	}
+
+	c.exchangeOptions = mergeExchangeOptions(defaultExchangeOptions, c.exchangeOptions)
+
+	defaultQueueOptions := QueueDeclare{
+		Durable:    false,
+		AutoDelete: true,
+		Exclusive:  false,
+		NoWait:     false,
+		Arguments:  amqp.Table{},
+	}
+
+	c.queueOptions = mergeQueueOptions(defaultQueueOptions, c.queueOptions)
 }
 
 // Subscribe to messages from the broker.
