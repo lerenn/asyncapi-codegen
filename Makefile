@@ -22,11 +22,11 @@ lint: ## Lint the code locally
 .PHONY: local-env/start
 local-env/start: ## Start the local environment
 	@go run ./tools/generate-certs
-	@uv tool run podman-compose up -d
+	@docker-compose up -d
 
 .PHONY: local-env/stop
 local-env/stop: ## Stop the local environment
-	@uv tool run podman-compose down
+	@docker-compose down
 
 .PHONY: publish
 publish: dagger/publish ## Publish with tag on git, docker hub, etc. locally
