@@ -1,375 +1,332 @@
 package rabbitmq
 
 import (
-	"context"
-	"fmt"
+    "context"
+    "fmt"
+    "sync"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
-	amqp "github.com/rabbitmq/amqp091-go"
+    "github.com/lerenn/asyncapi-codegen/pkg/extensions"
+    "github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers"
+    amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// Compile-time check to ensure that Controller implements the extensions.BrokerController interface.
+// Check interface implementation at compile time
 var _ extensions.BrokerController = (*Controller)(nil)
 
-// ExchangeDeclare is a subset of amqp.ExchangeDeclare, used for configuring exchange options.
+// ExchangeDeclare represents RabbitMQ exchange configuration
 type ExchangeDeclare struct {
-	Type       string
-	Passive    bool
-	Durable    bool
-	AutoDelete bool
-	Internal   bool
-	NoWait     bool
-	Arguments  amqp.Table
+    Type       string     // Exchange type (direct, fanout, topic, headers)
+    Passive    bool       // If true, won't declare exchange, just check if exists
+    Durable    bool       // Survives broker restart
+    AutoDelete bool       // Deleted when last binding is removed
+    Internal   bool       // If true, exchange cannot be directly published to by clients
+    NoWait     bool       // If true, doesn't wait for server confirmation
+    Arguments  amqp.Table // Additional exchange arguments
 }
 
-// QueueDeclare is a subset of amqp.QueueDeclare, used for configuring queue options.
+// QueueDeclare represents RabbitMQ queue configuration
 type QueueDeclare struct {
-	Durable    bool
-	Exclusive  bool
-	AutoDelete bool
-	NoWait     bool
-	Arguments  amqp.Table
+    Durable    bool       // Survives broker restart
+    Exclusive  bool       // Restricted to this connection
+    AutoDelete bool       // Deleted when last consumer unsubscribes
+    NoWait     bool       // If true, doesn't wait for server confirmation
+    Arguments  amqp.Table // Additional queue arguments
 }
 
-// Controller implements the extensions.BrokerController interface for RabbitMQ.
+// Controller manages RabbitMQ connections and operations
 type Controller struct {
-	url        string
-	connection *amqp.Connection
-	logger     extensions.Logger
-	queueGroup string
-	// Options are now pointers so we can check if they are set (nil or not nil)
-	exchangeOptions *ExchangeDeclare
-	queueOptions    *QueueDeclare
+    url             string
+    connection      *amqp.Connection
+    logger          extensions.Logger
+    queueGroup      string
+    exchangeOptions ExchangeDeclare
+    queueOptions    QueueDeclare
+    mu              sync.Mutex // Protects connection state
+    closed          bool
 }
 
-// ControllerOption is a functional option type to configure the Controller.
-type ControllerOption func(controller *Controller) error
+// ControllerOption configures the Controller during creation
+type ControllerOption func(*Controller) error
 
-// NewController creates a new RabbitMQ controller.
+// Default configuration constants
+const (
+    DefaultExchangeType = "direct"
+    DefaultQueueGroup   = brokers.DefaultQueueGroupID
+)
+
+// NewController creates and initializes a new RabbitMQ controller
 func NewController(url string, options ...ControllerOption) (*Controller, error) {
-	// Default values
-	controller := &Controller{
-		url:        url,
-		queueGroup: brokers.DefaultQueueGroupID,
-		logger:     extensions.DummyLogger{},
-	}
+    c := &Controller{
+        url:        url,
+        queueGroup: DefaultQueueGroup,
+        logger:     extensions.DummyLogger{},
+        exchangeOptions: ExchangeDeclare{
+            Type:      DefaultExchangeType,
+            Arguments: make(amqp.Table),
+        },
+        queueOptions: QueueDeclare{
+            Arguments: make(amqp.Table),
+        },
+    }
 
-	// Apply options
-	for _, option := range options {
-		if err := option(controller); err != nil {
-			return nil, fmt.Errorf("failed to apply option: %w", err)
-		}
-	}
+    for _, opt := range options {
+        if err := opt(c); err != nil {
+            return nil, fmt.Errorf("failed to apply option: %w", err)
+        }
+    }
 
-	// Establish connection if not provided via WithConnectionOpts
-	if controller.connection == nil {
-		conn, err := amqp.Dial(url)
-		if err != nil {
-			return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
-		}
-		controller.connection = conn
-	}
+    if c.connection == nil {
+        if err := c.connect(); err != nil {
+            return nil, fmt.Errorf("failed to establish initial connection: %w", err)
+        }
+    }
 
-	return controller, nil
+    return c, nil
 }
 
-// WithLogger sets a custom logger.
+// connect establishes a connection to RabbitMQ
+func (c *Controller) connect() error {
+    conn, err := amqp.Dial(c.url)
+    if err != nil {
+        return err
+    }
+    c.connection = conn
+    return nil
+}
+
+// Controller options
 func WithLogger(logger extensions.Logger) ControllerOption {
-	return func(controller *Controller) error {
-		controller.logger = logger
-		return nil
-	}
+    return func(c *Controller) error {
+        c.logger = logger
+        return nil
+    }
 }
 
-// WithConnectionOpts uses the provided amqp.Config for the RabbitMQ connection.
 func WithConnectionOpts(config amqp.Config) ControllerOption {
-	return func(controller *Controller) error {
-		conn, err := amqp.DialConfig(controller.url, config)
-		if err != nil {
-			return fmt.Errorf("failed to connect to RabbitMQ with custom config: %w", err)
-		}
-		controller.connection = conn
-		return nil
-	}
+    return func(c *Controller) error {
+        conn, err := amqp.DialConfig(c.url, config)
+        if err != nil {
+            return fmt.Errorf("failed to connect with config: %w", err)
+        }
+        c.connection = conn
+        return nil
+    }
 }
 
-// WithQueueGroup sets the queue group (exchange name in RabbitMQ) for the controller.
 func WithQueueGroup(queueGroup string) ControllerOption {
-	return func(controller *Controller) error {
-		controller.queueGroup = queueGroup
-		return nil
-	}
+    return func(c *Controller) error {
+        if queueGroup == "" {
+            return fmt.Errorf("queue group cannot be empty")
+        }
+        c.queueGroup = queueGroup
+        return nil
+    }
 }
 
-// WithQueueOptions sets the queue options.
 func WithQueueOptions(options QueueDeclare) ControllerOption {
-	return func(controller *Controller) error {
-		controller.queueOptions = &options // store a pointer
-		return nil
-	}
+    return func(c *Controller) error {
+        c.queueOptions = options
+        return nil
+    }
 }
 
-// mergeQueueOptions merges user-provided options with defaults, prioritizing user options.
-func mergeQueueOptions(defaultOptions, userOptions *QueueDeclare) QueueDeclare {
-	merged := defaultOptions // Start with default
-	if userOptions != nil {
-		merged = *userOptions // If options are provided, overwrite defaults
-	}
-
-	// Handle nested nil check for arguments
-	if merged.Arguments == nil && defaultOptions.Arguments != nil {
-		merged.Arguments = defaultOptions.Arguments
-	}
-
-	return merged
-}
-
-// WithExchangeOptions sets the exchange options.
 func WithExchangeOptions(options ExchangeDeclare) ControllerOption {
-	return func(controller *Controller) error {
-		controller.exchangeOptions = &options // store a pointer
-		return nil
-	}
+    return func(c *Controller) error {
+        if !isValidExchangeType(options.Type) {
+            return fmt.Errorf("invalid exchange type: %s", options.Type)
+        }
+        c.exchangeOptions = options
+        return nil
+    }
 }
 
-// isValidExchangeType checks if the provided exchange type is valid.
+// isValidExchangeType validates exchange type
 func isValidExchangeType(exchangeType string) bool {
-	switch exchangeType {
-	case "direct", "fanout", "topic", "headers":
-		return true
-	default:
-		return false
-	}
+    switch exchangeType {
+    case "direct", "fanout", "topic", "headers":
+        return true
+    default:
+        return false
+    }
 }
 
-// mergeExchangeOptions merges user-provided exchange options with defaults.
-func mergeExchangeOptions(defaultOptions, userOptions *ExchangeDeclare) ExchangeDeclare {
-	merged := defaultOptions // Start with default
-	if userOptions != nil {
-		merged = *userOptions // If options provided, overwrite defaults
-	}
-
-	if !isValidExchangeType(merged.Type) {
-		merged.Type = defaultOptions.Type // Use default if invalid
-	}
-
-	// Handle nested nil checks for arguments
-	if merged.Arguments == nil && defaultOptions.Arguments != nil {
-		merged.Arguments = defaultOptions.Arguments
-	}
-
-	return merged
-}
-
-// Publish publishes a message to the specified queue in RabbitMQ.
+// Publish sends a message to the specified queue
 func (c *Controller) Publish(ctx context.Context, queueName string, bm extensions.BrokerMessage) error {
-	channel, err := c.connection.Channel()
-	if err != nil {
-		return fmt.Errorf("failed to open a channel: %w", err)
-	}
-	defer channel.Close()
+    c.mu.Lock()
+    defer c.mu.Unlock()
 
-	// Merge options with defaults, doing it on each publish allows per-publish customization if needed.
-	c.mergeDefaultOptions()
+    if c.closed {
+        return fmt.Errorf("controller is closed")
+    }
 
-	// Declare Exchange
-	if err := channel.ExchangeDeclare(
-		c.queueGroup,             // name
-		c.exchangeOptions.Type,   // type
-		c.exchangeOptions.Durable,    // durable
-		c.exchangeOptions.AutoDelete, // auto-deleted
-		c.exchangeOptions.Internal,   // internal
-		c.exchangeOptions.NoWait,     // no-wait
-		c.exchangeOptions.Arguments,  // arguments
-	); err != nil {
-		return fmt.Errorf("failed to declare an exchange: %w", err)
-	}
+    ch, err := c.connection.Channel()
+    if err != nil {
+        return fmt.Errorf("failed to open channel: %w", err)
+    }
+    defer ch.Close()
 
-	// Declare Queue
-	_, err = channel.QueueDeclare(
-		queueName,                // name
-		c.queueOptions.Durable,    // durable
-		c.queueOptions.AutoDelete, // delete when unused
-		c.queueOptions.Exclusive,  // exclusive
-		c.queueOptions.NoWait,     // no-wait
-		c.queueOptions.Arguments,  // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare a queue: %w", err)
-	}
+    if err := c.declareExchange(ch); err != nil {
+        return err
+    }
 
-	// Convert headers to amqp.Table
-	headers := amqp.Table{}
-	for k, v := range bm.Headers {
-		headers[k] = v
-	}
+    if err := c.declareQueue(ch, queueName); err != nil {
+        return err
+    }
 
-	// Publish the message
-	if err := channel.PublishWithContext(
-		ctx,
-		c.queueGroup, // exchange
-		queueName,    // routing key (queue name)
-		false,        // mandatory
-		false,        // immediate
-		amqp.Publishing{
-			Headers:         headers,
-			ContentType:     "application/octet-stream", // Or determine dynamically
-			ContentEncoding: "binary",                   // Or determine dynamically
-			Body:            bm.Payload,
-		},
-	); err != nil {
-		return fmt.Errorf("failed to publish a message: %w", err)
-	}
-
-	c.logger.Info(ctx, fmt.Sprintf("Published message to queue %s", queueName))
-	return nil
+    return c.publishMessage(ch, queueName, bm)
 }
 
-func (c *Controller) mergeDefaultOptions() {
-	defaultExchangeOptions := ExchangeDeclare{
-		Type:       "direct",
-		Durable:    false,
-		AutoDelete: false,
-		Internal:   false,
-		NoWait:     false,
-		Arguments:  amqp.Table{},
-	}
-
-	c.exchangeOptions = &mergeExchangeOptions(defaultExchangeOptions, c.exchangeOptions)
-
-	defaultQueueOptions := QueueDeclare{
-		Durable:    false,
-		AutoDelete: true,
-		Exclusive:  false,
-		NoWait:     false,
-		Arguments:  amqp.Table{},
-	}
-
-	c.queueOptions = &mergeQueueOptions(defaultQueueOptions, c.queueOptions)
+func (c *Controller) declareExchange(ch *amqp.Channel) error {
+    return ch.ExchangeDeclare(
+        c.queueGroup,
+        c.exchangeOptions.Type,
+        c.exchangeOptions.Durable,
+        c.exchangeOptions.AutoDelete,
+        c.exchangeOptions.Internal,
+        c.exchangeOptions.NoWait,
+        c.exchangeOptions.Arguments,
+    )
 }
 
-// Subscribe subscribes to messages from the specified queue in RabbitMQ.
+func (c *Controller) declareQueue(ch *amqp.Channel, queueName string) error {
+    _, err := ch.QueueDeclare(
+        queueName,
+        c.queueOptions.Durable,
+        c.queueOptions.AutoDelete,
+        c.queueOptions.Exclusive,
+        c.queueOptions.NoWait,
+        c.queueOptions.Arguments,
+    )
+    return err
+}
+
+func (c *Controller) publishMessage(ch *amqp.Channel, queueName string, bm extensions.BrokerMessage) error {
+    headers := amqp.Table{}
+    for k, v := range bm.Headers {
+        headers[k] = v
+    }
+
+    return ch.Publish(
+        c.queueGroup,
+        queueName,
+        false,
+        false,
+        amqp.Publishing{
+            Body:            bm.Payload,
+            Headers:         headers,
+            ContentType:     "application/octet-stream",
+            ContentEncoding: "binary",
+            Timestamp:       time.Now(),
+        },
+    )
+}
+
+// Subscribe creates a subscription to the specified queue
 func (c *Controller) Subscribe(ctx context.Context, queueName string) (extensions.BrokerChannelSubscription, error) {
-	// Setup subscription channels
-	sub := extensions.NewBrokerChannelSubscription(
-		make(chan extensions.AcknowledgeableBrokerMessage, brokers.BrokerMessagesQueueSize),
-		make(chan any, 1),
-	)
+    c.mu.Lock()
+    defer c.mu.Unlock()
 
-	channel, err := c.connection.Channel()
-	if err != nil {
-		return extensions.BrokerChannelSubscription{}, fmt.Errorf("failed to open a channel: %w", err)
-	}
+    if c.closed {
+        return extensions.BrokerChannelSubscription{}, fmt.Errorf("controller is closed")
+    }
 
-	// Merge options (for queue declaration, could be different from publish options)
-	c.mergeDefaultOptions()
+    ch, err := c.connection.Channel()
+    if err != nil {
+        return extensions.BrokerChannelSubscription{}, fmt.Errorf("failed to open channel: %w", err)
+    }
 
-	// Declare Queue
-	_, err = channel.QueueDeclare(
-		queueName,                // name
-		c.queueOptions.Durable,    // durable
-		c.queueOptions.AutoDelete, // delete when unused
-		c.queueOptions.Exclusive,  // exclusive
-		c.queueOptions.NoWait,     // no-wait
-		c.queueOptions.Arguments,  // arguments
-	)
-	if err != nil {
-		return extensions.BrokerChannelSubscription{}, fmt.Errorf("failed to declare a queue: %w", err)
-	}
+    if err := c.declareQueue(ch, queueName); err != nil {
+        ch.Close()
+        return extensions.BrokerChannelSubscription{}, err
+    }
 
-	// Start consuming messages
-	msgs, err := channel.Consume(
-		queueName, // queue
-		"",        // consumer
-		false,     // auto-ack.  Set to false for manual acknowledgements.
-		false,     // exclusive
-		false,     // no-local
-		false,     // no-wait
-		nil,       // args
-	)
-	if err != nil {
-		return extensions.BrokerChannelSubscription{}, fmt.Errorf("failed to register a consumer: %w", err)
-	}
-
-	// Asynchronously handle cancellation and cleanup
-	sub.WaitForCancellationAsync(func() {
-		if err := channel.Cancel("", false); err != nil {
-			c.logger.Error(ctx, fmt.Sprintf("failed to cancel consumer: %v", err))
-		}
-		channel.Close()
-		c.logger.Info(ctx, fmt.Sprintf("Unsubscribed from queue %s", queueName))
-	})
-
-	// Goroutine to process received messages
-	go func() {
-		for delivery := range msgs {
-			// Convert amqp.Table headers to map[string][]byte
-			headers := make(map[string][]byte)
-			for key, value := range delivery.Headers {
-				switch v := value.(type) {
-				case []byte:
-					headers[key] = v
-				case string:
-					headers[key] = []byte(v)
-				default:
-					headers[key] = []byte(fmt.Sprintf("%v", v))
-				}
-			}
-
-			// Create and transmit AcknowledgeableBrokerMessage
-			sub.TransmitReceivedMessage(extensions.NewAcknowledgeableBrokerMessage(
-				extensions.BrokerMessage{
-					Headers: headers,
-					Payload: delivery.Body,
-				},
-				&AcknowledgementHandler{
-					Delivery: &delivery,
-					ctx:      ctx,
-					logger:   c.logger,
-				},
-			))
-		}
-		// The loop breaks when the msgs channel is closed (e.g., on connection loss or explicit close).
-		// The subscription should also be stopped in that case.
-		sub.Cancel()
-	}()
-
-	c.logger.Info(ctx, fmt.Sprintf("Subscribed to queue %s", queueName))
-	return sub, nil
+    return c.setupConsumer(ctx, ch, queueName)
 }
 
-// Close closes the RabbitMQ connection.
+func (c *Controller) setupConsumer(ctx context.Context, ch *amqp.Channel, queueName string) (extensions.BrokerChannelSubscription, error) {
+    sub := extensions.NewBrokerChannelSubscription(
+        make(chan extensions.AcknowledgeableBrokerMessage, brokers.BrokerMessagesQueueSize),
+        make(chan any, 1),
+    )
+
+    msgs, err := ch.Consume(queueName, "", false, false, false, false, nil)
+    if err != nil {
+        ch.Close()
+        return extensions.BrokerChannelSubscription{}, fmt.Errorf("failed to start consumer: %w", err)
+    }
+
+    go c.handleMessages(ctx, ch, sub, msgs)
+    return sub, nil
+}
+
+func (c *Controller) handleMessages(ctx context.Context, ch *amqp.Channel, sub extensions.BrokerChannelSubscription, msgs <-chan amqp.Delivery) {
+    defer ch.Close()
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-sub.StopChan():
+            return
+        case d, ok := <-msgs:
+            if !ok {
+                return
+            }
+            sub.TransmitReceivedMessage(extensions.NewAcknowledgeableBrokerMessage(
+                extensions.BrokerMessage{
+                    Headers: convertHeaders(d.Headers),
+                    Payload: d.Body,
+                },
+                &AcknowledgementHandler{Delivery: &d},
+            ))
+        }
+    }
+}
+
+func convertHeaders(headers amqp.Table) map[string][]byte {
+    result := make(map[string][]byte)
+    for k, v := range headers {
+        switch val := v.(type) {
+        case []byte:
+            result[k] = val
+        case string:
+            result[k] = []byte(val)
+        default:
+            result[k] = []byte(fmt.Sprintf("%v", v))
+        }
+    }
+    return result
+}
+
+// Close cleanly shuts down the controller
 func (c *Controller) Close() {
-	if c.connection != nil {
-		if err := c.connection.Close(); err != nil {
-			// Use background context as the original context could be done
-			c.logger.Error(context.Background(), fmt.Sprintf("error closing connection: %v", err))
-		}
-	}
-	c.logger.Info(context.Background(), "Closed connection") // Using Background() since the Controller doesn't have a context
+    c.mu.Lock()
+    defer c.mu.Unlock()
+
+    if c.closed {
+        return
+    }
+
+    if c.connection != nil {
+        if err := c.connection.Close(); err != nil {
+            c.logger.Error(context.Background(), fmt.Sprintf("failed to close connection: %v", err))
+        }
+    }
+    c.closed = true
 }
 
-// Ensure AcknowledgementHandler implements the BrokerAcknowledgment interface.
-var _ extensions.BrokerAcknowledgment = (*AcknowledgementHandler)(nil)
-
-// AcknowledgementHandler handles message acknowledgements.
+// AcknowledgementHandler implements message acknowledgment
 type AcknowledgementHandler struct {
-	Delivery *amqp.Delivery
-	ctx      context.Context // add context for logging
-	logger   extensions.Logger
+    Delivery *amqp.Delivery
 }
 
-// AckMessage acknowledges the message.
 func (h *AcknowledgementHandler) AckMessage() {
-	if err := h.Delivery.Ack(false); err != nil {
-		h.logger.Error(h.ctx, fmt.Sprintf("failed to ack message: %v", err))
-	}
+    if h.Delivery != nil {
+        _ = h.Delivery.Ack(false)
+    }
 }
 
-// NakMessage negatively acknowledges the message.
 func (h *AcknowledgementHandler) NakMessage() {
-	if err := h.Delivery.Nack(false, false); err != nil {
-		h.logger.Error(h.ctx, fmt.Sprintf("failed to nack message: %v", err))
-	}
+    if h.Delivery != nil {
+        _ = h.Delivery.Nack(false, true) // Requeue the message
+    }
 }
