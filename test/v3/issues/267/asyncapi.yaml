@@ -1,0 +1,31 @@
+asyncapi: 3.0.0
+
+channels:
+  test:
+    address: v3.issue267.test
+    messages:
+      test:
+        payload:
+          $ref: '#/components/schemas/Test'
+
+operations:
+  receiveTest:
+    action: receive
+    channel:
+      $ref: '#/channels/test'
+
+info:
+  title: Test
+  version: 1.0.0
+components:
+  schemas:
+    Test:
+      type: object
+      required:
+        - EnumProp
+      properties:
+        EnumProp:
+          type: string
+          enum:
+            - "nospaces"
+            - "has a space"

@@ -66,12 +66,18 @@ func GenerateValidateTags[T any](schema asyncapi.Validations[T], isPointer bool,
 	}
 }
 
+// singleQuote prepends and appends a single quote to the provided string.
+func singleQuote(s string) string {
+	return "'" + s + "'"
+}
+
 func appendEnumDirectives[T any](schema asyncapi.Validations[T], directives []string) []string {
 	if len(schema.Enum) > 0 {
 		var enumsStr []string
 		for _, e := range schema.Enum {
 			if eStr, ok := e.(string); ok {
-				enumsStr = append(enumsStr, eStr)
+				// single quotes are mandatory in order to handle values with spaces
+				enumsStr = append(enumsStr, singleQuote(eStr))
 			}
 		}
 
