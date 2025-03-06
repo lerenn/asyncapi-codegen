@@ -29,13 +29,13 @@ If and once you're ready to write the contribution, you can start the developmen
 environment by typing this command:
 
 ```bash 
-make local/up
+make local-env/start
 ```
 
 Once you're done, you can terminate your environment by typing this command:
 
 ```bash
-make local/down
+make local-env/stop
 ```
 
 #### Explore the source code
@@ -43,7 +43,7 @@ make local/down
 Code is separated between the following directories:
 * `build/` contains the files related to the CI and the packaging (Docker, ...)
   of asyncapi-codegen project
-* `cmd/` contains all executable produces by this project (no the project
+* `cmd/` contains all executables produced by this project (no the project
   internal tools)
 * `examples/` contains workable examples of generated code along to their asyncapi
   document against the brokers supported in this project. You can test them if
