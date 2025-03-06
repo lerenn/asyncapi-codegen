@@ -1,0 +1,17 @@
+# Issue: https://github.com/lerenn/asyncapi-codegen/issues/186
+
+asyncapi: 2.6.0
+info:
+  title: Sample App
+  version: 1.0.0
+channels:
+  v2.issue186.star.*.*:
+    publish:
+      message:
+        payload:
+          type: string
+  v2.issue186.angle.>:
+    publish:
+      message:
+        payload:
+          type: string
