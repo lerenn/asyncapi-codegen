@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
@@ -339,6 +340,52 @@ func (c *Controller) ConsumeMessage(ctx context.Context) jetstream.MessageHandle
 		}
 		c.channels[msg.Subject()] <- msg
 	}
+}
+
+// MatchSubjectSubscription checks whether a NATS subject matches a subscription string.
+func MatchSubjectSubscription(pattern string, subject string) bool {
+	if pattern == "" || subject == "" {
+		return false
+	}
+
+	// Split the pattern and subject into tokens
+	patternTokens := strings.Split(pattern, ".")
+	subjectTokens := strings.Split(subject, ".")
+
+	// Check if the number of tokens in the subject is less than the number of tokens in the pattern
+	if len(subjectTokens) < len(patternTokens) {
+		return false
+	}
+
+	// Iterate over the tokens in the pattern and subject
+	for i, patternToken := range patternTokens {
+		// If the pattern token is a wildcard, check if it matches the subject token
+		if patternToken == "*" {
+			// If the subject token is empty, return false
+			if subjectTokens[i] == "" {
+				return false
+			}
+
+			// Otherwise, continue to the next token
+			continue
+		} else if patternToken == ">" {
+			// If the wildcard is not the last token in the pattern, return false
+			if i != len(patternTokens)-1 {
+				return false
+			}
+
+			// Otherwise, the pattern matches the subject
+			return true
+		} else {
+			// If the pattern token is not a wildcard, check if it matches the subject token
+			if patternToken != subjectTokens[i] {
+				return false
+			}
+		}
+	}
+
+	// If all tokens match, the pattern matches the subject
+	return len(patternTokens) == len(subjectTokens)
 }
 
 var _ extensions.BrokerAcknowledgment = (*AcknowledgementHandler)(nil)
