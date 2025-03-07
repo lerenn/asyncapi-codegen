@@ -242,6 +242,11 @@ func TestMatchSubjectSubscription(t *testing.T) {
 		{"time.us.>", "time.eu.east", false},
 		{"time.us.>", "time.us.east.atlanta", true},
 		{"time", "", false},
+		{"a.b.>", "a.b", false},
+		{"a.b.>", "a", false},
+		{"a.*.c.>", "a.b.c.d.e", true},
+		{"a.*.c.>", "a.b.c", false},
+		{"a.*.c.>", "a.b.d", false},
 	}
 
 	// Run the test cases
