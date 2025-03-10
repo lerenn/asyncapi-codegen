@@ -24,5 +24,5 @@ func TestValidateOneOfExist(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, "oneof=API0 API1 API2 API3 API4", oneOfTag)
+	assert.Equal(t, "oneof='API0' 'API1' 'API2' 'API3' 'API4'", oneOfTag)
 }

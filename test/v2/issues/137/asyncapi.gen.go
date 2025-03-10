@@ -70,7 +70,7 @@ func (e *Error) Error() string {
 // AuditSchema is a schema from the AsyncAPI specification required in messages
 // Description: An audit event is a record of an event that has occurred in a system.
 type AuditSchema struct {
-	Channel ChannelSchema `json:"channel" validate:"oneof=API0 API1 API2 API3 API4"`
+	Channel ChannelSchema `json:"channel" validate:"oneof='API0' 'API1' 'API2' 'API3' 'API4'"`
 }
 
 // ChannelSchema is a schema from the AsyncAPI specification required in messages

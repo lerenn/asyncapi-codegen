@@ -495,7 +495,7 @@ func (msg V2Issue131TestMessage) toBrokerMessage() (extensions.BrokerMessage, er
 type TestSchema struct {
 	ArrayProp            []string `json:"ArrayProp,omitempty" validate:"omitempty,min=2,max=5,unique"`
 	ConstProp            *string  `json:"ConstProp,omitempty" validate:"omitempty,eq=Canada"`
-	EnumProp             *string  `json:"EnumProp,omitempty" validate:"omitempty,oneof=red amber green"`
+	EnumProp             *string  `json:"EnumProp,omitempty" validate:"omitempty,oneof='red' 'amber' 'green'"`
 	FloatProp            *float64 `json:"FloatProp,omitempty" validate:"omitempty,gte=2.5,lte=5.5"`
 	IntegerExclusiveProp *int64   `json:"IntegerExclusiveProp,omitempty" validate:"omitempty,gt=2,lt=5"`
 	IntegerProp          *int64   `json:"IntegerProp,omitempty" validate:"omitempty,gte=2,lte=5"`
