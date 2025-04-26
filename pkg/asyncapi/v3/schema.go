@@ -161,6 +161,8 @@ func (s *Schema) generateMetadata(parentName, name string, number *int, isRequir
 	// Set IsRequired
 	s.IsRequired = isRequired
 
+	s.ShouldOmitEmpty = s.ExtOmitEmpty
+
 	return nil
 }
 
