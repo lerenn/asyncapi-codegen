@@ -13,10 +13,22 @@ func (t {{ .Name }}) MarshalJSON() ([]byte, error) {
     // Remove the end of the json (i.e. '}')
     b = b[:len(b)-1]
 
-    // Add additional properties
-    for k, v := range t.AdditionalProperties {
-        b = append(b,[]byte(fmt.Sprintf(",%q:%q", k, v))...)
-    }
+	// When there are no properties, we cant start with a separator
+	needSeparator := len(b) > 1
+
+	// Add additional properties
+	for k, v := range t.AdditionalProperties {
+    	if needSeparator {
+    	    b = append(b, ',')
+    	}
+    	needSeparator = true
+	
+    	vBytes, err := json.Marshal(v)
+    	if err != nil {
+    	    return nil, err
+    	}
+    	b = append(b, fmt.Sprintf("%q:%s", k, vBytes)...)
+	}
 
     // Close JSON and return
     return append(b, []byte("}")...) , nil

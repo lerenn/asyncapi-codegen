@@ -1,0 +1,82 @@
+asyncapi: 3.0.0
+
+channels:
+  test: 
+    address: v3.issue666.test
+    messages:
+      test:
+        payload:
+          $ref: '#/components/schemas/ColliderDictionary'
+
+operations:
+  receiveTest:
+    action: receive
+    channel:
+      $ref: '#/channels/test'
+info:
+  title: Test
+  version: 1.0.0
+components:
+  schemas:
+    Sphere:
+      title: Sphere
+      type: object
+      properties:
+        shape_type:
+          type: string
+          enum:
+            - sphere
+        radius:
+          type: number
+          format: double
+      required:
+        - shape_type
+        - radius
+    Collider:
+      title: Collider
+      type: object
+      properties:
+        shape:
+          oneOf:
+            - $ref: '#/components/schemas/Sphere'
+          discriminator:
+            propertyName: shape_type
+            mapping:
+              sphere: '#/components/schemas/Sphere'
+        pose:
+          $ref: '#/components/schemas/Pose'
+        margin:
+          type: number
+          format: float
+          default: 0
+      required:
+        - shape
+    ColliderDictionary:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/Collider'
+    Pose:
+      title: Pose
+      type: object
+      properties:
+        position:
+          $ref: '#/components/schemas/Vector3d'
+        orientation:
+          $ref: '#/components/schemas/Vector3d'
+      default:
+        position:
+          - 0
+          - 0
+          - 0
+        orientation:
+          - 0
+          - 0
+          - 0
+    Vector3d:
+      title: Vector3d
+      type: array
+      maxItems: 3
+      minItems: 3
+      items:
+        type: number
+        format: double
