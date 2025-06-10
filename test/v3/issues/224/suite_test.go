@@ -1,6 +1,6 @@
-//go:generate go run ../../../../cmd/asyncapi-codegen -p issue666 -i ./asyncapi.yaml -o ./asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -p issue224 -i ./asyncapi.yaml -o ./asyncapi.gen.go
 
-package issue666
+package issue224
 
 import (
 	"encoding/json"

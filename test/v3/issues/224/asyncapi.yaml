@@ -2,7 +2,7 @@ asyncapi: 3.0.0
 
 channels:
   test: 
-    address: v3.issue666.test
+    address: v3.issue224.test
     messages:
       test:
         payload:
