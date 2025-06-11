@@ -101,6 +101,9 @@ func (s *Schema) generateMetadata(name string, isRequired bool) error {
 			s.Type = "string"
 		}
 	}
+
+	s.ShouldOmitEmpty = s.ExtOmitEmpty
+
 	return nil
 }
 

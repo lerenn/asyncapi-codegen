@@ -740,6 +740,32 @@ These extension properties apply to "Schema Objects" in AsyncAPI spec.
   }
   ```
 
+* `x-omitempty`: Controls the addition of the `omitempty` tag in JSON tags of generated Go structures.
+  When set to `false`, the `omitempty` tag won't be added even for optional fields.
+
+  For example,
+
+  ```yaml
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          x-omitempty: false
+  ```
+
+  will be generated as
+
+  ```go
+  type User struct {
+      Id   *string `json:"id,omitempty"`
+      Name *string `json:"name"`
+  }
+  ```
+
 ### ErrorHandler
 
 You can use an error handler that will be executed when processing for messages
@@ -773,7 +799,7 @@ ctrl, _ := NewAppController(/* Broker of your choice */, WithErrorHandler(errorh
 func(ctx context.Context, topic string, msg *extensions.AcknowledgeableBrokerMessage, err error) {
     // check error or move message to some other queue/topic
     handleTheErrorSomehow()
-    
+
     // Ack or Nak the message
     msg.Ack()
     msg.Nak()

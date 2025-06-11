@@ -25,12 +25,13 @@ type Validations[T any] struct {
 	OneOf []*T `json:"oneOf"`
 
 	// --- Non JSON Schema/AsyncAPI fields -------------------------------------
-	IsRequired bool `json:"-"`
+	IsRequired      bool  `json:"-"`
+	ShouldOmitEmpty *bool `json:"-"`
 }
 
 // Merge merges the newV into the current Validations.
 //
-//nolint:cyclop // This function is a merge function and it is expected to have a high cyclomatic complexity.
+//nolint:cyclop,funlen // This function is a merge function and it is expected to have a high cyclomatic complexity.
 func (v *Validations[T]) Merge(newV Validations[T]) {
 	if len(newV.Required) > 0 {
 		v.Required = newV.Required
@@ -91,5 +92,8 @@ func (v *Validations[T]) Merge(newV Validations[T]) {
 	}
 	if newV.IsRequired {
 		v.IsRequired = newV.IsRequired
+	}
+	if newV.ShouldOmitEmpty != nil {
+		v.ShouldOmitEmpty = newV.ShouldOmitEmpty
 	}
 }

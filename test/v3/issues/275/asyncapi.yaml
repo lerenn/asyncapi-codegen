@@ -1,0 +1,35 @@
+asyncapi: 3.0.0
+info:
+  title: OmitEmpty Test
+  version: 1.0.0
+
+channels:
+  v3OmitemptyTest:
+    address: v3.omitempty.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/TestMessage'
+
+components:
+  messages:
+    TestMessage:
+      payload:
+        $ref: '#/components/schemas/Test'
+
+  schemas:
+    Test:
+      type: object
+      required:
+        - requiredWithOmitEmpty
+      properties:
+        withOmitEmpty:
+          type: string
+          description: "This field should have omitempty in the JSON tag"
+        withoutOmitEmpty:
+          type: string
+          description: "This field should NOT have omitempty in the JSON tag"
+          x-omitempty: false
+        requiredWithOmitEmpty:
+          type: string
+          description: "This field should have omitempty in the JSON tag"
+          x-omitempty: true

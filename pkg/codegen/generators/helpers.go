@@ -21,11 +21,19 @@ func GenerateJSONTags[T any](schema asyncapi.Validations[T], field string) strin
 		template.ConvertKey(field),
 	}
 
-	if !schema.IsRequired {
+	if shouldAddOmitEmpty(schema) {
 		directives = append(directives, "omitempty")
 	}
 
 	return fmt.Sprintf("json:\"%s\"", strings.Join(directives, ","))
+}
+
+func shouldAddOmitEmpty[T any](schema asyncapi.Validations[T]) bool {
+	if schema.IsRequired {
+		return schema.ShouldOmitEmpty != nil && *schema.ShouldOmitEmpty
+	}
+
+	return schema.ShouldOmitEmpty == nil || *schema.ShouldOmitEmpty
 }
 
 // GenerateValidateTags returns the "validate" tag for a given field in a struct, based on the asyncapi contract.
