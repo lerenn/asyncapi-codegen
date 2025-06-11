@@ -25,6 +25,7 @@ adventure, this file is a attempt to show them the respect they earned.
 * [Hafiz (@fairyhunter13)](https://github.com/fairyhunter13)
 * [Geoffrey Bauduin (@geoffreybauduin)](https://github.com/geoffreybauduin)
 * [Vragov Roman (@vragovR)](https://github.com/vragovR)
+* [Gustav Sandström (@omegagussan)](https://github.com/omegagussan)
 * And maybe you ?
 
 ## I would like to join the list. How can I help the project?
