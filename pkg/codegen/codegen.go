@@ -20,14 +20,14 @@ import (
 
 // CodeGen is the main structure for the code generation.
 type CodeGen struct {
-	specification asyncapi.Specification
+	Specification asyncapi.Specification
 	modulePath    string
 	moduleVersion string
 }
 
-// FromFile returns a code generator from a specification file path.
+// FromFile returns a code generator from a Specification file path.
 func FromFile(path string, dependencies ...string) (CodeGen, error) {
-	// Get specification from file
+	// Get Specification from file
 	spec, err := parser.FromFile(parser.FromFileParams{
 		Path: path,
 	})
@@ -58,7 +58,7 @@ func New(spec asyncapi.Specification) (CodeGen, error) {
 	modulePath, moduleVersion := modulePathVersion()
 
 	return CodeGen{
-		specification: spec,
+		Specification: spec,
 		modulePath:    modulePath,
 		moduleVersion: moduleVersion,
 	}, nil
@@ -98,8 +98,8 @@ func (cg CodeGen) Generate(opt options.Options) error {
 		templatesv3.ForcePointerOnFields()
 	}
 
-	// Process specification
-	if err := cg.specification.Process(); err != nil {
+	// Process Specification
+	if err := cg.Specification.Process(); err != nil {
 		return err
 	}
 
@@ -130,10 +130,10 @@ func (cg CodeGen) Generate(opt options.Options) error {
 }
 
 func (cg CodeGen) generateContent(opt options.Options) (string, error) {
-	version := cg.specification.MajorVersion()
+	version := cg.Specification.MajorVersion()
 	switch version {
 	case 2:
-		spec, err := asyncapiv2.FromUnknownVersion(cg.specification)
+		spec, err := asyncapiv2.FromUnknownVersion(cg.Specification)
 		if err != nil {
 			return "", err
 		}
@@ -145,7 +145,7 @@ func (cg CodeGen) generateContent(opt options.Options) (string, error) {
 			ModuleVersion: cg.moduleVersion,
 		}.Generate()
 	case 3:
-		spec, err := asyncapiv3.FromUnknownVersion(cg.specification)
+		spec, err := asyncapiv3.FromUnknownVersion(cg.Specification)
 		if err != nil {
 			return "", err
 		}
