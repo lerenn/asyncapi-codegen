@@ -214,3 +214,46 @@ func TestExistingNatsConnection(t *testing.T) {
 
 	assert.True(t, nc.IsConnected(), "our connection should still be intact")
 }
+
+func TestMatchSubjectSubscription(t *testing.T) {
+	// Test cases
+	testCases := []struct {
+		pattern string
+		subject string
+		result  bool
+	}{
+		{"", "", false},
+		{"", "time", false},
+		{"time.us.east.atlanta", "time.us.east.atlanta", true},
+		{"time.us.east.atlanta", "time.us.last.atlanta", false},
+		{"*", "", false},
+		{"*", "time", true},
+		{"time.*.*.atlanta", "", false},
+		{"*.us.*.atlanta", "time.us.east.atlanta", true},
+		{"time.*.*.atlanta", "time.us.east.atlanta", true},
+		{"time.us.*.*", "time.us.east.atlanta", true},
+		{"time.us.*", "time.us.east.atlanta", false},
+		{"time.*.east", "time.us.east", true},
+		{"time.*.east", "time.eu.west", false},
+		{">", "", false},
+		{">", "time.us.east", true},
+		{"time.us.>", "", false},
+		{"time.us.>", "time.us", false},
+		{"time.us.>", "time.eu.east", false},
+		{"time.us.>", "time.us.east.atlanta", true},
+		{"time", "", false},
+		{"a.b.>", "a.b", false},
+		{"a.b.>", "a", false},
+		{"a.*.c.>", "a.b.c.d.e", true},
+		{"a.*.c.>", "a.b.c", false},
+		{"a.*.c.>", "a.b.d", false},
+	}
+
+	// Run the test cases
+	for _, testCase := range testCases {
+		result := MatchSubjectSubscription(testCase.pattern, testCase.subject)
+		if result != testCase.result {
+			println("Test failed for pattern:", testCase.pattern, "subject:", testCase.subject)
+		}
+	}
+}

@@ -1,0 +1,37 @@
+# Issue: https://github.com/lerenn/asyncapi-codegen/issues/186
+
+asyncapi: 3.0.0
+info:
+  title: Sample App
+  version: 1.2.3
+
+channels:
+  star:
+    address: v2.issue186.star.*.*
+    messages:
+      star:
+        $ref: '#/components/messages/star'
+  angle:
+    address: v2.issue186.angle.>
+    messages:
+      angle:
+        $ref: '#/components/messages/angle'
+
+operations:
+  starRequest:
+    action: receive
+    channel:
+      $ref: '#/channels/star'
+  angleRequest:
+    action: receive
+    channel:
+      $ref: '#/channels/angle'
+
+components:
+  messages:
+    star:
+      payload:
+        type: string
+    angle:
+      payload:
+        type: string
