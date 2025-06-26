@@ -1,0 +1,53 @@
+asyncapi: 3.0.0
+info:
+  title: Conflicting Headers Name Test
+  version: 1.0.0
+
+channels:
+  Channel1:
+    address: v3.omitempty.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/TestMessage'
+
+  Channel2:
+    address: v3.omitempty.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/TestMessage2'
+
+components:
+  messageTraits:
+    TestHeaders:
+      headers:
+        $ref: '#/components/schemas/TestHeaders'
+  messages:
+    TestMessage:
+      payload:
+        $ref: '#/components/schemas/Test'
+      traits:
+        - $ref: '#/components/messageTraits/TestHeaders'
+
+    TestMessage2:
+      payload:
+        $ref: '#/components/schemas/Test'
+      traits:
+        - $ref: '#/components/messageTraits/TestHeaders'
+  schemas:
+    TestHeaders:
+      type: object
+      properties:
+        correlationId:
+          type: string
+          description: "Correlation ID for tracing (traceId in OpenTelemetry)"
+        timestamp:
+          type: string
+          format: date-time
+    Test:
+      type: object
+      required:
+        - testProp
+      properties:
+        testProp:
+          type: string
+          description: "Something in the payload"
