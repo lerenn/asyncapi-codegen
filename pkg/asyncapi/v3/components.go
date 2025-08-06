@@ -6,25 +6,25 @@ package asyncapiv3
 type Components struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Schemas           map[string]*Schema                `json:"schemas"`
-	Servers           map[string]*Server                `json:"servers"`
-	Channels          map[string]*Channel               `json:"channels"`
-	Operations        map[string]*Operation             `json:"operations"`
-	Messages          map[string]*Message               `json:"messages"`
-	SecuritySchemes   map[string]*SecurityScheme        `json:"securitySchemes"`
-	ServerVariables   map[string]*ServerVariable        `json:"serverVariables"`
-	Parameters        map[string]*Parameter             `json:"parameters"`
-	CorrelationIDs    map[string]*CorrelationID         `json:"correlationIds"`
-	Replies           map[string]*OperationReply        `json:"replies"`
-	ReplyAddresses    map[string]*OperationReplyAddress `json:"replyAddresses"`
-	ExternalDocs      map[string]*ExternalDocumentation `json:"externalDocs"`
-	Tags              map[string]*Tag                   `json:"tags"`
-	OperationTraits   map[string]*OperationTrait        `json:"operationTraits"`
-	MessageTraits     map[string]*MessageTrait          `json:"messageTraits"`
-	ServerBindings    map[string]*ServerBindings        `json:"serverBindings"`
-	ChannelBindings   map[string]*ChannelBindings       `json:"channelBindings"`
-	OperationBindings map[string]*OperationBindings     `json:"operationBindings"`
-	MessageBindings   map[string]*MessageBindings       `json:"messageBindings"`
+	Schemas           map[string]*Schema                `json:"schemas,omitempty"`
+	Servers           map[string]*Server                `json:"servers,omitempty"`
+	Channels          map[string]*Channel               `json:"channels,omitempty"`
+	Operations        map[string]*Operation             `json:"operations,omitempty"`
+	Messages          map[string]*Message               `json:"messages,omitempty"`
+	SecuritySchemes   map[string]*SecurityScheme        `json:"securitySchemes,omitempty"`
+	ServerVariables   map[string]*ServerVariable        `json:"serverVariables,omitempty"`
+	Parameters        map[string]*Parameter             `json:"parameters,omitempty"`
+	CorrelationIDs    map[string]*CorrelationID         `json:"correlationIds,omitempty"`
+	Replies           map[string]*OperationReply        `json:"replies,omitempty"`
+	ReplyAddresses    map[string]*OperationReplyAddress `json:"replyAddresses,omitempty"`
+	ExternalDocs      map[string]*ExternalDocumentation `json:"externalDocs,omitempty"`
+	Tags              map[string]*Tag                   `json:"tags,omitempty"`
+	OperationTraits   map[string]*OperationTrait        `json:"operationTraits,omitempty"`
+	MessageTraits     map[string]*MessageTrait          `json:"messageTraits,omitempty"`
+	ServerBindings    map[string]*ServerBindings        `json:"serverBindings,omitempty"`
+	ChannelBindings   map[string]*ChannelBindings       `json:"channelBindings,omitempty"`
+	OperationBindings map[string]*OperationBindings     `json:"operationBindings,omitempty"`
+	MessageBindings   map[string]*MessageBindings       `json:"messageBindings,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 }

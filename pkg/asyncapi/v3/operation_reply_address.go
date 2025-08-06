@@ -10,9 +10,9 @@ import (
 type OperationReplyAddress struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 	Location    string `json:"location"`
-	Reference   string `json:"$ref"`
+	Reference   string `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 

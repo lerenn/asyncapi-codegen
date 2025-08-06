@@ -37,21 +37,21 @@ const (
 type Message struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Headers       *Schema                `json:"headers"`
-	Payload       *Schema                `json:"payload"`
-	OneOf         []*Message             `json:"oneOf"`
-	CorrelationID *CorrelationID         `json:"correlationID"`
-	ContentType   string                 `json:"contentType"`
-	Name          string                 `json:"name"`
-	Title         string                 `json:"title"`
-	Summary       string                 `json:"summary"`
-	Description   string                 `json:"description"`
-	Tags          []*Tag                 `json:"tags"`
-	ExternalDocs  *ExternalDocumentation `json:"externalDocs"`
-	Bindings      *MessageBindings       `json:"bindings"`
-	Examples      []*MessageExample      `json:"examples"`
-	Traits        []*MessageTrait        `json:"traits"`
-	Reference     string                 `json:"$ref"`
+	Headers       *Schema                `json:"headers,omitempty"`
+	Payload       *Schema                `json:"payload,omitempty"`
+	OneOf         []*Message             `json:"oneOf,omitempty"`
+	CorrelationID *CorrelationID         `json:"correlationID,omitempty"`
+	ContentType   string                 `json:"contentType,omitempty"`
+	Name          string                 `json:"name,omitempty"`
+	Title         string                 `json:"title,omitempty"`
+	Summary       string                 `json:"summary,omitempty"`
+	Description   string                 `json:"description,omitempty"`
+	Tags          []*Tag                 `json:"tags,omitempty"`
+	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitempty"`
+	Bindings      *MessageBindings       `json:"bindings,omitempty"`
+	Examples      []*MessageExample      `json:"examples,omitempty"`
+	Traits        []*MessageTrait        `json:"traits,omitempty"`
+	Reference     string                 `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 

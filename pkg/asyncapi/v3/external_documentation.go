@@ -11,9 +11,9 @@ const (
 type ExternalDocumentation struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 	URL         string `json:"url"`
-	Reference   string `json:"$ref"`
+	Reference   string `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
