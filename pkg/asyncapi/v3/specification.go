@@ -26,19 +26,19 @@ type Specification struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
 	Version            string                `json:"asyncapi"`
-	ID                 string                `json:"id"`
+	ID                 string                `json:"id,omitempty"`
 	Info               Info                  `json:"info"`
-	Servers            map[string]*Server    `json:"servers"`
-	DefaultContentType string                `json:"defaultContentType"`
-	Channels           map[string]*Channel   `json:"channels"`
-	Operations         map[string]*Operation `json:"operations"`
-	Components         Components            `json:"components"`
+	Servers            map[string]*Server    `json:"servers,omitempty"`
+	DefaultContentType string                `json:"defaultContentType,omitempty"`
+	Channels           map[string]*Channel   `json:"channels,omitempty"`
+	Operations         map[string]*Operation `json:"operations,omitempty"`
+	Components         Components            `json:"components,omitzero"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
 	// specificationReferenced is a map of all the outside specifications that
 	// are referenced in this specification.
-	dependencies map[string]*Specification
+	dependencies map[string]*Specification `json:"-"`
 }
 
 // NewSpecification creates a new Specification struct.

@@ -8,17 +8,17 @@ type Server struct {
 
 	Host            string                     `json:"host"`
 	Protocol        string                     `json:"protocol"`
-	ProtocolVersion string                     `json:"protocolVersion"`
-	PathName        string                     `json:"pathname"`
-	Description     string                     `json:"description"`
-	Title           string                     `json:"title"`
-	Summary         string                     `json:"summary"`
-	Variables       map[string]*ServerVariable `json:"variables"`
-	Security        *SecurityScheme            `json:"security"`
-	Tags            []*Tag                     `json:"tags"`
-	ExternalDocs    *ExternalDocumentation     `json:"externalDocs"`
-	Bindings        *ServerBindings            `json:"bindings"`
-	Reference       string                     `json:"$ref"`
+	ProtocolVersion string                     `json:"protocolVersion,omitempty"`
+	PathName        string                     `json:"pathname,omitempty"`
+	Description     string                     `json:"description,omitempty"`
+	Title           string                     `json:"title,omitempty"`
+	Summary         string                     `json:"summary,omitempty"`
+	Variables       map[string]*ServerVariable `json:"variables,omitempty"`
+	Security        *SecurityScheme            `json:"security,omitempty"`
+	Tags            []*Tag                     `json:"tags,omitempty"`
+	ExternalDocs    *ExternalDocumentation     `json:"externalDocs,omitempty"`
+	Bindings        *ServerBindings            `json:"bindings,omitempty"`
+	Reference       string                     `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 

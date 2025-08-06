@@ -9,14 +9,14 @@ import (
 // that are out of the AsyncAPI spec.
 type Extensions struct {
 	// Setting custom Go type when generating schemas
-	ExtGoType string `json:"x-go-type"`
+	ExtGoType string `json:"x-go-type,omitempty"`
 
 	// Setting custom import statements for ExtGoType
-	ExtGoTypeImport *GoTypeImportExtension `json:"x-go-type-import"`
+	ExtGoTypeImport *GoTypeImportExtension `json:"x-go-type-import,omitempty"`
 
 	// Controls whether to include omitempty in JSON tags
 	// If false, omitempty will be removed from JSON tags even if the field can be null
-	ExtOmitEmpty *bool `json:"x-omitempty"`
+	ExtOmitEmpty *bool `json:"x-omitempty,omitempty"`
 }
 
 // GoTypeImportExtension specifies the required import statement

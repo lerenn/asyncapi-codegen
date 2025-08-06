@@ -6,11 +6,11 @@ package asyncapiv3
 type MessageExample struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Headers   map[string]any `json:"headers"`
-	Payload   map[string]any `json:"payload"`
-	Name      string         `json:"name"`
-	Summary   string         `json:"summary"`
-	Reference string         `json:"$ref"`
+	Headers   map[string]any `json:"headers,omitempty"`
+	Payload   map[string]any `json:"payload,omitempty"`
+	Name      string         `json:"name,omitempty"`
+	Summary   string         `json:"summary,omitempty"`
+	Reference string         `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 

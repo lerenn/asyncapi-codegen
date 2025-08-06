@@ -6,14 +6,14 @@ package asyncapiv3
 type OperationTrait struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Title        string                 `json:"title"`
-	Summary      string                 `json:"summary"`
-	Description  string                 `json:"description"`
-	Security     []*SecurityScheme      `json:"security"`
-	Tags         []*Tag                 `json:"tags"`
-	ExternalDocs *ExternalDocumentation `json:"externalDocs"`
-	Bindings     *OperationBindings     `json:"bindings"`
-	Reference    string                 `json:"$ref"`
+	Title        string                 `json:"title,omitempty"`
+	Summary      string                 `json:"summary,omitempty"`
+	Description  string                 `json:"description,omitempty"`
+	Security     []*SecurityScheme      `json:"security,omitempty"`
+	Tags         []*Tag                 `json:"tags,omitempty"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
+	Bindings     *OperationBindings     `json:"bindings,omitempty"`
+	Reference    string                 `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
