@@ -3,26 +3,26 @@ package asyncapi
 // Validations is a representation of the JSON-Object validation fields supported by asyncapi
 // These fields are in common for v2 and v3.
 type Validations[T any] struct {
-	Required         []string `json:"required"`
-	MultipleOf       []string `json:"multipleOf"`
-	Maximum          float64  `json:"maximum"`
-	ExclusiveMaximum float64  `json:"exclusiveMaximum"`
-	Minimum          float64  `json:"minimum"`
-	ExclusiveMinimum float64  `json:"exclusiveMinimum"`
-	MaxLength        uint     `json:"maxLength"`
-	MinLength        uint     `json:"minLength"`
-	Pattern          string   `json:"pattern"`
-	MaxItems         uint     `json:"maxItems"`
-	MinItems         uint     `json:"minItems"`
-	UniqueItems      bool     `json:"uniqueItems"`
-	MaxProperties    uint     `json:"maxProperties"`
-	MinProperties    uint     `json:"minProperties"`
-	Enum             []any    `json:"enum"`
-	Const            any      `json:"const"`
+	Required         []string `json:"required,omitempty"`
+	MultipleOf       []string `json:"multipleOf,omitempty"`
+	Maximum          float64  `json:"maximum,omitempty"`
+	ExclusiveMaximum float64  `json:"exclusiveMaximum,omitempty"`
+	Minimum          float64  `json:"minimum,omitempty"`
+	ExclusiveMinimum float64  `json:"exclusiveMinimum,omitempty"`
+	MaxLength        uint     `json:"maxLength,omitempty"`
+	MinLength        uint     `json:"minLength,omitempty"`
+	Pattern          string   `json:"pattern,omitempty"`
+	MaxItems         uint     `json:"maxItems,omitempty"`
+	MinItems         uint     `json:"minItems,omitempty"`
+	UniqueItems      bool     `json:"uniqueItems,omitempty"`
+	MaxProperties    uint     `json:"maxProperties,omitempty"`
+	MinProperties    uint     `json:"minProperties,omitempty"`
+	Enum             []any    `json:"enum,omitempty"`
+	Const            any      `json:"const,omitempty"`
 
-	AllOf []*T `json:"allOf"`
-	AnyOf []*T `json:"anyOf"`
-	OneOf []*T `json:"oneOf"`
+	AllOf []*T `json:"allOf,omitempty"`
+	AnyOf []*T `json:"anyOf,omitempty"`
+	OneOf []*T `json:"oneOf,omitempty"`
 
 	// --- Non JSON Schema/AsyncAPI fields -------------------------------------
 	IsRequired      bool  `json:"-"`

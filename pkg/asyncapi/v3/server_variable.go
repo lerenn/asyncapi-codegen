@@ -6,11 +6,11 @@ package asyncapiv3
 type ServerVariable struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Enum        []string `json:"enum"`
-	Default     string   `json:"default"`
-	Description string   `json:"description"`
-	Examples    []string `json:"examples"`
-	Reference   string   `json:"$ref"`
+	Enum        []string `json:"enum,omitempty"`
+	Default     string   `json:"default,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Examples    []string `json:"examples,omitempty"`
+	Reference   string   `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 

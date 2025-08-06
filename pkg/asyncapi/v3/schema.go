@@ -30,30 +30,30 @@ const (
 type Schema struct {
 	// --- Original JSON Schema Definition -------------------------------------
 
-	Title                string             `json:"title"`
-	Type                 string             `json:"type"`
-	Examples             []any              `json:"examples"`
-	ReadOnly             bool               `json:"readOnly"`
-	WriteOnly            bool               `json:"writeOnly"`
-	Properties           map[string]*Schema `json:"properties"`
-	PatternProperties    map[string]*Schema `json:"patternProperties"`
-	AdditionalProperties *Schema            `json:"additionalProperties"`
-	AdditionalItems      []*Schema          `json:"additionalItems"`
-	Items                *Schema            `json:"items"`
-	PropertyNames        []string           `json:"propertyNames"`
-	Contains             []*Schema          `json:"contains"`
-	AllOf                []*Schema          `json:"allOf"`
-	AnyOf                []*Schema          `json:"anyOf"`
-	OneOf                []*Schema          `json:"oneOf"`
-	Not                  *Schema            `json:"not"`
+	Title                string             `json:"title,omitempty"`
+	Type                 string             `json:"type,omitempty"`
+	Examples             []any              `json:"examples,omitempty"`
+	ReadOnly             bool               `json:"readOnly,omitempty"`
+	WriteOnly            bool               `json:"writeOnly,omitempty"`
+	Properties           map[string]*Schema `json:"properties,omitempty"`
+	PatternProperties    map[string]*Schema `json:"patternProperties,omitempty"`
+	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
+	AdditionalItems      []*Schema          `json:"additionalItems,omitempty"`
+	Items                *Schema            `json:"items,omitempty"`
+	PropertyNames        []string           `json:"propertyNames,omitempty"`
+	Contains             []*Schema          `json:"contains,omitempty"`
+	AllOf                []*Schema          `json:"allOf,omitempty"`
+	AnyOf                []*Schema          `json:"anyOf,omitempty"`
+	OneOf                []*Schema          `json:"oneOf,omitempty"`
+	Not                  *Schema            `json:"not,omitempty"`
 
 	// --- AsyncAPI specific ---------------------------------------------------
 
-	Description string `json:"description"`
-	Format      string `json:"format"`
-	Default     any    `json:"default"`
+	Description string `json:"description,omitempty"`
+	Format      string `json:"format,omitempty"`
+	Default     any    `json:"default,omitempty"`
 
-	Reference string `json:"$ref"`
+	Reference string `json:"$ref,omitempty"`
 
 	// --- Non Json Schema/AsyncAPI fields -------------------------------------
 

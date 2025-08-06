@@ -6,19 +6,20 @@ package asyncapiv3
 type MessageTrait struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Headers       *Schema                `json:"headers"`
-	Payload       *Schema                `json:"payload"`
-	CorrelationID *CorrelationID         `json:"correlationID"`
-	ContentType   string                 `json:"contentType"`
-	Name          string                 `json:"name"`
-	Title         string                 `json:"title"`
-	Summary       string                 `json:"summary"`
-	Description   string                 `json:"description"`
-	Tags          []*Tag                 `json:"tags"`
-	ExternalDocs  *ExternalDocumentation `json:"externalDocs"`
-	Bindings      *MessageBindings       `json:"bindings"`
-	Examples      []*MessageExample      `json:"examples"`
-	Reference     string                 `json:"$ref"`
+	Headers *Schema `json:"headers,omitempty"`
+	// NOTE: "payload" is explicitly disallowed: https://github.com/asyncapi/spec/blob/c5888f52b70f8eb99f782df9d23a88e1a4dce112/spec/asyncapi.md?plain=1#L1414
+	Payload       *Schema                `json:"payload,omitempty"`
+	CorrelationID *CorrelationID         `json:"correlationID,omitempty"`
+	ContentType   string                 `json:"contentType,omitempty"`
+	Name          string                 `json:"name,omitempty"`
+	Title         string                 `json:"title,omitempty"`
+	Summary       string                 `json:"summary,omitempty"`
+	Description   string                 `json:"description,omitempty"`
+	Tags          []*Tag                 `json:"tags,omitempty"`
+	ExternalDocs  *ExternalDocumentation `json:"externalDocs,omitempty"`
+	Bindings      *MessageBindings       `json:"bindings,omitempty"`
+	Examples      []*MessageExample      `json:"examples,omitempty"`
+	Reference     string                 `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 

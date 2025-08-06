@@ -6,26 +6,26 @@ package asyncapiv3
 type MessageBindings struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	HTTP         HTTPBinding         `json:"http"`
-	WS           WsBinding           `json:"ws"`
-	Kafka        KafkaBinding        `json:"kafka"`
-	AnyPointMQ   AnyPointMqBinding   `json:"anypointmq"`
-	AMQP         AMQPBinding         `json:"amqp"`
-	AMQP1        AMQP1Binding        `json:"amqp1"`
-	MQTT         MQTTBinding         `json:"mqtt"`
-	MQTT5        MQTT5Binding        `json:"mqtt5"`
-	NATS         NATSBinding         `json:"nats"`
-	JMS          JMSBinding          `json:"jms"`
-	SNS          SNSBinding          `json:"sns"`
-	Solace       SolaceBinding       `json:"solace"`
-	SQS          SQSBinding          `json:"sqs"`
-	Stomp        StompBinding        `json:"stomp"`
-	Redis        RedisBinding        `json:"redis"`
-	Mercure      MercureBinding      `json:"mercure"`
-	IBMMQ        IBMMQBinding        `json:"ibmmq"`
-	GooglePubSub GooglePubSubBinding `json:"googlepubsub"`
-	Pulsar       PulsarBinding       `json:"pulsar"`
-	Reference    string              `json:"$ref"`
+	HTTP         HTTPBinding         `json:"http,omitzero"`
+	WS           WsBinding           `json:"ws,omitzero"`
+	Kafka        KafkaBinding        `json:"kafka,omitzero"`
+	AnyPointMQ   AnyPointMqBinding   `json:"anypointmq,omitzero"`
+	AMQP         AMQPBinding         `json:"amqp,omitzero"`
+	AMQP1        AMQP1Binding        `json:"amqp1,omitzero"`
+	MQTT         MQTTBinding         `json:"mqtt,omitzero"`
+	MQTT5        MQTT5Binding        `json:"mqtt5,omitzero"`
+	NATS         NATSBinding         `json:"nats,omitzero"`
+	JMS          JMSBinding          `json:"jms,omitzero"`
+	SNS          SNSBinding          `json:"sns,omitzero"`
+	Solace       SolaceBinding       `json:"solace,omitzero"`
+	SQS          SQSBinding          `json:"sqs,omitzero"`
+	Stomp        StompBinding        `json:"stomp,omitzero"`
+	Redis        RedisBinding        `json:"redis,omitzero"`
+	Mercure      MercureBinding      `json:"mercure,omitzero"`
+	IBMMQ        IBMMQBinding        `json:"ibmmq,omitzero"`
+	GooglePubSub GooglePubSubBinding `json:"googlepubsub,omitzero"`
+	Pulsar       PulsarBinding       `json:"pulsar,omitzero"`
+	Reference    string              `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
