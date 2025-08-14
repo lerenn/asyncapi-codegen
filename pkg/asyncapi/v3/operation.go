@@ -23,22 +23,29 @@ func (oa OperationAction) IsReceive() bool {
 // Operation is a representation of the corresponding asyncapi object filled
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#operationObject
+//
+// NOTE: From AsyncAPI specification on the "messages" field:
+//
+//	Excluding this property from the Operation implies that all messages from the channel will be included. Explicitly set the messages property to [] if this operation should contain no messages.
+//
+// Because of this caveat, it must be possible to both serialize the messages slice as an empty JSON array or exclude the key entirely.
+// The omitzero tag is required to enable this.
 type Operation struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
 	Action       OperationAction        `json:"action"`
 	Channel      *Channel               `json:"channel"` // Reference only
-	Title        string                 `json:"title"`
-	Summary      string                 `json:"summary"`
-	Description  string                 `json:"string"`
-	Security     []*SecurityScheme      `json:"security"`
-	Tags         []*Tag                 `json:"tags"`
-	ExternalDocs *ExternalDocumentation `json:"externalDocs"`
-	Bindings     *OperationBindings     `json:"bindings"`
-	Traits       []*OperationTrait      `json:"traits"`
-	Messages     []*Message             `json:"messages"` // References only
-	Reply        *OperationReply        `json:"reply"`
-	Reference    string                 `json:"$ref"`
+	Title        string                 `json:"title,omitempty"`
+	Summary      string                 `json:"summary,omitempty"`
+	Description  string                 `json:"description,omitempty"`
+	Security     []*SecurityScheme      `json:"security,omitempty"`
+	Tags         []*Tag                 `json:"tags,omitempty"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
+	Bindings     *OperationBindings     `json:"bindings,omitempty"`
+	Traits       []*OperationTrait      `json:"traits,omitempty"`
+	Messages     []*Message             `json:"messages,omitzero"` // References only
+	Reply        *OperationReply        `json:"reply,omitempty"`
+	Reference    string                 `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 

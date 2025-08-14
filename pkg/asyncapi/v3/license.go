@@ -7,7 +7,7 @@ type License struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
 	Name string `json:"name"`
-	URL  string `json:"url"`
+	URL  string `json:"url,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 }

@@ -22,17 +22,19 @@ var (
 type Channel struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Address      string                 `json:"address"`
-	Messages     map[string]*Message    `json:"messages"`
-	Title        string                 `json:"title"`
-	Summary      string                 `json:"summary"`
-	Description  string                 `json:"description"`
-	Servers      []*Server              `json:"servers"` // Reference only
-	Parameters   map[string]*Parameter  `json:"parameters"`
-	Tags         []*Tag                 `json:"tags"`
-	ExternalDocs *ExternalDocumentation `json:"externalDocs"`
-	Bindings     *ChannelBindings       `json:"bindings"`
-	Reference    string                 `json:"$ref"`
+	// NOTE: the JSON null literal is a valid value for address, which cannot be parsed as a Go string
+	// Solutions are to change to a *string (a breaking change) or use a wrapper type like sql.NullString
+	Address      string                 `json:"address,omitempty"`
+	Messages     map[string]*Message    `json:"messages,omitempty"`
+	Title        string                 `json:"title,omitempty"`
+	Summary      string                 `json:"summary,omitempty"`
+	Description  string                 `json:"description,omitempty"`
+	Servers      []*Server              `json:"servers,omitempty"` // Reference only
+	Parameters   map[string]*Parameter  `json:"parameters,omitempty"`
+	Tags         []*Tag                 `json:"tags,omitempty"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
+	Bindings     *ChannelBindings       `json:"bindings,omitempty"`
+	Reference    string                 `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 

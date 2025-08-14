@@ -4,12 +4,12 @@ package asyncapiv3
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#parameterObject
 type Parameter struct {
-	Enum        []string `json:"enum"`
-	Default     string   `json:"default"`
-	Description string   `json:"description"`
-	Examples    []string `json:"examples"`
-	Location    string   `json:"location"`
-	Reference   string   `json:"$ref"`
+	Enum        []string `json:"enum,omitempty"`
+	Default     string   `json:"default,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Examples    []string `json:"examples,omitempty"`
+	Location    string   `json:"location,omitempty"`
+	Reference   string   `json:"$ref,omitempty"`
 
 	// Non AsyncAPI fields
 	Name        string     `json:"-"`

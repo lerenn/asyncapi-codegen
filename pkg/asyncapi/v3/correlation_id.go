@@ -6,9 +6,9 @@ package asyncapiv3
 type CorrelationID struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Description string `json:"description"`
-	Location    string `json:"location"`
-	Reference   string `json:"$ref"`
+	Description string `json:"description,omitempty"`
+	Location    string `json:"location,omitempty"`
+	Reference   string `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 

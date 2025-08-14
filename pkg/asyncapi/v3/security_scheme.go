@@ -8,7 +8,7 @@ type OAuthFlow struct {
 
 	AuthorizationURL string            `json:"authorizationUrl"`
 	TokenURL         string            `json:"tokenUrl"`
-	RefreshURL       string            `json:"refreshUrl"`
+	RefreshURL       string            `json:"refreshUrl,omitempty"`
 	AvailableScopes  map[string]string `json:"availableScopes"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
@@ -20,10 +20,10 @@ type OAuthFlow struct {
 type OAuthFlows struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Implicit          OAuthFlow `json:"implicit"`
-	Password          OAuthFlow `json:"password"`
-	ClientCredentials OAuthFlow `json:"clientCredential"`
-	AuthorizationCode OAuthFlow `json:"authorizationCode"`
+	Implicit          OAuthFlow `json:"implicit,omitzero"`
+	Password          OAuthFlow `json:"password,omitzero"`
+	ClientCredentials OAuthFlow `json:"clientCredential,omitzero"`
+	AuthorizationCode OAuthFlow `json:"authorizationCode,omitzero"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 }
@@ -35,20 +35,41 @@ type SecurityScheme struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
 	Type             string     `json:"type"`
-	Description      string     `json:"description"`
-	Name             string     `json:"name"`
-	In               string     `json:"in"`
-	Scheme           string     `json:"scheme"`
-	BearerFormat     string     `json:"bearerFormat"`
-	Flows            OAuthFlows `json:"flows"`
-	OpenIDConnectURL string     `json:"openIdConnectUrl"`
-	Scopes           []string   `json:"scopes"`
-	Reference        string     `json:"$ref"`
+	Description      string     `json:"description,omitempty"`
+	Name             string     `json:"name,omitempty"`
+	In               string     `json:"in,omitempty"`
+	Scheme           string     `json:"scheme,omitempty"`
+	BearerFormat     string     `json:"bearerFormat,omitempty"`
+	Flows            OAuthFlows `json:"flows,omitzero"`
+	OpenIDConnectURL string     `json:"openIdConnectUrl,omitempty"`
+	Scopes           []string   `json:"scopes,omitempty"`
+	Reference        string     `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
 	ReferenceTo *SecurityScheme `json:"-"`
 }
+
+// SecuritySchemeType is type of a security scheme.
+type SecuritySchemeType string
+
+// Security scheme types supported by the AsyncAPI specification.
+// Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#securitySchemeObject
+const (
+	SecuritySchemeUserPassword         SecuritySchemeType = "userPassword"
+	SecuritySchemeAPIKey               SecuritySchemeType = "apiKey"
+	SecuritySchemeX509                 SecuritySchemeType = "X509"
+	SecuritySchemeSymmetricEncryption  SecuritySchemeType = "symmetricEncryption"
+	SecuritySchemeASymmetricEncryption SecuritySchemeType = "asymmetricEncryption"
+	SecuritySchemeHTTPAPIKey           SecuritySchemeType = "httpApiKey"
+	SecuritySchemeHTTP                 SecuritySchemeType = "http"
+	SecuritySchemeOAuth2               SecuritySchemeType = "oauth2"
+	SecuritySchemeOpenIDConnect        SecuritySchemeType = "openIdConnect"
+	SecuritySchemePlain                SecuritySchemeType = "plain"
+	SecuritySchemeScramSha256          SecuritySchemeType = "scramSha256"
+	SecuritySchemeScramSha512          SecuritySchemeType = "scramSha512"
+	SecuritySchemeGSSAPI               SecuritySchemeType = "gssapi"
+)
 
 // generateMetadata generates metadata for the SecurityScheme.
 func (s *SecurityScheme) generateMetadata(parentName, name string, number *int) {

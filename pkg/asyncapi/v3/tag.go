@@ -7,9 +7,9 @@ type Tag struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
 	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	ExternalDocs *ExternalDocumentation `json:"externalDocs"`
-	Reference    string                 `json:"$ref"`
+	Description  string                 `json:"description,omitempty"`
+	ExternalDocs *ExternalDocumentation `json:"externalDocs,omitempty"`
+	Reference    string                 `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
