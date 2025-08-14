@@ -367,24 +367,18 @@ func MatchSubjectSubscription(pattern string, subject string) bool {
 
 	// Iterate over the tokens in the pattern and subject
 	for i, patternToken := range patternTokens {
-		// If the pattern token is a wildcard, check if it matches the subject token
-		if patternToken == "*" {
+		switch patternToken {
+		case "*":
 			// If the subject token is empty, return false
 			if subjectTokens[i] == "" {
 				return false
 			}
-
 			// Otherwise, continue to the next token
 			continue
-		} else if patternToken == ">" {
+		case ">":
 			// If the wildcard is not the last token in the pattern, return false
-			if i != len(patternTokens)-1 {
-				return false
-			}
-
-			// Otherwise, the pattern matches the subject
-			return true
-		} else {
+			return i == len(patternTokens)-1
+		default:
 			// If the pattern token is not a wildcard, check if it matches the subject token
 			if patternToken != subjectTokens[i] {
 				return false

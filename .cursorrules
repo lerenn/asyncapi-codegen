@@ -1,0 +1,20 @@
+## Shipping Process
+
+When asked to "ship" the code or when shipping is mentioned, systematically execute these commands in order:
+
+1. **Generate Code**: Execute `make generate` to ensure all generated files are up to date
+2. **Lint and Fix**: Execute `make lint` and automatically fix any linting errors that are found
+3. **Tests**: Execute `make test`  and automatically fix any errors that are found
+6. **Create Branch**: Create a new branch with a descriptive name based on the changes made from the beginning of the chat, not only the last ones. ONLY if you're on main branch so check before hand.
+7. **Commit Changes**: Commit all changes with a descriptive commit message following conventional commit format based on the changes made from the beginning of the chat, not only the last ones.
+8. **Push Branch**: Push the new branch to the remote repository
+
+### Branch Naming Convention
+- Use descriptive names like: `feat/add-new-feature`, `fix/resolve-linting-issues`, `docs/update-readme`
+- Use kebab-case for branch names
+- Include the type of change (feat, fix, docs, refactor, etc.)
+
+### Commit Message Format
+- Use conventional commit format: `type(scope): description`
+- Examples: `feat(wtm): add git repository detection`, `fix(lint): resolve godot comment issues`
+- Keep descriptions concise but descriptive
