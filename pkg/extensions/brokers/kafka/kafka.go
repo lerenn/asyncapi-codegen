@@ -31,6 +31,9 @@ type Controller struct {
 	connectionTest bool
 
 	logger extensions.Logger
+
+	// writerOptions passed to writer on Publish()
+	writerOptions []WriterOption
 }
 
 // MessagesHandler is a function that can be used to process messages from the broker.
@@ -140,6 +143,14 @@ func WithConnectionTest(enabled bool) ControllerOption {
 	}
 }
 
+// WithWriterOptions set the options that will be applied to the kafka.Writer
+// used on Publish.
+func WithWriterOptions(opts ...WriterOption) ControllerOption {
+	return func(controller *Controller) {
+		controller.writerOptions = opts
+	}
+}
+
 // Publish a message to the broker.
 func (c *Controller) Publish(ctx context.Context, channel string, um extensions.BrokerMessage) error {
 	// Create new writer
@@ -153,6 +164,9 @@ func (c *Controller) Publish(ctx context.Context, channel string, um extensions.
 			TLS:  c.dialer.TLS.Clone(),
 			SASL: c.dialer.SASLMechanism,
 		},
+	}
+	for _, opt := range c.writerOptions {
+		opt(&w)
 	}
 
 	defer w.Close()
