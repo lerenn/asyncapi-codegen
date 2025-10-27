@@ -18,10 +18,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@8.0.0
         with:
           verb: call
-          args: -m build/ci test --src-dir .      
+          args: test --src-dir .      
   
   examples:
     name: Run examples
@@ -32,10 +32,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@8.0.0
         with:
           verb: call
-          args: -m build/ci examples --src-dir . stderr
+          args: examples --src-dir . stderr
   
   lint:
     name: Run linter
@@ -47,10 +47,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@8.0.0
         with:
           verb: call
-          args: -m build/ci lint --src-dir .      
+          args: lint --src-dir .      
 
   check-generation:
     name: Check generation has been run
@@ -62,10 +62,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@8.0.0
         with:
           verb: call
-          args: -m build/ci check-generation --src-dir .
+          args: check-generation --src-dir .
 
   publish:
     name: Publish a new version
@@ -88,7 +88,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: dagger/dagger-for-github@v5
+      - uses: dagger/dagger-for-github@8.0.0
         with:
           verb: call
-          args: -m build/ci publish --src-dir .
+          args: publish --src-dir .

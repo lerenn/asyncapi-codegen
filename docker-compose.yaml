@@ -78,66 +78,85 @@ services:
 
   # Kafka variants
   kafka:
-    image: bitnami/kafka:3.5.1
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: kafka
+    container_name: kafka
     ports:
-      - 9092:9092
-      - 9093:9093
-    expose:
-      - 9092
-      - 9093
+      - "9092:9092"
     environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=INTERNAL://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://localhost:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9093
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      CLUSTER_ID: "asyncapi-codegen-cluster"
+      KAFKA_NODE_ID: 0
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka:29093"
+      KAFKA_LISTENERS: "PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    volumes:
+      - ./tmp/kafka-kraft/kafka:/var/lib/kafka/data
   kafka-tls:
-    image: bitnami/kafka:3.5.1
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: kafka-tls
+    container_name: kafka-tls
     ports:
-      - 9094:9094
-      - 9095:9095
-    expose:
-      - 9094
-      - 9095
+      - "9094:9094"
     environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=INTERNAL://:9094,CONTROLLER://:9095
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://localhost:9094
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:SSL
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9095
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_TLS_TYPE=PEM
-      - KAFKA_TLS_CLIENT_AUTH=none
+      CLUSTER_ID: "asyncapi-codegen-cluster"
+      KAFKA_NODE_ID: 0
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka-tls:29093"
+      KAFKA_LISTENERS: "SSL://kafka-tls:29092,CONTROLLER://kafka-tls:29093,SSL_HOST://0.0.0.0:9094"
+      KAFKA_ADVERTISED_LISTENERS: "SSL://kafka-tls:29092,SSL_HOST://localhost:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,SSL:SSL,SSL_HOST:SSL"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "SSL"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.pem
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.pem
+      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.truststore.pem
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.pem
+      KAFKA_SSL_CLIENT_AUTH: "none"
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
     volumes:
-      - ./tmp/certs/kafka:/bitnami/kafka/config/certs/
+      - ./tmp/certs/kafka:/etc/kafka/secrets
+      - ./tmp/kafka-kraft/kafka-tls:/var/lib/kafka/data
   kafka-tls-basic-auth:
-    image: bitnami/kafka:3.5.1
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: kafka-tls-basic-auth
+    container_name: kafka-tls-basic-auth
     ports:
-      - 9096:9096
-      - 9097:9097
-    expose:
-      - 9096
-      - 9097
+      - "9096:9096"
     environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=INTERNAL://:9096,CONTROLLER://:9097
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://localhost:9096
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:SASL_SSL
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9097
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=SCRAM-SHA-512
-      - KAFKA_TLS_TYPE=PEM
-      - KAFKA_TLS_CLIENT_AUTH=none
-      - KAFKA_INTER_BROKER_USER=user
-      - KAFKA_INTER_BROKER_PASSWORD=password
+      CLUSTER_ID: "asyncapi-codegen-cluster"
+      KAFKA_NODE_ID: 0
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka-tls-basic-auth:29093"
+      KAFKA_LISTENERS: "SASL_SSL://kafka-tls-basic-auth:29092,CONTROLLER://kafka-tls-basic-auth:29093,SASL_SSL_HOST://0.0.0.0:9096"
+      KAFKA_ADVERTISED_LISTENERS: "SASL_SSL://kafka-tls-basic-auth:29092,SASL_SSL_HOST://localhost:9096"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,SASL_SSL:SASL_SSL,SASL_SSL_HOST:SASL_SSL"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "SASL_SSL"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.pem
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.pem
+      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.truststore.pem
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.pem
+      KAFKA_SSL_CLIENT_AUTH: "none"
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_OPTS: -Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf
     volumes:
-      - ./tmp/certs/kafka:/bitnami/kafka/config/certs/
+      - ./tmp/certs/kafka:/etc/kafka/secrets
+      - ./tmp/kafka-kraft/kafka-tls-basic-auth:/var/lib/kafka/data
+      - ./config/kafka-tls-basic-auth/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
     
   
