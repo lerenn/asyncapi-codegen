@@ -77,10 +77,8 @@ func brokerKafkaSecure() *dagger.Container {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
 
-	tlsDir := dag.Directory().
-		WithNewFile("kafka.keystore.key", string(key)).
-		WithNewFile("kafka.keystore.pem", string(cert)).
-		WithNewFile("kafka.truststore.pem", string(cacert))
+	keystorePassword := "changeit"
+	truststorePassword := "changeit"
 
 	return dag.Container().
 		//	Set container image
@@ -98,18 +96,41 @@ func brokerKafkaSecure() *dagger.Container {
 		WithEnvVariable("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1").
 		WithEnvVariable("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1").
 		WithEnvVariable("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1").
-		WithEnvVariable("KAFKA_SSL_KEYSTORE_FILENAME", "kafka.keystore.pem").
-		WithEnvVariable("KAFKA_SSL_KEYSTORE_LOCATION", "/etc/kafka/secrets/kafka.keystore.pem").
-		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_FILENAME", "kafka.truststore.pem").
-		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_LOCATION", "/etc/kafka/secrets/kafka.truststore.pem").
+		WithEnvVariable("KAFKA_SSL_KEYSTORE_FILENAME", "kafka.keystore.jks").
+		WithEnvVariable("KAFKA_SSL_KEYSTORE_LOCATION", "/etc/kafka/secrets/kafka.keystore.jks").
+		WithEnvVariable("KAFKA_SSL_KEYSTORE_TYPE", "JKS").
+		WithEnvVariable("KAFKA_SSL_KEYSTORE_CREDENTIALS", "kafka.keystore.jks.password").
+		WithEnvVariable("KAFKA_SSL_KEY_CREDENTIALS", "kafka.keystore.jks.password").
+		// Use same keystore as truststore for self-signed certs (contains CA cert in chain)
+		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_LOCATION", "/etc/kafka/secrets/kafka.keystore.jks").
+		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_TYPE", "JKS").
+		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_CREDENTIALS", "kafka.keystore.jks.password").
 		WithEnvVariable("KAFKA_SSL_CLIENT_AUTH", "none").
 		WithEnvVariable("KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM", "").
 		// Add exposed ports
 		WithExposedPort(9092).
 		WithExposedPort(9093).
 		WithExposedPort(29092).
-		// Mount certificates
-		WithDirectory("/etc/kafka/secrets", tlsDir)
+		// Create secrets directory and write PEM files
+		WithExec([]string{"mkdir", "-p", "/etc/kafka/secrets"}).
+		WithNewFile("/etc/kafka/secrets/key.pem", string(key)).
+		WithNewFile("/etc/kafka/secrets/cert.pem", string(cert)).
+		WithNewFile("/etc/kafka/secrets/cacert.pem", string(cacert)).
+		// Create certificate chain file (cert + CA cert)
+		WithExec([]string{"sh", "-c", "cat /etc/kafka/secrets/cert.pem /etc/kafka/secrets/cacert.pem > /etc/kafka/secrets/chain.pem"}).
+		// Convert PEM to PKCS12 with certificate chain
+		WithExec([]string{"openssl", "pkcs12", "-export", "-in", "/etc/kafka/secrets/chain.pem", "-inkey", "/etc/kafka/secrets/key.pem", "-out", "/etc/kafka/secrets/keystore.p12", "-password", "pass:" + keystorePassword, "-name", "kafka"}).
+		// Convert PKCS12 to JKS keystore
+		WithExec([]string{"keytool", "-importkeystore", "-srckeystore", "/etc/kafka/secrets/keystore.p12", "-srcstoretype", "PKCS12", "-destkeystore", "/etc/kafka/secrets/kafka.keystore.jks", "-deststoretype", "JKS", "-srcstorepass", keystorePassword, "-deststorepass", keystorePassword, "-noprompt"}).
+		// Import CA cert as trusted certificate into keystore (needed for it to work as truststore)
+		WithExec([]string{"keytool", "-import", "-trustcacerts", "-alias", "ca", "-file", "/etc/kafka/secrets/cacert.pem", "-keystore", "/etc/kafka/secrets/kafka.keystore.jks", "-storepass", keystorePassword, "-noprompt"}).
+		// Create symlink from truststore to keystore (some entrypoint scripts may look for truststore filename)
+		WithExec([]string{"ln", "-sf", "/etc/kafka/secrets/kafka.keystore.jks", "/etc/kafka/secrets/kafka.truststore.jks"}).
+		// Create password files for entrypoint
+		WithNewFile("/etc/kafka/secrets/kafka.keystore.jks.password", keystorePassword).
+		WithNewFile("/etc/kafka/secrets/kafka.truststore.jks.password", truststorePassword).
+		// Clean up temporary files
+		WithExec([]string{"rm", "-f", "/etc/kafka/secrets/key.pem", "/etc/kafka/secrets/cert.pem", "/etc/kafka/secrets/cacert.pem", "/etc/kafka/secrets/chain.pem", "/etc/kafka/secrets/keystore.p12"})
 }
 
 // brokerKafkaSecureBasicAuth returns a container for the Kafka broker secured with TLS and basic auth.
@@ -119,10 +140,8 @@ func brokerKafkaSecureBasicAuth() *dagger.Container {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
 
-	tlsDir := dag.Directory().
-		WithNewFile("kafka.keystore.key", string(key)).
-		WithNewFile("kafka.keystore.pem", string(cert)).
-		WithNewFile("kafka.truststore.pem", string(cacert))
+	keystorePassword := "changeit"
+	truststorePassword := "changeit"
 
 	// Create JAAS config for SASL
 	jaasConfig := `
@@ -151,10 +170,13 @@ KafkaServer {
 		WithEnvVariable("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1").
 		WithEnvVariable("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1").
 		WithEnvVariable("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1").
-		WithEnvVariable("KAFKA_SSL_KEYSTORE_FILENAME", "kafka.keystore.pem").
-		WithEnvVariable("KAFKA_SSL_KEYSTORE_LOCATION", "/etc/kafka/secrets/kafka.keystore.pem").
-		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_FILENAME", "kafka.truststore.pem").
-		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_LOCATION", "/etc/kafka/secrets/kafka.truststore.pem").
+		WithEnvVariable("KAFKA_SSL_KEYSTORE_FILENAME", "kafka.keystore.jks").
+		WithEnvVariable("KAFKA_SSL_KEYSTORE_LOCATION", "/etc/kafka/secrets/kafka.keystore.jks").
+		WithEnvVariable("KAFKA_SSL_KEYSTORE_CREDENTIALS", "kafka.keystore.jks.password").
+		WithEnvVariable("KAFKA_SSL_KEY_CREDENTIALS", "kafka.keystore.jks.password").
+		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_FILENAME", "kafka.truststore.jks").
+		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_LOCATION", "/etc/kafka/secrets/kafka.truststore.jks").
+		WithEnvVariable("KAFKA_SSL_TRUSTSTORE_CREDENTIALS", "kafka.truststore.jks.password").
 		WithEnvVariable("KAFKA_SSL_CLIENT_AUTH", "none").
 		WithEnvVariable("KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM", "").
 		WithEnvVariable("KAFKA_SASL_ENABLED_MECHANISMS", "PLAIN").
@@ -164,9 +186,28 @@ KafkaServer {
 		WithExposedPort(9092).
 		WithExposedPort(9093).
 		WithExposedPort(29092).
-		// Mount certificates and JAAS config
-		WithDirectory("/etc/kafka/secrets", tlsDir).
-		WithNewFile("/etc/kafka/kafka_server_jaas.conf", jaasConfig)
+		// Create secrets directory and write PEM files
+		WithExec([]string{"mkdir", "-p", "/etc/kafka/secrets"}).
+		WithNewFile("/etc/kafka/secrets/key.pem", string(key)).
+		WithNewFile("/etc/kafka/secrets/cert.pem", string(cert)).
+		WithNewFile("/etc/kafka/secrets/cacert.pem", string(cacert)).
+		// Create certificate chain file (cert + CA cert)
+		WithExec([]string{"sh", "-c", "cat /etc/kafka/secrets/cert.pem /etc/kafka/secrets/cacert.pem > /etc/kafka/secrets/chain.pem"}).
+		// Convert PEM to PKCS12 with certificate chain
+		WithExec([]string{"openssl", "pkcs12", "-export", "-in", "/etc/kafka/secrets/chain.pem", "-inkey", "/etc/kafka/secrets/key.pem", "-out", "/etc/kafka/secrets/keystore.p12", "-password", "pass:" + keystorePassword, "-name", "kafka"}).
+		// Convert PKCS12 to JKS keystore
+		WithExec([]string{"keytool", "-importkeystore", "-srckeystore", "/etc/kafka/secrets/keystore.p12", "-srcstoretype", "PKCS12", "-destkeystore", "/etc/kafka/secrets/kafka.keystore.jks", "-deststoretype", "JKS", "-srcstorepass", keystorePassword, "-deststorepass", keystorePassword, "-noprompt"}).
+		// Import CA cert as trusted certificate into keystore (needed for it to work as truststore)
+		WithExec([]string{"keytool", "-import", "-trustcacerts", "-alias", "ca", "-file", "/etc/kafka/secrets/cacert.pem", "-keystore", "/etc/kafka/secrets/kafka.keystore.jks", "-storepass", keystorePassword, "-noprompt"}).
+		// Create symlink from truststore to keystore (some entrypoint scripts may look for truststore filename)
+		WithExec([]string{"ln", "-sf", "/etc/kafka/secrets/kafka.keystore.jks", "/etc/kafka/secrets/kafka.truststore.jks"}).
+		// Create password files for entrypoint
+		WithNewFile("/etc/kafka/secrets/kafka.keystore.jks.password", keystorePassword).
+		WithNewFile("/etc/kafka/secrets/kafka.truststore.jks.password", truststorePassword).
+		// Create JAAS config
+		WithNewFile("/etc/kafka/kafka_server_jaas.conf", jaasConfig).
+		// Clean up temporary files
+		WithExec([]string{"rm", "-f", "/etc/kafka/secrets/key.pem", "/etc/kafka/secrets/cert.pem", "/etc/kafka/secrets/cacert.pem", "/etc/kafka/secrets/chain.pem", "/etc/kafka/secrets/keystore.p12"})
 }
 
 // brokerNATS returns a container for the NATS broker.

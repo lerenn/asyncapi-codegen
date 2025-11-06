@@ -112,6 +112,7 @@ func (suite *Suite) TearDownTest() {
 
 func (suite *Suite) TestIssue169() {
 	var wg sync.WaitGroup
+	var once sync.Once
 
 	// Test message
 	sent := V2Issue169MsgMessage{
@@ -122,7 +123,9 @@ func (suite *Suite) TestIssue169() {
 	err := suite.app.SubscribeV2Issue169Msg(context.Background(),
 		func(ctx context.Context, msg V2Issue169MsgMessage) error {
 			suite.Require().Equal(sent.Payload, msg.Payload)
-			wg.Done()
+			once.Do(func() {
+				wg.Done()
+			})
 			return nil
 		})
 	suite.Require().NoError(err)

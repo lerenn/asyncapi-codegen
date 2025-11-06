@@ -84,7 +84,7 @@ services:
     ports:
       - "9092:9092"
     environment:
-      CLUSTER_ID: "asyncapi-codegen-cluster"
+      CLUSTER_ID: "AAAAAAAAAAAAAAAAAAAAAA"
       KAFKA_NODE_ID: 0
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka:29093"
@@ -105,7 +105,7 @@ services:
     ports:
       - "9094:9094"
     environment:
-      CLUSTER_ID: "asyncapi-codegen-cluster"
+      CLUSTER_ID: "AAAAAAAAAAAAAAAAAAAAAA"
       KAFKA_NODE_ID: 0
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka-tls:29093"
@@ -117,10 +117,14 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.pem
-      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.pem
-      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.truststore.pem
-      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.pem
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.jks
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.jks
+      KAFKA_SSL_KEYSTORE_TYPE: JKS
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: kafka.keystore.jks.password
+      KAFKA_SSL_KEY_CREDENTIALS: kafka.keystore.jks.password
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.jks
+      KAFKA_SSL_TRUSTSTORE_TYPE: JKS
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: kafka.keystore.jks.password
       KAFKA_SSL_CLIENT_AUTH: "none"
       KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
     volumes:
@@ -133,7 +137,7 @@ services:
     ports:
       - "9096:9096"
     environment:
-      CLUSTER_ID: "asyncapi-codegen-cluster"
+      CLUSTER_ID: "AAAAAAAAAAAAAAAAAAAAAA"
       KAFKA_NODE_ID: 0
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka-tls-basic-auth:29093"
@@ -145,18 +149,23 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.pem
-      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.pem
-      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.truststore.pem
-      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.pem
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.jks
+      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.jks
+      KAFKA_SSL_KEYSTORE_TYPE: JKS
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: kafka.keystore.jks.password
+      KAFKA_SSL_KEY_CREDENTIALS: kafka.keystore.jks.password
+      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.jks
+      KAFKA_SSL_TRUSTSTORE_TYPE: JKS
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: kafka.keystore.jks.password
       KAFKA_SSL_CLIENT_AUTH: "none"
       KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
-      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN,SCRAM-SHA-512
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
       KAFKA_OPTS: -Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf
     volumes:
       - ./tmp/certs/kafka:/etc/kafka/secrets
       - ./tmp/kafka-kraft/kafka-tls-basic-auth:/var/lib/kafka/data
       - ./config/kafka-tls-basic-auth/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+      - ./config/kafka-tls-basic-auth/client.properties:/etc/kafka/client.properties
     
   
