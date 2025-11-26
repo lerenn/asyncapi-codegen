@@ -13,16 +13,31 @@ import (
 
 type namingSchemeFn func(string) string
 
+// toLowerCamel converts a string to camelCase (first letter lowercase).
+func toLowerCamel(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	camel := strcase.ToCamel(s)
+	// Lowercase the first letter
+	if len(camel) > 0 {
+		return strings.ToLower(camel[:1]) + camel[1:]
+	}
+	return camel
+}
+
 var convertKeyFuncs = map[string]namingSchemeFn{
-	"snake": strcase.ToSnake,
-	"kebab": strcase.ToKebab,
-	"camel": strcase.ToCamel,
-	"none":  func(s string) string { return s },
+	"snake":  strcase.ToSnake,
+	"kebab":  strcase.ToKebab,
+	"camel":  toLowerCamel,
+	"pascal": strcase.ToCamel,
+	"none":   func(s string) string { return s },
 }
 
 var namifyPerScheme = map[string]namingSchemeFn{
-	"camel": strcase.ToCamel,
-	"none":  DefaultNamifier,
+	"camel":  toLowerCamel,
+	"pascal": strcase.ToCamel,
+	"none":   DefaultNamifier,
 }
 
 var convertKey = convertKeyFuncs["none"]
@@ -87,7 +102,7 @@ func Namify(sentence string) string {
 func SetConvertKeyFn(name string) error {
 	fn, ok := convertKeyFuncs[name]
 	if !ok {
-		return fmt.Errorf("unknown convert key function %s, supported values: snake, kebab, camel, none", name)
+		return fmt.Errorf("unknown convert key function %s, supported values: snake, kebab, camel, pascal, none", name)
 	}
 
 	convertKey = fn
@@ -99,7 +114,7 @@ func SetConvertKeyFn(name string) error {
 func SetNamifyFn(name string) error {
 	fn, ok := namifyPerScheme[name]
 	if !ok {
-		return fmt.Errorf("unknown namify function %s, supported values: camel, none", name)
+		return fmt.Errorf("unknown namify function %s, supported values: camel, pascal, none", name)
 	}
 
 	namify = fn

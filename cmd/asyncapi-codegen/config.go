@@ -34,11 +34,11 @@ type Flags struct {
 	DisableFormatting bool
 
 	// ConvertKeys defines a schema property keys conversion strategy.
-	// Supported values: snake, camel, kebab, none
+	// Supported values: snake, camel, pascal, kebab, none
 	ConvertKeys string
 
 	// NamingScheme defines the naming case for generated golang structs
-	// Supported values: camel, none
+	// Supported values: camel, pascal, none
 	NamingScheme string
 
 	// IgnoreStringFormat states whether the properties' format (date, date-time) should impact the type in types
@@ -58,9 +58,9 @@ func (f *Flags) SetToCommand(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&f.Generate, "generate", "g", "user,application,types", "Generation options")
 	cmd.Flags().BoolVarP(&f.DisableFormatting, "disable-formatting", "f", false, "Disables the code generation formatting")
 	cmd.Flags().StringVarP(&f.ConvertKeys, "convert-keys", "c", "none",
-		"Schema property key names conversion strategy.\nSupported values: snake, camel, kebab, none.")
+		"Schema property key names conversion strategy.\nSupported values: snake, camel, pascal, kebab, none.")
 	cmd.Flags().StringVarP(&f.NamingScheme, "naming-scheme", "n", "none",
-		"Naming scheme for generated golang elements.\nSupported values: camel, none.")
+		"Naming scheme for generated golang elements.\nSupported values: camel, pascal, none.")
 	cmd.Flags().BoolVar(&f.IgnoreStringFormat, "ignore-string-format", false,
 		"Ignores the format (date, date-time) on string properties, generating golang string, instead of dates")
 	cmd.Flags().BoolVar(&f.ForcePointers, "force-pointers", false, "Forces all struct fields to be generated as pointers")
