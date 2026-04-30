@@ -3,7 +3,7 @@ package asyncapiv3
 import (
 	"fmt"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
 )
 
 const (

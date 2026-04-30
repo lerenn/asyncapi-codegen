@@ -5,7 +5,7 @@ package issue262
 import (
 	"testing"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )

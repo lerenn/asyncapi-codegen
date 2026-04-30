@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
 )
 
 type brokerSubscription struct {

@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
+	"github.com/dimonoff/asyncapi-codegen/pkg/utils"
+	"github.com/dimonoff/asyncapi-codegen/pkg/utils/template"
 	"github.com/mohae/deepcopy"
 )
 

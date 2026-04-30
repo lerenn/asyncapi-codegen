@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	"github.com/dimonoff/asyncapi-codegen/pkg/asyncapi"
 	"github.com/stretchr/testify/suite"
 )
 

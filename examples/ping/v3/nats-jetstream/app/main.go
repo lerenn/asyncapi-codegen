@@ -5,11 +5,11 @@ package main
 import (
 	"context"
 
-	"github.com/lerenn/asyncapi-codegen/examples"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
-	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
+	"github.com/dimonoff/asyncapi-codegen/examples"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions/loggers"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions/middlewares"
+	testutil "github.com/dimonoff/asyncapi-codegen/pkg/utils/test"
 	"github.com/nats-io/nats.go/jetstream"
 )
 

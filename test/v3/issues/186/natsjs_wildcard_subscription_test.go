@@ -7,9 +7,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
-	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions/brokers/natsjetstream"
+	testutil "github.com/dimonoff/asyncapi-codegen/pkg/utils/test"
 	natsio "github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"

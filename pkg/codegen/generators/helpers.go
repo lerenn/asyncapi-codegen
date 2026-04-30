@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
+	"github.com/dimonoff/asyncapi-codegen/pkg/asyncapi"
+	"github.com/dimonoff/asyncapi-codegen/pkg/utils/template"
 )
 
 func appendDirectiveIfDefined(directives []string, tagName string, value float64) []string {

@@ -3,7 +3,7 @@ package middlewares
 import (
 	"context"
 
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
 )
 
 // Intercepter is a middleware that intercepts messages in reception and in publication.

@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/go-playground/validator/v10"
-	issue259default "github.com/lerenn/asyncapi-codegen/test/v3/issues/259/default"
-	issue259forcepointers "github.com/lerenn/asyncapi-codegen/test/v3/issues/259/forcepointers"
+	issue259default "github.com/dimonoff/asyncapi-codegen/test/v3/issues/259/default"
+	issue259forcepointers "github.com/dimonoff/asyncapi-codegen/test/v3/issues/259/forcepointers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )

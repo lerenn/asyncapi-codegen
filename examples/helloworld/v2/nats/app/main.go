@@ -6,9 +6,9 @@ import (
 	"context"
 	"log"
 
-	"github.com/lerenn/asyncapi-codegen/examples"
-	"github.com/lerenn/asyncapi-codegen/pkg/extensions/brokers/nats"
-	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
+	"github.com/dimonoff/asyncapi-codegen/examples"
+	"github.com/dimonoff/asyncapi-codegen/pkg/extensions/brokers/nats"
+	testutil "github.com/dimonoff/asyncapi-codegen/pkg/utils/test"
 )
 
 func main() {
