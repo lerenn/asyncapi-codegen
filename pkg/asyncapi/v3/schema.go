@@ -167,7 +167,7 @@ func (s *Schema) generateMetadata(parentName, name string, number *int, isRequir
 }
 
 //
-//nolint:funlen,cyclop // Not necessary to reduce length and cyclop
+//nolint:cyclop // Not necessary to reduce cyclop
 func (s *Schema) setDependencies(spec Specification) error {
 	// Prevent modification if nil
 	if s == nil {

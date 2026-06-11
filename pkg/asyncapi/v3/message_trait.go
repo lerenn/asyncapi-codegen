@@ -7,7 +7,8 @@ type MessageTrait struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
 	Headers *Schema `json:"headers,omitempty"`
-	// NOTE: "payload" is explicitly disallowed: https://github.com/asyncapi/spec/blob/c5888f52b70f8eb99f782df9d23a88e1a4dce112/spec/asyncapi.md?plain=1#L1414
+	// NOTE: "payload" is explicitly disallowed by the AsyncAPI spec:
+	// https://github.com/asyncapi/spec/blob/c5888f52b70f8eb99f782df9d23a88e1a4dce112/spec/asyncapi.md?plain=1#L1414
 	Payload       *Schema                `json:"payload,omitempty"`
 	CorrelationID *CorrelationID         `json:"correlationID,omitempty"`
 	ContentType   string                 `json:"contentType,omitempty"`
