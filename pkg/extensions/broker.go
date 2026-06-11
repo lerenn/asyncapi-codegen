@@ -3,6 +3,7 @@ package extensions
 import (
 	"context"
 	"fmt"
+	"sync"
 )
 
 // BrokerChannelSubscription is a struct that contains every returned structures
@@ -102,7 +103,11 @@ func (bm BrokerMessage) String() string {
 type AcknowledgeableBrokerMessage struct {
 	BrokerMessage
 
-	acked          bool
+	// ackOnce guarantees that only one acknowledgement (Ack or Nak) is ever
+	// sent to the broker, even when the message is copied (it travels through
+	// channels by value) or when Ack/Nak are called concurrently. It is a
+	// pointer so every copy shares the same underlying sync.Once.
+	ackOnce        *sync.Once
 	acknowledgment BrokerAcknowledgment
 }
 
@@ -112,25 +117,29 @@ func NewAcknowledgeableBrokerMessage(
 	bm BrokerMessage,
 	acknowledgment BrokerAcknowledgment,
 ) AcknowledgeableBrokerMessage {
-	return AcknowledgeableBrokerMessage{BrokerMessage: bm, acknowledgment: acknowledgment}
+	return AcknowledgeableBrokerMessage{
+		BrokerMessage:  bm,
+		ackOnce:        &sync.Once{},
+		acknowledgment: acknowledgment,
+	}
 }
 
 // Ack will call the AckMessage of the underlying BrokerAcknowledgment
-// implementation if the message was not already acked.
+// implementation if the message was not already acknowledged.
 func (bm *AcknowledgeableBrokerMessage) Ack() {
-	if !bm.acked {
-		bm.acknowledgment.AckMessage()
-		bm.acked = true
+	if bm.ackOnce == nil {
+		return
 	}
+	bm.ackOnce.Do(bm.acknowledgment.AckMessage)
 }
 
 // Nak will call the NakMessage of the underlying BrokerAcknowledgment
-// implementation if the message was not already acked.
+// implementation if the message was not already acknowledged.
 func (bm *AcknowledgeableBrokerMessage) Nak() {
-	if !bm.acked {
-		bm.acknowledgment.NakMessage()
-		bm.acked = true
+	if bm.ackOnce == nil {
+		return
 	}
+	bm.ackOnce.Do(bm.acknowledgment.NakMessage)
 }
 
 // BrokerController represents the functions that should be implemented to connect

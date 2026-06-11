@@ -592,7 +592,7 @@ func (msg *Message) mergePayload(spec Specification, payload *Schema) error {
 	}
 
 	// Merge payload
-	return msg.Headers.MergeWith(spec, *payload)
+	return msg.Payload.MergeWith(spec, *payload)
 }
 
 // HaveCorrelationID check that the message have a correlation ID.

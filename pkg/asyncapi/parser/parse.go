@@ -58,7 +58,7 @@ func FromFile(params FromFileParams) (asyncapi.Specification, error) {
 			MajorVersion: params.MajorVersion,
 		})
 	default:
-		return nil, fmt.Errorf("%w: %q", ErrInvalidFileFormat, params.MajorVersion)
+		return nil, fmt.Errorf("%w: unsupported file extension %q", ErrInvalidFileFormat, filepath.Ext(params.Path))
 	}
 }
 
@@ -128,7 +128,7 @@ func FromJSON(params FromJSONParams) (asyncapi.Specification, error) {
 	case 3:
 		spec = asyncapiv3.NewSpecification()
 	default:
-		return nil, fmt.Errorf("unknown version (%q): this should not have happened", majorVersion)
+		return nil, fmt.Errorf("unknown version (%d): this should not have happened", majorVersion)
 	}
 
 	// Parse JSON

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -19,6 +20,10 @@ Just plug your application to your favorite message broker!
 More info on README: https://github.com/lerenn/asyncapi-codegen
 `,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		if len(flags.InputPaths) == 0 {
+			return errors.New("at least one input path is required (--input)")
+		}
+
 		cg, err := codegen.FromFile(flags.InputPaths[0], flags.InputPaths[1:]...)
 		if err != nil {
 			return err

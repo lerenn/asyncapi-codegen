@@ -1,5 +1,7 @@
 package utils
 
+import "slices"
+
 // RemoveDuplicateFromSlice removes duplicate values from a slice.
 func RemoveDuplicateFromSlice[T string | int](sliceList []T) []T {
 	allKeys := make(map[T]bool)
@@ -15,10 +17,5 @@ func RemoveDuplicateFromSlice[T string | int](sliceList []T) []T {
 
 // IsInSlice checks if a string is in a slice.
 func IsInSlice(slice []string, match string) bool {
-	for _, v := range slice {
-		if v == match {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, match)
 }
