@@ -50,9 +50,14 @@ func createKafkaCerts() {
 	keyPath := filepath.Join(basePath, "kafka.keystore.key")
 	certPath := filepath.Join(basePath, "kafka.keystore.pem")
 	caPath := filepath.Join(basePath, "kafka.truststore.pem")
+	// combinedPath holds the certificate chain and the private key in a single
+	// PEM file, which is the format expected by Kafka's `ssl.keystore.location`
+	// when `ssl.keystore.type=PEM` (the Apache Kafka image, unlike Bitnami, does
+	// not assemble the keystore from separate files).
+	combinedPath := filepath.Join(basePath, "kafka.keystore.combined.pem")
 
 	// Check if one file is missing
-	if !checkIfOneOfFilesIsMissing(keyPath, certPath, caPath) {
+	if !checkIfOneOfFilesIsMissing(keyPath, certPath, caPath, combinedPath) {
 		return
 	}
 
@@ -77,6 +82,12 @@ func createKafkaCerts() {
 	}
 
 	if err := os.WriteFile(caPath, cacert, os.ModePerm); err != nil {
+		panic(err)
+	}
+
+	// Export the combined keystore (certificate chain followed by the private key).
+	combined := append(append([]byte{}, cert...), key...)
+	if err := os.WriteFile(combinedPath, combined, os.ModePerm); err != nil {
 		panic(err)
 	}
 }
