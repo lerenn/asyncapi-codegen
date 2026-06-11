@@ -1,8 +1,8 @@
 module github.com/lerenn/asyncapi-codegen
 
-go 1.21
+go 1.24
 
-toolchain go1.21.4
+toolchain go1.24.0
 
 require (
 	cloud.google.com/go v0.114.0

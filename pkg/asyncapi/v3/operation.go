@@ -24,12 +24,15 @@ func (oa OperationAction) IsReceive() bool {
 // from an asyncapi specification that will be used to generate code.
 // Source: https://www.asyncapi.com/docs/reference/specification/v3.0.0#operationObject
 //
-// NOTE: From AsyncAPI specification on the "messages" field:
+// NOTE: From the AsyncAPI specification on the "messages" field:
 //
-//	Excluding this property from the Operation implies that all messages from the channel will be included. Explicitly set the messages property to [] if this operation should contain no messages.
+//	Excluding this property from the Operation implies that all messages
+//	from the channel will be included. Explicitly set the messages property
+//	to [] if this operation should contain no messages.
 //
-// Because of this caveat, it must be possible to both serialize the messages slice as an empty JSON array or exclude the key entirely.
-// The omitzero tag is required to enable this.
+// Because of this caveat, it must be possible to both serialize the messages
+// slice as an empty JSON array or exclude the key entirely. The omitzero tag
+// is required to enable this.
 type Operation struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
