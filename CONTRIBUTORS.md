@@ -28,6 +28,7 @@ adventure, this file is a attempt to show them the respect they earned.
 * [Vragov Roman (@vragovR)](https://github.com/vragovR)
 * [Gustav Sandström (@omegagussan)](https://github.com/omegagussan)
 * [André (@andiikaa)](https://github.com/andiikaa)
+* [Justen Stall (@justenstall)](https://github.com/justenstall)
 * And maybe you ?
 
 ## I would like to join the list. How can I help the project?
