@@ -305,6 +305,24 @@ func (s Schema) IsFieldRequired(field string) bool {
 	return utils.IsInSlice(s.Required, field)
 }
 
+// The accessors below let this Schema satisfy the generators.TemplateSchema
+// generic interface, which backs the template helpers shared between v2 and v3.
+
+// GetType returns the schema type.
+func (s Schema) GetType() string { return s.Type }
+
+// GetIsRequired returns whether the schema itself is required.
+func (s Schema) GetIsRequired() bool { return s.IsRequired }
+
+// GetProperties returns the schema properties.
+func (s Schema) GetProperties() map[string]*Schema { return s.Properties }
+
+// GetItems returns the schema items.
+func (s Schema) GetItems() *Schema { return s.Items }
+
+// GetAdditionalProperties returns the schema additional properties.
+func (s Schema) GetAdditionalProperties() *Schema { return s.AdditionalProperties }
+
 func (s *Schema) referenceFrom(ref []string) *Schema {
 	if len(ref) == 0 {
 		return s
