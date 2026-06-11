@@ -77,8 +77,13 @@ services:
       - ./tmp/certs/nats:/certs
 
   # Kafka variants
+  #
+  # The official Apache Kafka image (apache/kafka) is used instead of the
+  # deprecated Bitnami one. It maps KAFKA_<PROPERTY> environment variables
+  # straight to server.properties, so the values below are plain Kafka
+  # properties (no KAFKA_CFG_ prefix, no Bitnami-specific TLS helpers).
   kafka:
-    image: bitnamilegacy/kafka:3.5.1
+    image: apache/kafka:3.9.0
     ports:
       - 9092:9092
       - 9093:9093
@@ -86,16 +91,22 @@ services:
       - 9092
       - 9093
     environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=INTERNAL://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://localhost:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9093
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_NODE_ID=0
+      - KAFKA_PROCESS_ROLES=controller,broker
+      - KAFKA_LISTENERS=INTERNAL://:9092,CONTROLLER://:9093
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://localhost:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=0@localhost:9093
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      # Single-broker replication factors so the internal topics (consumer
+      # offsets, transaction state) can be created on this one-node cluster.
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
   kafka-tls:
-    image: bitnamilegacy/kafka:3.5.1
+    image: apache/kafka:3.9.0
     ports:
       - 9094:9094
       - 9095:9095
@@ -103,41 +114,71 @@ services:
       - 9094
       - 9095
     environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=INTERNAL://:9094,CONTROLLER://:9095
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://localhost:9094
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:SSL
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9095
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_TLS_TYPE=PEM
-      - KAFKA_TLS_CLIENT_AUTH=none
+      - KAFKA_NODE_ID=0
+      - KAFKA_PROCESS_ROLES=controller,broker
+      - KAFKA_LISTENERS=INTERNAL://:9094,CONTROLLER://:9095
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://localhost:9094
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:SSL
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=0@localhost:9095
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      # PEM keystore (certificate chain + private key in a single file) and CA
+      # truststore so the broker trusts its own certificate over the SSL
+      # inter-broker listener. Client certificate authentication is disabled.
+      - KAFKA_SSL_KEYSTORE_TYPE=PEM
+      - KAFKA_SSL_KEYSTORE_LOCATION=/etc/kafka/secrets/kafka.keystore.combined.pem
+      - KAFKA_SSL_TRUSTSTORE_TYPE=PEM
+      - KAFKA_SSL_TRUSTSTORE_LOCATION=/etc/kafka/secrets/kafka.truststore.pem
+      - KAFKA_SSL_CLIENT_AUTH=none
+      # Single-broker replication factors (see the plaintext broker above).
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
     volumes:
-      - ./tmp/certs/kafka:/bitnami/kafka/config/certs/
+      - ./tmp/certs/kafka:/etc/kafka/secrets
   kafka-tls-basic-auth:
-    image: bitnamilegacy/kafka:3.5.1
+    image: apache/kafka:3.9.0
     ports:
       - 9096:9096
       - 9097:9097
     expose:
       - 9096
       - 9097
-    environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=INTERNAL://:9096,CONTROLLER://:9097
-      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://localhost:9096
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:SASL_SSL
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@:9097
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_CFG_SASL_MECHANISM_INTER_BROKER_PROTOCOL=SCRAM-SHA-512
-      - KAFKA_TLS_TYPE=PEM
-      - KAFKA_TLS_CLIENT_AUTH=none
-      - KAFKA_INTER_BROKER_USER=user
-      - KAFKA_INTER_BROKER_PASSWORD=password
     volumes:
-      - ./tmp/certs/kafka:/bitnami/kafka/config/certs/
-    
-  
+      - ./tmp/certs/kafka:/etc/kafka/secrets
+    # SASL_SSL with SCRAM-SHA-512 requires the SCRAM credentials to be present in
+    # the KRaft metadata log, which can only be done at format time via
+    # `--add-scram`. The official image formats storage itself and offers no hook
+    # for this, so the storage is formatted explicitly before the broker starts.
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        cat > /tmp/server.properties <<'EOF'
+        node.id=0
+        process.roles=controller,broker
+        listeners=INTERNAL://:9096,CONTROLLER://:9097
+        advertised.listeners=INTERNAL://localhost:9096
+        listener.security.protocol.map=CONTROLLER:PLAINTEXT,INTERNAL:SASL_SSL
+        controller.quorum.voters=0@localhost:9097
+        controller.listener.names=CONTROLLER
+        inter.broker.listener.name=INTERNAL
+        log.dirs=/tmp/kraft-combined-logs
+        offsets.topic.replication.factor=1
+        transaction.state.log.replication.factor=1
+        transaction.state.log.min.isr=1
+        group.initial.rebalance.delay.ms=0
+        sasl.enabled.mechanisms=SCRAM-SHA-512
+        sasl.mechanism.inter.broker.protocol=SCRAM-SHA-512
+        listener.name.internal.sasl.enabled.mechanisms=SCRAM-SHA-512
+        listener.name.internal.scram-sha-512.sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="user" password="password";
+        ssl.keystore.type=PEM
+        ssl.keystore.location=/etc/kafka/secrets/kafka.keystore.combined.pem
+        ssl.truststore.type=PEM
+        ssl.truststore.location=/etc/kafka/secrets/kafka.truststore.pem
+        ssl.client.auth=none
+        EOF
+        CID=$(/opt/kafka/bin/kafka-storage.sh random-uuid)
+        /opt/kafka/bin/kafka-storage.sh format -t "$CID" -c /tmp/server.properties \
+          --add-scram SCRAM-SHA-512=[name=user,password=password] --ignore-formatted
+        exec /opt/kafka/bin/kafka-server-start.sh /tmp/server.properties
