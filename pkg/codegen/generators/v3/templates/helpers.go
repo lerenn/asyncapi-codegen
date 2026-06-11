@@ -68,22 +68,22 @@ func ReferenceToStructAttributePath(ref string) string {
 
 // ChannelToMessageTypeName will convert a channel to a message type name in the
 // form of golang conventional type names.
-func ChannelToMessageTypeName(ch asyncapi.Channel) string {
+func ChannelToMessageTypeName(ch asyncapi.Channel) (string, error) {
 	msg, err := ch.Follow().GetMessage()
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return templateutil.Namify(msg.Follow().Name)
+	return templateutil.Namify(msg.Follow().Name), nil
 }
 
 // OpToMsgTypeName will convert an operation to a message type name in the
 // form of golang conventional type names.
-func OpToMsgTypeName(op asyncapi.Operation) string {
+func OpToMsgTypeName(op asyncapi.Operation) (string, error) {
 	msg, err := op.Follow().GetMessage()
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return templateutil.Namify(msg.Follow().Name)
+	return templateutil.Namify(msg.Follow().Name), nil
 }
 
 // OpToChannelTypeName will convert an operation to a channel type name in the
@@ -117,6 +117,9 @@ func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	parameterRegexp := regexp.MustCompile("{[^{}]*}")
 
 	matches := parameterRegexp.FindAllString(ch.Address, -1)
+	if len(matches) == 0 {
+		return fmt.Sprintf("%q", ch.Address)
+	}
 	format := parameterRegexp.ReplaceAllString(ch.Address, "%s")
 
 	sprint := fmt.Sprintf("fmt.Sprintf(%q, ", format)
@@ -127,15 +130,23 @@ func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	return sprint[:len(sprint)-1] + ")"
 }
 
-var isFieldPointer = func(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
+func defaultIsFieldPointer(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
 	return !(IsRequired(parent, field) || schema.IsRequired) && schema.Type != "array"
 }
 
-// ForcePointerOnFields is used to force the generation of all fields as pointers, except for arrays.
-func ForcePointerOnFields() {
-	isFieldPointer = func(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
-		return schema.Type != "array"
+var isFieldPointer = defaultIsFieldPointer
+
+// SetForcePointers configures whether all struct fields (except arrays) should be
+// generated as pointers. It is reset on every generation run so the setting does
+// not leak between successive generations sharing the same process.
+func SetForcePointers(force bool) {
+	if force {
+		isFieldPointer = func(_ asyncapi.Schema, _ string, schema asyncapi.Schema) bool {
+			return schema.Type != "array"
+		}
+		return
 	}
+	isFieldPointer = defaultIsFieldPointer
 }
 
 // HelpersFunctions returns the functions that can be used as helpers

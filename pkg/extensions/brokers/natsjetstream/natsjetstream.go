@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
@@ -25,12 +26,28 @@ type Controller struct {
 	logger         extensions.Logger
 	streamName     string
 	consumerName   string
-	consumeContext jetstream.ConsumeContext
-	channels       map[string]chan jetstream.Msg
 	streamConfig   *jetstream.StreamConfig
 	consumerConfig *jetstream.ConsumerConfig
 
+	// mutex guards consumeContext and channels, which are accessed concurrently
+	// from Subscribe, the subscription cancellation handlers and the NATS
+	// consumer callback (ConsumeMessage).
+	mutex          sync.Mutex
+	consumeContext jetstream.ConsumeContext
+	channels       map[string]*subscriptionChannel
+
 	nakDelay time.Duration
+}
+
+// subscriptionChannel holds the channel used to dispatch incoming NATS messages
+// to a subscription's listening goroutine, along with a stop channel that is
+// closed on cancellation. The message channel is intentionally never closed:
+// closing it would race with the consumer callback still trying to send,
+// causing a "send on closed channel" panic. Instead, both the listener and the
+// producer select on stop to unwind cleanly.
+type subscriptionChannel struct {
+	messages chan jetstream.Msg
+	stop     chan struct{}
 }
 
 // NewController creates a new NATS JetStream controller.
@@ -39,7 +56,7 @@ func NewController(url string, options ...ControllerOption) (*Controller, error)
 	controller := &Controller{
 		url:            url,
 		logger:         extensions.DummyLogger{},
-		channels:       make(map[string]chan jetstream.Msg),
+		channels:       make(map[string]*subscriptionChannel),
 		consumeContext: nil,
 		nakDelay:       time.Second * 5,
 	}
@@ -230,27 +247,54 @@ func (c *Controller) Subscribe(ctx context.Context, channel string) (extensions.
 		make(chan any, 1),
 	)
 
-	if c.channels[channel] == nil {
-		c.channels[channel] = make(chan jetstream.Msg)
+	// Get or create the subscription channel for this NATS subject.
+	c.mutex.Lock()
+	sc := c.channels[channel]
+	if sc == nil {
+		sc = &subscriptionChannel{
+			messages: make(chan jetstream.Msg),
+			stop:     make(chan struct{}),
+		}
+		c.channels[channel] = sc
 	}
+	c.mutex.Unlock()
+
 	if err := c.ConsumeIfNeeded(ctx); err != nil {
+		// Roll back the channel we may have just registered to avoid leaking it.
+		c.mutex.Lock()
+		if c.channels[channel] == sc {
+			delete(c.channels, channel)
+		}
+		c.mutex.Unlock()
 		return extensions.BrokerChannelSubscription{}, err
 	}
 
 	go func() {
-		for message := range c.channels[channel] {
-			c.logger.Info(ctx, fmt.Sprintf("Received message for %s", channel), extensions.LogInfo{
-				Key:   "message",
-				Value: message,
-			})
-			c.HandleMessage(ctx, message, sub)
+		for {
+			select {
+			case <-sc.stop:
+				return
+			case message := <-sc.messages:
+				c.logger.Info(ctx, fmt.Sprintf("Received message for %s", channel), extensions.LogInfo{
+					Key:   "message",
+					Value: message,
+				})
+				c.HandleMessage(ctx, message, sub)
+			}
 		}
 	}()
 
 	// Wait for cancellation and drain the NATS subscription
 	sub.WaitForCancellationAsync(func() {
-		close(c.channels[channel])
-		delete(c.channels, channel)
+		c.mutex.Lock()
+		if c.channels[channel] == sc {
+			delete(c.channels, channel)
+		}
+		c.mutex.Unlock()
+
+		// Stop the listener goroutine and unblock any in-flight producer.
+		close(sc.stop)
+
 		c.StopConsumeIfNeeded()
 	})
 
@@ -296,23 +340,31 @@ func (c *Controller) Close() {
 
 // ConsumeIfNeeded starts consuming messages if needed.
 func (c *Controller) ConsumeIfNeeded(ctx context.Context) error {
-	if c.consumeContext == nil {
-		consumer, err := c.jetStream.Consumer(ctx, c.streamName, c.consumerName)
-		if err != nil {
-			return err
-		}
-		consumeContext, err := consumer.Consume(c.ConsumeMessage(ctx))
-		if err != nil {
-			return err
-		}
-		c.consumeContext = consumeContext
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if c.consumeContext != nil {
+		return nil
 	}
+
+	consumer, err := c.jetStream.Consumer(ctx, c.streamName, c.consumerName)
+	if err != nil {
+		return err
+	}
+	consumeContext, err := consumer.Consume(c.ConsumeMessage(ctx))
+	if err != nil {
+		return err
+	}
+	c.consumeContext = consumeContext
 
 	return nil
 }
 
 // StopConsumeIfNeeded stops consuming messages if needed (there is no other subscription).
 func (c *Controller) StopConsumeIfNeeded() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	if len(c.channels) == 0 && c.consumeContext != nil {
 		c.consumeContext.Stop()
 		c.consumeContext = nil
@@ -324,14 +376,19 @@ func (c *Controller) StopConsumeIfNeeded() {
 func (c *Controller) ConsumeMessage(ctx context.Context) jetstream.MessageHandler {
 	return func(msg jetstream.Msg) {
 		msgSubj := msg.Subject() // pull this into a var for debuggability
-		var responsibleSubscription string
-		for subjectSubscriptionPattern := range c.channels {
+
+		// Find the subscription responsible for this subject.
+		c.mutex.Lock()
+		var target *subscriptionChannel
+		for subjectSubscriptionPattern, sc := range c.channels {
 			if MatchSubjectSubscription(subjectSubscriptionPattern, msgSubj) {
-				responsibleSubscription = subjectSubscriptionPattern
+				target = sc
 				break
 			}
 		}
-		if responsibleSubscription == "" {
+		c.mutex.Unlock()
+
+		if target == nil {
 			c.logger.Warning(
 				ctx,
 				fmt.Sprintf(
@@ -346,7 +403,15 @@ func (c *Controller) ConsumeMessage(ctx context.Context) jetstream.MessageHandle
 
 			return
 		}
-		c.channels[responsibleSubscription] <- msg
+
+		// Dispatch the message, but bail out (and ack) if the subscription was
+		// cancelled concurrently so we never block forever or send on a channel
+		// nobody reads anymore.
+		select {
+		case target.messages <- msg:
+		case <-target.stop:
+			_ = msg.Ack()
+		}
 	}
 }
 

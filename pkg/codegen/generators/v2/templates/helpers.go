@@ -68,34 +68,37 @@ func ReferenceToStructAttributePath(ref string) string {
 
 // ReferenceToTypeName will convert a reference to a type name in the form of
 // golang conventional type names.
-func ReferenceToTypeName(ref string) string {
+func ReferenceToTypeName(ref string) (string, error) {
 	parts := strings.Split(ref, "/")
-	return templateutil.Namify(parts[3])
+	if len(parts) < 4 {
+		return "", fmt.Errorf("invalid reference %q: expected at least 4 '/'-separated segments", ref)
+	}
+	return templateutil.Namify(parts[3]), nil
 }
 
 // ChannelToMessage will convert a channel to its message, based on publish/subscribe.
 //
 //nolint:cyclop
-func ChannelToMessage(ch asyncapi.Channel, direction string) *asyncapi.Message {
+func ChannelToMessage(ch asyncapi.Channel, direction string) (*asyncapi.Message, error) {
 	switch {
 	case ch.Publish != nil && ch.Subscribe == nil:
-		return ch.Publish.Message.Follow()
+		return ch.Publish.Message.Follow(), nil
 	case ch.Subscribe != nil && ch.Publish == nil:
-		return ch.Subscribe.Message.Follow()
+		return ch.Subscribe.Message.Follow(), nil
 	case direction == "publish":
 		if ch.Publish == nil {
-			panic("ChannelToMessage: channel has no publish operation")
+			return nil, fmt.Errorf("channel %q has no publish operation", ch.Name)
 		}
-		return ch.Publish.Message.Follow()
+		return ch.Publish.Message.Follow(), nil
 	case direction == "subscribe":
 		if ch.Subscribe == nil {
-			panic("ChannelToMessage: channel has no subscribe operation")
+			return nil, fmt.Errorf("channel %q has no subscribe operation", ch.Name)
 		}
-		return ch.Subscribe.Message.Follow()
+		return ch.Subscribe.Message.Follow(), nil
 	case ch.Subscribe == nil && ch.Publish == nil:
-		panic("ChannelToMessage: channel has no publish or subscribe operation")
+		return nil, fmt.Errorf("channel %q has no publish or subscribe operation", ch.Name)
 	default:
-		panic("direction must be either 'publish' or 'subscribe'")
+		return nil, fmt.Errorf("direction must be either 'publish' or 'subscribe', got %q", direction)
 	}
 }
 
@@ -114,6 +117,9 @@ func GenerateChannelPath(ch asyncapi.Channel) string {
 	parameterRegexp := regexp.MustCompile("{[^{}]*}")
 
 	matches := parameterRegexp.FindAllString(ch.Path, -1)
+	if len(matches) == 0 {
+		return fmt.Sprintf("%q", ch.Path)
+	}
 	format := parameterRegexp.ReplaceAllString(ch.Path, "%v")
 
 	sprint := fmt.Sprintf("fmt.Sprintf(%q, ", format)
@@ -141,15 +147,23 @@ func OperationName(channel asyncapi.Channel) string {
 	return templateutil.Namify(name)
 }
 
-var isFieldPointer = func(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
+func defaultIsFieldPointer(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
 	return !(IsRequired(parent, field) || schema.IsRequired) && schema.Type != "array"
 }
 
-// ForcePointerOnFields is used to force the generation of all fields as pointers, except for arrays.
-func ForcePointerOnFields() {
-	isFieldPointer = func(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
-		return schema.Type != "array"
+var isFieldPointer = defaultIsFieldPointer
+
+// SetForcePointers configures whether all struct fields (except arrays) should be
+// generated as pointers. It is reset on every generation run so the setting does
+// not leak between successive generations sharing the same process.
+func SetForcePointers(force bool) {
+	if force {
+		isFieldPointer = func(_ asyncapi.Schema, _ string, schema asyncapi.Schema) bool {
+			return schema.Type != "array"
+		}
+		return
 	}
+	isFieldPointer = defaultIsFieldPointer
 }
 
 // HelpersFunctions returns the functions that can be used as helpers

@@ -29,9 +29,6 @@ type Flags struct {
 	// golang code should be generated
 	Generate string
 
-	// Broker contains the broker name whose code should be generated
-	Broker string
-
 	// DisableFormatting states if the formatting should be disabled when
 	// writing the generated code
 	DisableFormatting bool

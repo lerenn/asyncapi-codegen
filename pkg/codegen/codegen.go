@@ -93,10 +93,8 @@ func (cg CodeGen) Generate(opt options.Options) error {
 	if opt.IgnoreStringFormat {
 		template.DisableDateOrTimeGeneration()
 	}
-	if opt.ForcePointers {
-		templatesv2.ForcePointerOnFields()
-		templatesv3.ForcePointerOnFields()
-	}
+	templatesv2.SetForcePointers(opt.ForcePointers)
+	templatesv3.SetForcePointers(opt.ForcePointers)
 
 	// Process Specification
 	if err := cg.Specification.Process(); err != nil {
@@ -157,6 +155,6 @@ func (cg CodeGen) generateContent(opt options.Options) (string, error) {
 			ModuleVersion: cg.moduleVersion,
 		}.Generate()
 	default:
-		return "", fmt.Errorf("unsupported major version (%q)", version)
+		return "", fmt.Errorf("unsupported major version (%d)", version)
 	}
 }
