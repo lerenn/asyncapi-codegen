@@ -9,7 +9,9 @@ import (
 
 const (
 	// kafkaImage is the image used for kafka.
-	kafkaImage = "bitnami/kafka:3.5.1"
+	// NOTE: Bitnami deprecated their public Docker Hub catalog, so the image now
+	// lives under the bitnamilegacy organization (same image, relocated).
+	kafkaImage = "bitnamilegacy/kafka:3.5.1"
 	// natsImage is the image used for NATS.
 	natsImage = "nats:2.10"
 )
