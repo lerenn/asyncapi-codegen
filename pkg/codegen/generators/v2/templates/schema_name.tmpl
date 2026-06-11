@@ -4,6 +4,14 @@
 {{- if .ExtGoType -}}
 {{ .ExtGoType }}
 
+{{- /* ---------------------------- Reference --------------------------- */ -}}
+{{- /* A direct reference to another schema must take precedence over the */ -}}
+{{- /* schema's own type: the referenced type is the one actually        */ -}}
+{{- /* generated, so the field/alias must point to it (e.g. an object     */ -}}
+{{- /* message payload referencing an allOf schema). See issue #290.      */ -}}
+{{- else if .ReferenceTo -}}
+{{ namify .Follow.Name }}
+
 {{- else if .Type -}}
 
 {{- /* --------------------------- Type Object -------------------------- */ -}}
@@ -66,10 +74,6 @@ struct {
     {{ if $value.Reference}}{{ .ReferenceTo.Name }}{{else}}AnyOf{{$key}}{{end}} *{{template "schema" $value}}
 {{end -}}
 }
-
-{{- /* ---------------------------- Reference --------------------------- */ -}}
-{{- else if .ReferenceTo -}}
-{{ namify .Follow.Name }}
 
 {{- /* ----------------------- Unsupported use case ---------------------- */ -}}
 {{- else -}}
