@@ -5,6 +5,7 @@ import (
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	asyncapiv2 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
+	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -45,7 +46,7 @@ func (suite *HelpersSuite) TestIsRequired() {
 	}
 
 	for i, c := range cases {
-		suite.Require().Equal(c.Result, IsRequired(c.Schema, c.Field), i)
+		suite.Require().Equal(c.Result, generators.IsRequired(c.Schema, c.Field), i)
 	}
 }
 

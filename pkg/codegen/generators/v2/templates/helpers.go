@@ -8,63 +8,8 @@ import (
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v2"
 	"github.com/lerenn/asyncapi-codegen/pkg/codegen/generators"
-	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	templateutil "github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
-
-// GetChildrenObjectSchemas will return all the children object schemas of a
-// schema, only from first level and without AnyOf, AllOf and OneOf.
-func GetChildrenObjectSchemas(s asyncapi.Schema) []*asyncapi.Schema {
-	allSchemas := utils.MapToList(s.Properties)
-
-	if s.Items != nil {
-		allSchemas = append(allSchemas, s.Items)
-	}
-
-	if s.AdditionalProperties != nil {
-		allSchemas = append(allSchemas, s.AdditionalProperties)
-	}
-
-	// Only keep object schemas
-	filteredSchemas := make([]*asyncapi.Schema, 0, len(allSchemas))
-	for _, schema := range allSchemas {
-		if schema.Type == asyncapi.SchemaTypeIsObject.String() {
-			filteredSchemas = append(filteredSchemas, schema)
-		} else if schema.Type == asyncapi.SchemaTypeIsArray.String() &&
-			schema.Items != nil &&
-			schema.Items.Type == asyncapi.SchemaTypeIsObject.String() {
-			filteredSchemas = append(filteredSchemas, schema.Items)
-		}
-	}
-
-	return filteredSchemas
-}
-
-// referenceToSlicePath will convert a reference to a slice where each element is a
-// step of the path.
-func referenceToSlicePath(ref string) []string {
-	ref = strings.ReplaceAll(ref, ".", "/")
-	ref = strings.ReplaceAll(ref, "#", "")
-	return strings.Split(ref, "/")[1:]
-}
-
-// ReferenceToStructAttributePath will convert a reference to a struct attribute
-// path in the form of "a.b.c" where a, b and c are struct attributes in the
-// form of golang conventional type names.
-func ReferenceToStructAttributePath(ref string) string {
-	path := referenceToSlicePath(ref)
-
-	for k, v := range path {
-		// If this is concerning the header, then it will be named "headers"
-		if v == asyncapi.MessageFieldIsHeader.String() {
-			v = "headers"
-		}
-
-		path[k] = templateutil.Namify(v)
-	}
-
-	return strings.Join(path, ".")
-}
 
 // ReferenceToTypeName will convert a reference to a type name in the form of
 // golang conventional type names.
@@ -100,11 +45,6 @@ func ChannelToMessage(ch asyncapi.Channel, direction string) (*asyncapi.Message,
 	default:
 		return nil, fmt.Errorf("direction must be either 'publish' or 'subscribe', got %q", direction)
 	}
-}
-
-// IsRequired will check if a field is required in a asyncapi struct.
-func IsRequired(schema asyncapi.Schema, field string) bool {
-	return schema.IsFieldRequired(field)
 }
 
 // GenerateChannelPath will generate a channel path with the given channel.
@@ -147,35 +87,16 @@ func OperationName(channel asyncapi.Channel) string {
 	return templateutil.Namify(name)
 }
 
-func defaultIsFieldPointer(parent asyncapi.Schema, field string, schema asyncapi.Schema) bool {
-	return !(IsRequired(parent, field) || schema.IsRequired) && schema.Type != "array"
-}
-
-var isFieldPointer = defaultIsFieldPointer
-
-// SetForcePointers configures whether all struct fields (except arrays) should be
-// generated as pointers. It is reset on every generation run so the setting does
-// not leak between successive generations sharing the same process.
-func SetForcePointers(force bool) {
-	if force {
-		isFieldPointer = func(_ asyncapi.Schema, _ string, schema asyncapi.Schema) bool {
-			return schema.Type != "array"
-		}
-		return
-	}
-	isFieldPointer = defaultIsFieldPointer
-}
-
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
 	return template.FuncMap{
-		"getChildrenObjectSchemas":       GetChildrenObjectSchemas,
+		"getChildrenObjectSchemas":       generators.GetChildrenObjectSchemas[asyncapi.Schema],
 		"channelToMessage":               ChannelToMessage,
-		"isRequired":                     IsRequired,
-		"isFieldPointer":                 isFieldPointer,
+		"isRequired":                     generators.IsRequired[asyncapi.Schema],
+		"isFieldPointer":                 generators.IsFieldPointer[asyncapi.Schema],
 		"generateChannelPath":            GenerateChannelPath,
-		"referenceToStructAttributePath": ReferenceToStructAttributePath,
+		"referenceToStructAttributePath": generators.ReferenceToStructAttributePath,
 		"operationName":                  OperationName,
 		"referenceToTypeName":            ReferenceToTypeName,
 		"generateValidateTags":           generators.GenerateValidateTags[asyncapi.Schema],
