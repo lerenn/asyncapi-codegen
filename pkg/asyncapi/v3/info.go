@@ -8,12 +8,12 @@ type Info struct {
 
 	Title          string                 `json:"title"`
 	Version        string                 `json:"version"`
-	Description    string                 `json:"description"`
-	TermsOfService string                 `json:"termsOfService"`
-	Contact        *Contact               `json:"contact"`
-	License        *License               `json:"license"`
-	Tags           []*Tag                 `json:"tags"`
-	ExternalDocs   *ExternalDocumentation `json:"externalDocs"`
+	Description    string                 `json:"description,omitempty"`
+	TermsOfService string                 `json:"termsOfService,omitempty"`
+	Contact        *Contact               `json:"contact,omitempty"`
+	License        *License               `json:"license,omitempty"`
+	Tags           []*Tag                 `json:"tags,omitempty"`
+	ExternalDocs   *ExternalDocumentation `json:"externalDocs,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 }

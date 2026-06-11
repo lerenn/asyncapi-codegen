@@ -21,9 +21,9 @@ import (
 
 const (
 	// linterImage is the image used for linter.
-	linterImage = "golangci/golangci-lint:v1.62.0"
+	linterImage = "golangci/golangci-lint:v1.64.8"
 	// golangImage is the image used as base for golang operations.
-	golangImage = "golang:1.21.4-alpine"
+	golangImage = "golang:1.24-alpine"
 )
 
 // AsyncapiCodegenCi is the Dagger CI module for AsyncAPI Codegen.

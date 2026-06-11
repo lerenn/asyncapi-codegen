@@ -3,8 +3,6 @@ package main
 import (
 	"asyncapi-codegen/ci/dagger/internal/dagger"
 	"fmt"
-
-	testutil "github.com/lerenn/asyncapi-codegen/pkg/utils/test"
 )
 
 const (
@@ -74,7 +72,7 @@ func kafkaSingleNodeEnv(c *dagger.Container, advertisedHost, protocolMap string)
 // a combined keystore (certificate chain + private key in a single file) and a
 // CA truststore so the broker trusts its own certificate over SSL/SASL_SSL.
 func kafkaTLSDirectory(host string) *dagger.Directory {
-	key, cert, cacert, err := testutil.GenerateSelfSignedCertificateWithCA(host)
+	key, cert, cacert, err := GenerateSelfSignedCertificateWithCA(host)
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -168,7 +166,7 @@ func brokerNATS() *dagger.Container {
 
 // brokerNATSSecure returns a container for the NATS broker secured with TLS.
 func brokerNATSSecure() *dagger.Container {
-	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-tls")
+	key, cert, err := GenerateSelfSignedCertificate("nats-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -189,7 +187,7 @@ func brokerNATSSecure() *dagger.Container {
 // brokerNATSSecureBasicAuth returns a container for the NATS broker secured with TLS
 // and basic auth user: user password: password.
 func brokerNATSSecureBasicAuth() *dagger.Container {
-	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-tls-basic-auth")
+	key, cert, err := GenerateSelfSignedCertificate("nats-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -227,7 +225,7 @@ func brokerNATSJetstream() *dagger.Container {
 
 // brokerNATSJetstreamSecure returns a container for the NATS broker secured with TLS.
 func brokerNATSJetstreamSecure() *dagger.Container {
-	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-jetstream-tls-basic-auth")
+	key, cert, err := GenerateSelfSignedCertificate("nats-jetstream-tls-basic-auth")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}
@@ -248,7 +246,7 @@ func brokerNATSJetstreamSecure() *dagger.Container {
 // brokerNATSJetstreamSecureBasicAuth returns a container for the NATS broker secured with TLS
 // and basic auth user: user password: password.
 func brokerNATSJetstreamSecureBasicAuth() *dagger.Container {
-	key, cert, err := testutil.GenerateSelfSignedCertificate("nats-jetstream-tls")
+	key, cert, err := GenerateSelfSignedCertificate("nats-jetstream-tls")
 	if err != nil {
 		panic(fmt.Errorf("failed to generate self signed certificate: %w", err))
 	}

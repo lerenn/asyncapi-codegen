@@ -6,10 +6,10 @@ package asyncapiv3
 type OperationReply struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
-	Address   *OperationReplyAddress `json:"address"`
-	Channel   *Channel               `json:"channel"`  // Reference only
-	Messages  []*Message             `json:"messages"` // References only
-	Reference string                 `json:"$ref"`
+	Address   *OperationReplyAddress `json:"address,omitempty"`
+	Channel   *Channel               `json:"channel,omitempty"`  // Reference only
+	Messages  []*Message             `json:"messages,omitempty"` // References only
+	Reference string                 `json:"$ref,omitempty"`
 
 	// --- Non AsyncAPI fields -------------------------------------------------
 
