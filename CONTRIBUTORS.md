@@ -29,6 +29,7 @@ adventure, this file is a attempt to show them the respect they earned.
 * [Gustav Sandström (@omegagussan)](https://github.com/omegagussan)
 * [André (@andiikaa)](https://github.com/andiikaa)
 * [Justen Stall (@justenstall)](https://github.com/justenstall)
+* [Lucas Mendes (@lmendes86)](https://github.com/lmendes86)
 * And maybe you ?
 
 ## I would like to join the list. How can I help the project?
