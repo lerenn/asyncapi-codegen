@@ -1,0 +1,15 @@
+asyncapi: 2.6.0
+info:
+  title: date-time payload preserving fractional seconds
+  version: 1.0.0
+channels:
+  test:
+    publish:
+      message:
+        $ref: '#/components/messages/testMessage'
+components:
+  messages:
+    testMessage:
+      payload:
+        type: string
+        format: date-time

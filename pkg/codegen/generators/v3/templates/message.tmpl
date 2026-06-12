@@ -64,7 +64,7 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
     {{- if eq $payload.Type "string"}}
         // Convert to string
         {{- if isDateOrDateTimeGenerated $payload.Format }}
-            t, err := time.Parse(time.RFC3339, string(bMsg.Payload))
+            t, err := time.Parse(time.RFC3339Nano, string(bMsg.Payload))
             if err != nil {
                 return {{namify .Name}}{}, err
             }
@@ -126,7 +126,7 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
                             return msg, err
                         }
                     {{- else if isDateOrDateTimeGenerated $value.Format }}
-                        t, err := time.Parse(time.RFC3339, string(v))
+                        t, err := time.Parse(time.RFC3339Nano, string(v))
                         if err != nil {
                             return msg, err
                         }
@@ -146,7 +146,7 @@ func brokerMessageTo{{namify .Name}}(bMsg extensions.BrokerMessage) ({{namify .N
                             return msg, err
                         }
                     {{- else if isDateOrDateTimeGenerated $value.Format }}
-                        t, err := time.Parse(time.RFC3339, string(v))
+                        t, err := time.Parse(time.RFC3339Nano, string(v))
                         if err != nil {
                             return msg, err
                         }
@@ -208,7 +208,7 @@ func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) 
         {{- end}}
     {{- else if and (eq $payload.Type "string") (isDateOrDateTimeGenerated $payload.Format) }}
         // Convert to RFC3339 and to []byte
-        payload := []byte(msg.Payload.Format(time.RFC3339))
+        payload := []byte(msg.Payload.Format(time.RFC3339Nano))
     {{- else}}
         // Convert to []byte
         payload := []byte(msg.Payload)
@@ -245,7 +245,7 @@ func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) 
                     }
                     headers["{{$key}}"] = h
                 {{- else if isDateOrDateTimeGenerated $value.Format }}
-                    headers["{{$key}}"] = []byte({{ $dereferenceOp }}msg.Headers.{{namify $key}}.Format(time.RFC3339))
+                    headers["{{$key}}"] = []byte({{ $dereferenceOp }}msg.Headers.{{namify $key}}.Format(time.RFC3339Nano))
                 {{- else }}
                     headers["{{$key}}"] = []byte({{ $dereferenceOp }}msg.Headers.{{namify $key}})
                 {{- end }}
@@ -258,7 +258,7 @@ func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) 
                         }
                         headers["{{$key}}"] = h
                     {{- else if isDateOrDateTimeGenerated $value.Format }}
-                        headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}}.Format(time.RFC3339))
+                        headers["{{$key}}"] = []byte(msg.Headers.{{namify $key}}.Format(time.RFC3339Nano))
                     {{- else }}
                         headers["{{$key}}"] = []byte(*msg.Headers.{{namify $key}})
                     {{- end }}

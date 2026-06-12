@@ -305,7 +305,7 @@ func brokerMessageToTestMessage(bMsg extensions.BrokerMessage) (TestMessage, err
 			h := string(v)
 			msg.Headers.FieldReq = &h
 		case k == "someDateTime": // Retrieving SomeDateTime header
-			t, err := time.Parse(time.RFC3339, string(v))
+			t, err := time.Parse(time.RFC3339Nano, string(v))
 			if err != nil {
 				return msg, err
 			}
@@ -343,7 +343,7 @@ func (msg TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 
 	// Adding SomeDateTime header
 	if msg.Headers.SomeDateTime != nil {
-		headers["someDateTime"] = []byte(msg.Headers.SomeDateTime.Format(time.RFC3339))
+		headers["someDateTime"] = []byte(msg.Headers.SomeDateTime.Format(time.RFC3339Nano))
 	}
 
 	return extensions.BrokerMessage{

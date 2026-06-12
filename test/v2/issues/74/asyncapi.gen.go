@@ -481,7 +481,7 @@ func brokerMessageToTestMessage(bMsg extensions.BrokerMessage) (TestMessage, err
 	for k, v := range bMsg.Headers {
 		switch {
 		case k == "dateTime": // Retrieving DateTime header
-			t, err := time.Parse(time.RFC3339, string(v))
+			t, err := time.Parse(time.RFC3339Nano, string(v))
 			if err != nil {
 				return msg, err
 			}
@@ -512,7 +512,7 @@ func (msg TestMessage) toBrokerMessage() (extensions.BrokerMessage, error) {
 	headers := make(map[string][]byte, 2)
 
 	// Adding DateTime header
-	headers["dateTime"] = []byte(msg.Headers.DateTime.Format(time.RFC3339))
+	headers["dateTime"] = []byte(msg.Headers.DateTime.Format(time.RFC3339Nano))
 
 	// Adding Version header
 	headers["version"] = []byte(msg.Headers.Version)
