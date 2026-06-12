@@ -8,6 +8,31 @@ type LogInfo struct {
 	Value any
 }
 
+// LogInfosFromContext extracts the asyncapi-codegen values carried in the
+// context (provider, channel, direction, correlation ID, broker message and
+// specification version) into a slice of LogInfo.
+//
+// It is a convenience for custom Logger implementations that want this
+// information without having to know and unwrap each context key individually.
+func LogInfosFromContext(ctx context.Context) []LogInfo {
+	var infos []LogInfo
+
+	add := func(key string, ctxKey ContextKey) {
+		IfContextSetWith(ctx, ctxKey, func(value any) {
+			infos = append(infos, LogInfo{Key: key, Value: value})
+		})
+	}
+
+	add("version", ContextKeyIsVersion)
+	add("provider", ContextKeyIsProvider)
+	add("channel", ContextKeyIsChannel)
+	add("direction", ContextKeyIsDirection)
+	add("correlationID", ContextKeyIsCorrelationID)
+	add("brokerMessage", ContextKeyIsBrokerMessage)
+
+	return infos
+}
+
 // Logger is the interface that must be implemented by a logger.
 type Logger interface {
 	// Info logs information based on a message and key-value elements
