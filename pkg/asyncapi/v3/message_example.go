@@ -7,7 +7,7 @@ type MessageExample struct {
 	// --- AsyncAPI fields -----------------------------------------------------
 
 	Headers   map[string]any `json:"headers,omitempty"`
-	Payload   map[string]any `json:"payload,omitempty"`
+	Payload   any            `json:"payload,omitempty"`
 	Name      string         `json:"name,omitempty"`
 	Summary   string         `json:"summary,omitempty"`
 	Reference string         `json:"$ref,omitempty"`
