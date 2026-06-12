@@ -383,7 +383,6 @@ func (c *{{ $.Prefix }}Controller) {{ sendFuncName $value $.Prefix }}(
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-
 func (c *{{ $.Prefix }}Controller) {{ requestFuncName $value $.Prefix }}(
     ctx context.Context,
     {{- if .Channel.Follow.Parameters}}

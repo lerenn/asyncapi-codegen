@@ -180,16 +180,19 @@ func (c *UserController) PublishV2Issue129Test(
 // AsyncAPIVersion is the version of the used AsyncAPI document
 const AsyncAPIVersion = ""
 
+// MessageWithCorrelationID is implemented by messages that carry a correlation ID.
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
 }
 
+// Error is the error structure returned by the controller operations.
 type Error struct {
 	Channel string
 	Err     error
 }
 
+// Error returns a string representation of the error.
 func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
@@ -200,6 +203,7 @@ type V2Issue129TestMessage struct {
 	Payload TestSchema
 }
 
+// NewV2Issue129TestMessage creates a new V2Issue129TestMessage with default values if any.
 func NewV2Issue129TestMessage() V2Issue129TestMessage {
 	var msg V2Issue129TestMessage
 

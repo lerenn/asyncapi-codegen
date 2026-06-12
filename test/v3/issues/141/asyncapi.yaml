@@ -1,0 +1,54 @@
+asyncapi: 3.0.0
+info:
+  title: Issue 141 - generated code comments
+  version: 1.0.0
+
+channels:
+  ping:
+    address: v3.issue141.ping
+    messages:
+      ping:
+        $ref: '#/components/messages/ping'
+  pong:
+    address: v3.issue141.pong
+    messages:
+      pong:
+        $ref: '#/components/messages/pong'
+
+operations:
+  ping:
+    action: receive
+    channel:
+      $ref: '#/channels/ping'
+    reply:
+      channel:
+        $ref: '#/channels/pong'
+
+components:
+  messages:
+    ping:
+      headers:
+        type: object
+        properties:
+          correlationId:
+            type: string
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+      correlationId:
+        location: $message.header#/correlationId
+    pong:
+      headers:
+        type: object
+        properties:
+          correlationId:
+            type: string
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+      correlationId:
+        location: $message.header#/correlationId

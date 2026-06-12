@@ -13,16 +13,19 @@ import (
 // AsyncAPIVersion is the version of the used AsyncAPI document
 const AsyncAPIVersion = "1.0.0"
 
+// MessageWithCorrelationID is implemented by messages that carry a correlation ID.
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
 }
 
+// Error is the error structure returned by the controller operations.
 type Error struct {
 	Channel string
 	Err     error
 }
 
+// Error returns a string representation of the error.
 func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
@@ -44,6 +47,7 @@ type V2Issue190Msg1Message struct {
 	Payload V2Issue190Msg1MessagePayload
 }
 
+// NewV2Issue190Msg1Message creates a new V2Issue190Msg1Message with default values if any.
 func NewV2Issue190Msg1Message() V2Issue190Msg1Message {
 	var msg V2Issue190Msg1Message
 
@@ -101,6 +105,7 @@ type V2Issue190Msg2Message struct {
 	Payload V2Issue190Msg2MessagePayload
 }
 
+// NewV2Issue190Msg2Message creates a new V2Issue190Msg2Message with default values if any.
 func NewV2Issue190Msg2Message() V2Issue190Msg2Message {
 	var msg V2Issue190Msg2Message
 

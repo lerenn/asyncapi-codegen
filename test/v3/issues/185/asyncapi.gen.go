@@ -11,16 +11,19 @@ import (
 // AsyncAPIVersion is the version of the used AsyncAPI document
 const AsyncAPIVersion = ""
 
+// MessageWithCorrelationID is implemented by messages that carry a correlation ID.
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
 }
 
+// Error is the error structure returned by the controller operations.
 type Error struct {
 	Channel string
 	Err     error
 }
 
+// Error returns a string representation of the error.
 func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }

@@ -607,16 +607,19 @@ func (c *UserController) SendToStarRequestOperation(
 // AsyncAPIVersion is the version of the used AsyncAPI document
 const AsyncAPIVersion = "1.2.3"
 
+// MessageWithCorrelationID is implemented by messages that carry a correlation ID.
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
 }
 
+// Error is the error structure returned by the controller operations.
 type Error struct {
 	Channel string
 	Err     error
 }
 
+// Error returns a string representation of the error.
 func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
@@ -637,6 +640,7 @@ type AngleMessage struct {
 	Payload string
 }
 
+// NewAngleMessage creates a new AngleMessage with default values if any.
 func NewAngleMessage() AngleMessage {
 	var msg AngleMessage
 
@@ -678,6 +682,7 @@ type StarMessage struct {
 	Payload string
 }
 
+// NewStarMessage creates a new StarMessage with default values if any.
 func NewStarMessage() StarMessage {
 	var msg StarMessage
 

@@ -493,7 +493,6 @@ func (c *UserController) SendToGetServiceInfoOperation(
 // message on the reply channel.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-
 func (c *UserController) RequestToGetServiceInfoOperation(
 	ctx context.Context,
 	msg RequestMessage,
@@ -599,16 +598,19 @@ func (c *UserController) waitForGetServiceInfoOperationNextResponse(
 // AsyncAPIVersion is the version of the used AsyncAPI document
 const AsyncAPIVersion = ""
 
+// MessageWithCorrelationID is implemented by messages that carry a correlation ID.
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
 }
 
+// Error is the error structure returned by the controller operations.
 type Error struct {
 	Channel string
 	Err     error
 }
 
+// Error returns a string representation of the error.
 func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
@@ -619,6 +621,7 @@ type ReplyMessageFromReplyChannel struct {
 	Payload string
 }
 
+// NewReplyMessageFromReplyChannel creates a new ReplyMessageFromReplyChannel with default values if any.
 func NewReplyMessageFromReplyChannel() ReplyMessageFromReplyChannel {
 	var msg ReplyMessageFromReplyChannel
 
@@ -674,6 +677,7 @@ type RequestMessage struct {
 	Payload string
 }
 
+// NewRequestMessage creates a new RequestMessage with default values if any.
 func NewRequestMessage() RequestMessage {
 	var msg RequestMessage
 
