@@ -214,7 +214,17 @@ func (msg *Message) generateHeadersMetadata() error {
 		return nil
 	}
 
-	if err := msg.Headers.generateMetadata(msg.Name, "Headers", nil, false); err != nil {
+	return msg.Headers.generateMetadata(msg.Name, "Headers", nil, false)
+}
+
+func (msg *Message) setHeadersDependencies(spec Specification) error {
+	if msg.Headers == nil {
+		return nil
+	}
+
+	// Resolve dependencies first, so that headers defined as a reference are
+	// followed before validating their type.
+	if err := msg.Headers.setDependencies(spec); err != nil {
 		return err
 	}
 
@@ -225,14 +235,6 @@ func (msg *Message) generateHeadersMetadata() error {
 	}
 
 	return nil
-}
-
-func (msg *Message) setHeadersDependencies(spec Specification) error {
-	if msg.Headers == nil {
-		return nil
-	}
-
-	return msg.Headers.setDependencies(spec)
 }
 
 func (msg *Message) generateOneOfMetadata() error {
