@@ -492,10 +492,13 @@ func (c *UserController) RequestToGetServiceInfoOperation(
 		// Listen to next message
 		msg, err := c.waitForGetServiceInfoOperationNextResponse(ctx, addr, sub)
 		if err != nil {
+			// Return on error (e.g. context canceled or subscription closed)
+			// instead of looping forever
 			c.logger.Error(ctx, err.Error())
+			return ReplyMessageFromReplyChannel{}, err
 		}
 
-		// Continue if the message hasn't been received
+		// Continue if the message hasn't been received (e.g. correlation ID mismatch)
 		if msg == nil {
 			continue
 		}
