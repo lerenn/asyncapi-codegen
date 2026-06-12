@@ -51,20 +51,18 @@ float64
 
 {{- /* ------------------------- AnyOf or OneOf ------------------------- */ -}}
 {{- else if or .AnyOf .OneOf -}}
-{{$xxxOf := $.AnyOf}}{{- if .OneOf }}{{$xxxOf = $.OneOf}}{{end -}}
+{{$xxxOf := .AnyOf}}{{- if .OneOf }}{{$xxxOf = .OneOf}}{{end -}}
 
 struct {
     {{- if .OneOf }}
-    // WARNING: only one of the following field can be used
-    {{ end }}
-
+    // WARNING: only one of the following fields must be set
+    {{- end}}
 {{- range  $key, $value := $xxxOf}}
-    // {{ if $value.Reference}}{{ .ReferenceTo.Name }}{{else}}AnyOf{{$key}}{{end}}
 {{- if $value.Description}}
     // Description: {{multiLineComment $value.Description}}
 {{- end}}
-    {{ if $value.Reference}}{{ .ReferenceTo.Name }}{{else}}AnyOf{{$key}}{{end}} *{{template "schema" $value}}
-{{end -}}
+    {{ if $value.ReferenceTo }}{{ namify $value.Follow.Name }}{{ else }}OneOf{{ $key }}{{ end }} *{{template "schema-name" $value}} `json:"-"`
+{{- end}}
 }
 
 {{- /* ---------------------------- Reference --------------------------- */ -}}

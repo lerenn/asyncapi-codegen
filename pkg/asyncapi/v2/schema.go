@@ -307,9 +307,14 @@ func (s *Schema) setOneOfDependencies(spec Specification) error {
 			return err
 		}
 
-		// Merge with other fields as one struct (invalidate references)
-		if err := s.MergeWith(spec, *v); err != nil {
-			return err
+		// A single-member oneOf is equivalent to that member, so merge it into
+		// the parent schema. With several members, keep them separate so a
+		// discriminated struct (one optional field per member) can be generated
+		// instead of flattening every member into one struct.
+		if len(s.OneOf) == 1 {
+			if err := s.MergeWith(spec, *v); err != nil {
+				return err
+			}
 		}
 	}
 

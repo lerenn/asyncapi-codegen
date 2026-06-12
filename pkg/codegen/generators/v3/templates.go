@@ -25,6 +25,7 @@ const (
 	marshalingTemplatesDir                     = templatesDir + "/marshaling"
 	marshalingAdditionalPropertiesTemplatePath = marshalingTemplatesDir + "/additional_properties.tmpl"
 	marshalingTimeTemplatePath                 = marshalingTemplatesDir + "/time.tmpl"
+	marshalingOneOfTemplatePath                = marshalingTemplatesDir + "/oneof.tmpl"
 )
 
 var (

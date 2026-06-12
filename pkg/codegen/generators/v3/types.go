@@ -22,6 +22,7 @@ func (tg TypesGenerator) Generate() (string, error) {
 
 		marshalingAdditionalPropertiesTemplatePath,
 		marshalingTimeTemplatePath,
+		marshalingOneOfTemplatePath,
 	)
 	if err != nil {
 		return "", err

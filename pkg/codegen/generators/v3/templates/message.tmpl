@@ -13,9 +13,9 @@
 {{template "schema-definition" .Headers}}
 {{- end}}
 
-{{- /* Generate payload definition if payload is not a reference and if is an object/array */ -}}
-{{- if and .Payload 
-        (or (eq .Payload.Type "object") (eq .Payload.Type "array"))
+{{- /* Generate payload definition if payload is not a reference and if is an object/array/oneOf */ -}}
+{{- if and .Payload
+        (or (eq .Payload.Type "object") (eq .Payload.Type "array") .Payload.OneOf)
         (not .Payload.ReferenceTo) }}
 {{template "schema-definition" .Payload}}
 {{- end}}
@@ -35,7 +35,7 @@ Headers {{template "schema-name" .Headers}}
 
 {{- /* Display payload */}}
 // Payload will be inserted in the message payload
-Payload {{template "schema-name" .Payload}}
+Payload {{if and .Payload.OneOf (not .Payload.ReferenceTo)}}{{namify .Payload.Name}}{{else}}{{template "schema-name" .Payload}}{{end}}
 }
 
 func New{{namify .Name}}() {{namify .Name}} {
@@ -182,7 +182,7 @@ func (msg {{namify .Name}}) toBrokerMessage() (extensions.BrokerMessage, error) 
     {{- end}}
 
     {{/* Handle payload based on type */}}
-    {{- if or (eq $payload.Type "object") (eq $payload.Type "array")}}
+    {{- if or (eq $payload.Type "object") (eq $payload.Type "array") $payload.OneOf}}
         // Marshal payload to JSON
         payload, err := json.Marshal(msg.Payload)
         if err != nil {

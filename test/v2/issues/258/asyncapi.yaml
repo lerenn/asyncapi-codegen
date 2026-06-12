@@ -1,0 +1,27 @@
+asyncapi: 2.6.0
+info:
+  title: Multi-member oneOf payload
+  version: 1.0.0
+channels:
+  test:
+    publish:
+      message:
+        $ref: '#/components/messages/testMessage'
+components:
+  messages:
+    testMessage:
+      payload:
+        oneOf:
+          - $ref: '#/components/schemas/intValue'
+          - $ref: '#/components/schemas/strValue'
+  schemas:
+    intValue:
+      type: object
+      properties:
+        value:
+          type: integer
+    strValue:
+      type: object
+      properties:
+        value:
+          type: string
