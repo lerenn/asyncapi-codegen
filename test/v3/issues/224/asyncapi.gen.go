@@ -509,6 +509,15 @@ type ColliderSchema struct {
 	Shape  ShapePropertyFromColliderSchema `json:"shape"`
 }
 
+// SetDefaults sets the default values defined in the AsyncAPI specification for
+// the optional fields that are not set.
+func (t *ColliderSchema) SetDefaults() {
+	if t.Margin == nil {
+		v := float32(0)
+		t.Margin = &v
+	}
+}
+
 // ShapePropertyFromColliderSchema is a schema from the AsyncAPI specification required in messages
 type ShapePropertyFromColliderSchema struct {
 	Radius    float64 `json:"radius"`

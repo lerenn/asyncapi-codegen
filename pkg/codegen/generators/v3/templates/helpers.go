@@ -3,6 +3,7 @@ package templates
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"text/template"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
@@ -69,6 +70,70 @@ func GenerateChannelAddr(ch *asyncapi.Channel) string {
 	return sprint[:len(sprint)-1] + ")"
 }
 
+// HasScalarDefault reports whether the schema declares a default value that can
+// be rendered as a Go scalar literal (string, boolean, integer or number).
+// Date/time strings, objects, arrays and other complex defaults are not
+// supported and return false.
+func HasScalarDefault(s *asyncapi.Schema) bool {
+	if s == nil || s.Default == nil {
+		return false
+	}
+
+	switch s.Type {
+	case "boolean", "integer", "number":
+		return true
+	case "string":
+		// Generated date/time types have a non-trivial literal form, so they
+		// are intentionally left out.
+		return s.Format != "date" && s.Format != "date-time"
+	default:
+		return false
+	}
+}
+
+// DefaultLiteral returns the Go literal for the schema's default value, typed to
+// match the field type produced by the "schema-name" template. It assumes
+// HasScalarDefault returned true for the schema.
+func DefaultLiteral(s *asyncapi.Schema) string {
+	switch s.Type {
+	case "boolean":
+		b, _ := s.Default.(bool)
+		return strconv.FormatBool(b)
+	case "string":
+		str, _ := s.Default.(string)
+		return strconv.Quote(str)
+	case "integer":
+		goType := "int64"
+		if s.Format == "int32" {
+			goType = "int32"
+		}
+		return fmt.Sprintf("%s(%s)", goType, formatDefaultNumber(s.Default))
+	case "number":
+		goType := "float64"
+		if s.Format == "float" {
+			goType = "float32"
+		}
+		return fmt.Sprintf("%s(%s)", goType, formatDefaultNumber(s.Default))
+	default:
+		return ""
+	}
+}
+
+// formatDefaultNumber renders a numeric default (decoded from JSON as float64,
+// but also tolerating int/int64) without a spurious trailing ".0" for integers.
+func formatDefaultNumber(v any) string {
+	switch n := v.(type) {
+	case float64:
+		return strconv.FormatFloat(n, 'f', -1, 64)
+	case int:
+		return strconv.Itoa(n)
+	case int64:
+		return strconv.FormatInt(n, 10)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
@@ -84,5 +149,7 @@ func HelpersFunctions() template.FuncMap {
 		"referenceToStructAttributePath": generators.ReferenceToStructAttributePath,
 		"generateValidateTags":           generators.GenerateValidateTags[asyncapi.Schema],
 		"generateJSONTags":               generators.GenerateJSONTags[asyncapi.Schema],
+		"hasScalarDefault":               HasScalarDefault,
+		"defaultLiteral":                 DefaultLiteral,
 	}
 }

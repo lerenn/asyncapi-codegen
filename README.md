@@ -811,6 +811,35 @@ These extension properties apply to "Schema Objects" in AsyncAPI spec.
   }
   ```
 
+### Default values
+
+When an optional property declares a `default` value, a `SetDefaults()` method is
+generated on the corresponding struct. Calling it fills the fields that are still
+unset (`nil`) with their default, leaving already-set fields untouched:
+
+```yaml
+schemas:
+  Settings:
+    type: object
+    properties:
+      retries:
+        type: integer
+        default: 3
+```
+
+generates:
+
+```go
+func (t *Settings) SetDefaults() {
+    if t.Retries == nil {
+        v := int64(3)
+        t.Retries = &v
+    }
+}
+```
+
+Defaults are supported for scalar properties (string, boolean, integer, number).
+
 ### ErrorHandler
 
 You can use an error handler that will be executed when processing for messages
