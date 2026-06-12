@@ -1,0 +1,29 @@
+asyncapi: 3.0.0
+info:
+  title: Free-form object via additionalProperties
+  version: 1.0.0
+channels:
+  test:
+    address: v3.issue261.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/testMessage'
+operations:
+  testOperation:
+    action: send
+    channel:
+      $ref: '#/channels/test'
+    messages:
+      - $ref: '#/channels/test/messages/testMessage'
+components:
+  messages:
+    testMessage:
+      payload:
+        $ref: '#/components/schemas/freeForm'
+  schemas:
+    freeForm:
+      type: object
+      properties:
+        name:
+          type: string
+      additionalProperties: true

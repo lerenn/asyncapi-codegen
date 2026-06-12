@@ -71,11 +71,11 @@ struct {
 {{- else if .ReferenceTo -}}
 {{ namify .Follow.Name }}
 
-{{- /* ----------------------- Unsupported usecase ---------------------- */ -}}
+{{- /* --------------------- Free-form (any) schema --------------------- */ -}}
+{{- /* An empty schema (e.g. additionalProperties: true) means "any value" */ -}}
+{{- /* per JSON Schema, so it is generated as interface{}. */ -}}
 {{- else -}}
 interface{}
-// WARNING: potential error in AsyncAPI generation
-// Infos on type: {{ describeStruct . }}
 {{- end -}}
 
 {{- end -}}
