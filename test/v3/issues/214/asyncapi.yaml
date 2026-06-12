@@ -1,0 +1,31 @@
+asyncapi: 3.0.0
+info:
+  title: x-go-name overrides field and type names
+  version: 1.0.0
+channels:
+  test:
+    address: v3.issue214.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/testMessage'
+operations:
+  testOperation:
+    action: send
+    channel:
+      $ref: '#/channels/test'
+    messages:
+      - $ref: '#/channels/test/messages/testMessage'
+components:
+  messages:
+    testMessage:
+      payload:
+        $ref: '#/components/schemas/event'
+  schemas:
+    event:
+      type: object
+      x-go-name: Event
+      properties:
+        event_id:
+          type: integer
+          description: The id of the event
+          x-go-name: EventID

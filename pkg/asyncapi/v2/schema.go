@@ -121,6 +121,11 @@ func (s *Schema) unmarshalAdditionalProperties(data json.RawMessage) error {
 func (s *Schema) generateMetadata(name string, isRequired bool) error {
 	s.Name = template.Namify(name)
 
+	// Allow overriding the generated type name with the x-go-name extension.
+	if s.ExtGoName != "" {
+		s.Name = template.Namify(s.ExtGoName)
+	}
+
 	// Generate Properties metadata
 	if err := s.generatePropertiesMetadata(); err != nil {
 		return err

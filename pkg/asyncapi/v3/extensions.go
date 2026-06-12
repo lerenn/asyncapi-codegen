@@ -11,6 +11,10 @@ type Extensions struct {
 	// Setting custom Go type when generating schemas
 	ExtGoType string `json:"x-go-type,omitempty"`
 
+	// Setting a custom Go identifier for the generated type or struct field,
+	// overriding the name derived from the spec.
+	ExtGoName string `json:"x-go-name,omitempty"`
+
 	// Setting custom import statements for ExtGoType
 	ExtGoTypeImport *GoTypeImportExtension `json:"x-go-type-import,omitempty"`
 
