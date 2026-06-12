@@ -16,10 +16,15 @@ type Text struct {
 	boldOrangePrinter *color.Color
 	boldWhitePrinter  *color.Color
 	greyPrinter       *color.Color
+	level             Level
+}
+
+func (tl *Text) setLevel(level Level) {
+	tl.level = level
 }
 
 // NewText creates a new Human logger.
-func NewText() Text {
+func NewText(options ...Option) Text {
 	// Create red color
 	red := color.New(color.FgHiRed)
 	boldRed := red.Add(color.Bold)
@@ -32,12 +37,16 @@ func NewText() Text {
 	white := color.New(color.FgWhite)
 	boldWhite := white.Add(color.Bold)
 
-	return Text{
+	tl := Text{
 		boldRedPrinter:    boldRed,
 		boldOrangePrinter: boldOrange,
 		boldWhitePrinter:  boldWhite,
 		greyPrinter:       color.New(color.FgHiBlack),
 	}
+	for _, option := range options {
+		option(&tl)
+	}
+	return tl
 }
 
 func (tl Text) humanizeStructuredLogs(sl map[string]any, msgFmt *color.Color, prefixes ...string) string {
@@ -106,11 +115,17 @@ func (tl Text) formatLog(ctx context.Context, msgFmt *color.Color, msg string, i
 
 // Info logs a message at info level with context and additional info.
 func (tl Text) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	if tl.level > LevelInfo {
+		return
+	}
 	fmt.Println(tl.formatLog(ctx, tl.boldWhitePrinter, msg, info...))
 }
 
 // Warning logs a message at warning level with context and additional info.
 func (tl Text) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	if tl.level > LevelWarning {
+		return
+	}
 	fmt.Println(tl.formatLog(ctx, tl.boldOrangePrinter, msg, info...))
 }
 

@@ -10,11 +10,21 @@ import (
 )
 
 // ECS is a logger that will print logs in Elastic Common Schema ECS format.
-type ECS struct{}
+type ECS struct {
+	level Level
+}
 
 // NewECS creates a new ECS logger.
-func NewECS() ECS {
-	return ECS{}
+func NewECS(options ...Option) ECS {
+	ecs := ECS{}
+	for _, option := range options {
+		option(&ecs)
+	}
+	return ecs
+}
+
+func (ecs *ECS) setLevel(level Level) {
+	ecs.level = level
 }
 
 func (ecs ECS) setInfoFromContext(ctx context.Context, msg string, info ...extensions.LogInfo) []extensions.LogInfo {
@@ -83,11 +93,17 @@ func (ecs ECS) logWithLevel(ctx context.Context, level string, msg string, info 
 
 // Info logs a message at info level with context and additional info.
 func (ecs ECS) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	if ecs.level > LevelInfo {
+		return
+	}
 	ecs.logWithLevel(ctx, "info", msg, info...)
 }
 
 // Warning logs a message at warning level with context and additional info.
 func (ecs ECS) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
+	if ecs.level > LevelWarning {
+		return
+	}
 	ecs.logWithLevel(ctx, "warning", msg, info...)
 }
 
