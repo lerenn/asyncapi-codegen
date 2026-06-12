@@ -11,6 +11,7 @@ var SupportedVersions = []string{
 	"2.6.0",
 
 	"3.0.0",
+	"3.1.0",
 }
 
 // IsVersionSupported checks that the version is supported.
