@@ -1,0 +1,45 @@
+asyncapi: 3.0.0
+info:
+  title: Multiple messages with a correlation ID but no explicit headers
+  version: 1.0.0
+channels:
+  ping:
+    address: v3.issue283.ping
+    messages:
+      ping:
+        $ref: '#/components/messages/ping'
+  pong:
+    address: v3.issue283.pong
+    messages:
+      pong:
+        $ref: '#/components/messages/pong'
+operations:
+  ping:
+    action: receive
+    channel:
+      $ref: '#/channels/ping'
+  pong:
+    action: send
+    channel:
+      $ref: '#/channels/pong'
+components:
+  messages:
+    # Neither message declares headers explicitly, but both define a
+    # correlationId pointing into the header. Each message therefore needs a
+    # synthesized header type, which must not collide.
+    ping:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+      correlationId:
+        location: $message.header#/correlationId
+    pong:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+      correlationId:
+        location: $message.header#/correlationId

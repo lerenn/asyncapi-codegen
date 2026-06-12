@@ -338,11 +338,18 @@ func (msg *Message) createTreeUntilLocationFromMessageType(t MessageField, locat
 	case (*placeholder) != nil && (*placeholder).ReferenceTo != nil: // If there is a reference
 		// Use it as child
 		child = (*placeholder).ReferenceTo
-	case (*placeholder) == nil: // If there is no header and no reference
-		// Create a default one for the message
+	case (*placeholder) == nil: // If there is no header/payload and no reference
+		// Create a default one for the message. Use a message-scoped name
+		// (the same one the regular metadata generation would produce) so that
+		// two messages defining a correlation ID do not both generate a type
+		// literally named "Header" and collide.
 		(*placeholder) = utils.ToPointer(NewSchema())
-		(*placeholder).Name = MessageFieldIsHeader.String()
 		(*placeholder).Type = SchemaTypeIsObject.String()
+		if t == MessageFieldIsHeader {
+			(*placeholder).Name = generateFullName(msg.Name, "Headers", "", nil)
+		} else {
+			(*placeholder).Name = generateFullName("", msg.Name+"_Payload", "", nil)
+		}
 		fallthrough
 	default:
 		// Set the child as the message headers
