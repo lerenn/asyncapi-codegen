@@ -1,0 +1,25 @@
+asyncapi: 3.1.0
+info:
+  title: AsyncAPI 3.1.0 specification
+  version: 1.0.0
+channels:
+  test:
+    address: v3.issue299.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/testMessage'
+operations:
+  testOperation:
+    action: send
+    channel:
+      $ref: '#/channels/test'
+    messages:
+      - $ref: '#/channels/test/messages/testMessage'
+components:
+  messages:
+    testMessage:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
