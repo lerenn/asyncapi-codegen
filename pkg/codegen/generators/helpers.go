@@ -2,6 +2,7 @@ package generators
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
@@ -57,8 +58,7 @@ func GenerateValidateTags[T any](schema asyncapi.Validations[T], isPointer bool,
 
 	directives = appendEnumDirectives(schema, directives)
 	if schema.Const != nil {
-		if cStr, ok := schema.Const.(string); ok {
-			// Only generate enum if the elements is a string, otherwise this is unsupported
+		if cStr, ok := scalarToValidatorValue(schema.Const); ok {
 			directives = append(directives, fmt.Sprintf("eq=%s", cStr))
 		}
 	}
@@ -80,19 +80,44 @@ func singleQuote(s string) string {
 }
 
 func appendEnumDirectives[T any](schema asyncapi.Validations[T], directives []string) []string {
-	if len(schema.Enum) > 0 {
-		var enumsStr []string
-		for _, e := range schema.Enum {
-			if eStr, ok := e.(string); ok {
-				// single quotes are mandatory in order to handle values with spaces
-				enumsStr = append(enumsStr, singleQuote(eStr))
-			}
+	if len(schema.Enum) == 0 {
+		return directives
+	}
+
+	enumsStr := make([]string, 0, len(schema.Enum))
+	for _, e := range schema.Enum {
+		v, ok := scalarToValidatorValue(e)
+		if !ok {
+			// If any element is not a supported scalar, the whole enum is unsupported.
+			return directives
 		}
 
-		// Only generate enum if all elements are string, otherwise this is unsupported
-		if len(schema.Enum) == len(enumsStr) {
-			directives = append(directives, fmt.Sprintf("oneof=%s", strings.Join(enumsStr, " ")))
+		// String values are single-quoted to handle values with spaces.
+		if _, isStr := e.(string); isStr {
+			v = singleQuote(v)
 		}
+		enumsStr = append(enumsStr, v)
 	}
-	return directives
+
+	return append(directives, fmt.Sprintf("oneof=%s", strings.Join(enumsStr, " ")))
+}
+
+// scalarToValidatorValue returns the validator literal for a scalar enum/const
+// value. It reports false when the value is not a supported scalar (object,
+// array, ...), in which case no validation directive should be generated.
+func scalarToValidatorValue(v any) (string, bool) {
+	switch t := v.(type) {
+	case string:
+		return t, true
+	case bool:
+		return strconv.FormatBool(t), true
+	case float64:
+		return strconv.FormatFloat(t, 'f', -1, 64), true
+	case int:
+		return strconv.Itoa(t), true
+	case int64:
+		return strconv.FormatInt(t, 10), true
+	default:
+		return "", false
+	}
 }
