@@ -1,0 +1,34 @@
+asyncapi: 3.0.0
+info:
+  title: Headers defined as a reference object
+  version: 1.0.0
+channels:
+  test:
+    address: v3.issue296.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/testMessage'
+operations:
+  testOperation:
+    action: send
+    channel:
+      $ref: '#/channels/test'
+    messages:
+      - $ref: '#/channels/test/messages/testMessage'
+components:
+  messages:
+    testMessage:
+      # Headers defined as a reference must be resolved before being validated.
+      headers:
+        $ref: '#/components/schemas/commonHeaders'
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+  schemas:
+    commonHeaders:
+      type: object
+      properties:
+        replyTo:
+          type: string
