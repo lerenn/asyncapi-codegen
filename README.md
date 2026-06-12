@@ -849,6 +849,24 @@ The following tags are currently supported:
 | uniqueItems      | unique         | Only for arrays                                              |
 | enum             | oneof          | Only string enum are supported                               |    
 
+You can validate manually wherever you hold a generated payload, or plug in the
+provided opt-in middleware to reject invalid messages automatically:
+
+```go
+import (
+    "github.com/go-playground/validator/v10"
+    "github.com/lerenn/asyncapi-codegen/pkg/extensions/middlewares"
+)
+
+ctrl, _ := NewUserController(broker, WithMiddlewares(
+    middlewares.Validation(validator.New(), func() any { return &UserMessagePayload{} }),
+))
+```
+
+The middleware unmarshals the message payload and validates it against the
+generated tags; if validation fails it returns an error, so the message is
+neither delivered (on reception) nor sent (on publication).
+
 
 ## Contributing and support
 
