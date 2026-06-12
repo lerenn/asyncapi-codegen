@@ -1,0 +1,17 @@
+asyncapi: 2.6.0
+info:
+  title: Types-only generation must not contain controller boilerplate
+  version: 1.0.0
+channels:
+  test:
+    publish:
+      message:
+        $ref: '#/components/messages/testMessage'
+components:
+  messages:
+    testMessage:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
