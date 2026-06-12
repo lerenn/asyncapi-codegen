@@ -119,3 +119,11 @@ func RemoveDuplicateSecuritySchemes(securities []*SecurityScheme) []*SecuritySch
 	}
 	return newList
 }
+
+// Follow returns the referenced SecurityScheme if there is one, otherwise the SecurityScheme itself.
+func (s *SecurityScheme) Follow() *SecurityScheme {
+	if s.ReferenceTo != nil {
+		return s.ReferenceTo
+	}
+	return s
+}

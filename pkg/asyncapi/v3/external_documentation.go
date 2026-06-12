@@ -50,3 +50,11 @@ func (doc *ExternalDocumentation) setDependencies(spec Specification) error {
 
 	return nil
 }
+
+// Follow returns the referenced ExternalDocumentation if there is one, otherwise the ExternalDocumentation itself.
+func (doc *ExternalDocumentation) Follow() *ExternalDocumentation {
+	if doc.ReferenceTo != nil {
+		return doc.ReferenceTo
+	}
+	return doc
+}

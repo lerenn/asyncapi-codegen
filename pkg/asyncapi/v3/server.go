@@ -123,3 +123,11 @@ func (srv *Server) setReference(spec Specification) error {
 
 	return nil
 }
+
+// Follow returns the referenced Server if there is one, otherwise the Server itself.
+func (srv *Server) Follow() *Server {
+	if srv.ReferenceTo != nil {
+		return srv.ReferenceTo
+	}
+	return srv
+}

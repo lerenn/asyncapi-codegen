@@ -60,3 +60,11 @@ func (chb *ChannelBindings) setDependencies(spec Specification) error {
 
 	return nil
 }
+
+// Follow returns the referenced ChannelBindings if there is one, otherwise the ChannelBindings itself.
+func (chb *ChannelBindings) Follow() *ChannelBindings {
+	if chb.ReferenceTo != nil {
+		return chb.ReferenceTo
+	}
+	return chb
+}

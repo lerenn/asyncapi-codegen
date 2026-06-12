@@ -72,3 +72,11 @@ func (ora OperationReplyAddress) isLocationRequired(op *Operation) (bool, error)
 	path := strings.Split(ora.Location, "/")
 	return locationParent.IsFieldRequired(path[len(path)-1]), nil
 }
+
+// Follow returns the referenced OperationReplyAddress if there is one, otherwise the OperationReplyAddress itself.
+func (ora *OperationReplyAddress) Follow() *OperationReplyAddress {
+	if ora.ReferenceTo != nil {
+		return ora.ReferenceTo
+	}
+	return ora
+}
