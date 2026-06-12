@@ -511,6 +511,21 @@ func main() {
 
 You can find all loggers in the directory `pkg/log`.
 
+By default, the provided loggers (`NewText` and `NewECS`) output every message.
+You can restrict them to a minimum severity level with the `WithLevel` option:
+
+```golang
+import(
+  log "github.com/lerenn/asyncapi-codegen/pkg/extensions/loggers"
+)
+
+// Only warnings and errors will be printed, info messages are discarded.
+logger := log.NewECS(log.WithLevel(log.LevelWarning))
+```
+
+Available levels are `LevelInfo` (default, logs everything), `LevelWarning`
+(warnings and errors) and `LevelError` (errors only).
+
 #### Publication/Reception logging
 
 To log published and received messages, you'll have to pass a logger as a middleware
