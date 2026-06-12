@@ -134,6 +134,62 @@ func formatDefaultNumber(v any) string {
 	}
 }
 
+// SubscribeFuncName returns the Go name of the SubscribeTo function generated
+// for the given operation, honoring the x-go-subscribe-func override.
+func SubscribeFuncName(op *asyncapi.Operation) string {
+	if name := op.Follow().ExtGoSubscribeFunc; name != "" {
+		return templateutil.Namify(name)
+	}
+	return "SubscribeTo" + templateutil.Namify(op.Follow().Name)
+}
+
+// ReceivedFuncName returns the Go name of the subscriber callback generated for
+// the given operation, honoring the x-go-received-func override.
+func ReceivedFuncName(op *asyncapi.Operation) string {
+	if name := op.Follow().ExtGoReceivedFunc; name != "" {
+		return templateutil.Namify(name)
+	}
+	return templateutil.Namify(op.Follow().Name) + "Received"
+}
+
+// ReplyFuncName returns the Go name of the ReplyTo function generated for the
+// given operation, honoring the x-go-reply-func override.
+func ReplyFuncName(op *asyncapi.Operation) string {
+	if name := op.Follow().ExtGoReplyFunc; name != "" {
+		return templateutil.Namify(name)
+	}
+	return "ReplyTo" + templateutil.Namify(op.Follow().Name)
+}
+
+// SendFuncName returns the Go name of the Send function generated for the given
+// operation, honoring the x-go-send-func override. The prefix is the controller
+// side ("App" or "User"), which selects the default "SendAs"/"SendTo" verb.
+func SendFuncName(op *asyncapi.Operation, prefix string) string {
+	if name := op.Follow().ExtGoSendFunc; name != "" {
+		return templateutil.Namify(name)
+	}
+	verb := "SendAs"
+	if prefix == "User" {
+		verb = "SendTo"
+	}
+	return verb + templateutil.Namify(op.Follow().Name)
+}
+
+// RequestFuncName returns the Go name of the Request function generated for the
+// given operation, honoring the x-go-request-func override. The prefix is the
+// controller side ("App" or "User"), which selects the default
+// "RequestAs"/"RequestTo" verb.
+func RequestFuncName(op *asyncapi.Operation, prefix string) string {
+	if name := op.Follow().ExtGoRequestFunc; name != "" {
+		return templateutil.Namify(name)
+	}
+	verb := "RequestAs"
+	if prefix == "User" {
+		verb = "RequestTo"
+	}
+	return verb + templateutil.Namify(op.Follow().Name)
+}
+
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
@@ -151,5 +207,10 @@ func HelpersFunctions() template.FuncMap {
 		"generateJSONTags":               generators.GenerateJSONTags[asyncapi.Schema],
 		"hasScalarDefault":               HasScalarDefault,
 		"defaultLiteral":                 DefaultLiteral,
+		"subscribeFuncName":              SubscribeFuncName,
+		"receivedFuncName":               ReceivedFuncName,
+		"replyFuncName":                  ReplyFuncName,
+		"sendFuncName":                   SendFuncName,
+		"requestFuncName":                RequestFuncName,
 	}
 }

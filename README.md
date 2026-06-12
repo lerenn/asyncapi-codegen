@@ -677,6 +677,32 @@ const AsyncAPIVersion = "{{ .Info.Version }}"
 
 ### Specification extensions
 
+#### Operation Object extensions (AsyncAPI v3)
+
+These extension properties apply to "Operation Objects" and override the Go name
+of the functions generated for that operation. When omitted, the default derived
+name is used.
+
+* `x-go-subscribe-func`: overrides the `SubscribeTo<Operation>` method name.
+* `x-go-received-func`: overrides the `<Operation>Received` subscriber callback name.
+* `x-go-reply-func`: overrides the `ReplyTo<Operation>` method name.
+* `x-go-send-func`: overrides the `Send{As,To}<Operation>` method name.
+* `x-go-request-func`: overrides the `Request{As,To}<Operation>` method name.
+
+For example,
+
+```yaml
+operations:
+  ping:
+    action: receive
+    channel:
+      $ref: '#/channels/ping'
+    x-go-subscribe-func: ListenForPing
+    x-go-received-func: OnPing
+    x-go-send-func: PublishPing
+    x-go-request-func: AskPing
+```
+
 #### Schema Object extensions
 
 These extension properties apply to "Schema Objects" in AsyncAPI spec.

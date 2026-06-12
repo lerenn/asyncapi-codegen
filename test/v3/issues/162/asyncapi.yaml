@@ -1,0 +1,47 @@
+asyncapi: 3.0.0
+info:
+  title: Issue 162 - overwritable function names
+  version: 1.0.0
+
+channels:
+  ping:
+    address: v3.issue162.ping
+    messages:
+      ping:
+        $ref: '#/components/messages/ping'
+  pong:
+    address: v3.issue162.pong
+    messages:
+      pong:
+        $ref: '#/components/messages/pong'
+
+operations:
+  ping:
+    action: receive
+    channel:
+      $ref: '#/channels/ping'
+    reply:
+      channel:
+        $ref: '#/channels/pong'
+    x-go-subscribe-func: ListenForPing
+    x-go-received-func: OnPing
+    x-go-reply-func: AnswerPing
+    x-go-send-func: PublishPing
+    x-go-request-func: AskPing
+
+components:
+  messages:
+    ping:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: ping
+    pong:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: pong
