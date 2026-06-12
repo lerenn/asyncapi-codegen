@@ -39,6 +39,11 @@ type {{ .Name }} {{template "schema-name" .}}
     {{template "marshaling-time" .}}
 {{- end -}}
 
+{{/* Create specific marshaling for oneOf */ -}}
+{{- if .OneOf -}}
+    {{template "marshaling-oneof" .}}
+{{- end -}}
+
 {{- end -}}
 
 {{- /* ------------------------- SubDefinitions ------------------------- */ -}}

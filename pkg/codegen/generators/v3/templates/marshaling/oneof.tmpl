@@ -1,0 +1,30 @@
+{{define "marshaling-oneof" -}}
+
+// MarshalJSON marshals the oneOf schema, emitting the single member that is set.
+func (t {{ namify .Name }}) MarshalJSON() ([]byte, error) {
+{{- range $key, $value := .OneOf}}
+    if t.{{ if $value.ReferenceTo }}{{ namify $value.Follow.Name }}{{ else }}OneOf{{ $key }}{{ end }} != nil {
+        return json.Marshal(t.{{ if $value.ReferenceTo }}{{ namify $value.Follow.Name }}{{ else }}OneOf{{ $key }}{{ end }})
+    }
+{{- end}}
+
+    return []byte("null"), nil
+}
+
+// UnmarshalJSON unmarshals JSON into the first oneOf member that accepts it.
+// Without a discriminator, members are tried in order; the first one that
+// unmarshals without error wins.
+func (t *{{ namify .Name }}) UnmarshalJSON(data []byte) error {
+{{- range $key, $value := .OneOf}}
+    {
+        var value {{template "schema-name" $value}}
+        if err := json.Unmarshal(data, &value); err == nil {
+            t.{{ if $value.ReferenceTo }}{{ namify $value.Follow.Name }}{{ else }}OneOf{{ $key }}{{ end }} = &value
+            return nil
+        }
+    }
+{{- end}}
+
+    return fmt.Errorf("data did not match any schema in oneOf")
+}
+{{- end}}
