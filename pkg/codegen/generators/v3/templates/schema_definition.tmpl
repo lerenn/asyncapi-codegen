@@ -29,6 +29,27 @@ type {{ namify .Name }} struct {
     {{template "marshaling-additional-properties" .}}
 {{- end}}
 
+{{- /* Generate SetDefaults() for optional properties that have a default (#138) */ -}}
+{{- $hasDefaults := false -}}
+{{- range $key, $value := .Properties -}}
+{{- if and (isFieldPointer $ $key $value) (hasScalarDefault $value) -}}{{- $hasDefaults = true -}}{{- end -}}
+{{- end -}}
+{{- if $hasDefaults}}
+
+// SetDefaults sets the default values defined in the AsyncAPI specification for
+// the optional fields that are not set.
+func (t *{{ namify .Name }}) SetDefaults() {
+{{- range $key, $value := .Properties}}
+{{- if and (isFieldPointer $ $key $value) (hasScalarDefault $value)}}
+    if t.{{if $value.ExtGoName}}{{namify $value.ExtGoName}}{{else}}{{namify $key}}{{end}} == nil {
+        v := {{defaultLiteral $value}}
+        t.{{if $value.ExtGoName}}{{namify $value.ExtGoName}}{{else}}{{namify $key}}{{end}} = &v
+    }
+{{- end}}
+{{- end}}
+}
+{{- end}}
+
 {{- /* ----------------------------- Others ----------------------------- */ -}}
 {{- else -}}
 
