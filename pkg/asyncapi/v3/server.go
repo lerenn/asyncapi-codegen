@@ -14,7 +14,7 @@ type Server struct {
 	Title           string                     `json:"title,omitempty"`
 	Summary         string                     `json:"summary,omitempty"`
 	Variables       map[string]*ServerVariable `json:"variables,omitempty"`
-	Security        *SecurityScheme            `json:"security,omitempty"`
+	Security        []*SecurityScheme          `json:"security,omitempty"`
 	Tags            []*Tag                     `json:"tags,omitempty"`
 	ExternalDocs    *ExternalDocumentation     `json:"externalDocs,omitempty"`
 	Bindings        *ServerBindings            `json:"bindings,omitempty"`
@@ -42,7 +42,9 @@ func (srv *Server) generateMetadata(parentName, name string) {
 	}
 
 	// Generate security metadata
-	srv.Security.generateMetadata(srv.Name, "", nil)
+	for i, sec := range srv.Security {
+		sec.generateMetadata(srv.Name, "", &i)
+	}
 
 	// Generate tags metadata
 	for i, t := range srv.Tags {
@@ -57,6 +59,8 @@ func (srv *Server) generateMetadata(parentName, name string) {
 }
 
 // setDependencies sets dependencies between the different elements of the Server.
+//
+//nolint:cyclop
 func (srv *Server) setDependencies(spec Specification) error {
 	// Prevent modification if nil
 	if srv == nil {
@@ -76,8 +80,10 @@ func (srv *Server) setDependencies(spec Specification) error {
 	}
 
 	// Set security dependencies
-	if err := srv.Security.setDependencies(spec); err != nil {
-		return err
+	for _, sec := range srv.Security {
+		if err := sec.setDependencies(spec); err != nil {
+			return err
+		}
 	}
 
 	// Set tags dependencies

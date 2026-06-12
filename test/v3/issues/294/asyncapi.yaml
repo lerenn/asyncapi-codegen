@@ -1,0 +1,53 @@
+asyncapi: 3.0.0
+info:
+  title: Server Security Array Test
+  version: 1.0.0
+  description: Test for parsing server security as array (issue #294)
+
+servers:
+  production:
+    host: mqtt.example.com
+    protocol: mqtt
+    description: Production MQTT broker
+    security:
+      - $ref: '#/components/securitySchemes/apiKey'
+      - $ref: '#/components/securitySchemes/oauth2'
+
+channels:
+  testChannel:
+    address: v3.issue294.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/TestMessage'
+
+operations:
+  testOperation:
+    action: send
+    channel:
+      $ref: '#/channels/testChannel'
+    messages:
+      - $ref: '#/channels/testChannel/messages/testMessage'
+
+components:
+  messages:
+    TestMessage:
+      payload:
+        type: object
+        properties:
+          message:
+            type: string
+
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: user
+      description: API key authentication
+    oauth2:
+      type: oauth2
+      description: OAuth2 authentication
+      flows:
+        clientCredentials:
+          tokenUrl: https://example.com/oauth/token
+          availableScopes:
+            read: Read access
+            write: Write access
