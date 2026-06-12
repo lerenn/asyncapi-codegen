@@ -594,6 +594,17 @@ ctrl, _ := NewAppController(
 )
 ```
 
+The controller stores contextual information (channel, correlation ID,
+direction, …) in the `context.Context` passed to your logger. To retrieve it
+without unwrapping each key manually, use `extensions.LogInfosFromContext`:
+
+```golang
+func (logger SimpleLogger) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
+  info = append(info, extensions.LogInfosFromContext(ctx)...)
+  // ... log msg with info
+}
+```
+
 ### Versioning
 
 If you are in need to do a migration or support multiple versions of your
