@@ -1,0 +1,39 @@
+asyncapi: 3.0.0
+info:
+  title: Request reply with context timeout
+  version: 1.0.0
+channels:
+  ping:
+    address: v3.issue292.ping
+    messages:
+      ping:
+        $ref: '#/components/messages/ping'
+  pong:
+    address: v3.issue292.pong
+    messages:
+      pong:
+        $ref: '#/components/messages/pong'
+operations:
+  ping:
+    action: receive
+    channel:
+      $ref: '#/channels/ping'
+    reply:
+      channel:
+        $ref: '#/channels/pong'
+components:
+  messages:
+    ping:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: ping
+    pong:
+      payload:
+        type: object
+        properties:
+          event:
+            type: string
+            const: pong
