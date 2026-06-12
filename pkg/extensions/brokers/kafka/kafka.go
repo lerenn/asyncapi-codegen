@@ -39,9 +39,28 @@ type Controller struct {
 // MessagesHandler is a function that can be used to process messages from the broker.
 type MessagesHandler func(
 	ctx context.Context,
-	r *kafka.Reader,
+	r messageReader,
 	sub extensions.BrokerChannelSubscription,
 )
+
+// messageReader abstracts the parts of *kafka.Reader used by the message
+// handlers, so that the consumption loop can be unit-tested without a live
+// broker. *kafka.Reader satisfies this interface.
+type messageReader interface {
+	ReadMessage(ctx context.Context) (kafka.Message, error)
+	FetchMessage(ctx context.Context) (kafka.Message, error)
+	CommitMessages(ctx context.Context, msgs ...kafka.Message) error
+}
+
+// shouldStopConsuming reports whether a read error is terminal and the message
+// handler should stop consuming. A cancelled context or a closed reader (EOF /
+// closed pipe) is terminal; any other error is transient and consumption should
+// continue rather than silently killing the subscription.
+func shouldStopConsuming(ctx context.Context, err error) bool {
+	return ctx.Err() != nil ||
+		errors.Is(err, io.EOF) ||
+		errors.Is(err, io.ErrClosedPipe)
+}
 
 // ControllerOption is a function that can be used to configure a Kafka controller
 // Examples: WithGroupID(), WithPartition(), WithMaxBytes(), WithLogger().
@@ -295,17 +314,20 @@ func (c *Controller) checkTopicExistOrCreateIt(ctx context.Context, topic string
 // Maybe consider to use the manualCommitMessagesHandler.
 func autoCommitMessagesHandler(
 	logger *extensions.Logger,
-) func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
-	return func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
+) func(ctx context.Context, r messageReader, sub extensions.BrokerChannelSubscription) {
+	return func(ctx context.Context, r messageReader, sub extensions.BrokerChannelSubscription) {
 		for {
 			msg, err := r.ReadMessage(ctx)
 			if err != nil {
-				// If the error is not io.EOF, then it is a real error
-				if !errors.Is(err, io.EOF) {
-					(*logger).Warning(ctx, fmt.Sprintf("Error when reading message: %q", err.Error()))
+				// Stop only on terminal errors (context done or closed reader).
+				// Transient errors should not kill the subscription.
+				if shouldStopConsuming(ctx, err) {
+					return
 				}
 
-				return
+				(*logger).Warning(ctx, fmt.Sprintf("Error when reading message, continuing: %q", err.Error()))
+
+				continue
 			}
 
 			// Get headers
@@ -329,17 +351,20 @@ func autoCommitMessagesHandler(
 // the message is committed by user via the AcknowledgementHandler.
 func manualCommitMessagesHandler(
 	logger *extensions.Logger,
-) func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
-	return func(ctx context.Context, r *kafka.Reader, sub extensions.BrokerChannelSubscription) {
+) func(ctx context.Context, r messageReader, sub extensions.BrokerChannelSubscription) {
+	return func(ctx context.Context, r messageReader, sub extensions.BrokerChannelSubscription) {
 		for {
 			msg, err := r.FetchMessage(ctx)
 			if err != nil {
-				// If the error is not io.EOF, then it is a real error
-				if !errors.Is(err, io.EOF) {
-					(*logger).Warning(ctx, fmt.Sprintf("Error when reading message: %q", err.Error()))
+				// Stop only on terminal errors (context done or closed reader).
+				// Transient errors should not kill the subscription.
+				if shouldStopConsuming(ctx, err) {
+					return
 				}
 
-				return
+				(*logger).Warning(ctx, fmt.Sprintf("Error when reading message, continuing: %q", err.Error()))
+
+				continue
 			}
 
 			// Get headers
