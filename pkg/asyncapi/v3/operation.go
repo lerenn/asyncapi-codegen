@@ -50,6 +50,16 @@ type Operation struct {
 	Reply        *OperationReply        `json:"reply,omitempty"`
 	Reference    string                 `json:"$ref,omitempty"`
 
+	// --- asyncapi-codegen extensions -----------------------------------------
+	// These override the Go names of the functions generated for this operation.
+	// When empty, the default derived name is used.
+
+	ExtGoSendFunc      string `json:"x-go-send-func,omitempty"`
+	ExtGoSubscribeFunc string `json:"x-go-subscribe-func,omitempty"`
+	ExtGoReceivedFunc  string `json:"x-go-received-func,omitempty"`
+	ExtGoReplyFunc     string `json:"x-go-reply-func,omitempty"`
+	ExtGoRequestFunc   string `json:"x-go-request-func,omitempty"`
+
 	// --- Non AsyncAPI fields -------------------------------------------------
 
 	Name        string     `json:"-"`
