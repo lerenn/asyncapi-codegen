@@ -1,0 +1,30 @@
+asyncapi: 3.0.0
+info:
+  title: Message example with an array payload
+  version: 1.0.0
+channels:
+  test:
+    address: v3.issue301.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/testMessage'
+operations:
+  testOperation:
+    action: send
+    channel:
+      $ref: '#/channels/test'
+    messages:
+      - $ref: '#/channels/test/messages/testMessage'
+components:
+  messages:
+    testMessage:
+      payload:
+        type: array
+        items:
+          type: string
+      # An example payload may be a JSON array when the payload is an array.
+      examples:
+        - name: arrayExample
+          payload:
+            - first
+            - second
