@@ -109,6 +109,15 @@ type FromJSONParams struct {
 //
 //nolint:ireturn,nolintlint
 func FromJSON(params FromJSONParams) (asyncapi.Specification, error) {
+	// An OpenAPI document can be used as a schema-only dependency: only its
+	// "components" are kept, so that its schemas can be referenced from an
+	// AsyncAPI spec even when the document contains fields AsyncAPI does not
+	// allow (e.g. an array-typed "servers"). It is parsed with the same major
+	// version as the spec that depends on it.
+	if isOpenAPISpecification(params.Data) {
+		return fromOpenAPISpecification(params.Data, params.MajorVersion)
+	}
+
 	// Check that the version is correct
 	majorVersion := params.MajorVersion
 	if majorVersion == 0 {
@@ -133,6 +142,66 @@ func FromJSON(params FromJSONParams) (asyncapi.Specification, error) {
 
 	// Parse JSON
 	if err := json.Unmarshal(params.Data, &spec); err != nil {
+		return nil, err
+	}
+
+	return spec, nil
+}
+
+// isOpenAPISpecification reports whether the given JSON is an OpenAPI document
+// (it has an "openapi" field) rather than an AsyncAPI one.
+func isOpenAPISpecification(data []byte) bool {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(data, &m); err != nil {
+		return false
+	}
+
+	_, hasOpenAPI := m["openapi"]
+	_, hasAsyncAPI := m["asyncapi"]
+
+	return hasOpenAPI && !hasAsyncAPI
+}
+
+// fromOpenAPISpecification parses only the "components" of an OpenAPI document.
+// Everything else (servers, paths, ...) is ignored, so the document can be used
+// purely as a source of referenceable schemas. The components are parsed as an
+// AsyncAPI specification of the given major version (defaulting to 3), so that
+// the dependency can be added to a spec of the same version.
+//
+//nolint:ireturn,nolintlint
+func fromOpenAPISpecification(data []byte, majorVersion int) (asyncapi.Specification, error) {
+	var doc struct {
+		Components json.RawMessage `json:"components"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, err
+	}
+
+	if majorVersion == 0 {
+		majorVersion = 3
+	}
+
+	var spec asyncapi.Specification
+	switch majorVersion {
+	case 2:
+		spec = asyncapiv2.NewSpecification()
+	case 3:
+		spec = asyncapiv3.NewSpecification()
+	default:
+		return nil, fmt.Errorf("%w: unsupported major version (%d) for OpenAPI dependency", ErrInvalidVersion, majorVersion)
+	}
+
+	if len(doc.Components) == 0 {
+		return spec, nil
+	}
+
+	// Reuse the regular components unmarshaling by wrapping them in a minimal
+	// specification.
+	wrapper := []byte(`{"components":`)
+	wrapper = append(wrapper, doc.Components...)
+	wrapper = append(wrapper, '}')
+
+	if err := json.Unmarshal(wrapper, &spec); err != nil {
 		return nil, err
 	}
 

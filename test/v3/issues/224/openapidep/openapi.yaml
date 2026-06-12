@@ -1,0 +1,19 @@
+openapi: 3.0.0
+info:
+  title: A plain OpenAPI document
+  version: 1.0.0
+# servers is an array in OpenAPI, which AsyncAPI does not allow; it must be
+# ignored when the document is used as a schema-only dependency.
+servers:
+  - url: https://example.com
+    description: production
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer

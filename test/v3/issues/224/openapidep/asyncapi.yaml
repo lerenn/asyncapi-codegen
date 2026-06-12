@@ -1,0 +1,23 @@
+asyncapi: 3.0.0
+info:
+  title: Main spec referencing an OpenAPI dependency
+  version: 1.0.0
+channels:
+  test:
+    address: v3.issue224.test
+    messages:
+      testMessage:
+        $ref: '#/components/messages/testMessage'
+operations:
+  testOperation:
+    action: send
+    channel:
+      $ref: '#/channels/test'
+    messages:
+      - $ref: '#/channels/test/messages/testMessage'
+components:
+  messages:
+    testMessage:
+      payload:
+        # Imported directly from an OpenAPI document used as a dependency.
+        $ref: './openapi.yaml#/components/schemas/Pet'
