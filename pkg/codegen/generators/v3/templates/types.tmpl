@@ -43,6 +43,11 @@ type {{ namifyWithoutParam .Name }}Parameters struct {
 {{template "schema-definition" $value}}
 {{- end}}
 
+{{- /* Generate schemas from referenced dependencies (e.g. a shared schema file or an OpenAPI document) that the main spec does not already define */}}
+{{range $key, $value := .DependencySchemas}}
+{{template "schema-definition" $value}}
+{{- end}}
+
 {{- if .Channels}}
 const(
 {{- range $key, $value := .Channels}}

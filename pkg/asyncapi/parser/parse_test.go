@@ -5,8 +5,28 @@ import (
 	"testing"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
+	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 	"github.com/stretchr/testify/suite"
 )
+
+func (suite *ParseSuite) TestOpenAPIDependencyKeepsOnlyComponents() {
+	// An OpenAPI document with an array-typed "servers" (invalid in AsyncAPI)
+	// must still parse, keeping only its components/schemas.
+	data := []byte(`{
+		"openapi": "3.0.0",
+		"servers": [{"url": "https://example.com"}],
+		"paths": {},
+		"components": {"schemas": {"Pet": {"type": "object"}}}
+	}`)
+
+	spec, err := FromJSON(FromJSONParams{Data: data})
+	suite.Require().NoError(err)
+
+	v3, ok := spec.(*asyncapiv3.Specification)
+	suite.Require().True(ok)
+	suite.Require().Contains(v3.Components.Schemas, "Pet")
+	suite.Require().Empty(v3.Servers)
+}
 
 func TestParseSuite(t *testing.T) {
 	suite.Run(t, new(ParseSuite))
