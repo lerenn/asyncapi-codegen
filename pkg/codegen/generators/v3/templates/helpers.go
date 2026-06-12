@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"text/template"
 
 	asyncapi "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
@@ -190,6 +191,24 @@ func RequestFuncName(op *asyncapi.Operation, prefix string) string {
 	return verb + templateutil.Namify(op.Follow().Name)
 }
 
+// OperationMessageCount returns the number of messages of an operation.
+func OperationMessageCount(op *asyncapi.Operation) int {
+	return len(op.Follow().GetMessages())
+}
+
+// MessageTypeName returns the generated Go type name of a message.
+func MessageTypeName(msg *asyncapi.Message) string {
+	return templateutil.Namify(msg.Follow().Name)
+}
+
+// SendFuncNameForMessage returns the name of the per-message send function
+// generated when an operation carries more than one message (issue #140). It is
+// the operation send function name suffixed with "For" and the message name.
+func SendFuncNameForMessage(op *asyncapi.Operation, prefix string, msg *asyncapi.Message) string {
+	base := strings.TrimSuffix(MessageTypeName(msg), "Message")
+	return SendFuncName(op, prefix) + "For" + base
+}
+
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
@@ -212,5 +231,8 @@ func HelpersFunctions() template.FuncMap {
 		"replyFuncName":                  ReplyFuncName,
 		"sendFuncName":                   SendFuncName,
 		"requestFuncName":                RequestFuncName,
+		"operationMessageCount":          OperationMessageCount,
+		"messageTypeName":                MessageTypeName,
+		"sendFuncNameForMessage":         SendFuncNameForMessage,
 	}
 }

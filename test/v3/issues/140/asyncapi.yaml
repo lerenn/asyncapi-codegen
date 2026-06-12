@@ -1,0 +1,34 @@
+asyncapi: 3.0.0
+info:
+  title: Issue 140 - multiple messages per operation
+  version: 1.0.0
+
+channels:
+  events:
+    address: v3.issue140.events
+    messages:
+      userCreated:
+        $ref: '#/components/messages/userCreated'
+      userDeleted:
+        $ref: '#/components/messages/userDeleted'
+
+operations:
+  sendEvents:
+    action: send
+    channel:
+      $ref: '#/channels/events'
+
+components:
+  messages:
+    userCreated:
+      payload:
+        type: object
+        properties:
+          id:
+            type: string
+    userDeleted:
+      payload:
+        type: object
+        properties:
+          id:
+            type: string

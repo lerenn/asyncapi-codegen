@@ -877,6 +877,30 @@ func (t *Settings) SetDefaults() {
 
 Defaults are supported for scalar properties (string, boolean, integer, number).
 
+### Multiple messages per operation (AsyncAPI v3)
+
+When an operation (or its channel) declares more than one message, a dedicated
+send function is generated for each one, named after the operation and the
+message:
+
+```yaml
+channels:
+  events:
+    address: app.events
+    messages:
+      userCreated: { $ref: '#/components/messages/userCreated' }
+      userDeleted: { $ref: '#/components/messages/userDeleted' }
+operations:
+  sendEvents:
+    action: send
+    channel: { $ref: '#/channels/events' }
+```
+
+generates `SendAsSendEventsOperationForUserCreated` and
+`...ForUserDeleted`, each sending its own message type. Operations with a single
+message are unchanged. Reception of multiple message types on a single channel
+is not covered yet (the subscribe side still handles the first message only).
+
 ### Channel parameters from message location (AsyncAPI v3)
 
 When a channel parameter declares a `location` runtime expression, the generated

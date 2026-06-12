@@ -2,6 +2,7 @@ package asyncapiv3
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
@@ -154,10 +155,20 @@ func (ch *Channel) Follow() *Channel {
 	return ch
 }
 
-// GetMessage will return the channel message.
+// GetMessage will return the channel message. When the channel has several
+// messages, the one with the lowest name is returned deterministically (ranging
+// a map directly would be non-deterministic, producing unstable generated code).
 func (ch Channel) GetMessage() (*Message, error) {
-	for _, m := range ch.Follow().Messages {
-		return m.Follow(), nil // TODO: change
+	messages := ch.Follow().Messages
+	if len(messages) == 0 {
+		return nil, fmt.Errorf("%w: channel %q", ErrNoMessageInChannel, ch.Name)
 	}
-	return nil, fmt.Errorf("%w: channel %q", ErrNoMessageInChannel, ch.Name)
+
+	names := make([]string, 0, len(messages))
+	for name := range messages {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	return messages[names[0]].Follow(), nil
 }

@@ -1,6 +1,9 @@
 package asyncapiv3
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
 // OperationAction represents an OperationAction.
 type OperationAction string
@@ -245,6 +248,28 @@ func (op Operation) GetMessage() (*Message, error) {
 	}
 
 	return op.Channel.GetMessage()
+}
+
+// GetMessages returns all the resolved messages of the operation, sorted by
+// name for deterministic generation. It falls back to the channel messages when
+// the operation itself does not list any.
+func (op Operation) GetMessages() []*Message {
+	var msgs []*Message
+
+	switch {
+	case len(op.Messages) > 0:
+		for _, m := range op.Messages {
+			msgs = append(msgs, m.Follow())
+		}
+	case op.Channel != nil:
+		for _, m := range op.Channel.Follow().Messages {
+			msgs = append(msgs, m.Follow())
+		}
+	}
+
+	sort.Slice(msgs, func(i, j int) bool { return msgs[i].Name < msgs[j].Name })
+
+	return msgs
 }
 
 // ApplyTrait applies a trait to the operation.
