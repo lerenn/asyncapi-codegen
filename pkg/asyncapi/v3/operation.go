@@ -1,5 +1,7 @@
 package asyncapiv3
 
+import "strings"
+
 // OperationAction represents an OperationAction.
 type OperationAction string
 
@@ -157,7 +159,41 @@ func (op *Operation) setDependencies(spec Specification) error {
 	// Generate reply
 	op.generateReply()
 
+	// Resolve channel parameter locations against the operation message
+	op.setParametersLocationDependencies()
+
 	return nil
+}
+
+// setParametersLocationDependencies resolves, for each channel parameter that
+// defines a `location` runtime expression, the field of the operation message
+// it points to. It ensures the field exists on the message (creating the schema
+// tree if needed, like correlation IDs do) and records whether that field is
+// required so the generated code knows if it is a pointer. This lets the
+// generated send functions auto-fill the parameter from the message.
+func (op *Operation) setParametersLocationDependencies() {
+	ch := op.Channel.Follow()
+	if ch == nil || len(ch.Parameters) == 0 {
+		return
+	}
+
+	// The location refers to the operation message; if there is none, there is
+	// nothing to resolve.
+	msg, err := op.GetMessage()
+	if err != nil {
+		return
+	}
+
+	for _, p := range ch.Parameters {
+		pf := p.Follow()
+		if pf.Location == "" {
+			continue
+		}
+
+		locationParent := msg.createTreeUntilLocation(pf.Location)
+		path := strings.Split(pf.Location, "/")
+		pf.LocationRequired = locationParent.IsFieldRequired(path[len(path)-1])
+	}
 }
 
 func (op *Operation) setReference(spec Specification) error {

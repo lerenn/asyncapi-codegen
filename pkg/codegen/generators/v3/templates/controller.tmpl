@@ -330,6 +330,7 @@ func (c *{{ $.Prefix }}Controller) {{ sendFuncName $value $.Prefix }}(
     {{- end}}
     msg {{opToMsgTypeName $value}},
 ) error {
+    {{- template "fill-parameters-from-location" $value }}
     // Set channel address
     {{- if eq .Channel.Follow.Address "" }}
         addr := chanAddr

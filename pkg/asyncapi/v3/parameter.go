@@ -14,6 +14,19 @@ type Parameter struct {
 	// Non AsyncAPI fields
 	Name        string     `json:"-"`
 	ReferenceTo *Parameter `json:"-"`
+
+	// LocationRequired indicates whether the field targeted by Location is a
+	// required field of the message (and thus generated as a non-pointer field).
+	LocationRequired bool `json:"-"`
+}
+
+// Follow returns the referenced parameter if there is one, otherwise the
+// parameter itself.
+func (p *Parameter) Follow() *Parameter {
+	if p.ReferenceTo != nil {
+		return p.ReferenceTo
+	}
+	return p
 }
 
 // generateMetadata generates metadata for the Parameter.

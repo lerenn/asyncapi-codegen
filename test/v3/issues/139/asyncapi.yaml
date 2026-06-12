@@ -1,0 +1,31 @@
+asyncapi: 3.0.0
+info:
+  title: Issue 139 - dynamic parameter location
+  version: 1.0.0
+
+channels:
+  user:
+    address: v3.issue139.user.{userId}
+    parameters:
+      userId:
+        location: $message.payload#/userId
+    messages:
+      userSignedUp:
+        $ref: '#/components/messages/userSignedUp'
+
+operations:
+  sendUser:
+    action: send
+    channel:
+      $ref: '#/channels/user'
+
+components:
+  messages:
+    userSignedUp:
+      payload:
+        type: object
+        properties:
+          userId:
+            type: string
+          name:
+            type: string
