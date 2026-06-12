@@ -1,6 +1,8 @@
 package asyncapiv2
 
 import (
+	"encoding/json"
+
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
@@ -58,6 +60,61 @@ func NewSchema() Schema {
 		},
 		Properties: make(map[string]*Schema),
 	}
+}
+
+// UnmarshalJSON unmarshals a Schema from JSON. It is needed because the JSON
+// Schema "additionalProperties" keyword may be either a boolean or a schema
+// object, which a plain *Schema field cannot represent.
+func (s *Schema) UnmarshalJSON(data []byte) error {
+	// The alias avoids infinite recursion into this method. The shadowing
+	// additionalProperties raw message captures the value at depth 0 (winning
+	// over the embedded alias' field), so it is not unmarshaled into a *Schema,
+	// which would fail for the boolean form.
+	type alias Schema
+	aux := struct {
+		AdditionalProperties json.RawMessage `json:"additionalProperties,omitempty"`
+		*alias
+	}{
+		alias: (*alias)(s),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	return s.unmarshalAdditionalProperties(aux.AdditionalProperties)
+}
+
+// unmarshalAdditionalProperties handles the "additionalProperties" keyword,
+// which per JSON Schema may be a boolean or a schema. A boolean true means "any
+// additional property is allowed" and is represented as an empty schema (which
+// generates map[string]interface{}); false means "no additional properties" and
+// is represented as a nil schema.
+func (s *Schema) unmarshalAdditionalProperties(data json.RawMessage) error {
+	if len(data) == 0 {
+		return nil
+	}
+
+	// Boolean form.
+	var allowed bool
+	if err := json.Unmarshal(data, &allowed); err == nil {
+		if allowed {
+			s.AdditionalProperties = utils.ToPointer(NewSchema())
+		} else {
+			s.AdditionalProperties = nil
+		}
+
+		return nil
+	}
+
+	// Schema form.
+	var sub Schema
+	if err := json.Unmarshal(data, &sub); err != nil {
+		return err
+	}
+	s.AdditionalProperties = &sub
+
+	return nil
 }
 
 // generateMetadata generates metadata for the schema and its children.
