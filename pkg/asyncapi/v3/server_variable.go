@@ -47,3 +47,11 @@ func (sv *ServerVariable) setDependencies(spec Specification) error {
 
 	return nil
 }
+
+// Follow returns the referenced ServerVariable if there is one, otherwise the ServerVariable itself.
+func (sv *ServerVariable) Follow() *ServerVariable {
+	if sv.ReferenceTo != nil {
+		return sv.ReferenceTo
+	}
+	return sv
+}

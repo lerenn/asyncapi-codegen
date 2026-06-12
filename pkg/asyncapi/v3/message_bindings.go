@@ -62,3 +62,11 @@ func (mb *MessageBindings) setDependencies(spec Specification) error {
 
 	return nil
 }
+
+// Follow returns the referenced MessageBindings if there is one, otherwise the MessageBindings itself.
+func (mb *MessageBindings) Follow() *MessageBindings {
+	if mb.ReferenceTo != nil {
+		return mb.ReferenceTo
+	}
+	return mb
+}

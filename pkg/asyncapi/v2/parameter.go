@@ -38,3 +38,11 @@ func (p *Parameter) setDependencies(spec Specification) error {
 
 	return nil
 }
+
+// Follow returns the referenced Parameter if there is one, otherwise the Parameter itself.
+func (p *Parameter) Follow() *Parameter {
+	if p.ReferenceTo != nil {
+		return p.ReferenceTo
+	}
+	return p
+}

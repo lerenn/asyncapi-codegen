@@ -72,3 +72,11 @@ func RemoveDuplicateTags(tags []*Tag) []*Tag {
 	}
 	return newList
 }
+
+// Follow returns the referenced Tag if there is one, otherwise the Tag itself.
+func (t *Tag) Follow() *Tag {
+	if t.ReferenceTo != nil {
+		return t.ReferenceTo
+	}
+	return t
+}

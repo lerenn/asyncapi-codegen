@@ -62,3 +62,11 @@ func (ob *ServerBindings) setDependencies(spec Specification) error {
 
 	return nil
 }
+
+// Follow returns the referenced ServerBindings if there is one, otherwise the ServerBindings itself.
+func (ob *ServerBindings) Follow() *ServerBindings {
+	if ob.ReferenceTo != nil {
+		return ob.ReferenceTo
+	}
+	return ob
+}

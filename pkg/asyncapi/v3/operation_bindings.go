@@ -62,3 +62,11 @@ func (ob *OperationBindings) setDependencies(spec Specification) error {
 
 	return nil
 }
+
+// Follow returns the referenced OperationBindings if there is one, otherwise the OperationBindings itself.
+func (ob *OperationBindings) Follow() *OperationBindings {
+	if ob.ReferenceTo != nil {
+		return ob.ReferenceTo
+	}
+	return ob
+}

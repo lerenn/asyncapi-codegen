@@ -46,3 +46,11 @@ func (me *MessageExample) setDependencies(spec Specification) error {
 
 	return nil
 }
+
+// Follow returns the referenced MessageExample if there is one, otherwise the MessageExample itself.
+func (me *MessageExample) Follow() *MessageExample {
+	if me.ReferenceTo != nil {
+		return me.ReferenceTo
+	}
+	return me
+}
