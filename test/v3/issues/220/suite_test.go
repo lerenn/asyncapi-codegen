@@ -1,4 +1,4 @@
-//go:generate go run ../../../../cmd/asyncapi-codegen -p camel -n camel -i ./asyncapi.yaml -o ./camel/asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -p camel -n pascal -i ./asyncapi.yaml -o ./camel/asyncapi.gen.go
 //go:generate go run ../../../../cmd/asyncapi-codegen -p none -n none -i ./asyncapi.yaml -o ./none/asyncapi.gen.go
 
 package issue220

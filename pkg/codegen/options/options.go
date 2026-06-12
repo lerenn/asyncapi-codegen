@@ -26,11 +26,11 @@ type Options struct {
 	DisableFormatting bool
 
 	// ConvertKeys defines a schema property keys conversion strategy.
-	// Supported values: snake, camel, kebab, none
+	// Supported values: snake, camel, pascal, kebab, none
 	ConvertKeys string
 
 	// NamingScheme defines the naming scheme for generated golang structs
-	// Supported values: camel, none
+	// Supported values: camel, pascal, none
 	NamingScheme string
 
 	// IgnoreStringFormat states whether the properties' format (date, date-time) should impact the type in types
