@@ -312,6 +312,58 @@ func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{ namify $value.Follow.Name }
 {{- end}}
 
 {{- range  $key, $value := .Operations.Send}}
+{{- if and (gt (operationMessageCount $value) 1) (not .Reply) (not .ReplyOf)}}
+{{- /* Multiple messages: generate one send function per message (#140) */}}
+{{- range $msg := $value.GetMessages}}
+
+// {{ sendFuncNameForMessage $value $.Prefix $msg }} will send a {{ cutSuffix (messageTypeName $msg) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+func (c *{{ $.Prefix }}Controller) {{ sendFuncNameForMessage $value $.Prefix $msg }}(
+    ctx context.Context,
+    {{- if $value.Channel.Follow.Parameters }}
+        params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
+    {{- end}}
+    {{- if eq $value.Channel.Follow.Address "" }}
+        chanAddr string,
+    {{- end}}
+    msg {{messageTypeName $msg}},
+) error {
+    // Set channel address
+    {{- if eq $value.Channel.Follow.Address "" }}
+        addr := chanAddr
+    {{- else }}
+        addr := {{ generateChannelAddrFromOp $value }}
+    {{- end }}
+
+    {{if $msg.HaveCorrelationID -}}
+    // Set correlation ID if it does not exist
+    if id := msg.CorrelationID(); id == "" {
+        msg.SetCorrelationID(uuid.New().String())
+    }
+    {{- end}}
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
+    {{if $msg.HaveCorrelationID -}}
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
+    {{- end}}
+
+    // Convert to BrokerMessage
+    brokerMsg, err := msg.toBrokerMessage()
+    if err != nil  {
+        return err
+    }
+
+    // Set broker message to context
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsBrokerMessage, brokerMsg.String())
+
+    // Send the message on event-broker through middlewares
+    return c.executeMiddlewares(ctx, &brokerMsg, func(ctx context.Context) error {
+        return c.broker.Publish(ctx, addr, brokerMsg)
+    })
+}
+{{- end}}
+{{- else}}
 
 // {{ sendFuncName $value $.Prefix }} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
 //
@@ -371,6 +423,7 @@ func (c *{{ $.Prefix }}Controller) {{ sendFuncName $value $.Prefix }}(
         return c.broker.Publish(ctx, addr, brokerMsg)
     })
 }
+{{- end}}
 
 
 {{if .Reply -}}
