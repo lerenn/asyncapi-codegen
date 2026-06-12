@@ -38,6 +38,7 @@ Headers {{template "schema-name" .Headers}}
 Payload {{if and .Payload.OneOf (not .Payload.ReferenceTo)}}{{namify .Payload.Name}}{{else}}{{template "schema-name" .Payload}}{{end}}
 }
 
+// New{{namify .Name}} creates a new {{namify .Name}} with default values if any.
 func New{{namify .Name}}() {{namify .Name}} {
     var msg {{namify .Name}}
 

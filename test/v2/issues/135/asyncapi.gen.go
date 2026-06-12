@@ -12,16 +12,19 @@ import (
 // AsyncAPIVersion is the version of the used AsyncAPI document
 const AsyncAPIVersion = "1.2.3"
 
+// MessageWithCorrelationID is implemented by messages that carry a correlation ID.
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
 }
 
+// Error is the error structure returned by the controller operations.
 type Error struct {
 	Channel string
 	Err     error
 }
 
+// Error returns a string representation of the error.
 func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
@@ -32,6 +35,7 @@ type V2Issue135GroupMessage struct {
 	Payload string
 }
 
+// NewV2Issue135GroupMessage creates a new V2Issue135GroupMessage with default values if any.
 func NewV2Issue135GroupMessage() V2Issue135GroupMessage {
 	var msg V2Issue135GroupMessage
 
@@ -73,6 +77,7 @@ type V2Issue135InfoMessage struct {
 	Payload string
 }
 
+// NewV2Issue135InfoMessage creates a new V2Issue135InfoMessage with default values if any.
 func NewV2Issue135InfoMessage() V2Issue135InfoMessage {
 	var msg V2Issue135InfoMessage
 
@@ -114,6 +119,7 @@ type V2Issue135ProjectMessage struct {
 	Payload string
 }
 
+// NewV2Issue135ProjectMessage creates a new V2Issue135ProjectMessage with default values if any.
 func NewV2Issue135ProjectMessage() V2Issue135ProjectMessage {
 	var msg V2Issue135ProjectMessage
 
@@ -155,6 +161,7 @@ type V2Issue135ResourceMessage struct {
 	Payload string
 }
 
+// NewV2Issue135ResourceMessage creates a new V2Issue135ResourceMessage with default values if any.
 func NewV2Issue135ResourceMessage() V2Issue135ResourceMessage {
 	var msg V2Issue135ResourceMessage
 
@@ -196,6 +203,7 @@ type V2Issue135StatusMessage struct {
 	Payload string
 }
 
+// NewV2Issue135StatusMessage creates a new V2Issue135StatusMessage with default values if any.
 func NewV2Issue135StatusMessage() V2Issue135StatusMessage {
 	var msg V2Issue135StatusMessage
 

@@ -313,16 +313,19 @@ func (c *AppController) UnsubscribeFromReceiveHelloOperation(
 // AsyncAPIVersion is the version of the used AsyncAPI document
 const AsyncAPIVersion = "0.1.0"
 
+// MessageWithCorrelationID is implemented by messages that carry a correlation ID.
 type MessageWithCorrelationID interface {
 	CorrelationID() string
 	SetCorrelationID(id string)
 }
 
+// Error is the error structure returned by the controller operations.
 type Error struct {
 	Channel string
 	Err     error
 }
 
+// Error returns a string representation of the error.
 func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
@@ -333,6 +336,7 @@ type SayHelloMessageFromHelloChannel struct {
 	Payload string
 }
 
+// NewSayHelloMessageFromHelloChannel creates a new SayHelloMessageFromHelloChannel with default values if any.
 func NewSayHelloMessageFromHelloChannel() SayHelloMessageFromHelloChannel {
 	var msg SayHelloMessageFromHelloChannel
 
