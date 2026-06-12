@@ -682,6 +682,30 @@ These extension properties apply to "Schema Objects" in AsyncAPI spec.
   }
   ```
 
+* `x-go-name`: Overrides the Go identifier generated for a type or a struct
+  field, while keeping the original property key in the JSON tag.
+
+  For example,
+
+  ```yaml
+  schemas:
+    event:
+      type: object
+      x-go-name: Event
+      properties:
+        event_id:
+          type: integer
+          x-go-name: EventID
+  ```
+
+  will be generated as
+
+  ```go
+  type Event struct {
+          EventID *int64 `json:"event_id,omitempty"`
+  }
+  ```
+
 * `x-go-type-import`: Specifies the import package for `x-go-type`.
                       This has two properties `name` and `path`.
         `path` is the package import path, e.g. `github.com/google/uuid`.

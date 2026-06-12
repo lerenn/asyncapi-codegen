@@ -5,6 +5,7 @@ import (
 
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi"
 	"github.com/lerenn/asyncapi-codegen/pkg/utils"
+	"github.com/lerenn/asyncapi-codegen/pkg/utils/template"
 )
 
 // SchemaType is a structure that represents the type of a field.
@@ -147,6 +148,11 @@ func (s *Schema) generateMetadata(parentName, name string, number *int, isRequir
 	// Set name
 	// NOTE: do not specify the type "schema" in the name
 	s.Name = generateFullName(parentName, name, "", number)
+
+	// Allow overriding the generated type name with the x-go-name extension.
+	if s.ExtGoName != "" {
+		s.Name = template.Namify(s.ExtGoName)
+	}
 
 	// Generate Properties metadata
 	for n, p := range s.Properties {
