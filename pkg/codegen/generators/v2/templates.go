@@ -20,6 +20,7 @@ const (
 	messageTemplatePath          = templatesDir + "/message.tmpl"
 	subscriberTemplatePath       = templatesDir + "/subscriber.tmpl"
 	controllerTemplatePath       = templatesDir + "/controller.tmpl"
+	controllerBaseTemplatePath   = templatesDir + "/controller_base.tmpl"
 	parameterTemplatePath        = templatesDir + "/parameter.tmpl"
 
 	marshalingTemplatesDir                     = templatesDir + "/marshaling"

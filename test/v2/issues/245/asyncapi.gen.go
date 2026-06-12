@@ -11,6 +11,47 @@ import (
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
 
+// controller is the controller that will be used to communicate with the broker
+// It will be used internally by AppController and UserController
+type controller struct {
+	// broker is the broker controller that will be used to communicate
+	broker extensions.BrokerController
+	// subscriptions is a map of all subscriptions
+	subscriptions map[string]extensions.BrokerChannelSubscription
+	// logger is the logger that will be used to log operations on controller
+	logger extensions.Logger
+	// middlewares are the middlewares that will be executed when sending or
+	// receiving messages
+	middlewares []extensions.Middleware
+	// handler to handle errors from consumers and middlewares
+	errorHandler extensions.ErrorHandler
+}
+
+// ControllerOption is the type of the options that can be passed
+// when creating a new Controller
+type ControllerOption func(controller *controller)
+
+// WithLogger attaches a logger to the controller
+func WithLogger(logger extensions.Logger) ControllerOption {
+	return func(controller *controller) {
+		controller.logger = logger
+	}
+}
+
+// WithMiddlewares attaches middlewares that will be executed when sending or receiving messages
+func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
+	return func(controller *controller) {
+		controller.middlewares = middlewares
+	}
+}
+
+// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
+func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
+	return func(controller *controller) {
+		controller.errorHandler = handler
+	}
+}
+
 // AppController is the structure that provides publishing capabilities to the
 // developer and and connect the broker with the App
 type AppController struct {
@@ -389,47 +430,6 @@ func (c *UserController) UnsubscribeV2Issue245Test(ctx context.Context) {
 
 // AsyncAPIVersion is the version of the used AsyncAPI document
 const AsyncAPIVersion = "1.2.3"
-
-// controller is the controller that will be used to communicate with the broker
-// It will be used internally by AppController and UserController
-type controller struct {
-	// broker is the broker controller that will be used to communicate
-	broker extensions.BrokerController
-	// subscriptions is a map of all subscriptions
-	subscriptions map[string]extensions.BrokerChannelSubscription
-	// logger is the logger that will be used² to log operations on controller
-	logger extensions.Logger
-	// middlewares are the middlewares that will be executed when sending or
-	// receiving messages
-	middlewares []extensions.Middleware
-	// handler to handle errors from consumers and middlewares
-	errorHandler extensions.ErrorHandler
-}
-
-// ControllerOption is the type of the options that can be passed
-// when creating a new Controller
-type ControllerOption func(controller *controller)
-
-// WithLogger attaches a logger to the controller
-func WithLogger(logger extensions.Logger) ControllerOption {
-	return func(controller *controller) {
-		controller.logger = logger
-	}
-}
-
-// WithMiddlewares attaches middlewares that will be executed when sending or receiving messages
-func WithMiddlewares(middlewares ...extensions.Middleware) ControllerOption {
-	return func(controller *controller) {
-		controller.middlewares = middlewares
-	}
-}
-
-// WithErrorHandler attaches a errorhandler to handle errors from subscriber functions
-func WithErrorHandler(handler extensions.ErrorHandler) ControllerOption {
-	return func(controller *controller) {
-		controller.errorHandler = handler
-	}
-}
 
 type MessageWithCorrelationID interface {
 	CorrelationID() string

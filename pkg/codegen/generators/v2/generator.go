@@ -24,6 +24,14 @@ func (g Generator) Generate() (string, error) {
 		return "", err
 	}
 
+	// Generate the shared controller boilerplate once, only when a controller
+	// side is generated. This keeps the `types` output free of it.
+	base, err := g.generateControllerBase()
+	if err != nil {
+		return "", err
+	}
+	content += base
+
 	for remainingParts, part := true, ""; remainingParts; part = "" {
 		switch {
 		case g.Options.Generate.Application:
@@ -65,6 +73,17 @@ func (g Generator) generateImports(opts options.Options) (string, error) {
 
 func (g Generator) generateTypes() (string, error) {
 	return TypesGenerator{Specification: g.Specification}.Generate()
+}
+
+// generateControllerBase returns the shared controller boilerplate, but only
+// when an application or user controller is generated; otherwise it returns an
+// empty string so that the `types` output stays free of it.
+func (g Generator) generateControllerBase() (string, error) {
+	if !g.Options.Generate.Application && !g.Options.Generate.User {
+		return "", nil
+	}
+
+	return ControllerBaseGenerator{}.Generate()
 }
 
 func (g Generator) generateApp() (string, error) {
