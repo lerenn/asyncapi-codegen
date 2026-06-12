@@ -142,5 +142,5 @@ func (suite *Suite) TestWithCamelKeyConversion() {
 	bMsg := <-interceptor
 
 	// Check that the additional properties are at the level 0 of payload
-	suite.Require().Equal("{\"ThisIsAProperty\":\"value\"}", string(bMsg.Payload))
+	suite.Require().Equal("{\"thisIsAProperty\":\"value\"}", string(bMsg.Payload))
 }
