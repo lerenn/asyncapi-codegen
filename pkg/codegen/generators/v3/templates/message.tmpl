@@ -307,3 +307,26 @@ func (msg *{{namify .Name}}) SetAsResponseFrom(req MessageWithCorrelationID) {
 {{- end -}}
 
 {{- end }}
+
+{{- /* ---------------------------------------------------------------------- */ -}}
+{{- /* fill-parameters-from-location auto-fills channel parameters that define */ -}}
+{{- /* a `location` runtime expression from the outgoing message, unless the   */ -}}
+{{- /* caller already set them. The dot is the operation. (issue #139)         */ -}}
+{{- define "fill-parameters-from-location" -}}
+{{- if .Channel.Follow.Parameters}}
+{{- range $pkey, $pvalue := .Channel.Follow.Parameters}}
+{{- if $pvalue.Follow.Location}}
+    // Fill {{namify $pkey}} from the message ({{$pvalue.Follow.Location}}) if not set
+    if params.{{namify $pkey}} == "" {
+        {{- if $pvalue.Follow.LocationRequired}}
+        params.{{namify $pkey}} = msg.{{referenceToStructAttributePath $pvalue.Follow.Location}}
+        {{- else}}
+        if v := msg.{{referenceToStructAttributePath $pvalue.Follow.Location}}; v != nil {
+            params.{{namify $pkey}} = *v
+        }
+        {{- end}}
+    }
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end -}}

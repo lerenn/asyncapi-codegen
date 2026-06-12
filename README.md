@@ -866,6 +866,30 @@ func (t *Settings) SetDefaults() {
 
 Defaults are supported for scalar properties (string, boolean, integer, number).
 
+### Channel parameters from message location (AsyncAPI v3)
+
+When a channel parameter declares a `location` runtime expression, the generated
+send functions auto-fill that parameter from the outgoing message when the
+caller leaves it empty. The parameter stays overridable: if you set it
+explicitly, your value is used as-is.
+
+```yaml
+channels:
+  user:
+    address: app.user.{userId}
+    parameters:
+      userId:
+        location: $message.payload#/userId
+    messages:
+      userSignedUp:
+        $ref: '#/components/messages/userSignedUp'
+```
+
+With the spec above, `SendAs...` derives `userId` from `msg.Payload.UserId`, so
+the message is published on `app.user.<userId>` without passing the parameter
+manually. Supported locations are `$message.payload#/...` and
+`$message.header#/...`, and the targeted field must be a string.
+
 ### ErrorHandler
 
 You can use an error handler that will be executed when processing for messages
