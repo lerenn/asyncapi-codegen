@@ -209,6 +209,43 @@ func SendFuncNameForMessage(op *asyncapi.Operation, prefix string, msg *asyncapi
 	return SendFuncName(op, prefix) + "For" + base
 }
 
+// messageNameBase returns the message type name without its "Message" suffix,
+// used to build per-message function names.
+func messageNameBase(msg *asyncapi.Message) string {
+	return strings.TrimSuffix(MessageTypeName(msg), "Message")
+}
+
+// SubscribeFuncNameForMessage returns the name of the per-message subscribe
+// function generated when a receive operation carries more than one message
+// (issue #333). It is the operation subscribe function name suffixed with "For"
+// and the message name.
+func SubscribeFuncNameForMessage(op *asyncapi.Operation, msg *asyncapi.Message) string {
+	return SubscribeFuncName(op) + "For" + messageNameBase(msg)
+}
+
+// UnsubscribeFuncNameForMessage returns the name of the per-message unsubscribe
+// function generated when a receive operation carries more than one message
+// (issue #333).
+func UnsubscribeFuncNameForMessage(op *asyncapi.Operation, msg *asyncapi.Message) string {
+	return "UnsubscribeFrom" + templateutil.Namify(op.Follow().Name) + "For" + messageNameBase(msg)
+}
+
+// ReceivedFuncNameForMessage returns the name of the per-message subscriber
+// callback generated when a receive operation carries more than one message
+// (issue #333).
+func ReceivedFuncNameForMessage(op *asyncapi.Operation, msg *asyncapi.Message) string {
+	return templateutil.Namify(op.Follow().Name) + "For" + messageNameBase(msg) + "Received"
+}
+
+// IsMultiMessageReceive reports whether the given receive operation carries more
+// than one message and therefore needs per-message subscribe functions and
+// try-each-until-valid dispatch (issue #333). Reply and reply-target operations
+// are excluded as the request/reply path is handled separately.
+func IsMultiMessageReceive(op *asyncapi.Operation) bool {
+	o := op.Follow()
+	return len(o.GetMessages()) > 1 && o.Reply == nil && o.ReplyOf == nil
+}
+
 // HelpersFunctions returns the functions that can be used as helpers
 // in a golang template.
 func HelpersFunctions() template.FuncMap {
@@ -234,5 +271,9 @@ func HelpersFunctions() template.FuncMap {
 		"operationMessageCount":          OperationMessageCount,
 		"messageTypeName":                MessageTypeName,
 		"sendFuncNameForMessage":         SendFuncNameForMessage,
+		"subscribeFuncNameForMessage":    SubscribeFuncNameForMessage,
+		"unsubscribeFuncNameForMessage":  UnsubscribeFuncNameForMessage,
+		"receivedFuncNameForMessage":     ReceivedFuncNameForMessage,
+		"isMultiMessageReceive":          IsMultiMessageReceive,
 	}
 }

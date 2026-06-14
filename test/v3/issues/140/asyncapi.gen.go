@@ -7,9 +7,32 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"sync"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/lerenn/asyncapi-codegen/pkg/extensions"
 )
+
+// validate is the validator used to discriminate between the several message
+// types that can be received on a single channel (issue #333).
+var validate = validator.New()
+
+// messageDispatchHandler tries to convert and validate a raw broker message
+// against a single expected message type and, when it matches, dispatches it to
+// the registered callback. It returns true when the message matched the type.
+type messageDispatchHandler func(ctx context.Context, bMsg extensions.BrokerMessage) (handled bool, err error)
+
+// messageDispatcher holds, per channel address, the per-message handlers
+// registered by multi-message receive subscriptions and multiplexes a single
+// broker subscription to them (issue #333). It is held by pointer on the
+// controller so the controller stays safe to copy by value.
+type messageDispatcher struct {
+	// mutex protects concurrent access to handlers.
+	mutex sync.Mutex
+	// handlers maps a channel address to the per-message handlers registered on it.
+	handlers map[string]map[string]messageDispatchHandler
+}
 
 // controller is the controller that will be used to communicate with the broker
 // It will be used internally by AppController and UserController
@@ -18,6 +41,9 @@ type controller struct {
 	broker extensions.BrokerController
 	// subscriptions is a map of all subscriptions
 	subscriptions map[string]extensions.BrokerChannelSubscription
+	// dispatcher multiplexes broker messages to the per-message handlers
+	// registered by multi-message receive subscriptions (issue #333).
+	dispatcher *messageDispatcher
 	// logger is the logger that will be used to log operations on controller
 	logger extensions.Logger
 	// middlewares are the middlewares that will be executed when sending or
@@ -206,8 +232,11 @@ func (c *AppController) SendAsSendEventsOperationForUserDeleted(
 
 // UserSubscriber contains all handlers that are listening messages for User
 type UserSubscriber interface {
-	// SendEventsOperationReceived receive all UserCreated messages from Events channel.
-	SendEventsOperationReceived(ctx context.Context, msg UserCreatedMessage) error
+	// SendEventsOperationForUserCreatedReceived receive all UserCreated messages from Events channel.
+	SendEventsOperationForUserCreatedReceived(ctx context.Context, msg UserCreatedMessage) error
+
+	// SendEventsOperationForUserDeletedReceived receive all UserDeleted messages from Events channel.
+	SendEventsOperationForUserDeletedReceived(ctx context.Context, msg UserDeletedMessage) error
 }
 
 // UserController is the structure that provides sending capabilities to the
@@ -227,6 +256,7 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 	controller := controller{
 		broker:        bc,
 		subscriptions: make(map[string]extensions.BrokerChannelSubscription),
+		dispatcher:    &messageDispatcher{handlers: make(map[string]map[string]messageDispatchHandler)},
 		logger:        extensions.DummyLogger{},
 		middlewares:   make([]extensions.Middleware, 0),
 		errorHandler:  extensions.DefaultErrorHandler(),
@@ -319,7 +349,10 @@ func (c *UserController) SubscribeToAllChannels(ctx context.Context, as UserSubs
 		return extensions.ErrNilUserSubscriber
 	}
 
-	if err := c.SubscribeToSendEventsOperation(ctx, as.SendEventsOperationReceived); err != nil {
+	if err := c.SubscribeToSendEventsOperationForUserCreated(ctx, as.SendEventsOperationForUserCreatedReceived); err != nil {
+		return err
+	}
+	if err := c.SubscribeToSendEventsOperationForUserDeleted(ctx, as.SendEventsOperationForUserDeletedReceived); err != nil {
 		return err
 	}
 
@@ -328,18 +361,17 @@ func (c *UserController) SubscribeToAllChannels(ctx context.Context, as UserSubs
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
 func (c *UserController) UnsubscribeFromAllChannels(ctx context.Context) {
-	c.UnsubscribeFromSendEventsOperation(ctx)
+	c.UnsubscribeFromSendEventsOperationForUserCreated(ctx)
+	c.UnsubscribeFromSendEventsOperationForUserDeleted(ctx)
 }
 
-// SubscribeToSendEventsOperation will receive UserCreated messages from Events channel.
+// SubscribeToSendEventsOperationForUserCreated will receive UserCreated messages from Events channel.
 //
-// Callback function 'fn' will be called each time a new message is received.
+// Callback function 'fn' will be called each time a UserCreated message is received.
 //
-// NOTE: for now, this only support the first message from AsyncAPI list.
-//
-// NOTE: for now, this only support the first message from AsyncAPI list.
-// If you need support for other messages, please raise an issue.
-func (c *UserController) SubscribeToSendEventsOperation(
+// NOTE: this channel carries several message types; a received message is only
+// dispatched to this callback when it matches the UserCreatedMessage schema.
+func (c *UserController) SubscribeToSendEventsOperationForUserCreated(
 	ctx context.Context,
 	fn func(ctx context.Context, msg UserCreatedMessage) error,
 ) error {
@@ -350,27 +382,149 @@ func (c *UserController) SubscribeToSendEventsOperation(
 	ctx = addUserContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
-	// Check if the controller is already subscribed
-	_, exists := c.subscriptions[addr]
-	if exists {
-		err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
-		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
-		return err
+	// Build the handler that discriminates UserCreatedMessage messages and
+	// dispatches them to the callback.
+	handler := func(hdlrCtx context.Context, bMsg extensions.BrokerMessage) (bool, error) {
+		// Try to convert the broker message to the expected type
+		msg, err := brokerMessageToUserCreatedMessage(bMsg)
+		if err != nil {
+			return false, nil
+		}
+
+		// Validate it against the message schema to discriminate it from the
+		// other message types received on this channel.
+		if err := validate.Struct(msg); err != nil {
+			return false, nil
+		}
+
+		// Execute the subscription function
+		if err := fn(hdlrCtx, msg); err != nil {
+			return true, err
+		}
+
+		return true, nil
 	}
 
-	// Subscribe to broker channel
+	// Register the handler and subscribe to the channel if not done already
+	return c.subscribeToSendEventsOperation(ctx, addr, "UserCreatedMessage", handler)
+}
+
+// UnsubscribeFromSendEventsOperationForUserCreated will stop the reception of UserCreated messages from Events channel.
+// The underlying broker subscription is canceled once the last message type on
+// the channel is unsubscribed.
+// A timeout can be set in context to avoid blocking operation, if needed.
+func (c *UserController) UnsubscribeFromSendEventsOperationForUserCreated(
+	ctx context.Context,
+) {
+	// Get channel address
+	addr := "v3.issue140.events"
+
+	c.unsubscribeFromSendEventsOperation(ctx, addr, "UserCreatedMessage")
+}
+
+// SubscribeToSendEventsOperationForUserDeleted will receive UserDeleted messages from Events channel.
+//
+// Callback function 'fn' will be called each time a UserDeleted message is received.
+//
+// NOTE: this channel carries several message types; a received message is only
+// dispatched to this callback when it matches the UserDeletedMessage schema.
+func (c *UserController) SubscribeToSendEventsOperationForUserDeleted(
+	ctx context.Context,
+	fn func(ctx context.Context, msg UserDeletedMessage) error,
+) error {
+	// Get channel address
+	addr := "v3.issue140.events"
+
+	// Set context
+	ctx = addUserContextValues(ctx, addr)
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
+
+	// Build the handler that discriminates UserDeletedMessage messages and
+	// dispatches them to the callback.
+	handler := func(hdlrCtx context.Context, bMsg extensions.BrokerMessage) (bool, error) {
+		// Try to convert the broker message to the expected type
+		msg, err := brokerMessageToUserDeletedMessage(bMsg)
+		if err != nil {
+			return false, nil
+		}
+
+		// Validate it against the message schema to discriminate it from the
+		// other message types received on this channel.
+		if err := validate.Struct(msg); err != nil {
+			return false, nil
+		}
+
+		// Execute the subscription function
+		if err := fn(hdlrCtx, msg); err != nil {
+			return true, err
+		}
+
+		return true, nil
+	}
+
+	// Register the handler and subscribe to the channel if not done already
+	return c.subscribeToSendEventsOperation(ctx, addr, "UserDeletedMessage", handler)
+}
+
+// UnsubscribeFromSendEventsOperationForUserDeleted will stop the reception of UserDeleted messages from Events channel.
+// The underlying broker subscription is canceled once the last message type on
+// the channel is unsubscribed.
+// A timeout can be set in context to avoid blocking operation, if needed.
+func (c *UserController) UnsubscribeFromSendEventsOperationForUserDeleted(
+	ctx context.Context,
+) {
+	// Get channel address
+	addr := "v3.issue140.events"
+
+	c.unsubscribeFromSendEventsOperation(ctx, addr, "UserDeletedMessage")
+}
+
+// subscribeToSendEventsOperation registers a per-message handler on the
+// Events channel and, on the first
+// registration, opens a single broker subscription multiplexed to every
+// registered handler (issue #333).
+func (c *UserController) subscribeToSendEventsOperation(
+	ctx context.Context,
+	addr string,
+	msgName string,
+	handler messageDispatchHandler,
+) error {
+	c.dispatcher.mutex.Lock()
+	defer c.dispatcher.mutex.Unlock()
+
+	// If there are already handlers on this channel, just register this one: the
+	// existing broker subscription will dispatch to it.
+	if handlers, exists := c.dispatcher.handlers[addr]; exists {
+		if _, exists := handlers[msgName]; exists {
+			err := fmt.Errorf("%w: controller is already subscribed for message %q on channel %q", extensions.ErrAlreadySubscribedChannel, msgName, addr)
+			c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
+			return err
+		}
+
+		handlers[msgName] = handler
+		c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
+		return nil
+	}
+
+	// First registration on this channel: register the handler...
+	c.dispatcher.handlers[addr] = map[string]messageDispatchHandler{msgName: handler}
+
+	// ...and subscribe to the broker channel.
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
+		delete(c.dispatcher.handlers, addr)
 		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
+	c.subscriptions[addr] = sub
 	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
-	// Asynchronously listen to new messages and pass them to app receiver
+	// Asynchronously listen to new messages and dispatch them to the matching
+	// registered handler.
 	go func() {
 		for {
 			// Listen to next message
-			stop, err := c.listenToSendEventsOperationNextMessage(addr, sub, fn)
+			stop, err := c.listenToSendEventsOperationNextMessage(addr, sub)
 			if err != nil {
 				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
@@ -382,16 +536,12 @@ func (c *UserController) SubscribeToSendEventsOperation(
 		}
 	}()
 
-	// Add the cancel channel to the inside map
-	c.subscriptions[addr] = sub
-
 	return nil
 }
 
 func (c *UserController) listenToSendEventsOperationNextMessage(
 	addr string,
 	sub extensions.BrokerChannelSubscription,
-	fn func(ctx context.Context, msg UserCreatedMessage) error,
 ) (stop bool, err error) {
 	// Create a context for the received response
 	msgCtx, cancel := context.WithCancel(context.Background())
@@ -413,20 +563,37 @@ func (c *UserController) listenToSendEventsOperationNextMessage(
 
 	// Execute middlewares before handling the message
 	if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, func(middlewareCtx context.Context) error {
-		// Process message
-		msg, err := brokerMessageToUserCreatedMessage(acknowledgeableBrokerMessage.BrokerMessage)
-		if err != nil {
-			return err
+		// Snapshot the registered message names in a deterministic order
+		c.dispatcher.mutex.Lock()
+		handlers := c.dispatcher.handlers[addr]
+		msgNames := make([]string, 0, len(handlers))
+		for msgName := range handlers {
+			msgNames = append(msgNames, msgName)
+		}
+		c.dispatcher.mutex.Unlock()
+		sort.Strings(msgNames)
+
+		// Try each registered handler until one matches the received message
+		for _, msgName := range msgNames {
+			c.dispatcher.mutex.Lock()
+			handler := c.dispatcher.handlers[addr][msgName]
+			c.dispatcher.mutex.Unlock()
+			if handler == nil {
+				continue
+			}
+
+			handled, err := handler(middlewareCtx, acknowledgeableBrokerMessage.BrokerMessage)
+			if err != nil {
+				return err
+			}
+			if handled {
+				acknowledgeableBrokerMessage.Ack()
+				return nil
+			}
 		}
 
-		// Execute the subscription function
-		if err := fn(middlewareCtx, msg); err != nil {
-			return err
-		}
-
-		acknowledgeableBrokerMessage.Ack()
-
-		return nil
+		// No registered handler matched the received message
+		return extensions.ErrNoMatchingMessage
 	}); err != nil {
 		c.errorHandler(msgCtx, addr, &acknowledgeableBrokerMessage, err)
 		// On error execute the acknowledgeableBrokerMessage nack() function and
@@ -437,28 +604,40 @@ func (c *UserController) listenToSendEventsOperationNextMessage(
 	return false, nil
 }
 
-// UnsubscribeFromSendEventsOperation will stop the reception of UserCreated messages from Events channel.
-// A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) UnsubscribeFromSendEventsOperation(
+func (c *UserController) unsubscribeFromSendEventsOperation(
 	ctx context.Context,
+	addr string,
+	msgName string,
 ) {
-	// Get channel address
-	addr := "v3.issue140.events"
+	c.dispatcher.mutex.Lock()
+	defer c.dispatcher.mutex.Unlock()
 
-	// Check if there receivers for this channel
-	sub, exists := c.subscriptions[addr]
+	// Check if there are handlers for this channel
+	handlers, exists := c.dispatcher.handlers[addr]
 	if !exists {
 		return
 	}
 
+	// Check if this message type is subscribed
+	if _, exists := handlers[msgName]; !exists {
+		return
+	}
+
+	// Remove the handler for this message type
+	delete(handlers, msgName)
+
 	// Set context
 	ctx = addUserContextValues(ctx, addr)
 
-	// Stop the subscription
-	sub.Cancel(ctx)
+	// If there are no more handlers on this channel, cancel the broker subscription
+	if len(handlers) == 0 {
+		delete(c.dispatcher.handlers, addr)
 
-	// Remove if from the receivers
-	delete(c.subscriptions, addr)
+		if sub, exists := c.subscriptions[addr]; exists {
+			sub.Cancel(ctx)
+			delete(c.subscriptions, addr)
+		}
+	}
 
 	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }

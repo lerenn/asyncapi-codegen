@@ -331,7 +331,10 @@ func (c *AppController) UnsubscribeFromPingOperation(
 	delete(c.subscriptions, addr)
 
 	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
-} // SubscribeToPingWithIDOperation will receive PingWithID messages from PingWithID channel.
+}
+
+// SubscribeToPingWithIDOperation will receive PingWithID messages from PingWithID channel.
+//
 // Callback function 'fn' will be called each time a new message is received.
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.

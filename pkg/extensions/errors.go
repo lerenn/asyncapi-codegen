@@ -34,4 +34,9 @@ var (
 	// ErrChannelAddressEmpty is raised when a given channel address is empty,
 	// when dynamically set from message.
 	ErrChannelAddressEmpty = fmt.Errorf("%w: channel address empty", ErrAsyncAPI)
+
+	// ErrNoMatchingMessage is raised when a message received on a channel that
+	// carries several message types does not match any of the expected types,
+	// i.e. it could not be unmarshalled and validated against any of them.
+	ErrNoMatchingMessage = fmt.Errorf("%w: no expected message type matched the received message", ErrAsyncAPI)
 )

@@ -1,0 +1,48 @@
+asyncapi: 3.0.0
+info:
+  title: Issue 333 - receive multiple messages per operation
+  version: 1.0.0
+
+channels:
+  events:
+    address: v3.issue333.events
+    messages:
+      userSignedUp:
+        $ref: '#/components/messages/userSignedUp'
+      userDeleted:
+        $ref: '#/components/messages/userDeleted'
+
+operations:
+  receiveEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/events'
+
+components:
+  messages:
+    userSignedUp:
+      payload:
+        type: object
+        required:
+          - event
+          - id
+        properties:
+          event:
+            type: string
+            enum:
+              - user_signed_up
+          id:
+            type: string
+    userDeleted:
+      payload:
+        type: object
+        required:
+          - event
+          - id
+        properties:
+          event:
+            type: string
+            enum:
+              - user_deleted
+          id:
+            type: string

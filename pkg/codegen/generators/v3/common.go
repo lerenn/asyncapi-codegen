@@ -13,6 +13,19 @@ type ActionOperations struct {
 	Send         map[string]*asyncapi.Operation
 }
 
+// HasMultiMessageReceive reports whether at least one receive operation carries
+// more than one message, and therefore needs the multiplexed dispatcher
+// machinery (issue #333).
+func (ao ActionOperations) HasMultiMessageReceive() bool {
+	for _, op := range ao.Receive {
+		o := op.Follow()
+		if len(o.GetMessages()) > 1 && o.Reply == nil && o.ReplyOf == nil {
+			return true
+		}
+	}
+	return false
+}
+
 // NewActionOperations will create a struct with operations based on their action.
 func NewActionOperations(side generators.Side, spec asyncapi.Specification) ActionOperations {
 	var ao ActionOperations

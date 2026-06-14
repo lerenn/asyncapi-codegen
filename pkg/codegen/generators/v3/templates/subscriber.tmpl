@@ -2,8 +2,15 @@
 // {{ .Prefix }}Subscriber contains all handlers that are listening messages for {{ .Prefix }}
 type {{ .Prefix }}Subscriber interface {
 {{- range $key, $value := .Operations.Receive}}
+{{- if isMultiMessageReceive $value }}
+{{- range $msg := $value.GetMessages}}
+    // {{ receivedFuncNameForMessage $value $msg }} receive all {{ cutSuffix (messageTypeName $msg) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+    {{ receivedFuncNameForMessage $value $msg }}(ctx context.Context, msg {{messageTypeName $msg}}) error
+{{end}}
+{{- else}}
     // {{ receivedFuncName $value }} receive all {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
     {{ receivedFuncName $value }}(ctx context.Context, msg {{opToMsgTypeName $value}}) error
 {{end}}
+{{- end}}
 }
 {{- end}}

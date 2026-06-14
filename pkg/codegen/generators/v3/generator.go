@@ -83,7 +83,29 @@ func (g Generator) generateControllerBase() (string, error) {
 		return "", nil
 	}
 
-	return ControllerBaseGenerator{}.Generate()
+	return ControllerBaseGenerator{
+		MultiMessageReceive: g.hasMultiMessageReceive(),
+	}.Generate()
+}
+
+// hasMultiMessageReceive reports whether any of the controller sides that will
+// be generated has a receive operation carrying several messages (issue #333).
+func (g Generator) hasMultiMessageReceive() bool {
+	sides := make([]generators.Side, 0, 2)
+	if g.Options.Generate.Application {
+		sides = append(sides, generators.SideIsApplication)
+	}
+	if g.Options.Generate.User {
+		sides = append(sides, generators.SideIsUser)
+	}
+
+	for _, side := range sides {
+		if NewActionOperations(side, g.Specification).HasMultiMessageReceive() {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (g Generator) generateApp() (string, error) {
