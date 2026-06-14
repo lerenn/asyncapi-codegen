@@ -97,7 +97,7 @@ func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
 {{if .MethodCount -}}
     c.UnsubscribeAll(ctx)
 
-    c.logger.Info(ctx, "Closed {{ snakeCase .Prefix }} controller")
+    c.logger.Info(ctx, "Closed {{ snakeCase .Prefix }} controller", extensions.LogInfosFromContext(ctx)...)
 {{end -}}
 }
 
@@ -152,17 +152,17 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(
     _, exists := c.subscriptions[path]
     if exists {
         err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
-        c.logger.Error(ctx, err.Error())
+        c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
         return err
     }
 
     // Subscribe to broker channel
     sub, err := c.broker.Subscribe(ctx, path)
     if err != nil {
-        c.logger.Error(ctx, err.Error())
+        c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
         return err
     }
-    c.logger.Info(ctx, "Subscribed to channel")
+    c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
     // Asynchronously listen to new messages and pass them to app subscriber
     go func() {
@@ -170,7 +170,7 @@ func (c *{{ $.Prefix }}Controller) Subscribe{{operationName $value}}(
             // Listen to next message
             stop, err := c.listenTo{{operationName $value}}NextMessage(path, sub, fn)
             if err != nil {
-                c.logger.Error(ctx, err.Error())
+                c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
             }
 
             // Stop if required
@@ -267,7 +267,7 @@ func (c *{{ $.Prefix }}Controller) Unsubscribe{{operationName $value}}(ctx conte
     // Remove if from the subscribers
     delete(c.subscriptions, path)
 
-    c.logger.Info(ctx, "Unsubscribed from channel")
+    c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 {{end}}
 
@@ -340,10 +340,10 @@ func (c *UserController) WaitFor{{operationName $value}}(
     // Subscribe to broker channel
     sub, err := c.broker.Subscribe(ctx, path)
     if err != nil {
-        c.logger.Error(ctx, err.Error())
+        c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
         return {{(channelToMessage $value "subscribe").Name}}{}, err
     }
-    c.logger.Info(ctx, "Subscribed to channel")
+    c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
     // Close subscriber on leave
     defer func(){
@@ -351,7 +351,7 @@ func (c *UserController) WaitFor{{operationName $value}}(
         sub.Cancel(ctx)
 
         // Logging unsubscribing
-        c.logger.Info(ctx, "Unsubscribed from channel")
+        c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
     } ()
 
     // Execute callback for publication
@@ -366,7 +366,7 @@ func (c *UserController) WaitFor{{operationName $value}}(
         if err != nil {
             // Return on error (e.g. context canceled or subscription closed)
             // instead of looping forever
-            c.logger.Error(ctx, err.Error())
+            c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
             return {{(channelToMessage $value "subscribe").Name}}{}, err
         }
 
@@ -398,14 +398,14 @@ func (c *UserController) waitFor{{operationName $value}}NextMessage(
         // (i.e. uninitialized message), then the subscription ended before
         // receiving the expected message
         if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-            c.logger.Error(msgCtx, "Channel closed before getting message")
+            c.logger.Error(msgCtx, "Channel closed before getting message", extensions.LogInfosFromContext(msgCtx)...)
             return nil, extensions.ErrSubscriptionCanceled
         }
 
         // Get new message
         msg, err := brokerMessageTo{{(channelToMessage $value "subscribe").Name}}(acknowledgeableBrokerMessage.BrokerMessage)
         if err != nil {
-            c.logger.Error(msgCtx, err.Error())
+            c.logger.Error(msgCtx, err.Error(), extensions.LogInfosFromContext(msgCtx)...)
         }
 
         // Acknowledge message
@@ -432,7 +432,7 @@ func (c *UserController) waitFor{{operationName $value}}NextMessage(
 
         return &msg, nil
     case <-ctx.Done(): // Set corresponding error if context is done
-        c.logger.Error(msgCtx, "Context done before getting message")
+        c.logger.Error(msgCtx, "Context done before getting message", extensions.LogInfosFromContext(msgCtx)...)
         return nil, extensions.ErrContextCanceled
     }
 }

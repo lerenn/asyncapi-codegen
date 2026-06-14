@@ -156,7 +156,7 @@ func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeFromAllChannels(ctx)
 
-	c.logger.Info(ctx, "Closed app controller")
+	c.logger.Info(ctx, "Closed app controller", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SubscribeToAllChannels will receive messages from channels where channel has
@@ -202,17 +202,17 @@ func (c *AppController) SubscribeToPingOperation(
 	_, exists := c.subscriptions[addr]
 	if exists {
 		err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Asynchronously listen to new messages and pass them to app receiver
 	go func() {
@@ -220,7 +220,7 @@ func (c *AppController) SubscribeToPingOperation(
 			// Listen to next message
 			stop, err := c.listenToPingOperationNextMessage(addr, sub, fn)
 			if err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
 
 			// Stop if required
@@ -321,7 +321,7 @@ func (c *AppController) UnsubscribeFromPingOperation(
 	// Remove if from the receivers
 	delete(c.subscriptions, addr)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SendAsReplyToPingOperation will send a Pong message on Pong channel.
@@ -505,10 +505,10 @@ func (c *UserController) RequestToPingOperation(
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return PongMessage{}, err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Close receiver on leave
 	defer func() {
@@ -516,12 +516,12 @@ func (c *UserController) RequestToPingOperation(
 		sub.Cancel(ctx)
 
 		// Logging unsubscribing
-		c.logger.Info(ctx, "Unsubscribed from channel")
+		c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 	}()
 
 	// Send the message
 	if err := c.SendToPingOperation(ctx, msg); err != nil {
-		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
+		c.logger.Error(ctx, "error happened when sending message", append(extensions.LogInfosFromContext(ctx), extensions.LogInfo{Key: "error", Value: err.Error()})...)
 		return PongMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
 
@@ -532,7 +532,7 @@ func (c *UserController) RequestToPingOperation(
 		if err != nil {
 			// Return on error (e.g. context canceled or subscription closed)
 			// instead of looping forever
-			c.logger.Error(ctx, err.Error())
+			c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			return PongMessage{}, err
 		}
 
@@ -562,7 +562,7 @@ func (c *UserController) waitForPingOperationNextResponse(
 		// (i.e. uninitialized message), then the subscription ended before
 		// receiving the expected message
 		if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-			c.logger.Error(msgCtx, "Channel closed before getting message")
+			c.logger.Error(msgCtx, "Channel closed before getting message", extensions.LogInfosFromContext(msgCtx)...)
 			return nil, extensions.ErrSubscriptionCanceled
 		}
 
@@ -588,7 +588,7 @@ func (c *UserController) waitForPingOperationNextResponse(
 
 		return &rmsg, nil
 	case <-ctx.Done(): // Set corresponding error if context is done
-		c.logger.Error(msgCtx, "Context done before getting message")
+		c.logger.Error(msgCtx, "Context done before getting message", extensions.LogInfosFromContext(msgCtx)...)
 		return nil, extensions.ErrContextCanceled
 	}
 }

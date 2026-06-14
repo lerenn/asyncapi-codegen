@@ -76,18 +76,7 @@ func (tl Text) humanizeStructuredLogs(sl map[string]any, msgFmt *color.Color, pr
 	return s
 }
 
-func (tl Text) setInfoFromContext(ctx context.Context, msg string, info ...extensions.LogInfo) []extensions.LogInfo {
-	// Add additional keys from context
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsChannel, func(value any) {
-		info = append(info, extensions.LogInfo{Key: "Channel", Value: value})
-	})
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsCorrelationID, func(value any) {
-		info = append(info, extensions.LogInfo{Key: "CorrelationID", Value: value})
-	})
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsBrokerMessage, func(value any) {
-		info = append(info, extensions.LogInfo{Key: "Content", Value: value})
-	})
-
+func (tl Text) addStandardInfo(msg string, info ...extensions.LogInfo) []extensions.LogInfo {
 	// Add additional keys
 	info = append(info, extensions.LogInfo{
 		Key:   "Message",
@@ -102,9 +91,9 @@ func (tl Text) setInfoFromContext(ctx context.Context, msg string, info ...exten
 	return info
 }
 
-func (tl Text) formatLog(ctx context.Context, msgFmt *color.Color, msg string, info ...extensions.LogInfo) string {
+func (tl Text) formatLog(msgFmt *color.Color, msg string, info ...extensions.LogInfo) string {
 	// Set additional fields
-	info = tl.setInfoFromContext(ctx, msg, info...)
+	info = tl.addStandardInfo(msg, info...)
 
 	// Structure log
 	sl := structureLogs(info)
@@ -114,22 +103,22 @@ func (tl Text) formatLog(ctx context.Context, msgFmt *color.Color, msg string, i
 }
 
 // Info logs a message at info level with context and additional info.
-func (tl Text) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
+func (tl Text) Info(_ context.Context, msg string, info ...extensions.LogInfo) {
 	if tl.level > LevelInfo {
 		return
 	}
-	fmt.Println(tl.formatLog(ctx, tl.boldWhitePrinter, msg, info...))
+	fmt.Println(tl.formatLog(tl.boldWhitePrinter, msg, info...))
 }
 
 // Warning logs a message at warning level with context and additional info.
-func (tl Text) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
+func (tl Text) Warning(_ context.Context, msg string, info ...extensions.LogInfo) {
 	if tl.level > LevelWarning {
 		return
 	}
-	fmt.Println(tl.formatLog(ctx, tl.boldOrangePrinter, msg, info...))
+	fmt.Println(tl.formatLog(tl.boldOrangePrinter, msg, info...))
 }
 
 // Error logs a message at error level with context and additional info.
-func (tl Text) Error(ctx context.Context, msg string, info ...extensions.LogInfo) {
-	fmt.Println(tl.formatLog(ctx, tl.boldRedPrinter, msg, info...))
+func (tl Text) Error(_ context.Context, msg string, info ...extensions.LogInfo) {
+	fmt.Println(tl.formatLog(tl.boldRedPrinter, msg, info...))
 }

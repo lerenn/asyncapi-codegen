@@ -159,7 +159,7 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeAll(ctx)
 
-	c.logger.Info(ctx, "Closed user controller")
+	c.logger.Info(ctx, "Closed user controller", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
@@ -199,17 +199,17 @@ func (c *UserController) SubscribePong(
 	_, exists := c.subscriptions[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
@@ -217,7 +217,7 @@ func (c *UserController) SubscribePong(
 			// Listen to next message
 			stop, err := c.listenToPongNextMessage(path, sub, fn)
 			if err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
 
 			// Stop if required
@@ -308,7 +308,7 @@ func (c *UserController) UnsubscribePong(ctx context.Context) {
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 
 // PublishPing will publish messages to 'ping.v2' channel
@@ -365,10 +365,10 @@ func (c *UserController) WaitForPong(
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return PongMessage{}, err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Close subscriber on leave
 	defer func() {
@@ -376,7 +376,7 @@ func (c *UserController) WaitForPong(
 		sub.Cancel(ctx)
 
 		// Logging unsubscribing
-		c.logger.Info(ctx, "Unsubscribed from channel")
+		c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 	}()
 
 	// Execute callback for publication
@@ -391,7 +391,7 @@ func (c *UserController) WaitForPong(
 		if err != nil {
 			// Return on error (e.g. context canceled or subscription closed)
 			// instead of looping forever
-			c.logger.Error(ctx, err.Error())
+			c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			return PongMessage{}, err
 		}
 
@@ -423,14 +423,14 @@ func (c *UserController) waitForPongNextMessage(
 		// (i.e. uninitialized message), then the subscription ended before
 		// receiving the expected message
 		if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-			c.logger.Error(msgCtx, "Channel closed before getting message")
+			c.logger.Error(msgCtx, "Channel closed before getting message", extensions.LogInfosFromContext(msgCtx)...)
 			return nil, extensions.ErrSubscriptionCanceled
 		}
 
 		// Get new message
 		msg, err := brokerMessageToPongMessage(acknowledgeableBrokerMessage.BrokerMessage)
 		if err != nil {
-			c.logger.Error(msgCtx, err.Error())
+			c.logger.Error(msgCtx, err.Error(), extensions.LogInfosFromContext(msgCtx)...)
 		}
 
 		// Acknowledge message
@@ -457,7 +457,7 @@ func (c *UserController) waitForPongNextMessage(
 
 		return &msg, nil
 	case <-ctx.Done(): // Set corresponding error if context is done
-		c.logger.Error(msgCtx, "Context done before getting message")
+		c.logger.Error(msgCtx, "Context done before getting message", extensions.LogInfosFromContext(msgCtx)...)
 		return nil, extensions.ErrContextCanceled
 	}
 }

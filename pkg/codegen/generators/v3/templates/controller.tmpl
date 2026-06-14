@@ -97,7 +97,7 @@ func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
 {{if .Operations.ReceiveCount -}}
     c.UnsubscribeFromAllChannels(ctx)
 
-    c.logger.Info(ctx, "Closed {{ snakeCase .Prefix }} controller")
+    c.logger.Info(ctx, "Closed {{ snakeCase .Prefix }} controller", extensions.LogInfosFromContext(ctx)...)
 {{end -}}
 }
 
@@ -158,17 +158,17 @@ func (c *{{ $.Prefix }}Controller) {{ subscribeFuncName $value }}(
     _, exists := c.subscriptions[addr]
     if exists {
         err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
-        c.logger.Error(ctx, err.Error())
+        c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
         return err
     }
 
     // Subscribe to broker channel
     sub, err := c.broker.Subscribe(ctx, addr)
     if err != nil {
-        c.logger.Error(ctx, err.Error())
+        c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
         return err
     }
-    c.logger.Info(ctx, "Subscribed to channel")
+    c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
     // Asynchronously listen to new messages and pass them to app receiver
     go func() {
@@ -176,7 +176,7 @@ func (c *{{ $.Prefix }}Controller) {{ subscribeFuncName $value }}(
             // Listen to next message
             stop, err := c.listenTo{{ namify $value.Follow.Name }}NextMessage(addr, sub, fn)
             if err != nil {
-                c.logger.Error(ctx, err.Error())
+                c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
             }
 
             // Stop if required
@@ -307,7 +307,7 @@ func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{ namify $value.Follow.Name }
     // Remove if from the receivers
     delete(c.subscriptions, addr)
 
-    c.logger.Info(ctx, "Unsubscribed from channel")
+    c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 {{- end}}
 
@@ -394,7 +394,7 @@ func (c *{{ $.Prefix }}Controller) {{ sendFuncName $value $.Prefix }}(
     // Set correlation ID if it does not exist
     if id := msg.CorrelationID(); id == "" {
         {{if .ReplyOf -}}
-        c.logger.Error(ctx, extensions.ErrNoCorrelationIDSet.Error())
+        c.logger.Error(ctx, extensions.ErrNoCorrelationIDSet.Error(), extensions.LogInfosFromContext(ctx)...)
         return extensions.ErrNoCorrelationIDSet
         {{else -}}
         msg.SetCorrelationID(uuid.New().String())
@@ -464,10 +464,10 @@ func (c *{{ $.Prefix }}Controller) {{ requestFuncName $value $.Prefix }}(
     // Subscribe to broker channel
     sub, err := c.broker.Subscribe(ctx, addr)
     if err != nil {
-        c.logger.Error(ctx, err.Error())
+        c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
         return {{channelToMessageTypeName .Reply.Channel}}{}, err
     }
-    c.logger.Info(ctx, "Subscribed to channel")
+    c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
     // Close receiver on leave
     defer func(){
@@ -475,7 +475,7 @@ func (c *{{ $.Prefix }}Controller) {{ requestFuncName $value $.Prefix }}(
         sub.Cancel(ctx)
 
         // Logging unsubscribing
-        c.logger.Info(ctx, "Unsubscribed from channel")
+        c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
     } ()
 
     {{if $value.GetMessage.HaveCorrelationID -}}
@@ -487,7 +487,7 @@ func (c *{{ $.Prefix }}Controller) {{ requestFuncName $value $.Prefix }}(
 
     // Send the message 
     if err := c.{{ sendFuncName $value $.Prefix }}(ctx, {{- if .Channel.Follow.Parameters}}params,{{- end}} msg); err != nil {
-        c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
+        c.logger.Error(ctx, "error happened when sending message", append(extensions.LogInfosFromContext(ctx), extensions.LogInfo{Key: "error", Value: err.Error()})...)
         return {{channelToMessageTypeName .Reply.Channel}}{}, fmt.Errorf("error happened when sending message: %w", err)
     }
 
@@ -498,7 +498,7 @@ func (c *{{ $.Prefix }}Controller) {{ requestFuncName $value $.Prefix }}(
         if err != nil {
             // Return on error (e.g. context canceled or subscription closed)
             // instead of looping forever
-            c.logger.Error(ctx, err.Error())
+            c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
             return {{channelToMessageTypeName .Reply.Channel}}{}, err
         }
 
@@ -534,7 +534,7 @@ func (c *{{ $.Prefix }}Controller) waitFor{{ namify $value.Follow.Name }}NextRes
         // (i.e. uninitialized message), then the subscription ended before
         // receiving the expected message
         if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-            c.logger.Error(msgCtx, "Channel closed before getting message")
+            c.logger.Error(msgCtx, "Channel closed before getting message", extensions.LogInfosFromContext(msgCtx)...)
             return nil, extensions.ErrSubscriptionCanceled
         }
 
@@ -542,7 +542,7 @@ func (c *{{ $.Prefix }}Controller) waitFor{{ namify $value.Follow.Name }}NextRes
         // Get new message
         rmsg, err := brokerMessageTo{{channelToMessageTypeName .Reply.Channel}}(acknowledgeableBrokerMessage.BrokerMessage)
         if err != nil {
-            c.logger.Error(msgCtx, err.Error())
+            c.logger.Error(msgCtx, err.Error(), extensions.LogInfosFromContext(msgCtx)...)
         }
 
         // Acknowledge the message
@@ -576,7 +576,7 @@ func (c *{{ $.Prefix }}Controller) waitFor{{ namify $value.Follow.Name }}NextRes
 
         return &rmsg, nil
     case <-ctx.Done(): // Set corresponding error if context is done
-        c.logger.Error(msgCtx, "Context done before getting message")
+        c.logger.Error(msgCtx, "Context done before getting message", extensions.LogInfosFromContext(msgCtx)...)
         return nil, extensions.ErrContextCanceled
     }
 }

@@ -211,10 +211,10 @@ func (c *UserController) RequestToPingRequestOperation(
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return PongMessage{}, err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Close receiver on leave
 	defer func() {
@@ -222,7 +222,7 @@ func (c *UserController) RequestToPingRequestOperation(
 		sub.Cancel(ctx)
 
 		// Logging unsubscribing
-		c.logger.Info(ctx, "Unsubscribed from channel")
+		c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 	}()
 
 	// Set correlation ID if it does not exist
@@ -232,7 +232,7 @@ func (c *UserController) RequestToPingRequestOperation(
 
 	// Send the message
 	if err := c.SendToPingRequestOperation(ctx, msg); err != nil {
-		c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
+		c.logger.Error(ctx, "error happened when sending message", append(extensions.LogInfosFromContext(ctx), extensions.LogInfo{Key: "error", Value: err.Error()})...)
 		return PongMessage{}, fmt.Errorf("error happened when sending message: %w", err)
 	}
 
@@ -243,7 +243,7 @@ func (c *UserController) RequestToPingRequestOperation(
 		if err != nil {
 			// Return on error (e.g. context canceled or subscription closed)
 			// instead of looping forever
-			c.logger.Error(ctx, err.Error())
+			c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			return PongMessage{}, err
 		}
 
@@ -275,14 +275,14 @@ func (c *UserController) waitForPingRequestOperationNextResponse(
 		// (i.e. uninitialized message), then the subscription ended before
 		// receiving the expected message
 		if !open && acknowledgeableBrokerMessage.IsUninitialized() {
-			c.logger.Error(msgCtx, "Channel closed before getting message")
+			c.logger.Error(msgCtx, "Channel closed before getting message", extensions.LogInfosFromContext(msgCtx)...)
 			return nil, extensions.ErrSubscriptionCanceled
 		}
 
 		// Get new message
 		rmsg, err := brokerMessageToPongMessage(acknowledgeableBrokerMessage.BrokerMessage)
 		if err != nil {
-			c.logger.Error(msgCtx, err.Error())
+			c.logger.Error(msgCtx, err.Error(), extensions.LogInfosFromContext(msgCtx)...)
 		}
 
 		// Acknowledge the message
@@ -312,7 +312,7 @@ func (c *UserController) waitForPingRequestOperationNextResponse(
 
 		return &rmsg, nil
 	case <-ctx.Done(): // Set corresponding error if context is done
-		c.logger.Error(msgCtx, "Context done before getting message")
+		c.logger.Error(msgCtx, "Context done before getting message", extensions.LogInfosFromContext(msgCtx)...)
 		return nil, extensions.ErrContextCanceled
 	}
 }
