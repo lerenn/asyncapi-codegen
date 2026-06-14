@@ -1,3 +1,25 @@
+{{if .MultiMessageReceive -}}
+// validate is the validator used to discriminate between the several message
+// types that can be received on a single channel (issue #333).
+var validate = validator.New()
+
+// messageDispatchHandler tries to convert and validate a raw broker message
+// against a single expected message type and, when it matches, dispatches it to
+// the registered callback. It returns true when the message matched the type.
+type messageDispatchHandler func(ctx context.Context, bMsg extensions.BrokerMessage) (handled bool, err error)
+
+// messageDispatcher holds, per channel address, the per-message handlers
+// registered by multi-message receive subscriptions and multiplexes a single
+// broker subscription to them (issue #333). It is held by pointer on the
+// controller so the controller stays safe to copy by value.
+type messageDispatcher struct {
+    // mutex protects concurrent access to handlers.
+    mutex sync.Mutex
+    // handlers maps a channel address to the per-message handlers registered on it.
+    handlers map[string]map[string]messageDispatchHandler
+}
+{{end -}}
+
 // controller is the controller that will be used to communicate with the broker
 // It will be used internally by AppController and UserController
 type controller struct {
@@ -5,6 +27,11 @@ type controller struct {
     broker extensions.BrokerController
     // subscriptions is a map of all subscriptions
     subscriptions map[string]extensions.BrokerChannelSubscription
+    {{- if .MultiMessageReceive}}
+    // dispatcher multiplexes broker messages to the per-message handlers
+    // registered by multi-message receive subscriptions (issue #333).
+    dispatcher *messageDispatcher
+    {{- end}}
     // logger is the logger that will be used to log operations on controller
     logger           extensions.Logger
     // middlewares are the middlewares that will be executed when sending or

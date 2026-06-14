@@ -15,6 +15,9 @@ func New{{ .Prefix }}Controller(bc extensions.BrokerController, options ...Contr
     controller := controller{
         broker:         bc,
         subscriptions:  make(map[string]extensions.BrokerChannelSubscription),
+        {{- if .Operations.HasMultiMessageReceive}}
+        dispatcher:     &messageDispatcher{handlers: make(map[string]map[string]messageDispatchHandler)},
+        {{- end}}
         logger:         extensions.DummyLogger{},
         middlewares:    make([]extensions.Middleware, 0),
         errorHandler:   extensions.DefaultErrorHandler(),
@@ -112,9 +115,17 @@ func (c *{{ .Prefix }}Controller) SubscribeToAllChannels(ctx context.Context, as
 
     {{range  $key, $value := .Operations.Receive -}}
     {{- if not .Channel.Follow.Parameters }}
+    {{- if isMultiMessageReceive $value }}
+    {{- range $msg := $value.GetMessages}}
+    if err := c.{{ subscribeFuncNameForMessage $value $msg }}(ctx, as.{{ receivedFuncNameForMessage $value $msg }}); err != nil {
+        return err
+    }
+    {{- end}}
+    {{- else}}
     if err := c.{{ subscribeFuncName $value }}(ctx, as.{{ receivedFuncName $value }}); err != nil {
         return err
     }
+    {{- end}}
     {{- end}}
     {{- end}}
 
@@ -125,13 +136,259 @@ func (c *{{ .Prefix }}Controller) SubscribeToAllChannels(ctx context.Context, as
 func (c *{{ .Prefix }}Controller) UnsubscribeFromAllChannels(ctx context.Context) {
     {{- range  $key, $value := .Operations.Receive}}
     {{- if not .Channel.Follow.Parameters}}
+    {{- if isMultiMessageReceive $value }}
+    {{- range $msg := $value.GetMessages}}
+    c.{{ unsubscribeFuncNameForMessage $value $msg }}(ctx)
+    {{- end}}
+    {{- else}}
     c.UnsubscribeFrom{{ namify $value.Follow.Name }}(ctx)
+    {{- end}}
     {{- end}}
     {{- end}}
 }
 {{- end}}
 
 {{range $key, $value := .Operations.Receive -}}
+{{- if isMultiMessageReceive $value }}
+{{- /* MULTI-MESSAGE RECEIVE (#333): generate one subscribe function per message.
+       A single broker subscription per channel is opened and multiplexed to the
+       registered per-message handlers, using try-each-until-valid discrimination
+       (unmarshal + validate) to dispatch each received message. */}}
+{{- range $msg := $value.GetMessages}}
+// {{ subscribeFuncNameForMessage $value $msg }} will receive {{ cutSuffix (messageTypeName $msg) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+//
+// Callback function 'fn' will be called each time a {{ cutSuffix (messageTypeName $msg) "Message" }} message is received.
+//
+// NOTE: this channel carries several message types; a received message is only
+// dispatched to this callback when it matches the {{ messageTypeName $msg }} schema.
+func (c *{{ $.Prefix }}Controller) {{ subscribeFuncNameForMessage $value $msg }}(
+    ctx context.Context,
+    {{- if $value.Channel.Follow.Parameters}}
+    params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
+    {{- end}}
+    fn func (ctx context.Context, msg {{messageTypeName $msg}}) error,
+) error {
+    // Get channel address
+    addr := {{ generateChannelAddrFromOp $value }}
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
+    ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
+
+    // Build the handler that discriminates {{messageTypeName $msg}} messages and
+    // dispatches them to the callback.
+    handler := func(hdlrCtx context.Context, bMsg extensions.BrokerMessage) (bool, error) {
+        // Try to convert the broker message to the expected type
+        msg, err := brokerMessageTo{{messageTypeName $msg}}(bMsg)
+        if err != nil {
+            return false, nil
+        }
+
+        // Validate it against the message schema to discriminate it from the
+        // other message types received on this channel.
+        if err := validate.Struct(msg); err != nil {
+            return false, nil
+        }
+
+        {{if $msg.HaveCorrelationID -}}
+        // Add correlation ID to context if it exists
+        if id := msg.CorrelationID(); id != "" {
+            hdlrCtx = context.WithValue(hdlrCtx, extensions.ContextKeyIsCorrelationID, id)
+        }
+        {{- end}}
+
+        // Execute the subscription function
+        if err := fn(hdlrCtx, msg); err != nil {
+            return true, err
+        }
+
+        return true, nil
+    }
+
+    // Register the handler and subscribe to the channel if not done already
+    return c.subscribeTo{{ namify $value.Follow.Name }}(ctx, addr, "{{messageTypeName $msg}}", handler)
+}
+
+// {{ unsubscribeFuncNameForMessage $value $msg }} will stop the reception of {{ cutSuffix (messageTypeName $msg) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+// The underlying broker subscription is canceled once the last message type on
+// the channel is unsubscribed.
+// A timeout can be set in context to avoid blocking operation, if needed.
+func (c *{{ $.Prefix }}Controller) {{ unsubscribeFuncNameForMessage $value $msg }}(
+    ctx context.Context,
+    {{- if $value.Channel.Follow.Parameters}}
+    params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
+    {{- end}}
+) {
+    // Get channel address
+    addr := {{ generateChannelAddrFromOp $value }}
+
+    c.unsubscribeFrom{{ namify $value.Follow.Name }}(ctx, addr, "{{messageTypeName $msg}}")
+}
+{{- end}}
+
+// subscribeTo{{ namify $value.Follow.Name }} registers a per-message handler on the
+// {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel and, on the first
+// registration, opens a single broker subscription multiplexed to every
+// registered handler (issue #333).
+func (c *{{ $.Prefix }}Controller) subscribeTo{{ namify $value.Follow.Name }}(
+    ctx context.Context,
+    addr string,
+    msgName string,
+    handler messageDispatchHandler,
+) error {
+    c.dispatcher.mutex.Lock()
+    defer c.dispatcher.mutex.Unlock()
+
+    // If there are already handlers on this channel, just register this one: the
+    // existing broker subscription will dispatch to it.
+    if handlers, exists := c.dispatcher.handlers[addr]; exists {
+        if _, exists := handlers[msgName]; exists {
+            err := fmt.Errorf("%w: controller is already subscribed for message %q on channel %q", extensions.ErrAlreadySubscribedChannel, msgName, addr)
+            c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
+            return err
+        }
+
+        handlers[msgName] = handler
+        c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
+        return nil
+    }
+
+    // First registration on this channel: register the handler...
+    c.dispatcher.handlers[addr] = map[string]messageDispatchHandler{msgName: handler}
+
+    // ...and subscribe to the broker channel.
+    sub, err := c.broker.Subscribe(ctx, addr)
+    if err != nil {
+        delete(c.dispatcher.handlers, addr)
+        c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
+        return err
+    }
+    c.subscriptions[addr] = sub
+    c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
+
+    // Asynchronously listen to new messages and dispatch them to the matching
+    // registered handler.
+    go func() {
+        for {
+            // Listen to next message
+            stop, err := c.listenTo{{ namify $value.Follow.Name }}NextMessage(addr, sub)
+            if err != nil {
+                c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
+            }
+
+            // Stop if required
+            if stop {
+                return
+            }
+        }
+    } ()
+
+    return nil
+}
+
+func (c *{{ $.Prefix }}Controller) listenTo{{ namify $value.Follow.Name }}NextMessage(
+    addr string,
+    sub extensions.BrokerChannelSubscription,
+) (stop bool, err error) {
+    // Create a context for the received response
+    msgCtx, cancel := context.WithCancel(context.Background())
+    msgCtx = add{{ $.Prefix }}ContextValues(msgCtx, addr)
+    msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
+    defer cancel()
+
+    // Wait for next message
+    acknowledgeableBrokerMessage, open := <-sub.MessagesChannel()
+
+    // If subscription is closed and there is no more message
+    // (i.e. uninitialized message), then exit the function
+    if !open && acknowledgeableBrokerMessage.IsUninitialized() {
+        return true, nil
+    }
+
+    // Set broker message to context
+    msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsBrokerMessage, acknowledgeableBrokerMessage.String())
+
+    // Execute middlewares before handling the message
+    if err := c.executeMiddlewares(msgCtx, &acknowledgeableBrokerMessage.BrokerMessage, func(middlewareCtx context.Context) error {
+        // Snapshot the registered message names in a deterministic order
+        c.dispatcher.mutex.Lock()
+        handlers := c.dispatcher.handlers[addr]
+        msgNames := make([]string, 0, len(handlers))
+        for msgName := range handlers {
+            msgNames = append(msgNames, msgName)
+        }
+        c.dispatcher.mutex.Unlock()
+        sort.Strings(msgNames)
+
+        // Try each registered handler until one matches the received message
+        for _, msgName := range msgNames {
+            c.dispatcher.mutex.Lock()
+            handler := c.dispatcher.handlers[addr][msgName]
+            c.dispatcher.mutex.Unlock()
+            if handler == nil {
+                continue
+            }
+
+            handled, err := handler(middlewareCtx, acknowledgeableBrokerMessage.BrokerMessage)
+            if err != nil {
+                return err
+            }
+            if handled {
+                acknowledgeableBrokerMessage.Ack()
+                return nil
+            }
+        }
+
+        // No registered handler matched the received message
+        return extensions.ErrNoMatchingMessage
+    }); err != nil {
+        c.errorHandler(msgCtx, addr, &acknowledgeableBrokerMessage, err)
+        // On error execute the acknowledgeableBrokerMessage nack() function and
+        // let the BrokerAcknowledgment decide what is the right nack behavior for the broker
+        acknowledgeableBrokerMessage.Nak()
+    }
+
+    return false, nil
+}
+
+func (c *{{ $.Prefix }}Controller) unsubscribeFrom{{ namify $value.Follow.Name }}(
+    ctx context.Context,
+    addr string,
+    msgName string,
+) {
+    c.dispatcher.mutex.Lock()
+    defer c.dispatcher.mutex.Unlock()
+
+    // Check if there are handlers for this channel
+    handlers, exists := c.dispatcher.handlers[addr]
+    if !exists {
+        return
+    }
+
+    // Check if this message type is subscribed
+    if _, exists := handlers[msgName]; !exists {
+        return
+    }
+
+    // Remove the handler for this message type
+    delete(handlers, msgName)
+
+    // Set context
+    ctx = add{{ $.Prefix }}ContextValues(ctx, addr)
+
+    // If there are no more handlers on this channel, cancel the broker subscription
+    if len(handlers) == 0 {
+        delete(c.dispatcher.handlers, addr)
+
+        if sub, exists := c.subscriptions[addr]; exists {
+            sub.Cancel(ctx)
+            delete(c.subscriptions, addr)
+        }
+    }
+
+    c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
+}
+{{- else}}
 // {{ subscribeFuncName $value }} will receive {{ cutSuffix (opToMsgTypeName $value) "Message" }} messages from {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
@@ -309,6 +566,7 @@ func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{ namify $value.Follow.Name }
 
     c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
+{{- end}}
 {{- end}}
 
 {{- range  $key, $value := .Operations.Send}}

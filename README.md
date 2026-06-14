@@ -916,8 +916,33 @@ operations:
 
 generates `SendAsSendEventsOperationForUserCreated` and
 `...ForUserDeleted`, each sending its own message type. Operations with a single
-message are unchanged. Reception of multiple message types on a single channel
-is not covered yet (the subscribe side still handles the first message only).
+message are unchanged.
+
+On the **receive** side, a subscribe function is likewise generated per message,
+named after the operation and the message, with one callback per message type:
+
+```yaml
+operations:
+  receiveEvents:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+```
+
+generates `SubscribeToReceiveEventsOperationForUserCreated(ctx, fn)` and
+`...ForUserDeleted(ctx, fn)` (plus the matching `UnsubscribeFrom...For...`
+functions and per-message methods on the subscriber interface). A single broker
+subscription is opened per channel and multiplexed to the registered handlers.
+
+Each received message is discriminated with a **try-each-until-valid** strategy:
+it is unmarshalled and validated against every expected message schema (using
+[`go-playground/validator`](https://github.com/go-playground/validator), so this
+dependency must be available in your module) and dispatched to the first one
+that matches. This is heuristic and can be ambiguous when several message
+schemas overlap — it works best when the messages have distinguishing required
+or `enum`/`const` fields. A message that matches none of the expected types is
+nacked and surfaced to the [error handler](#errorhandler) as
+`extensions.ErrNoMatchingMessage`. Operations with a single message are
+unchanged.
 
 ### Channel parameters from message location (AsyncAPI v3)
 
