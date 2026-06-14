@@ -158,7 +158,7 @@ func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeFromAllChannels(ctx)
 
-	c.logger.Info(ctx, "Closed app controller")
+	c.logger.Info(ctx, "Closed app controller", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SubscribeToAllChannels will receive messages from channels where channel has
@@ -208,17 +208,17 @@ func (c *AppController) SubscribeToAngleRequestOperation(
 	_, exists := c.subscriptions[addr]
 	if exists {
 		err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Asynchronously listen to new messages and pass them to app receiver
 	go func() {
@@ -226,7 +226,7 @@ func (c *AppController) SubscribeToAngleRequestOperation(
 			// Listen to next message
 			stop, err := c.listenToAngleRequestOperationNextMessage(addr, sub, fn)
 			if err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
 
 			// Stop if required
@@ -314,7 +314,7 @@ func (c *AppController) UnsubscribeFromAngleRequestOperation(
 	// Remove if from the receivers
 	delete(c.subscriptions, addr)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 } // SubscribeToStarRequestOperation will receive Star messages from Star channel.
 // Callback function 'fn' will be called each time a new message is received.
 //
@@ -337,17 +337,17 @@ func (c *AppController) SubscribeToStarRequestOperation(
 	_, exists := c.subscriptions[addr]
 	if exists {
 		err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Asynchronously listen to new messages and pass them to app receiver
 	go func() {
@@ -355,7 +355,7 @@ func (c *AppController) SubscribeToStarRequestOperation(
 			// Listen to next message
 			stop, err := c.listenToStarRequestOperationNextMessage(addr, sub, fn)
 			if err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
 
 			// Stop if required
@@ -443,7 +443,7 @@ func (c *AppController) UnsubscribeFromStarRequestOperation(
 	// Remove if from the receivers
 	delete(c.subscriptions, addr)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 
 // UserController is the structure that provides sending capabilities to the

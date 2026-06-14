@@ -158,7 +158,7 @@ func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeFromAllChannels(ctx)
 
-	c.logger.Info(ctx, "Closed app controller")
+	c.logger.Info(ctx, "Closed app controller", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SubscribeToAllChannels will receive messages from channels where channel has
@@ -204,17 +204,17 @@ func (c *AppController) SubscribeToPingRequestOperation(
 	_, exists := c.subscriptions[addr]
 	if exists {
 		err := fmt.Errorf("%w: controller is already subscribed on channel %q", extensions.ErrAlreadySubscribedChannel, addr)
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, addr)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Asynchronously listen to new messages and pass them to app receiver
 	go func() {
@@ -222,7 +222,7 @@ func (c *AppController) SubscribeToPingRequestOperation(
 			// Listen to next message
 			stop, err := c.listenToPingRequestOperationNextMessage(addr, sub, fn)
 			if err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
 
 			// Stop if required
@@ -329,7 +329,7 @@ func (c *AppController) UnsubscribeFromPingRequestOperation(
 	// Remove if from the receivers
 	delete(c.subscriptions, addr)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SendAsReplyToPingRequestOperation will send a Pong message on Pong channel.
@@ -345,7 +345,7 @@ func (c *AppController) SendAsReplyToPingRequestOperation(
 
 	// Set correlation ID if it does not exist
 	if id := msg.CorrelationID(); id == "" {
-		c.logger.Error(ctx, extensions.ErrNoCorrelationIDSet.Error())
+		c.logger.Error(ctx, extensions.ErrNoCorrelationIDSet.Error(), extensions.LogInfosFromContext(ctx)...)
 		return extensions.ErrNoCorrelationIDSet
 
 	}

@@ -281,7 +281,7 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeAll(ctx)
 
-	c.logger.Info(ctx, "Closed user controller")
+	c.logger.Info(ctx, "Closed user controller", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
@@ -321,17 +321,17 @@ func (c *UserController) SubscribeTestCreated(
 	_, exists := c.subscriptions[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
@@ -339,7 +339,7 @@ func (c *UserController) SubscribeTestCreated(
 			// Listen to next message
 			stop, err := c.listenToTestCreatedNextMessage(path, sub, fn)
 			if err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
 
 			// Stop if required
@@ -425,7 +425,7 @@ func (c *UserController) UnsubscribeTestCreated(ctx context.Context) {
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 
 // AsyncAPIVersion is the version of the used AsyncAPI document

@@ -155,7 +155,7 @@ func (c *AppController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeAll(ctx)
 
-	c.logger.Info(ctx, "Closed app controller")
+	c.logger.Info(ctx, "Closed app controller", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
@@ -195,17 +195,17 @@ func (c *AppController) SubscribeV2Issue49Chat(
 	_, exists := c.subscriptions[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
@@ -213,7 +213,7 @@ func (c *AppController) SubscribeV2Issue49Chat(
 			// Listen to next message
 			stop, err := c.listenToV2Issue49ChatNextMessage(path, sub, fn)
 			if err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
 
 			// Stop if required
@@ -299,7 +299,7 @@ func (c *AppController) UnsubscribeV2Issue49Chat(ctx context.Context) {
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 
 // PublishV2Issue49Chat will publish messages to 'v2.issue49.chat' channel
@@ -463,7 +463,7 @@ func (c *UserController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeAll(ctx)
 
-	c.logger.Info(ctx, "Closed user controller")
+	c.logger.Info(ctx, "Closed user controller", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
@@ -507,17 +507,17 @@ func (c *UserController) SubscribeV2Issue49Chat(
 	_, exists := c.subscriptions[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
@@ -525,7 +525,7 @@ func (c *UserController) SubscribeV2Issue49Chat(
 			// Listen to next message
 			stop, err := c.listenToV2Issue49ChatNextMessage(path, sub, fn)
 			if err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
 
 			// Stop if required
@@ -611,7 +611,7 @@ func (c *UserController) UnsubscribeV2Issue49Chat(ctx context.Context) {
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 
 // SubscribeV2Issue49Status will subscribe to new messages from 'v2.issue49.status' channel.
@@ -632,17 +632,17 @@ func (c *UserController) SubscribeV2Issue49Status(
 	_, exists := c.subscriptions[path]
 	if exists {
 		err := fmt.Errorf("%w: %q channel is already subscribed", extensions.ErrAlreadySubscribedChannel, path)
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
 
 	// Subscribe to broker channel
 	sub, err := c.broker.Subscribe(ctx, path)
 	if err != nil {
-		c.logger.Error(ctx, err.Error())
+		c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 		return err
 	}
-	c.logger.Info(ctx, "Subscribed to channel")
+	c.logger.Info(ctx, "Subscribed to channel", extensions.LogInfosFromContext(ctx)...)
 
 	// Asynchronously listen to new messages and pass them to app subscriber
 	go func() {
@@ -650,7 +650,7 @@ func (c *UserController) SubscribeV2Issue49Status(
 			// Listen to next message
 			stop, err := c.listenToV2Issue49StatusNextMessage(path, sub, fn)
 			if err != nil {
-				c.logger.Error(ctx, err.Error())
+				c.logger.Error(ctx, err.Error(), extensions.LogInfosFromContext(ctx)...)
 			}
 
 			// Stop if required
@@ -736,7 +736,7 @@ func (c *UserController) UnsubscribeV2Issue49Status(ctx context.Context) {
 	// Remove if from the subscribers
 	delete(c.subscriptions, path)
 
-	c.logger.Info(ctx, "Unsubscribed from channel")
+	c.logger.Info(ctx, "Unsubscribed from channel", extensions.LogInfosFromContext(ctx)...)
 }
 
 // PublishV2Issue49Chat will publish messages to 'v2.issue49.chat' channel

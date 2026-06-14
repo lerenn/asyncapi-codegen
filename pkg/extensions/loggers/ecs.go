@@ -27,28 +27,7 @@ func (ecs *ECS) setLevel(level Level) {
 	ecs.level = level
 }
 
-func (ecs ECS) setInfoFromContext(ctx context.Context, msg string, info ...extensions.LogInfo) []extensions.LogInfo {
-	// Add additional keys from context
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsProvider, func(value any) {
-		info = append(info, extensions.LogInfo{Key: "asyncapi.provider", Value: value})
-	})
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsChannel, func(value any) {
-		info = append(info, extensions.LogInfo{Key: "asyncapi.channel", Value: value})
-	})
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsDirection, func(value any) {
-		if value == "publication" {
-			info = append(info, extensions.LogInfo{Key: "event.action", Value: "published-message"})
-		} else if value == "reception" {
-			info = append(info, extensions.LogInfo{Key: "event.action", Value: "received-message"})
-		}
-	})
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsBrokerMessage, func(value any) {
-		info = append(info, extensions.LogInfo{Key: "event.original", Value: value})
-	})
-	extensions.IfContextSetWith(ctx, extensions.ContextKeyIsCorrelationID, func(value any) {
-		info = append(info, extensions.LogInfo{Key: "trace.id", Value: value})
-	})
-
+func (ecs ECS) addStandardInfo(msg string, info ...extensions.LogInfo) []extensions.LogInfo {
 	// Add additional keys
 	info = append(info, extensions.LogInfo{
 		Key:   "message",
@@ -67,9 +46,9 @@ func (ecs ECS) setInfoFromContext(ctx context.Context, msg string, info ...exten
 	return info
 }
 
-func (ecs ECS) formatLog(ctx context.Context, msg string, info ...extensions.LogInfo) string {
+func (ecs ECS) formatLog(msg string, info ...extensions.LogInfo) string {
 	// Set additional fields
-	info = ecs.setInfoFromContext(ctx, msg, info...)
+	info = ecs.addStandardInfo(msg, info...)
 
 	// Structure log
 	sl := structureLogs(info)
@@ -83,31 +62,31 @@ func (ecs ECS) formatLog(ctx context.Context, msg string, info ...extensions.Log
 	return string(b)
 }
 
-func (ecs ECS) logWithLevel(ctx context.Context, level string, msg string, info ...extensions.LogInfo) {
+func (ecs ECS) logWithLevel(level string, msg string, info ...extensions.LogInfo) {
 	// Add additional keys
 	info = append(info, extensions.LogInfo{Key: "log.level", Value: level})
 
 	// Print log
-	fmt.Println(ecs.formatLog(ctx, msg, info...))
+	fmt.Println(ecs.formatLog(msg, info...))
 }
 
 // Info logs a message at info level with context and additional info.
-func (ecs ECS) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
+func (ecs ECS) Info(_ context.Context, msg string, info ...extensions.LogInfo) {
 	if ecs.level > LevelInfo {
 		return
 	}
-	ecs.logWithLevel(ctx, "info", msg, info...)
+	ecs.logWithLevel("info", msg, info...)
 }
 
 // Warning logs a message at warning level with context and additional info.
-func (ecs ECS) Warning(ctx context.Context, msg string, info ...extensions.LogInfo) {
+func (ecs ECS) Warning(_ context.Context, msg string, info ...extensions.LogInfo) {
 	if ecs.level > LevelWarning {
 		return
 	}
-	ecs.logWithLevel(ctx, "warning", msg, info...)
+	ecs.logWithLevel("warning", msg, info...)
 }
 
 // Error logs a message at error level with context and additional info.
-func (ecs ECS) Error(ctx context.Context, msg string, info ...extensions.LogInfo) {
-	ecs.logWithLevel(ctx, "error", msg, info...)
+func (ecs ECS) Error(_ context.Context, msg string, info ...extensions.LogInfo) {
+	ecs.logWithLevel("error", msg, info...)
 }

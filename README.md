@@ -594,16 +594,34 @@ ctrl, _ := NewAppController(
 )
 ```
 
-The controller stores contextual information (channel, correlation ID,
-direction, …) in the `context.Context` passed to your logger. To retrieve it
-without unwrapping each key manually, use `extensions.LogInfosFromContext`:
+The generated code passes the contextual information (channel, correlation ID,
+direction, provider, broker message, version) directly to your logger as
+explicit `LogInfo` arguments at every log call. Your logger therefore only has
+to log the `msg` and the `info` it is given — there is no need to unwrap any
+context key:
 
 ```golang
 func (logger SimpleLogger) Info(ctx context.Context, msg string, info ...extensions.LogInfo) {
-  info = append(info, extensions.LogInfosFromContext(ctx)...)
+  // 'info' already contains the contextual values (channel, correlationID, …)
   // ... log msg with info
 }
 ```
+
+> **Migration note (from versions where loggers enriched from context):** the
+> contextual values are no longer read from the `context.Context` by the
+> built-in `Text`/`ECS` loggers — they are now supplied as explicit `LogInfo`
+> arguments by the generated code, using the generic keys returned by
+> `extensions.LogInfosFromContext` (`channel`, `correlationID`, `brokerMessage`,
+> `direction`, `provider`, `version`). This means:
+> * The built-in `Text` and `ECS` loggers now emit those generic keys instead of
+>   their previous custom names (e.g. ECS no longer maps to `trace.id`,
+>   `event.action`, `event.original`).
+> * Custom loggers receive everything as arguments and no longer need to call
+>   `extensions.LogInfosFromContext` themselves.
+>
+> The values are still stored in the `context.Context` (it stays useful for
+> other purposes), so a custom logger that *wants* to keep reading from context
+> can still call `extensions.LogInfosFromContext(ctx)`.
 
 ### Versioning
 
