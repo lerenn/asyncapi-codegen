@@ -33,7 +33,7 @@ func ValidTestSchema() TestSchema {
 		IntegerProp:          Ptr[int64](2),
 		IntegerExclusiveProp: Ptr[int64](3),
 		FloatProp:            Ptr[float64](2.55),
-		EnumProp:             Ptr("amber"),
+		EnumProp:             Ptr(EnumPropPropertyFromTestSchemaAmber),
 		ConstProp:            Ptr("Canada"),
 	}
 }
@@ -144,7 +144,7 @@ func (suite *Suite) TestArray() {
 
 func (suite *Suite) TestEnum() {
 	wrong := ValidTestSchema()
-	wrong.EnumProp = Ptr("Wrong")
+	wrong.EnumProp = Ptr(EnumPropPropertyFromTestSchema("Wrong"))
 
 	assert.Error(suite.T(), validator.New().Struct(wrong))
 
@@ -156,7 +156,7 @@ func (suite *Suite) TestEnum() {
 
 func (suite *Suite) TestConst() {
 	wrong := ValidTestSchema()
-	wrong.EnumProp = Ptr("Wrong")
+	wrong.EnumProp = Ptr(EnumPropPropertyFromTestSchema("Wrong"))
 
 	assert.Error(suite.T(), validator.New().Struct(wrong))
 

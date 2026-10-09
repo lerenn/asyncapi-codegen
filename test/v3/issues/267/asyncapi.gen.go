@@ -508,8 +508,18 @@ func (msg TestMessageFromTestChannel) toBrokerMessage() (extensions.BrokerMessag
 
 // TestSchema is a schema from the AsyncAPI specification required in messages
 type TestSchema struct {
-	EnumProp string `json:"EnumProp" validate:"oneof='nospaces' 'has a space'"`
+	EnumProp EnumPropPropertyFromTestSchema `json:"EnumProp" validate:"oneof='nospaces' 'has a space'"`
 }
+
+// EnumPropPropertyFromTestSchema is a schema from the AsyncAPI specification required in messages
+type EnumPropPropertyFromTestSchema string
+
+const (
+	// EnumPropPropertyFromTestSchemaNospaces is a possible value of EnumPropPropertyFromTestSchema.
+	EnumPropPropertyFromTestSchemaNospaces EnumPropPropertyFromTestSchema = "nospaces"
+	// EnumPropPropertyFromTestSchemaHasASpace is a possible value of EnumPropPropertyFromTestSchema.
+	EnumPropPropertyFromTestSchemaHasASpace EnumPropPropertyFromTestSchema = "has a space"
+)
 
 const (
 	// TestChannelPath is the constant representing the 'TestChannel' channel path.

@@ -51,6 +51,19 @@ func (t *{{ namify .Name }}) SetDefaults() {
 {{- end}}
 
 {{- /* ----------------------------- Others ----------------------------- */ -}}
+{{- else if isGeneratedEnum . -}}
+
+type {{ namify .Name }} string
+
+{{- $consts := enumConstants .}}
+
+const (
+{{- range $i, $c := $consts}}
+    // {{ $c }} is a possible value of {{ namify $.Name }}.
+    {{ $c }} {{ namify $.Name }} = {{ enumValue $ $i }}
+{{- end}}
+)
+
 {{- else -}}
 
 type {{ .Name }} {{template "schema-name" .}}
@@ -70,6 +83,9 @@ type {{ .Name }} {{template "schema-name" .}}
 {{- /* ------------------------- SubDefinitions ------------------------- */ -}}
 {{ if or (eq .Type "object") (eq .Type "array") -}}
     {{- range $key, $value := getChildrenObjectSchemas . }}
+        {{template "schema-definition" $value }}
+    {{- end}}
+    {{- range $value := enumChildren . }}
         {{template "schema-definition" $value }}
     {{- end}}
 {{- end}}

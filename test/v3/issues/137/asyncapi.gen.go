@@ -35,3 +35,16 @@ type AuditSchema struct {
 
 // ChannelSchema is a schema from the AsyncAPI specification required in messages
 type ChannelSchema string
+
+const (
+	// ChannelSchemaAPI0 is a possible value of ChannelSchema.
+	ChannelSchemaAPI0 ChannelSchema = "API0"
+	// ChannelSchemaAPI1 is a possible value of ChannelSchema.
+	ChannelSchemaAPI1 ChannelSchema = "API1"
+	// ChannelSchemaAPI2 is a possible value of ChannelSchema.
+	ChannelSchemaAPI2 ChannelSchema = "API2"
+	// ChannelSchemaAPI3 is a possible value of ChannelSchema.
+	ChannelSchemaAPI3 ChannelSchema = "API3"
+	// ChannelSchemaAPI4 is a possible value of ChannelSchema.
+	ChannelSchemaAPI4 ChannelSchema = "API4"
+)

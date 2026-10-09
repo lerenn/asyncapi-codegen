@@ -524,8 +524,8 @@ func (t *ColliderSchema) SetDefaults() {
 
 // ShapePropertyFromColliderSchema is a schema from the AsyncAPI specification required in messages
 type ShapePropertyFromColliderSchema struct {
-	Radius    float64 `json:"radius"`
-	ShapeType string  `json:"shape_type" validate:"oneof='sphere'"`
+	Radius    float64                           `json:"radius"`
+	ShapeType ShapeTypePropertyFromSphereSchema `json:"shape_type" validate:"oneof='sphere'"`
 }
 
 // ColliderDictionarySchema is a schema from the AsyncAPI specification required in messages
@@ -606,9 +606,17 @@ type PoseSchema struct {
 
 // SphereSchema is a schema from the AsyncAPI specification required in messages
 type SphereSchema struct {
-	Radius    float64 `json:"radius"`
-	ShapeType string  `json:"shape_type" validate:"oneof='sphere'"`
+	Radius    float64                           `json:"radius"`
+	ShapeType ShapeTypePropertyFromSphereSchema `json:"shape_type" validate:"oneof='sphere'"`
 }
+
+// ShapeTypePropertyFromSphereSchema is a schema from the AsyncAPI specification required in messages
+type ShapeTypePropertyFromSphereSchema string
+
+const (
+	// ShapeTypePropertyFromSphereSchemaSphere is a possible value of ShapeTypePropertyFromSphereSchema.
+	ShapeTypePropertyFromSphereSchemaSphere ShapeTypePropertyFromSphereSchema = "sphere"
+)
 
 // Vector3dSchema is a schema from the AsyncAPI specification required in messages
 type Vector3dSchema []float64

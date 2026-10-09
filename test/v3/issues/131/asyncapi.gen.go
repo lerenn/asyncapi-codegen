@@ -508,15 +508,27 @@ func (msg TestMessageFromTestChannel) toBrokerMessage() (extensions.BrokerMessag
 
 // TestSchema is a schema from the AsyncAPI specification required in messages
 type TestSchema struct {
-	ArrayProp            []string `json:"ArrayProp,omitempty" validate:"omitempty,min=2,max=5,unique"`
-	ConstProp            *string  `json:"ConstProp,omitempty" validate:"omitempty,eq=Canada"`
-	EnumProp             *string  `json:"EnumProp,omitempty" validate:"omitempty,oneof='red' 'amber' 'green'"`
-	FloatProp            *float64 `json:"FloatProp,omitempty" validate:"omitempty,gte=2.5,lte=5.5"`
-	IntegerExclusiveProp *int64   `json:"IntegerExclusiveProp,omitempty" validate:"omitempty,gt=2,lt=5"`
-	IntegerProp          *int64   `json:"IntegerProp,omitempty" validate:"omitempty,gte=2,lte=5"`
-	RequiredProp         string   `json:"RequiredProp"`
-	StringProp           *string  `json:"StringProp,omitempty" validate:"omitempty,min=2,max=5"`
+	ArrayProp            []string                        `json:"ArrayProp,omitempty" validate:"omitempty,min=2,max=5,unique"`
+	ConstProp            *string                         `json:"ConstProp,omitempty" validate:"omitempty,eq=Canada"`
+	EnumProp             *EnumPropPropertyFromTestSchema `json:"EnumProp,omitempty" validate:"omitempty,oneof='red' 'amber' 'green'"`
+	FloatProp            *float64                        `json:"FloatProp,omitempty" validate:"omitempty,gte=2.5,lte=5.5"`
+	IntegerExclusiveProp *int64                          `json:"IntegerExclusiveProp,omitempty" validate:"omitempty,gt=2,lt=5"`
+	IntegerProp          *int64                          `json:"IntegerProp,omitempty" validate:"omitempty,gte=2,lte=5"`
+	RequiredProp         string                          `json:"RequiredProp"`
+	StringProp           *string                         `json:"StringProp,omitempty" validate:"omitempty,min=2,max=5"`
 }
+
+// EnumPropPropertyFromTestSchema is a schema from the AsyncAPI specification required in messages
+type EnumPropPropertyFromTestSchema string
+
+const (
+	// EnumPropPropertyFromTestSchemaRed is a possible value of EnumPropPropertyFromTestSchema.
+	EnumPropPropertyFromTestSchemaRed EnumPropPropertyFromTestSchema = "red"
+	// EnumPropPropertyFromTestSchemaAmber is a possible value of EnumPropPropertyFromTestSchema.
+	EnumPropPropertyFromTestSchemaAmber EnumPropPropertyFromTestSchema = "amber"
+	// EnumPropPropertyFromTestSchemaGreen is a possible value of EnumPropPropertyFromTestSchema.
+	EnumPropPropertyFromTestSchemaGreen EnumPropPropertyFromTestSchema = "green"
+)
 
 const (
 	// TestChannelPath is the constant representing the 'TestChannel' channel path.
