@@ -32,7 +32,7 @@ func ValidTestSchema() TestSchema {
 		ArrayProp:    []string{"test1", "test2"},
 		IntegerProp:  Ptr[int64](2),
 		FloatProp:    Ptr[float64](2.55),
-		EnumProp:     Ptr("amber"),
+		EnumProp:     Ptr(EnumPropPropertyFromTestSchemaAmber),
 		ConstProp:    Ptr("Canada"),
 	}
 }
@@ -66,7 +66,7 @@ func (suite *Suite) TestGenerateJsonOmitEmptyTag() {
 		},
 		{
 			name:     "EnumProp is not nil",
-			data:     TestSchema{RequiredProp: "test", EnumProp: Ptr("amber")},
+			data:     TestSchema{RequiredProp: "test", EnumProp: Ptr(EnumPropPropertyFromTestSchemaAmber)},
 			expected: `{"RequiredProp":"test", "EnumProp":"amber"}`,
 		},
 		{

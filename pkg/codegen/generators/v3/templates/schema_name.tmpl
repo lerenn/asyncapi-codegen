@@ -16,7 +16,9 @@ bool
 
 {{- /* --------------------------- Type String -------------------------- */ -}}
 {{- else if eq .Type "string" -}}
-{{- if and (isDateOrDateTimeGenerated .Format) (eq .Format "date") -}}
+{{- if isGeneratedEnum . -}}
+{{ namify .Name }}
+{{- else if and (isDateOrDateTimeGenerated .Format) (eq .Format "date") -}}
 civil.Date
 {{- else if and (isDateOrDateTimeGenerated .Format) (eq .Format "date-time") -}}
 time.Time

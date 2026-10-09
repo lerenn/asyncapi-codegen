@@ -1026,6 +1026,11 @@ The following tags are currently supported:
 | uniqueItems      | unique         | Only for arrays                                              |
 | enum             | oneof          | Only string enum are supported                               |    
 
+String enums (component or inline) are also generated as a dedicated Go type with
+one constant per value (e.g. `type Color string` with `ColorRed`, `ColorGreen`, ...)
+for the v3 generator. Enums with `x-go-type` or a `date`/`date-time` format keep
+their plain type.
+
 You can validate manually wherever you hold a generated payload, or plug in the
 provided opt-in middleware to reject invalid messages automatically:
 

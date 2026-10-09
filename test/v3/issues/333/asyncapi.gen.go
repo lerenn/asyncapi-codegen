@@ -674,9 +674,17 @@ func (e *Error) Error() string {
 
 // UserDeletedMessagePayload is a schema from the AsyncAPI specification required in messages
 type UserDeletedMessagePayload struct {
-	Event string `json:"event" validate:"oneof='user_deleted'"`
-	Id    string `json:"id"`
+	Event EventPropertyFromUserDeletedMessagePayload `json:"event" validate:"oneof='user_deleted'"`
+	Id    string                                     `json:"id"`
 }
+
+// EventPropertyFromUserDeletedMessagePayload is a schema from the AsyncAPI specification required in messages
+type EventPropertyFromUserDeletedMessagePayload string
+
+const (
+	// EventPropertyFromUserDeletedMessagePayloadUserDeleted is a possible value of EventPropertyFromUserDeletedMessagePayload.
+	EventPropertyFromUserDeletedMessagePayloadUserDeleted EventPropertyFromUserDeletedMessagePayload = "user_deleted"
+)
 
 // UserDeletedMessage is the message expected for 'UserDeletedMessage' channel.
 type UserDeletedMessage struct {
@@ -727,9 +735,17 @@ func (msg UserDeletedMessage) toBrokerMessage() (extensions.BrokerMessage, error
 
 // UserSignedUpMessagePayload is a schema from the AsyncAPI specification required in messages
 type UserSignedUpMessagePayload struct {
-	Event string `json:"event" validate:"oneof='user_signed_up'"`
-	Id    string `json:"id"`
+	Event EventPropertyFromUserSignedUpMessagePayload `json:"event" validate:"oneof='user_signed_up'"`
+	Id    string                                      `json:"id"`
 }
+
+// EventPropertyFromUserSignedUpMessagePayload is a schema from the AsyncAPI specification required in messages
+type EventPropertyFromUserSignedUpMessagePayload string
+
+const (
+	// EventPropertyFromUserSignedUpMessagePayloadUserSignedUp is a possible value of EventPropertyFromUserSignedUpMessagePayload.
+	EventPropertyFromUserSignedUpMessagePayloadUserSignedUp EventPropertyFromUserSignedUpMessagePayload = "user_signed_up"
+)
 
 // UserSignedUpMessage is the message expected for 'UserSignedUpMessage' channel.
 type UserSignedUpMessage struct {
