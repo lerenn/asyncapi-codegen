@@ -84,7 +84,7 @@ func HasScalarDefault(s *asyncapi.Schema) bool {
 	switch s.Type {
 	case "boolean", "integer", "number":
 		return true
-	case "string":
+	case schemaTypeString:
 		// Generated date/time types have a non-trivial literal form, so they
 		// are intentionally left out.
 		return s.Format != "date" && s.Format != "date-time"
@@ -101,7 +101,7 @@ func DefaultLiteral(s *asyncapi.Schema) string {
 	case "boolean":
 		b, _ := s.Default.(bool)
 		return strconv.FormatBool(b)
-	case "string":
+	case schemaTypeString:
 		str, _ := s.Default.(string)
 		if IsGeneratedEnum(s) {
 			return fmt.Sprintf("%s(%s)", templateutil.Namify(s.Name), strconv.Quote(str))
@@ -139,12 +139,14 @@ func formatDefaultNumber(v any) string {
 	}
 }
 
+const schemaTypeString = "string"
+
 // IsGeneratedEnum reports whether the schema is a string enumeration for which a
 // dedicated Go type and constants are generated (issue #337). Enumerations with
 // a custom Go type, a generated date/time format or non-string values are left
 // as their plain underlying type.
 func IsGeneratedEnum(s *asyncapi.Schema) bool {
-	if s == nil || s.Type != "string" || len(s.Enum) == 0 || s.Name == "" || s.ExtGoType != "" {
+	if s == nil || s.Type != schemaTypeString || len(s.Enum) == 0 || s.Name == "" || s.ExtGoType != "" {
 		return false
 	}
 	if s.Format == "date" || s.Format == "date-time" {
