@@ -1,0 +1,31 @@
+asyncapi: 3.0.0
+info:
+  title: Operation message referencing a channel message
+  version: 1.0.0
+channels:
+  events:
+    address: v3.channelmessageref.events
+    messages:
+      event:
+        $ref: '#/components/messages/event'
+operations:
+  sendEvent:
+    action: send
+    channel:
+      $ref: '#/channels/events'
+    messages:
+      - $ref: '#/channels/events/messages/event'
+  receiveEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/events'
+    messages:
+      - $ref: '#/channels/events/messages/event'
+components:
+  messages:
+    event:
+      payload:
+        type: object
+        properties:
+          id:
+            type: string
