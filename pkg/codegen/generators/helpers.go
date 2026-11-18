@@ -41,7 +41,8 @@ func shouldAddOmitEmpty[T any](schema asyncapi.Validations[T]) bool {
 // This tag can then be used by go-playground/validator/v10 to validate the struct's content.
 func GenerateValidateTags[T any](schema asyncapi.Validations[T], isPointer bool, schemaType string) string {
 	var directives []string
-	if schema.IsRequired && (isPointer || schemaType == "array") {
+	// A nullable field may be null, so "required" (non-nil) does not apply to it.
+	if schema.IsRequired && !schema.IsNullable && (isPointer || schemaType == "array") {
 		directives = append(directives, "required")
 	}
 
@@ -64,7 +65,7 @@ func GenerateValidateTags[T any](schema asyncapi.Validations[T], isPointer bool,
 	}
 
 	if len(directives) > 0 {
-		if !schema.IsRequired {
+		if !schema.IsRequired || schema.IsNullable {
 			directives = append([]string{"omitempty"}, directives...)
 		}
 

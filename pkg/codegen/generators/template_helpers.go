@@ -27,6 +27,7 @@ const messageFieldHeader = "header"
 type TemplateSchema[T any] interface {
 	GetType() string
 	GetIsRequired() bool
+	GetIsNullable() bool
 	IsFieldRequired(field string) bool
 	GetProperties() map[string]*T
 	GetItems() *T
@@ -112,5 +113,6 @@ func IsFieldPointer[T TemplateSchema[T]](parent T, field string, schema T) bool 
 		return schema.GetType() != schemaTypeArray
 	}
 
-	return !(IsRequired(parent, field) || schema.GetIsRequired()) && schema.GetType() != schemaTypeArray
+	required := IsRequired(parent, field) || schema.GetIsRequired()
+	return (!required || schema.GetIsNullable()) && schema.GetType() != schemaTypeArray
 }
