@@ -1,5 +1,10 @@
 package asyncapi
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // Validations is a representation of the JSON-Object validation fields supported by asyncapi
 // These fields are in common for v2 and v3.
 type Validations[T any] struct {
@@ -26,7 +31,40 @@ type Validations[T any] struct {
 
 	// --- Non JSON Schema/AsyncAPI fields -------------------------------------
 	IsRequired      bool  `json:"-"`
+	IsNullable      bool  `json:"-"`
 	ShouldOmitEmpty *bool `json:"-"`
+}
+
+// UnmarshalType decodes the JSON Schema "type" keyword, which may be a string or
+// an array. Of the array forms, only [<type>, "null"] is supported: it returns
+// <type> and nullable true.
+func UnmarshalType(data json.RawMessage) (typ string, nullable bool, err error) {
+	if len(data) == 0 {
+		return "", false, nil
+	}
+
+	if err := json.Unmarshal(data, &typ); err == nil {
+		return typ, false, nil
+	}
+
+	var types []string
+	if err := json.Unmarshal(data, &types); err != nil {
+		return "", false, err
+	}
+
+	typ = ""
+	for _, t := range types {
+		switch {
+		case t == "null":
+			nullable = true
+		case typ != "":
+			return "", false, fmt.Errorf("unsupported type %v: only one type besides \"null\" is supported", types)
+		default:
+			typ = t
+		}
+	}
+
+	return typ, nullable, nil
 }
 
 // Merge merges the newV into the current Validations.
@@ -92,6 +130,9 @@ func (v *Validations[T]) Merge(newV Validations[T]) {
 	}
 	if newV.IsRequired {
 		v.IsRequired = newV.IsRequired
+	}
+	if newV.IsNullable {
+		v.IsNullable = newV.IsNullable
 	}
 	if newV.ShouldOmitEmpty != nil {
 		v.ShouldOmitEmpty = newV.ShouldOmitEmpty

@@ -1,0 +1,35 @@
+asyncapi: 3.0.0
+info:
+  title: Nullable type arrays
+  version: 1.0.0
+
+channels:
+  user:
+    address: v3.issue344.user
+    messages:
+      user:
+        $ref: '#/components/messages/user'
+
+operations:
+  receiveUser:
+    action: receive
+    channel:
+      $ref: '#/channels/user'
+
+components:
+  messages:
+    user:
+      payload:
+        $ref: '#/components/schemas/User'
+  schemas:
+    User:
+      type: object
+      required: [apiKey, name]
+      properties:
+        apiKey:
+          type: [string, 'null']
+          minLength: 4
+        name:
+          type: string
+        age:
+          type: ['null', integer]

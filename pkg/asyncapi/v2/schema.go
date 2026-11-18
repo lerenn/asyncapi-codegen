@@ -64,7 +64,8 @@ func NewSchema() Schema {
 
 // UnmarshalJSON unmarshals a Schema from JSON. It is needed because the JSON
 // Schema "additionalProperties" keyword may be either a boolean or a schema
-// object, which a plain *Schema field cannot represent.
+// object, and "type" may be either a string or an array, which plain fields
+// cannot represent.
 func (s *Schema) UnmarshalJSON(data []byte) error {
 	// The alias avoids infinite recursion into this method. The shadowing
 	// additionalProperties raw message captures the value at depth 0 (winning
@@ -73,12 +74,18 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	type alias Schema
 	aux := struct {
 		AdditionalProperties json.RawMessage `json:"additionalProperties,omitempty"`
+		Type                 json.RawMessage `json:"type,omitempty"`
 		*alias
 	}{
 		alias: (*alias)(s),
 	}
 
 	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	var err error
+	if s.Type, s.IsNullable, err = asyncapi.UnmarshalType(aux.Type); err != nil {
 		return err
 	}
 
@@ -380,6 +387,9 @@ func (s Schema) GetType() string { return s.Type }
 
 // GetIsRequired returns whether the schema itself is required.
 func (s Schema) GetIsRequired() bool { return s.IsRequired }
+
+// GetIsNullable returns whether the schema's type includes "null".
+func (s Schema) GetIsNullable() bool { return s.IsNullable }
 
 // GetProperties returns the schema properties.
 func (s Schema) GetProperties() map[string]*Schema { return s.Properties }
